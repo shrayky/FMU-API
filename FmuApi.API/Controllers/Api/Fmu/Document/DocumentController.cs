@@ -39,7 +39,7 @@ namespace FmuApiAPI.Controllers.Api.Fmu.Document
             {
                 AnswerDocument answer = new()
                 {
-                    Code = 1,
+                    Code = 0,
                     Error = result.Error
                 };
 

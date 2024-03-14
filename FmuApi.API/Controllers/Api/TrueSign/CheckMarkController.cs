@@ -23,12 +23,12 @@ namespace FmuApiAPI.Controllers.Api.TrueSign
 
             var trueMarkCheckResult = await _checkMarks.RequestMarkState(checkMarksRequestData);
 
-            if (trueMarkCheckResult is null)
+            if (trueMarkCheckResult.IsFailure)
             {
-                return NotFound();
+                return NotFound(trueMarkCheckResult.Error);
             }
 
-            return Ok(trueMarkCheckResult);
+            return Ok(trueMarkCheckResult.Value);
         }
     }
 }

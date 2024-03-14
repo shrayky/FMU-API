@@ -49,13 +49,12 @@ namespace FmuApiApplication.Services.Fmu
 
             var trueMarkCheckResult = await _checkMarks.RequestMarkState(checkMarksRequestData);
 
-            trueMarkCheckResult ??= new();
+            answer.Truemark_response = trueMarkCheckResult.IsSuccess ? trueMarkCheckResult.Value : new();
+            answer.Error = trueMarkCheckResult.IsFailure ? trueMarkCheckResult.Error : "";
 
-            answer.Truemark_response = trueMarkCheckResult;
-
-            if (trueMarkCheckResult.Code == 0)
+            if (answer.Truemark_response.Code == 0)
             {
-                foreach (var trueApiMarcData in trueMarkCheckResult.Codes)
+                foreach (var trueApiMarcData in answer.Truemark_response.Codes)
                 {
                     string markError = trueApiMarcData.MarkError();
 

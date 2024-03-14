@@ -1,4 +1,5 @@
-﻿using FmuApiApplication.Utilites;
+﻿using CSharpFunctionalExtensions;
+using FmuApiApplication.Utilites;
 using FmuApiDomain.Models.Configuration;
 using FmuApiDomain.Models.TrueSignApi.MarkData.Check;
 using Microsoft.Extensions.Logging;
@@ -22,10 +23,13 @@ namespace FmuApiApplication.Services.TrueSign
             _httpClientFactory = httpClientFactory;
         }
 
-        public async Task<CheckAnswerTrueApi?> RequestMarkState(CheckMarksRequestData marks)
+        public async Task<Result<CheckAnswerTrueApi>> RequestMarkState(CheckMarksRequestData marks)
         {
             if (!Constants.Online)
-                return null;
+                return Result.Failure<CheckAnswerTrueApi>("Нет интеренета");
+
+            if (Constants.Parametrs.Cdn.Count() == 0)
+                return Result.Failure<CheckAnswerTrueApi>("Нет загруженных cdn");
 
             Dictionary<string, string> headers = new();
             headers.Add(HeaderNames.Accept, "application/json");
@@ -42,7 +46,7 @@ namespace FmuApiApplication.Services.TrueSign
                 TrueSignCdn? cdn = Cdn();
 
                 if (cdn is null)
-                    return null;
+                    return Result.Failure<CheckAnswerTrueApi>("Нет загруженных cdn");
 
                 try
                 {
@@ -51,8 +55,10 @@ namespace FmuApiApplication.Services.TrueSign
                                                                                     JsonContent.Create(marks),
                                                                                     _httpClientFactory,
                                                                                     TimeSpan.FromSeconds(requestTimeoutSeconds));
+                    if (answ is null)
+                        continue;
 
-                    return answ;
+                    return Result.Success(answ);
                 }
                 catch
                 {
@@ -65,7 +71,7 @@ namespace FmuApiApplication.Services.TrueSign
                     break;
             }
 
-            return null;
+            return Result.Failure<CheckAnswerTrueApi>("Ни один cdn сервер не ответил");
 
         }
 
