@@ -1,21 +1,22 @@
 ﻿using FmuApiApplication.Utilites;
 using FmuApiDomain.Models.TrueSignTokenService;
+using FmuApiSettings;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
 
 namespace FmuApiApplication.Workers
 {
-    public class TrueSignTokenServiceLoader : BackgroundService
+    public class TrueSignTokenServiceLoaderWorker : BackgroundService
     {
-        private readonly ILogger<TrueSignTokenServiceLoader> _logger;
+        private readonly ILogger<TrueSignTokenServiceLoaderWorker> _logger;
         private readonly IHttpClientFactory _httpClientFactory;
 
         private DateTime nextWorkDate = DateTime.Now;
         private readonly int checkPeriodMinutes = 120;
         private readonly int requestTimeoutSeconds = 15;
 
-        public TrueSignTokenServiceLoader(IHttpClientFactory httpClientFactory, ILogger<TrueSignTokenServiceLoader> logger)
+        public TrueSignTokenServiceLoaderWorker(IHttpClientFactory httpClientFactory, ILogger<TrueSignTokenServiceLoaderWorker> logger)
         {
             _httpClientFactory = httpClientFactory;
             _logger = logger;
@@ -33,9 +34,6 @@ namespace FmuApiApplication.Workers
                 {
                     nextWorkDate = DateTime.Now.AddMinutes(checkPeriodMinutes);
 
-                    if (Constants.Parametrs.TrueSignTokenService.ConnectionAddres == string.Empty)
-                        continue;
-
                     TrueSignTokenDataPacket? packet = new();
 
                     try
@@ -47,7 +45,7 @@ namespace FmuApiApplication.Workers
                     }
                     catch (Exception ex)
                     {
-                            _logger.LogWarning($"Ошибка получения токена для честного знака {ex.Message}");
+                            _logger.LogWarning("Ошибка получения токена для честного знака {err}", ex.Message);
                             Constants.Online = false;
                     }
 
@@ -59,7 +57,7 @@ namespace FmuApiApplication.Workers
                             Expired = packet.Data.Expired
                         };
 
-                    _logger.LogInformation($"Получен токен честного знака.");
+                    _logger.LogInformation("Получен токен честного знака.");
 
                     }
 

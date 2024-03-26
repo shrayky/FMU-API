@@ -2,6 +2,7 @@
 using FmuApiApplication.Utilites;
 using FmuApiDomain.Models.Configuration;
 using FmuApiDomain.Models.TrueSignApi.MarkData.Check;
+using FmuApiSettings;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -11,8 +12,8 @@ namespace FmuApiApplication.Services.TrueSign
     public class CheckMarks
     {
         private readonly string _addres = "/api/v4/true-api/codes/check";
-        private readonly int requestTimeoutSeconds = 2;
-        private readonly int requestAttempts = 3;
+        private readonly int requestTimeoutSeconds = Constants.Parametrs.HttpRequestTimeouts.CheckMarkRequestTimeout;
+        private readonly int requestAttempts = Constants.Parametrs.Cdn.Count;
 
         private readonly ILogger<CheckMarks> _logger;
         private IHttpClientFactory _httpClientFactory;
@@ -28,7 +29,7 @@ namespace FmuApiApplication.Services.TrueSign
             if (!Constants.Online)
                 return Result.Failure<CheckAnswerTrueApi>("Нет интеренета");
 
-            if (Constants.Parametrs.Cdn.Count() == 0)
+            if (Constants.Parametrs.Cdn.Count == 0)
                 return Result.Failure<CheckAnswerTrueApi>("Нет загруженных cdn");
 
             Dictionary<string, string> headers = new();
@@ -41,6 +42,10 @@ namespace FmuApiApplication.Services.TrueSign
 
             int attemptLost = requestAttempts;
 
+            var content = JsonContent.Create(marks);
+
+            _logger.LogInformation("Проверяю марки в честном знаке {@request}", content);
+
             while (true)
             {
                 TrueSignCdn? cdn = Cdn();
@@ -52,11 +57,13 @@ namespace FmuApiApplication.Services.TrueSign
                 {
                     var answ = await HttpRequestHelper.PostAsync<CheckAnswerTrueApi>($"{cdn.Host}{_addres}",
                                                                                     headers,
-                                                                                    JsonContent.Create(marks),
+                                                                                    content,
                                                                                     _httpClientFactory,
                                                                                     TimeSpan.FromSeconds(requestTimeoutSeconds));
                     if (answ is null)
                         continue;
+
+                    _logger.LogInformation("Получен ответ от четного знака {@answ}", answ);
 
                     return Result.Success(answ);
                 }

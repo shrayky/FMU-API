@@ -2,6 +2,7 @@
 {
     public class ServerConfig
     {
-        public int IpPort { get; } = 2578;
+        public int IpPort { get; set; } = 2578;
+        public bool Https {  get; set; } = false;
     }
 }

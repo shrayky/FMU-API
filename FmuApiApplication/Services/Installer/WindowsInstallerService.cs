@@ -1,4 +1,6 @@
-﻿using System.Diagnostics;
+﻿using FmuApiApplication.Utilites;
+using FmuApiSettings;
+using System.Diagnostics;
 using System.Reflection;
 using System.ServiceProcess;
 
@@ -66,8 +68,8 @@ namespace FmuApiApplication.Services.Installer
             }
 
             Constants.Init();
-            Constants.Parametrs.XAPIKEY = ArgumentValue(installerArgs, "--xapikey", Constants.Parametrs.XAPIKEY);
-            await Constants.Parametrs.SaveAsync(Constants.Parametrs);
+            Constants.Parametrs.XAPIKEY = StringHelper.ArgumentValue(installerArgs, "--xapikey", Constants.Parametrs.XAPIKEY);
+            await Constants.Parametrs.SaveAsync(Constants.Parametrs, Constants.DataFolderPath);
 
             return true;
 
@@ -106,24 +108,6 @@ namespace FmuApiApplication.Services.Installer
             return true;
 
         }
-
-        private static string ArgumentValue(string[] keyValues, string key, string defaultValue = "")
-        {
-            bool nextValue = false;
-
-            foreach (string arg in keyValues)
-            {
-                if (arg == key)
-                {
-                    nextValue = true;
-                    continue;
-                }
-
-                if (nextValue)
-                    return arg;
-            }
-
-            return defaultValue;
-        }
+        
     }
 }

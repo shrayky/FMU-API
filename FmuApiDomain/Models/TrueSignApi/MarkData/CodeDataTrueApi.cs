@@ -23,6 +23,8 @@ namespace FmuApiDomain.Models.TrueSignApi.MarkData
         public bool Found { get; set; } = false;
         [JsonPropertyName("utilised")]
         public bool Utilised { get; set; } = false;
+        [JsonPropertyName("isOwner")]
+        public bool IsOwner { get; set; } = false;
         [JsonPropertyName("isBlocked")]
         public bool IsBlocked { get; set; } = false;
         [JsonPropertyName("productionDate")]

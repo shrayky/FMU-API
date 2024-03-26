@@ -1,5 +1,6 @@
 ﻿using FmuApiApplication;
 using FmuApiDomain.Models.Fmu.Token;
+using FmuApiSettings;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 
@@ -20,7 +21,7 @@ namespace FmuApiAPI.Controllers.Api.Fmu.Token
             AuthorizationAnswer authorizationAnswer = new()
             {
                 Id = "Pos",
-                Name = "Pos",
+                Name = "",
                 Expired = (int)expired.Subtract(DateTime.UnixEpoch).TotalSeconds,
                 Signature = "fmu-api-sign"
             };

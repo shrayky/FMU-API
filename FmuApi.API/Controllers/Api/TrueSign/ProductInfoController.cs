@@ -1,5 +1,6 @@
 ﻿using FmuApiApplication;
 using FmuApiApplication.Services.TrueSign;
+using FmuApiSettings;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FmuApiAPI.Controllers.Api.TrueSign

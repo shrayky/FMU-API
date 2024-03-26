@@ -1,4 +1,5 @@
 ﻿using FmuApiApplication;
+using FmuApiSettings;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FmuApiAPI.Controllers.Api.Configuration
@@ -18,7 +19,7 @@ namespace FmuApiAPI.Controllers.Api.Configuration
         async public Task<IActionResult> XApiKeyPost(string xapi)
         {
             Constants.Parametrs.XAPIKEY = xapi;
-            await Constants.Parametrs.SaveAsync(Constants.Parametrs);
+            await Constants.Parametrs.SaveAsync(Constants.Parametrs, Constants.DataFolderPath);
 
             return Ok();
         }

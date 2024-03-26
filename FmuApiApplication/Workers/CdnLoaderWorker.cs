@@ -1,6 +1,7 @@
 ﻿using FmuApiApplication.Utilites;
 using FmuApiDomain.Models.Configuration;
 using FmuApiDomain.Models.TrueSignApi.Cdn;
+using FmuApiSettings;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
@@ -16,7 +17,7 @@ namespace FmuApiApplication.Workers
 
         private DateTime nextWorkDate = DateTime.Now;
         private readonly int checkPeriodMinutes = 120;
-        private readonly int requestTimeoutSeconds = 15;
+        private readonly int requestTimeoutSeconds = Constants.Parametrs.HttpRequestTimeouts.CdnRequestTimeout;
 
         public CdnLoaderWorker(ILogger<CdnLoaderWorker> logger, IHttpClientFactory httpClientFactory)
         {
@@ -28,27 +29,36 @@ namespace FmuApiApplication.Workers
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                if (nextWorkDate <= DateTime.Now)
+                if (nextWorkDate >= DateTime.Now)
                 {
-                    nextWorkDate = DateTime.Now.AddMinutes(checkPeriodMinutes);
-
-                    if (!Constants.Online)
-                        continue;
-
-                    if (Constants.Parametrs.XAPIKEY == string.Empty)
-                        continue;
-
-                    try
-                    {
-                        _ = await UpadteCdnList();
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning($"Ошибка загрузки cdn серверов: {ex.Message}");
-                    }
+                    await Task.Delay(10_000, stoppingToken);
+                    continue;
                 }
 
-                await Task.Delay(10_000, stoppingToken);
+                _logger.LogInformation("Загружаю список cdn");
+
+                nextWorkDate = DateTime.Now.AddMinutes(checkPeriodMinutes);
+
+                if (!Constants.Online)
+                {
+                    _logger.LogWarning("Нет подключения к интернету");
+                    continue;
+                }
+
+                if (Constants.Parametrs.XAPIKEY == string.Empty)
+                {
+                    _logger.LogWarning("Не настроен XAPIKEY");
+                    continue;
+                }
+
+                try
+                {
+                    _ = await UpadteCdnList();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning($"Ошибка загрузки cdn серверов: {ex.Message} \r\n {ex.InnerException}");
+                }
             }
         }
 
@@ -72,14 +82,22 @@ namespace FmuApiApplication.Workers
 
             foreach (CdnHost cdnHost in cdns.Hosts)
             {
-                CdnHealth? cdnHealth;
+                CdnHealth? cdnHealth = new();
 
                 DateTime beginCheckHealth = DateTime.Now;
 
-                cdnHealth = await HttpRequestHelper.GetJsonFromHttpAsync<CdnHealth>($"{cdnHost.Host}/api/v4/true-api/cdn/health/check",
-                                                                                        headers,
-                                                                                        _httpClientFactory,
-                                                                                         TimeSpan.FromSeconds(requestTimeoutSeconds));
+                try
+                {
+                    cdnHealth = await HttpRequestHelper.GetJsonFromHttpAsync<CdnHealth>($"{cdnHost.Host}/api/v4/true-api/cdn/health/check",
+                                                                                            headers,
+                                                                                            _httpClientFactory,
+                                                                                             TimeSpan.FromSeconds(requestTimeoutSeconds));
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning("Ошибка проверки healthcheck cdn сервера: {srv} {exMessage} \r\n {exInnerException}", cdnHost.Host, ex.Message, ex.InnerException);
+                    continue;
+                }
 
                 if (cdnHealth is null)
                     continue;
@@ -96,7 +114,7 @@ namespace FmuApiApplication.Workers
             if (trueSignCdns.Count > 0)
             {
                 Constants.Parametrs.Cdn = trueSignCdns.OrderBy(p => p.Latency).ToList();
-                await Constants.Parametrs.SaveAsync(Constants.Parametrs);
+                await Constants.Parametrs.SaveAsync(Constants.Parametrs, Constants.DataFolderPath);
             }
 
             return true;

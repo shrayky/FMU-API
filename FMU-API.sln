@@ -9,6 +9,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FmuApiApplication", "FmuApi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FmuApiAPI", "FmuApi.API\FmuApiAPI.csproj", "{A0A22B0E-8917-443C-893C-2B066C8C182B}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FmuApiCouhDb", "FmuApiCouhDb\FmuApiCouhDb.csproj", "{3C727947-7BCD-45AE-94C3-B89898B6B556}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FmuApiSettings", "FmuApiSettings\FmuApiSettings.csproj", "{F8B68661-F8D5-4E44-914A-BC86E5BDFE79}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +31,14 @@ Global
 		{A0A22B0E-8917-443C-893C-2B066C8C182B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A0A22B0E-8917-443C-893C-2B066C8C182B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A0A22B0E-8917-443C-893C-2B066C8C182B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C727947-7BCD-45AE-94C3-B89898B6B556}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C727947-7BCD-45AE-94C3-B89898B6B556}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C727947-7BCD-45AE-94C3-B89898B6B556}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C727947-7BCD-45AE-94C3-B89898B6B556}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F8B68661-F8D5-4E44-914A-BC86E5BDFE79}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F8B68661-F8D5-4E44-914A-BC86E5BDFE79}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F8B68661-F8D5-4E44-914A-BC86E5BDFE79}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F8B68661-F8D5-4E44-914A-BC86E5BDFE79}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

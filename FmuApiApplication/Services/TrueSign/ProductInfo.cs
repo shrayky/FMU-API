@@ -2,6 +2,7 @@
 using FmuApiApplication.Utilites;
 using FmuApiDomain.Models.TrueSignApi;
 using FmuApiDomain.Models.TrueSignApi.ProductInfo;
+using FmuApiSettings;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
 using System.Net.Http.Json;

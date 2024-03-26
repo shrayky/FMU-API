@@ -3,59 +3,67 @@ using System.Text.Json.Serialization;
 
 namespace FmuApiDomain.Models.Configuration
 {
-    public class Constant : ICloneable
+    public class Parametrs : ICloneable
     {
         public string AppName { get; } = "FMU-API";
-        public int AppVersion { get; set; } = 6;
+        public int AppVersion { get; set; } = 8;
         public string XAPIKEY { get; set; } = string.Empty;
         public ServerConfig ServerConfig { get; set; } = new();
-        public List<TrueSignCdn> Cdn { get; set; } = new();
-        public CouchDbConnection CouchDb { get; set; } = new();
+        public AlcoUnitConfig FrontolAlcoUnit { get; set; } = new();
         public string HostToPing { get; set; } = "https://mail.ru";
+        public List<TrueSignCdn> Cdn { get; set; } = new();
+        public CouchDbConnection MarksDb { get; set; } = new();
         public TrueSignTokenService TrueSignTokenService { get; set; } = new();
+        public HttpRequestTimeouts HttpRequestTimeouts { get; set; } = new();
+        public LogSettings Logging { get; set; } = new();
         [JsonIgnore]
         public SignData SignData { get; set; } = new();
 
-        public void Init()
-        {
+        private string _dataFolder = string.Empty;
+
+        public void Init(string dataFolder)
+        { 
+            _dataFolder = dataFolder;
+
             LoadFromJson();
         }
 
         private void LoadFromJson()
         {
-            string programDataFloder = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-            string dataFolder = $"{programDataFloder}\\Automation\\{AppName}";
-            string configFileName = $"{dataFolder}\\config.json";
+            string configFileName = $"{_dataFolder}\\config.json";
 
-            if (!Directory.Exists(dataFolder))
-                Directory.CreateDirectory(dataFolder);
+            if (!Directory.Exists(_dataFolder))
+                Directory.CreateDirectory(_dataFolder);
 
-            Constant loadedConstants = new Constant();
+            Parametrs loadedConstants = new Parametrs();
 
             if (File.Exists(configFileName))
                 loadedConstants = LoadFromFile(configFileName);
             else
-                Save(configFileName, loadedConstants);
+                Save(loadedConstants, configFileName);
 
             if (loadedConstants != null)
             {
                 if (loadedConstants.AppVersion != AppVersion)
                 {
                     loadedConstants.AppVersion = AppVersion;
-                    Save(configFileName, loadedConstants);
+                    Save(loadedConstants, configFileName);
                 }
 
                 XAPIKEY = loadedConstants.XAPIKEY;
                 ServerConfig = loadedConstants.ServerConfig;
+                FrontolAlcoUnit = loadedConstants.FrontolAlcoUnit;
                 Cdn = loadedConstants.Cdn;
-                CouchDb = loadedConstants.CouchDb;
+                MarksDb = loadedConstants.MarksDb;
                 HostToPing = loadedConstants.HostToPing;
                 TrueSignTokenService = loadedConstants.TrueSignTokenService;
+                HttpRequestTimeouts = loadedConstants.HttpRequestTimeouts;
+                Logging = loadedConstants.Logging;
             }
 
         }
 
-        public void Save(string configFileName, Constant constantsToSave)
+        public void Save(Parametrs constantsToSave, string configFileName)
         {
             JsonSerializerOptions jsonOptions = new()
             {
@@ -74,10 +82,8 @@ namespace FmuApiDomain.Models.Configuration
             { }
         }
 
-        async public Task<bool> SaveAsync(Constant constantsToSave)
+        async public Task<bool> SaveAsync(Parametrs constantsToSave, string dataFolder)
         {
-            string programDataFloder = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-            string dataFolder = $"{programDataFloder}\\Automation\\{AppName}";
             string configFileName = $"{dataFolder}\\config.json";
 
             JsonSerializerOptions jsonOptions = new JsonSerializerOptions();
@@ -104,9 +110,9 @@ namespace FmuApiDomain.Models.Configuration
             return true;
         }
 
-        private static Constant LoadFromFile(string configFileName)
+        private static Parametrs LoadFromFile(string configFileName)
         {
-            Constant? constant = new Constant();
+            Parametrs? constant = new Parametrs();
 
             StreamReader file = new(configFileName);
 
@@ -114,14 +120,13 @@ namespace FmuApiDomain.Models.Configuration
             file.Close();
 
             if (configJson != null)
-                constant = JsonSerializer.Deserialize<Constant>(configJson);
+                constant = JsonSerializer.Deserialize<Parametrs>(configJson);
 
             if (constant == null)
-                return new Constant();
+                return new Parametrs();
 
             return constant;
         }
         public object Clone() => MemberwiseClone();
     }
-
 }

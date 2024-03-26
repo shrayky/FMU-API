@@ -1,8 +1,10 @@
 ﻿using FmuApiApplication.Utilites;
 using FmuApiDomain.Models.TrueSignApi.Cdn;
+using FmuApiSettings;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
+using System.Net.Http.Json;
 
 namespace FmuApiApplication.Workers
 {
@@ -12,7 +14,6 @@ namespace FmuApiApplication.Workers
         private readonly IHttpClientFactory _httpClientFactory;
 
         private readonly int CheckPeriodMinutes = 2;
-        private readonly int RequestTimeoutSeconds = 15;
         private DateTime nextWorkDate = DateTime.Now;
 
         public InternetConnectionCheckWorker(ILogger<InternetConnectionCheckWorker> logger, IHttpClientFactory httpClientFactory)
@@ -34,22 +35,17 @@ namespace FmuApiApplication.Workers
                 {
                     nextWorkDate = DateTime.Now.AddMinutes(CheckPeriodMinutes);
 
-                    if (Constants.Parametrs.HostToPing != string.Empty) 
+                    try
                     {
-                        try
-                        {
-                            var result = await HttpRequestHelper.GetHttpAsync(Constants.Parametrs.HostToPing,
-                                                                              headers,
-                                                                              _httpClientFactory,
-                                                                              TimeSpan.FromSeconds(RequestTimeoutSeconds));
+                        var client = _httpClientFactory.CreateClient("internetCheck");
+                        var answer = await client.GetAsync("");
 
-                            Constants.Online = (result != string.Empty);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogWarning($"Ошибка проверки доступности интеренета: {ex.Message}");
-                            Constants.Online = false;
-                        }
+                        Constants.Online = (answer.StatusCode == System.Net.HttpStatusCode.OK);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning("Ошибка проверки доступности интеренета: {err}", ex.Message);
+                        Constants.Online = false;
                     }
                 }
 

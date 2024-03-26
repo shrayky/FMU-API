@@ -1,0 +1,41 @@
+﻿using FmuApiApplication.Services.MarkStateSrv;
+using FmuApiDomain.Models.MarkState;
+using Microsoft.AspNetCore.Mvc;
+
+namespace FmuApiAPI.Controllers.Api.MarkState
+{
+    [Route("api/markstate")]
+    [ApiController]
+    [ApiExplorerSettings(GroupName = "Mark state API")]
+    public class MarkStateController : ControllerBase
+    {
+        private readonly ILogger<MarkStateController> _logger;
+        private MarkStateSrv _markStateSrv;
+
+        public MarkStateController(ILogger<MarkStateController> logger, MarkStateSrv markStateSrv) 
+        {
+            _logger = logger;
+            _markStateSrv = markStateSrv;
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SaleMark(SaleMarkContract saleMark)
+        {
+            try
+            {
+                if (saleMark.CheqData.IsSale)
+                    await _markStateSrv.SetMarksSaled(saleMark);
+                else
+                    await _markStateSrv.SetMarksInStok(saleMark);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("[{Date}] - Ошибка изменения статусов марок в БД. \r\n {err}", DateTime.Now, ex.Message);
+                return BadRequest(ex.Message);
+            }
+
+            return Ok();
+        }
+
+    }
+}
