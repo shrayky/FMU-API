@@ -1,5 +1,4 @@
-﻿using FmuApiApplication;
-using FmuApiDomain.Models.Fmu.Token;
+﻿using FmuApiDomain.Models.Fmu.Token;
 using FmuApiSettings;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
@@ -7,6 +6,7 @@ using System.Text.Json;
 namespace FmuApiAPI.Controllers.Api.Fmu.Token
 {
     [Route("api/fmu/[controller]")]
+    [Route("[controller]")]
     [ApiController]
     [ApiExplorerSettings(GroupName = "Frontol mark unit API")]
     public class TokenController : ControllerBase
@@ -30,8 +30,8 @@ namespace FmuApiAPI.Controllers.Api.Fmu.Token
             byte[] encodedByte = System.Text.Encoding.ASCII.GetBytes(configJson);
             string signature = Convert.ToBase64String(encodedByte);
 
-            Constants.Parametrs.SignData.Signature = signature;
-            Constants.Parametrs.SignData.Expired = expired;
+            Constants.FmuToken.Signature = signature;
+            Constants.FmuToken.Expired = expired;
 
             return Ok(configJson);
         }

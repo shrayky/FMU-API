@@ -1,15 +1,15 @@
 ﻿using FmuApiCouhDb.CrudServices;
-using FmuApiDomain.Models.MarkState;
+using FmuApiDomain.Models.MarkInformation;
 using Microsoft.Extensions.Logging;
 
 namespace FmuApiApplication.Services.MarkStateSrv
 {
     public class MarkStateSrv
     {
-        private readonly MarkStateCrud _markStateCrud;
+        private readonly MarkInformationCrud _markStateCrud;
         private readonly ILogger<MarkStateSrv> _logger;
 
-        public MarkStateSrv(MarkStateCrud markStateCrud, ILogger<MarkStateSrv> logger)
+        public MarkStateSrv(MarkInformationCrud markStateCrud, ILogger<MarkStateSrv> logger)
         {
             _markStateCrud = markStateCrud;
             _logger = logger;
@@ -19,7 +19,7 @@ namespace FmuApiApplication.Services.MarkStateSrv
         {
             foreach (var mark in saleMarkData.Marks)
             {
-                await _markStateCrud.SetStateAsync(mark, "sold", saleMarkData.CheqData);
+                await _markStateCrud.SetStateAsync(mark, MarkState.Sold, saleMarkData.CheqData);
             }
         }
 
@@ -27,7 +27,7 @@ namespace FmuApiApplication.Services.MarkStateSrv
         {
             foreach (var mark in saleMarkData.Marks)
             {
-                await _markStateCrud.SetStateAsync(mark, "stock", saleMarkData.CheqData);
+                await _markStateCrud.SetStateAsync(mark, MarkState.Stock, saleMarkData.CheqData);
             }
         }
     }

@@ -1,5 +1,5 @@
 ﻿using CouchDB.Driver.Types;
-using FmuApiDomain.Models.MarkState;
+using FmuApiDomain.Models.MarkInformation;
 using FmuApiDomain.Models.TrueSignApi.MarkData;
 
 namespace FmuApiCouhDb.DocumentModels

@@ -1,6 +1,0 @@
-@FmuApi.API_HostAddress = http://localhost:5163
-
-GET {{FmuApi.API_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

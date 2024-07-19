@@ -4,13 +4,17 @@ using FmuApiApplication.Services.TrueSign;
 using FmuApiApplication.Workers;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using CouchDB.Driver.DependencyInjection;
-using FmuApiCouhDb;
-using FmuApiCouhDb.CrudServices;
 using FmuApiApplication.Services.AcoUnit;
 using FmuApiSettings;
 using FmuApiApplication.Utilites;
 using Serilog;
 using FmuApiAPI;
+using FmuApiCouhDb;
+using FmuApiCouhDb.CrudServices;
+using System.Net;
+using FmuFrontolDb;
+using Microsoft.EntityFrameworkCore;
+using FmuApiApplication.Services.Frontol;
 
 var slConsole = new LoggerConfiguration()
     .MinimumLevel.Debug().WriteTo
@@ -45,30 +49,9 @@ bool RunHttpApiService()
 
     WebApplicationBuilder? builder = WebApplication.CreateBuilder(webApplicationOptions);
 
-    if (Constants.Parametrs.Logging.IsEnabled)
-    {
-        string logFileName = string.Concat(Constants.DataFolderPath, "\\log\\fmu-api.log");
+    ConfigureLogging(builder);
 
-        var logConfig = Constants.Parametrs.Logging.LogLevel.ToLower() switch
-        {
-            "verbose" => LoggerConfig.Verbose(logFileName),
-            "debug" => LoggerConfig.Debug(logFileName),
-            "information" => LoggerConfig.Information(logFileName),
-            "warning" => LoggerConfig.Warning(logFileName),
-            "error" => LoggerConfig.Error(logFileName),
-            "fatal" => LoggerConfig.Fatal(logFileName),
-            _ => LoggerConfig.Information(logFileName)
-        };
-
-        builder.Logging.AddSerilog(logConfig);
-    }
-
-    builder.WebHost.UseUrls(
-        Constants.Parametrs.ServerConfig.Https switch
-        {
-            true => $"https://+:{Constants.Parametrs.ServerConfig.IpPort}",
-            _ => $"http://+:{Constants.Parametrs.ServerConfig.IpPort}"
-        });
+    builder.WebHost.UseUrls($"http://+:{Constants.Parametrs.ServerConfig.ApiIpPort}");
 
     var services = builder.Services;
 
@@ -81,45 +64,105 @@ bool RunHttpApiService()
 
     services.AddHttpClient();
 
-    services.AddSingleton<CheckMarks>();
+    services.AddScoped<CheckMarks>();
 
-    services.AddSingleton<FrontolDocument>();
-    services.AddSingleton<ProductInfo>();
+    services.AddScoped<FrontolDocument>();
+    services.AddScoped<ProductInfo>();
 
     services.AddHttpClient<AlcoUnitGateway>("alcoUnit", options =>
     {
         options.BaseAddress = new Uri(Constants.Parametrs.FrontolAlcoUnit.NetAdres);
         options.Timeout = TimeSpan.FromSeconds(20);
     });
-    services.AddSingleton<AlcoUnitGateway>();
+    services.AddScoped<AlcoUnitGateway>();
 
     services.AddHostedService<CdnLoaderWorker>();
 
     if (Constants.Parametrs.TrueSignTokenService.ConnectionAddres != string.Empty)
         services.AddHostedService<TrueSignTokenServiceLoaderWorker>();
 
-    if (Constants.Parametrs.HostToPing != string.Empty)
+    if (Constants.Parametrs.HostsToPing.Count > 0)
     {
-        services.AddHttpClient("internetCheck", client =>
-        {
-            client.BaseAddress = new Uri(Constants.Parametrs.HostToPing);   
-            client.Timeout = TimeSpan.FromSeconds(15);
-        });
+        services.AddHttpClient("internetCheck");
         services.AddHostedService<InternetConnectionCheckWorker>();
     }
 
+    if (Constants.Parametrs.FrontolConnectionSettings.ConnectionEnable())
+    {
+        services.AddDbContext<FrontolDbContext>(options =>
+        {
+            options.UseFirebird(Constants.Parametrs.FrontolConnectionSettings.ConnectionStringBuild());
+        });
+        
+        services.AddScoped<FrontolSprtDataService>();
+
+    } 
+
     services.AddHostedService<ClearOldLogsWorker>();
 
-    services.AddSingleton<MarkStateCrud>();
+    services.AddScoped<MarkInformationCrud>();
+    services.AddScoped<FrontolDocumentCrud>();
 
-    if (Constants.Parametrs.MarksDb.ConfigurationEnabled())
+    ConfigureCors(services);
+
+    if (Constants.Parametrs.Database.ConfigurationIsEnabled)
     {
         services.AddCouchContext<CouchDbContext>(opt =>
-            opt.UseEndpoint(Constants.Parametrs.MarksDb.NetAdres)
-                .UseCookieAuthentication(Constants.Parametrs.MarksDb.UserName, Constants.Parametrs.MarksDb.Password)
+            opt.UseEndpoint(Constants.Parametrs.Database.NetAdres)
+                .UseCookieAuthentication(Constants.Parametrs.Database.UserName, Constants.Parametrs.Database.Password)
                 .EnsureDatabaseExists());
     }
 
+    ConfigureSwagger(services);
+
+    if (OperatingSystem.IsWindows())
+    {
+        builder.Host.UseWindowsService();
+    }
+
+    builder.Services.AddRazorPages();
+
+    var app = builder.Build();
+
+    app.UseSwagger();
+    app.UseSwaggerUI();
+
+    app.UseCors();
+
+    app.UseStaticFiles();
+    app.UseRouting();
+
+    app.MapRazorPages();
+    app.MapControllers();
+
+    app.Run();
+
+    return true;
+}
+
+void ConfigureLogging(WebApplicationBuilder builder)
+{
+    if (!Constants.Parametrs.Logging.IsEnabled)
+        return;
+
+    string logFileName = string.Concat(Constants.DataFolderPath, "\\log\\fmu-api.log");
+
+    var logConfig = Constants.Parametrs.Logging.LogLevel.ToLower() switch
+    {
+        "verbose" => LoggerConfig.Verbose(logFileName),
+        "debug" => LoggerConfig.Debug(logFileName),
+        "information" => LoggerConfig.Information(logFileName),
+        "warning" => LoggerConfig.Warning(logFileName),
+        "error" => LoggerConfig.Error(logFileName),
+        "fatal" => LoggerConfig.Fatal(logFileName),
+        _ => LoggerConfig.Information(logFileName)
+    };
+
+    builder.Logging.AddSerilog(logConfig);
+}
+
+void ConfigureSwagger(IServiceCollection services)
+{
     services.AddSwaggerGen(option =>
     {
         option.ResolveConflictingActions(apiDescriptions => apiDescriptions.First());
@@ -130,13 +173,13 @@ bool RunHttpApiService()
         {
             if (api.GroupName != null)
             {
-                return new[] { api.GroupName };
+                return [api.GroupName];
             }
 
-            var controllerActionDescriptor = api.ActionDescriptor as ControllerActionDescriptor;
+            ControllerActionDescriptor? controllerActionDescriptor = api.ActionDescriptor as ControllerActionDescriptor;
             if (controllerActionDescriptor != null)
             {
-                return new[] { controllerActionDescriptor.ControllerName };
+                return [controllerActionDescriptor.ControllerName];
             }
 
             throw new InvalidOperationException("Unable to determine tag for endpoint.");
@@ -147,28 +190,27 @@ bool RunHttpApiService()
     services.AddControllers();
     services.AddEndpointsApiExplorer();
     services.AddSwaggerGen();
-
-    if (OperatingSystem.IsWindows())
-    {
-        builder.Host.UseWindowsService();
-    }
-
-    var app = builder.Build();
-
-    app.UseSwagger();
-    app.UseSwaggerUI();
-
-    app.MapControllers();
-
-    if (Constants.Parametrs.ServerConfig.Https)
-        app.UseHttpsRedirection();
-
-    app.Run();
-
-    return true;
 }
 
-    bool ShowAppInfo()
+void ConfigureCors(IServiceCollection services)
+{
+    List<string> hostAdreses = [];
+
+    hostAdreses.Add($"http://{Dns.GetHostName()}:{Constants.Parametrs.ServerConfig.ApiIpPort}");
+    hostAdreses.Add($"http://localhost:{Constants.Parametrs.ServerConfig.ApiIpPort}");
+    hostAdreses.Add($"http://127.0.0.1:{Constants.Parametrs.ServerConfig.ApiIpPort}");
+
+    services.AddCors(opt =>
+    {
+        opt.AddDefaultPolicy(
+            policy =>
+            {
+                policy.WithOrigins(hostAdreses.ToArray()).AllowAnyMethod();
+            });
+    });
+}
+
+bool ShowAppInfo()
 {
     logger.LogInformation("Ключи запуска приложения:\r\n" +
             "  --service запуска в режиме службы. рабочий режим\r\n" +

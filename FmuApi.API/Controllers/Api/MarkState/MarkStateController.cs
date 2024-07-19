@@ -1,5 +1,5 @@
 ﻿using FmuApiApplication.Services.MarkStateSrv;
-using FmuApiDomain.Models.MarkState;
+using FmuApiDomain.Models.MarkInformation;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FmuApiAPI.Controllers.Api.MarkState

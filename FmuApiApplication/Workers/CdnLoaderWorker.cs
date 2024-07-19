@@ -1,5 +1,5 @@
 ﻿using FmuApiApplication.Utilites;
-using FmuApiDomain.Models.Configuration;
+using FmuApiDomain.Models.Configuration.TrueSign;
 using FmuApiDomain.Models.TrueSignApi.Cdn;
 using FmuApiSettings;
 using Microsoft.Extensions.Hosting;
@@ -17,8 +17,7 @@ namespace FmuApiApplication.Workers
 
         private DateTime nextWorkDate = DateTime.Now;
         private readonly int checkPeriodMinutes = 120;
-        private readonly int requestTimeoutSeconds = Constants.Parametrs.HttpRequestTimeouts.CdnRequestTimeout;
-
+      
         public CdnLoaderWorker(ILogger<CdnLoaderWorker> logger, IHttpClientFactory httpClientFactory)
         {
             _logger = logger;
@@ -45,7 +44,9 @@ namespace FmuApiApplication.Workers
                     continue;
                 }
 
-                if (Constants.Parametrs.XAPIKEY == string.Empty)
+                string xapikey = Constants.Parametrs.OrganisationConfig.XapiKey();
+
+                if (xapikey == string.Empty)
                 {
                     _logger.LogWarning("Не настроен XAPIKEY");
                     continue;
@@ -53,7 +54,7 @@ namespace FmuApiApplication.Workers
 
                 try
                 {
-                    _ = await UpadteCdnList();
+                    _ = await UpadteCdnList(xapikey);
                 }
                 catch (Exception ex)
                 {
@@ -62,23 +63,22 @@ namespace FmuApiApplication.Workers
             }
         }
 
-        private async Task<bool> UpadteCdnList()
+        private async Task<bool> UpadteCdnList(string xapikey)
         {
             Dictionary<string, string> headers = new()
             {
                 { HeaderNames.Accept, "application/json" },
-                { "X-API-KEY", Constants.Parametrs.XAPIKEY }
+                { "X-API-KEY", xapikey }
             };
 
             CdnListAnswerTrueApi? cdns = await HttpRequestHelper.GetJsonFromHttpAsync<CdnListAnswerTrueApi>(_cdnUrl,
                                                                                                             headers,
                                                                                                             _httpClientFactory,
-                                                                                                            TimeSpan.FromSeconds(requestTimeoutSeconds));
+                                                                                                            TimeSpan.FromSeconds(Constants.Parametrs.HttpRequestTimeouts.CdnRequestTimeout));
 
-            if (cdns is null)
-                cdns = new();
+            cdns ??= new();
 
-            List<TrueSignCdn> trueSignCdns = new();
+            List<TrueSignCdn> trueSignCdns = [];
 
             foreach (CdnHost cdnHost in cdns.Hosts)
             {
@@ -91,7 +91,7 @@ namespace FmuApiApplication.Workers
                     cdnHealth = await HttpRequestHelper.GetJsonFromHttpAsync<CdnHealth>($"{cdnHost.Host}/api/v4/true-api/cdn/health/check",
                                                                                             headers,
                                                                                             _httpClientFactory,
-                                                                                             TimeSpan.FromSeconds(requestTimeoutSeconds));
+                                                                                             TimeSpan.FromSeconds(Constants.Parametrs.HttpRequestTimeouts.CdnRequestTimeout));
                 }
                 catch (Exception ex)
                 {
@@ -113,8 +113,10 @@ namespace FmuApiApplication.Workers
 
             if (trueSignCdns.Count > 0)
             {
-                Constants.Parametrs.Cdn = trueSignCdns.OrderBy(p => p.Latency).ToList();
-                await Constants.Parametrs.SaveAsync(Constants.Parametrs, Constants.DataFolderPath);
+                Constants.Cdn.List = trueSignCdns.OrderBy(p => p.Latency).ToList();
+                await Constants.Cdn.SaveAsync(Constants.DataFolderPath);
+                //Constants.Parametrs.Cdn = trueSignCdns.OrderBy(p => p.Latency).ToList();
+                //await Constants.Parametrs.SaveAsync(Constants.Parametrs, Constants.DataFolderPath);
             }
 
             return true;

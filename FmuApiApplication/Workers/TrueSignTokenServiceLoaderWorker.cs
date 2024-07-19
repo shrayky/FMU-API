@@ -51,7 +51,7 @@ namespace FmuApiApplication.Workers
 
                     if (packet != null) 
                     {
-                        Constants.Parametrs.SignData = new()
+                        Constants.TrueApiToken= new()
                         {
                             Signature = packet.Data.Token,
                             Expired = packet.Data.Expired

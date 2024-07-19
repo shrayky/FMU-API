@@ -12,13 +12,14 @@ namespace FmuApiAPI.Controllers.Api.Configuration
         [HttpGet]
         public IActionResult XApiKeyGet()
         {
-            return Ok(Constants.Parametrs.XAPIKEY);
+            return Ok(Constants.Parametrs.OrganisationConfig.XapiKey());
         }
 
         [HttpPost]
-        async public Task<IActionResult> XApiKeyPost(string xapi)
+        async public Task<IActionResult> XApiKeyPostAsync(string xapi)
         {
-            Constants.Parametrs.XAPIKEY = xapi;
+            Constants.Parametrs.OrganisationConfig.SetXapiKey(xapi);
+
             await Constants.Parametrs.SaveAsync(Constants.Parametrs, Constants.DataFolderPath);
 
             return Ok();

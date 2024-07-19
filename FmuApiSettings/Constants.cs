@@ -1,12 +1,16 @@
 ﻿using FmuApiDomain.Models.Configuration;
+using FmuApiDomain.Models.Configuration.TrueSign;
 
 namespace FmuApiSettings
 {
     public static class Constants
     {
         public static Parametrs Parametrs { get; set; } = new Parametrs();
+        public static CdnData Cdn { get; set; } = new();
         public static string DataFolderPath { get; set; } = string.Empty;
         public static bool Online { get; set; } = true;
+        public static SignData TrueApiToken { get; set; } = new();
+        public static SignData FmuToken { get; set; } = new();
 
         private static void ConfigurateDataFolder(string _dataFloderPath)
         {
@@ -24,9 +28,7 @@ namespace FmuApiSettings
 
         public static void Init()
         {
-            ConfigurateDataFolder("");
-
-            Parametrs.Init(DataFolderPath);
+            Init("");
         }
 
         public static void Init(string dataFolder) 
@@ -34,6 +36,7 @@ namespace FmuApiSettings
             ConfigurateDataFolder(dataFolder);
 
             Parametrs.Init(DataFolderPath);
+            Cdn.LoadFromFile(DataFolderPath);
         }
 
     }

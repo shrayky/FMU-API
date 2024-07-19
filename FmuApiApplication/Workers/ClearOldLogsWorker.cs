@@ -27,14 +27,16 @@ namespace FmuApiApplication.Workers
                     continue;
                 }
 
-                _logger.LogInformation("Запуск очистки старых лог-файлов");
-
                 nextWorkDate = DateTime.Now.AddHours(12);
 
                 var files = Directory.GetFiles(logFolderPath, "fmu-api*.log");
 
                 var deleteDate = DateTime.Now.AddDays(Constants.Parametrs.Logging.LogDepth * -1);
                 var deleteFiles = new List<string>();
+
+                _logger.LogInformation("Запуск очистки старых лог-файлов до даты {deleteDate}", deleteDate);
+
+                int deletedFiles = 0;
 
                 files.OrderDescending().ToList().ForEach(fName =>
                 {
@@ -47,12 +49,15 @@ namespace FmuApiApplication.Workers
                     try
                     {
                         File.Delete(fileName);
+                        deletedFiles++;
                     }
                     catch (Exception ex)
                     {
                         _logger.LogError("Не удалось удалить лог-файл {fileName} ошибка {ex}", fileName, ex);
                     }
                 }
+
+                _logger.LogInformation("Удалено файлов {deletedFiles}, следующая очистка в {nextWorkDate}", deletedFiles, nextWorkDate);
 
             }
         }

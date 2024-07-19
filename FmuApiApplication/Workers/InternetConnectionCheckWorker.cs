@@ -1,10 +1,10 @@
-﻿using FmuApiApplication.Utilites;
-using FmuApiDomain.Models.TrueSignApi.Cdn;
-using FmuApiSettings;
+﻿using FmuApiSettings;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
-using System.Net.Http.Json;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
 
 namespace FmuApiApplication.Workers
 {
@@ -31,25 +31,54 @@ namespace FmuApiApplication.Workers
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                if (nextWorkDate <= DateTime.Now)
+                if (nextWorkDate >= DateTime.Now)
                 {
-                    nextWorkDate = DateTime.Now.AddMinutes(CheckPeriodMinutes);
+                    await Task.Delay(60_000, stoppingToken);
+                    continue;
+                }
+                 
+                nextWorkDate = DateTime.Now.AddMinutes(CheckPeriodMinutes);
 
-                    try
-                    {
-                        var client = _httpClientFactory.CreateClient("internetCheck");
-                        var answer = await client.GetAsync("");
+                bool online = false;
 
-                        Constants.Online = (answer.StatusCode == System.Net.HttpStatusCode.OK);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning("Ошибка проверки доступности интеренета: {err}", ex.Message);
-                        Constants.Online = false;
-                    }
+                foreach (var siteAdres in Constants.Parametrs.HostsToPing)
+                {
+                    var adr = siteAdres.Value.Trim();
+
+                    if (adr == string.Empty)
+                        continue;
+
+                    if (!adr.StartsWith("https://"))
+                        adr = $"https://{adr}";
+
+                    online = await CheckAsyns(adr);
+
+                    if (online)
+                        break;
                 }
 
-                await Task.Delay(60_000, stoppingToken);
+                Constants.Online = online;
+                
+            }
+        }
+
+        private async Task<bool> CheckAsyns(string siteAdres)
+        {
+            try
+            {
+                var client = _httpClientFactory.CreateClient("internetCheck");
+                client.Timeout = TimeSpan.FromSeconds(Constants.Parametrs.HttpRequestTimeouts.CheckInternetConnectionTimeout);
+
+                client.BaseAddress = new Uri(siteAdres);
+
+                var answer = await client.GetAsync("");
+
+                return answer.StatusCode == HttpStatusCode.OK;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Ошибка проверки доступности интеренета: {err}", ex.Message);
+                return false;
             }
         }
     }

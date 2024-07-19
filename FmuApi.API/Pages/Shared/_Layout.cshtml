@@ -1,0 +1,23 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <title>@ViewData["Title"]</title>
+
+    <link rel="stylesheet" href="~/lib/webix/skins/dark.css" type="text/css" charset="utf-8">
+    
+    <script src="~/lib/webix/webix.js"></script>
+
+    @RenderSection("Headers", required: false)
+
+</head>
+<body>
+
+    @RenderBody()
+    @await RenderSectionAsync("Scripts", required: false)
+
+</body>
+</html>

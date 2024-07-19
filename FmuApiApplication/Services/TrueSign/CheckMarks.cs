@@ -1,10 +1,11 @@
 ﻿using CSharpFunctionalExtensions;
 using FmuApiApplication.Utilites;
-using FmuApiDomain.Models.Configuration;
+using FmuApiDomain.Models.Configuration.TrueSign;
 using FmuApiDomain.Models.TrueSignApi.MarkData.Check;
 using FmuApiSettings;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
+using System.Diagnostics.Eventing.Reader;
 using System.Net.Http.Json;
 
 namespace FmuApiApplication.Services.TrueSign
@@ -13,7 +14,7 @@ namespace FmuApiApplication.Services.TrueSign
     {
         private readonly string _addres = "/api/v4/true-api/codes/check";
         private readonly int requestTimeoutSeconds = Constants.Parametrs.HttpRequestTimeouts.CheckMarkRequestTimeout;
-        private readonly int requestAttempts = Constants.Parametrs.Cdn.Count;
+        private readonly int requestAttempts = Constants.Cdn.List.Count;
 
         private readonly ILogger<CheckMarks> _logger;
         private IHttpClientFactory _httpClientFactory;
@@ -24,21 +25,46 @@ namespace FmuApiApplication.Services.TrueSign
             _httpClientFactory = httpClientFactory;
         }
 
-        public async Task<Result<CheckAnswerTrueApi>> RequestMarkState(CheckMarksRequestData marks)
+        public async Task<Result<CheckMarksDataTrueApi>> RequestMarkState(CheckMarksRequestData marks, int ogranisationCode)
+        {
+            string xApiKey;
+
+            if (ogranisationCode == 0)
+                xApiKey = Constants.Parametrs.OrganisationConfig.XapiKey();
+            else
+                xApiKey = Constants.Parametrs.OrganisationConfig.XapiKey(ogranisationCode);
+
+            _logger.LogInformation(xApiKey);
+
+            return await DoRequest(marks, xApiKey);
+        }
+
+        public async Task<Result<CheckMarksDataTrueApi>> RequestMarkState(CheckMarksRequestData marks)
+        {
+            string xApiKey = Constants.Parametrs.OrganisationConfig.XapiKey();
+
+            return await DoRequest(marks, xApiKey);
+        }
+
+        private async Task<Result<CheckMarksDataTrueApi>> DoRequest(CheckMarksRequestData marks, string xApiKey)
         {
             if (!Constants.Online)
-                return Result.Failure<CheckAnswerTrueApi>("Нет интеренета");
+                return Result.Failure<CheckMarksDataTrueApi>("Нет интеренета");
 
-            if (Constants.Parametrs.Cdn.Count == 0)
-                return Result.Failure<CheckAnswerTrueApi>("Нет загруженных cdn");
+            if (Constants.Cdn.List.Count == 0)
+                return Result.Failure<CheckMarksDataTrueApi>("Нет загруженных cdn");
+
+            TrueSignCdn? cdn = Cdn();
+
+            if (cdn is null)
+                return Result.Failure<CheckMarksDataTrueApi>("Нет загруженных cdn");
 
             Dictionary<string, string> headers = new();
             headers.Add(HeaderNames.Accept, "application/json");
 
-            if (Constants.Parametrs.SignData.Token() == "")
-                headers.Add("X-API-KEY", Constants.Parametrs.XAPIKEY);
-            else
-                headers.Add(HeaderNames.Authorization, $"Bearer {Constants.Parametrs.SignData.Token()}");
+            headers.Add("X-API-KEY", xApiKey);
+            
+            //headers.Add(HeaderNames.Authorization, $"Bearer {Constants.TrueApiToken.Token()}");
 
             int attemptLost = requestAttempts;
 
@@ -48,14 +74,9 @@ namespace FmuApiApplication.Services.TrueSign
 
             while (true)
             {
-                TrueSignCdn? cdn = Cdn();
-
-                if (cdn is null)
-                    return Result.Failure<CheckAnswerTrueApi>("Нет загруженных cdn");
-
                 try
                 {
-                    var answ = await HttpRequestHelper.PostAsync<CheckAnswerTrueApi>($"{cdn.Host}{_addres}",
+                    var answ = await HttpRequestHelper.PostAsync<CheckMarksDataTrueApi>($"{cdn.Host}{_addres}",
                                                                                     headers,
                                                                                     content,
                                                                                     _httpClientFactory,
@@ -78,16 +99,15 @@ namespace FmuApiApplication.Services.TrueSign
                     break;
             }
 
-            return Result.Failure<CheckAnswerTrueApi>("Ни один cdn сервер не ответил");
-
+            return Result.Failure<CheckMarksDataTrueApi>("Ни один cdn сервер не ответил");
         }
 
         private static TrueSignCdn? Cdn()
         {
-            if (Constants.Parametrs.Cdn.Count == 0)
+            if (Constants.Cdn.List.Count == 0)
                 return null;
 
-            foreach (var cdn in Constants.Parametrs.Cdn)
+            foreach (var cdn in Constants.Cdn.List)
             {
                 if (!cdn.IsOffline)
                     continue;
@@ -96,17 +116,17 @@ namespace FmuApiApplication.Services.TrueSign
                     cdn.BringOnline();
             }
 
-            var cdns = Constants.Parametrs.Cdn.Where(p => p.IsOffline == false).ToList();
+            var cdns = Constants.Cdn.List.Where(p => p.IsOffline == false).ToList();
 
             if (cdns.Count == 0)
             {
-                foreach (var cdn in Constants.Parametrs.Cdn)
+                foreach (var cdn in Constants.Cdn.List)
                 {
                     cdn.BringOnline();
                 }
             }
 
-            foreach (var cdn in Constants.Parametrs.Cdn)
+            foreach (var cdn in Constants.Cdn.List)
             {
                 if (cdn.IsOffline)
                     continue;

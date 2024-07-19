@@ -29,7 +29,7 @@ namespace FmuApiApplication.Services.TrueSign
             {
                 { HeaderNames.Accept, "application/json"},
                 { HeaderNames.CacheControl, "no-cache"},
-                { HeaderNames.Authorization, $"Bearer {Constants.Parametrs.SignData.Token()}"}
+                { HeaderNames.Authorization, $"Bearer {Constants.TrueApiToken.Token()}"}
             };
 
             try

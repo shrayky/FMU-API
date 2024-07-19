@@ -11,7 +11,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FmuApiAPI", "FmuApi.API\Fmu
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FmuApiCouhDb", "FmuApiCouhDb\FmuApiCouhDb.csproj", "{3C727947-7BCD-45AE-94C3-B89898B6B556}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FmuApiSettings", "FmuApiSettings\FmuApiSettings.csproj", "{F8B68661-F8D5-4E44-914A-BC86E5BDFE79}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FmuApiSettings", "FmuApiSettings\FmuApiSettings.csproj", "{F8B68661-F8D5-4E44-914A-BC86E5BDFE79}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FmuFrontolDb", "FmuFrontolDb\FmuFrontolDb.csproj", "{19AA4200-6672-472F-A879-350DC082AD2A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,10 @@ Global
 		{F8B68661-F8D5-4E44-914A-BC86E5BDFE79}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F8B68661-F8D5-4E44-914A-BC86E5BDFE79}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F8B68661-F8D5-4E44-914A-BC86E5BDFE79}.Release|Any CPU.Build.0 = Release|Any CPU
+		{19AA4200-6672-472F-A879-350DC082AD2A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{19AA4200-6672-472F-A879-350DC082AD2A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{19AA4200-6672-472F-A879-350DC082AD2A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{19AA4200-6672-472F-A879-350DC082AD2A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

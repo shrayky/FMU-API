@@ -16,8 +16,9 @@ namespace FmuApiAPI.Controllers.Api.Fmu.Document
         private readonly FrontolDocument _frontolDocument;
         private readonly AlcoUnitGateway _alcoUnitGateway;
         private readonly ILogger<DocumentController> _logger;
-        private bool AlcoUnitIsEnabled = (Constants.Parametrs.FrontolAlcoUnit.NetAdres != string.Empty);
 
+        private readonly bool AlcoUnitIsEnabled = (Constants.Parametrs.FrontolAlcoUnit.NetAdres != string.Empty);
+        private readonly bool FrontolDocumentDbIsEnabled = (Constants.Parametrs.Database.FrontolDocumentsDbName!= string.Empty);
 
         public DocumentController(FrontolDocument frontolDocument, AlcoUnitGateway alcoUnitGateway, ILogger<DocumentController> logger)
         {
@@ -43,26 +44,46 @@ namespace FmuApiAPI.Controllers.Api.Fmu.Document
 
         private async Task<IActionResult> CancelDocumentAsync(RequestDocument document)
         {
-            if (document.IsAlcoholCheck() && AlcoUnitIsEnabled)
-                return await SendDocumentToAlcoUnitAsync(document);
+            if (FrontolDocumentDbIsEnabled)
+                await _frontolDocument.CancelDocumentAsync(document);
+
+            if (AlcoUnitIsEnabled)
+                await SendDocumentToAlcoUnitAsync(document);
 
             return Ok();
         }
 
         private async Task<IActionResult> CommitDocumentAsync(RequestDocument document)
         {
-            if (document.IsAlcoholCheck() && AlcoUnitIsEnabled)
-                return await SendDocumentToAlcoUnitAsync(document);
+            int resultCode = 200;
 
-            return Ok();
+            if (FrontolDocumentDbIsEnabled) 
+            {
+                resultCode = await _frontolDocument.CommitDoumentAsync(document);
+            }
+
+            if (AlcoUnitIsEnabled)
+                await SendDocumentToAlcoUnitAsync(document);
+
+            return resultCode == 200 ? Ok() : BadRequest();
         }
 
         private async Task<IActionResult> BeginDocumentAsync(RequestDocument document)
         {
-            if (document.IsAlcoholCheck() && AlcoUnitIsEnabled)
-                return await SendDocumentToAlcoUnitAsync(document);
+            FmuAnswer answerData = new();
 
-            return Ok();
+            if (FrontolDocumentDbIsEnabled)
+            {
+                var result = await _frontolDocument.BeginDocumentAsync(document);
+
+                if (result.IsSuccess)
+                    answerData = result.Value;
+            }
+
+            if (document.IsAlcoholCheck() && AlcoUnitIsEnabled)
+                await SendDocumentToAlcoUnitAsync(document);
+
+            return Ok(answerData);
         }
 
         private async Task<IActionResult> CheckDocument(RequestDocument document)
@@ -75,14 +96,33 @@ namespace FmuApiAPI.Controllers.Api.Fmu.Document
 
         private async Task<IActionResult> CheckMarkInDoument(RequestDocument document)
         {
-            Result<AnswerDocument> result = await _frontolDocument.CheckAsync(document);
+            // для документов возврата никаких проверок делать не надо
+            // можно сразу возвращать 200
+            if (document.Type == FmuDocumentsTypes.ReceiptReturn)
+                return Ok();
 
-            if (result.IsSuccess)
-                return Ok(result.Value);
+            Result<FmuAnswer> result;
+
+            try
+            {
+                result = await _frontolDocument.CheckAsync(document);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("[{Date}] - Ошибка проверки документа: {err}", DateTime.Now, ex.Message);
+
+                FmuAnswer answer = new()
+                {
+                    Code = 0,
+                    Error = ex.Message,
+                };
+
+                return Ok(answer);
+            }
 
             if (result.IsFailure)
             {
-                AnswerDocument answer = new()
+                FmuAnswer answer = new()
                 {
                     Code = 0,
                     Error = result.Error
@@ -91,7 +131,7 @@ namespace FmuApiAPI.Controllers.Api.Fmu.Document
                 return Ok(answer);
             }
 
-            return BadRequest();
+            return Ok(result.Value);
         }
 
         private async Task<IActionResult> SendDocumentToAlcoUnitAsync(RequestDocument document)

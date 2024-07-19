@@ -15,14 +15,14 @@ namespace FmuApiDomain.Models.Fmu.Document
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string Shift { get; set; } = string.Empty;
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-        public string Number { get; set; } = string.Empty;
+        public int Number { get; set; } = 0;
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string User { get; set; } = string.Empty;
         public List<Position> Positions { get; set; } = new();
 
         public Dictionary<string, string> MarkDictionary()
         {
-            Dictionary<string, string> mark = new();
+            Dictionary<string, string> mark = [];
 
             foreach (var positon in Positions)
             {
@@ -33,6 +33,31 @@ namespace FmuApiDomain.Models.Fmu.Document
             }
 
             return mark;
+        }
+
+        public List<string> DecodedMarksList()
+        {
+            List<string> marks = [];
+
+            foreach (var positon in Positions)
+            {
+                foreach (var requestedMark in positon.Marking_codes)
+                {
+                    marks.Add(System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(requestedMark)));
+                }
+            }
+
+            return marks;
+        }
+
+        public int MarksCount()
+        {
+            int count = 0;
+
+            foreach (var positon in Positions)
+                count += positon.Marking_codes.Count;
+
+            return count;
         }
 
         public bool IsAlcoholCheck()

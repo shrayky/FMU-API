@@ -38,10 +38,13 @@ namespace FmuApiApplication.Services.Installer
                 }
             }
 
-            if (File.Exists(bin))
-                File.Delete(bin);
+            string serviceFileName = Environment.ProcessPath ?? Assembly.GetExecutingAssembly().Location;
+            string setupFolder = Path.GetDirectoryName(serviceFileName) ?? serviceFileName.Replace("fmu-api.exe", "");
 
-            File.Copy(Environment.ProcessPath ?? Assembly.GetExecutingAssembly().Location, bin);
+            if (Directory.Exists(setupFolder))
+                Directory.Delete(setupFolder);
+
+            CopyFilesRecursively(setupFolder, _installDirectory);
 
             if (existingService is null)
             {
@@ -66,9 +69,12 @@ namespace FmuApiApplication.Services.Installer
                 startInfo.Arguments = $"/c netsh advfirewall firewall add rule name = \"{_serviceName}\" dir =in action = allow protocol = TCP localport = 2578";
                 process.Start();
             }
-
+            
             Constants.Init();
-            Constants.Parametrs.XAPIKEY = StringHelper.ArgumentValue(installerArgs, "--xapikey", Constants.Parametrs.XAPIKEY);
+            
+            var xapikey = StringHelper.ArgumentValue(installerArgs, "--xapikey", Constants.Parametrs.OrganisationConfig.XapiKey());
+            Constants.Parametrs.OrganisationConfig.SetXapiKey(xapikey);
+
             await Constants.Parametrs.SaveAsync(Constants.Parametrs, Constants.DataFolderPath);
 
             return true;
@@ -108,6 +114,19 @@ namespace FmuApiApplication.Services.Installer
             return true;
 
         }
-        
+
+        private static void CopyFilesRecursively(string sourcePath, string targetPath)
+        {
+            foreach (string dirPath in Directory.GetDirectories(sourcePath, "*", SearchOption.AllDirectories))
+            {
+                Directory.CreateDirectory(dirPath.Replace(sourcePath, targetPath));
+            }
+            
+            foreach (string newPath in Directory.GetFiles(sourcePath, "*.*", SearchOption.AllDirectories))
+            {
+                File.Copy(newPath, newPath.Replace(sourcePath, targetPath), true);
+            }
+        }
+
     }
 }

@@ -1,4 +1,6 @@
-﻿using System.Text.Json.Serialization;
+﻿using Microsoft.VisualBasic;
+using System.Reflection.Metadata;
+using System.Text.Json.Serialization;
 
 namespace FmuApiDomain.Models.TrueSignApi.MarkData
 {
@@ -55,12 +57,34 @@ namespace FmuApiDomain.Models.TrueSignApi.MarkData
         [JsonPropertyName("expireDate")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public DateTime? ExpireDate { get; set; }
+        [JsonPropertyName("innerUnitCount")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public int? InnerUnitCount { get; set; }
+        [JsonPropertyName("soldUnitCount")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public int? SoldUnitCount {  get; set; }
         [JsonIgnore]
         public bool IsExpired { get => ExpireDate < DateTime.Now; }
         [JsonIgnore]
         public bool CodeFounded { get => ErrorCode != 10; }
         [JsonIgnore]
         public int DaysExpired { get => ExpireDate is null ? 999 : Convert.ToInt32((DateTime.Now - ExpireDate).Value.TotalDays); }
+
+        public bool InGroup(string ignoreVerificationErrorForTrueApiGroups)
+        {
+            var ignoredCodes = ignoreVerificationErrorForTrueApiGroups.Split(" ");
+
+            foreach (int groupCode in GroupIds)
+            {
+                foreach (string ignoredCode in ignoredCodes)
+                {
+                    if (ignoredCode == groupCode.ToString())
+                        return true;
+                }
+            }
+
+            return false;
+        }
 
         public string MarkError()
         {

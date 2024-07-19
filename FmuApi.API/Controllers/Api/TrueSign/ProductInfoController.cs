@@ -23,10 +23,10 @@ namespace FmuApiAPI.Controllers.Api.TrueSign
             if (!Constants.Online)
                 return BadRequest("Нет доступа к интеренету.");
 
-            if (Constants.Parametrs.SignData.Signature == string.Empty)
+            if (Constants.TrueApiToken.Signature == string.Empty)
                 return BadRequest("Нет токена true api полученного с помощью УКЭП");
 
-            if (Constants.Parametrs.SignData.Expired < DateTime.Now)
+            if (Constants.TrueApiToken.Expired < DateTime.Now)
                 return BadRequest("Токен УКЭП истек, необъодимо получить новый.");
 
             var info = await _productInfo.Load(gtins);
