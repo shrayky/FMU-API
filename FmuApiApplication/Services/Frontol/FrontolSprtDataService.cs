@@ -32,10 +32,10 @@ namespace FmuApiApplication.Services.Frontol
             if (sprt == null)
                 return 0;
 
-            if (sprt.PrintGroupForCheck == 0)
+            if (sprt.FiscalPrinterGroupCode() == 0)
                 return 0;
 
-            var pg = await _db.PrintGroups.FirstOrDefaultAsync(pg => pg.Id == sprt.PrintGroupForCheck);
+            var pg = await _db.PrintGroups.FirstOrDefaultAsync(pg => pg.Id == sprt.FiscalPrinterGroupCode());
 
             if (pg == null) 
                 return 0;

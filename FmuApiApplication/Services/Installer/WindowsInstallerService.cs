@@ -41,8 +41,8 @@ namespace FmuApiApplication.Services.Installer
             string serviceFileName = Environment.ProcessPath ?? Assembly.GetExecutingAssembly().Location;
             string setupFolder = Path.GetDirectoryName(serviceFileName) ?? serviceFileName.Replace("fmu-api.exe", "");
 
-            if (Directory.Exists(setupFolder))
-                Directory.Delete(setupFolder);
+            if (Directory.Exists(_installDirectory))
+                Directory.Delete(_installDirectory);
 
             CopyFilesRecursively(setupFolder, _installDirectory);
 

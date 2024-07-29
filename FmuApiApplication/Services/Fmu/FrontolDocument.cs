@@ -17,7 +17,7 @@ namespace FmuApiApplication.Services.Fmu
         private readonly CheckMarks _checkMarks;
         private readonly MarkInformationCrud _markStateCrud;
         private readonly FrontolDocumentCrud _frontolDocumentCrud;
-        private readonly FrontolSprtDataService _frontolSprtDataService;
+        private readonly FrontolSprtDataService? _frontolSprtDataService;
         private readonly ILogger<FrontolDocument> _logger;
 
         public FrontolDocument(CheckMarks checkMarks, MarkInformationCrud markStateCrud, FrontolDocumentCrud frontolDocumentCrud, FrontolSprtDataService frontolSprtDataService, ILogger<FrontolDocument> logger)
@@ -26,6 +26,14 @@ namespace FmuApiApplication.Services.Fmu
             _markStateCrud = markStateCrud;
             _frontolDocumentCrud = frontolDocumentCrud;
             _frontolSprtDataService = frontolSprtDataService;
+            _logger = logger;
+        }
+
+        public FrontolDocument(CheckMarks checkMarks, MarkInformationCrud markStateCrud, FrontolDocumentCrud frontolDocumentCrud, ILogger<FrontolDocument> logger)
+        {
+            _checkMarks = checkMarks;
+            _markStateCrud = markStateCrud;
+            _frontolDocumentCrud = frontolDocumentCrud;
             _logger = logger;
         }
 
@@ -98,6 +106,9 @@ namespace FmuApiApplication.Services.Fmu
 
         private async Task<int> WareOrganisationId(string barcode)
         {
+            if (_frontolSprtDataService == null)
+                return 0;
+
             if (!Constants.Parametrs.FrontolConnectionSettings.ConnectionEnable())
                 return 0;
 
@@ -356,6 +367,8 @@ namespace FmuApiApplication.Services.Fmu
                     await _markStateCrud.SetStateAsync(mark.SGtin, state, saleData);
                 }
             }
+
+            await _frontolDocumentCrud.DelteAsync(document.Uid);
 
             return 200;
         }

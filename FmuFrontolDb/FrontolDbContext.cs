@@ -16,6 +16,7 @@ namespace FmuFrontolDb
         public FrontolDbContext()
         {
             _connectionString = Constants.Parametrs.FrontolConnectionSettings.ConnectionStringBuild();
+            
         }
         public FrontolDbContext(string connectionString)
         {

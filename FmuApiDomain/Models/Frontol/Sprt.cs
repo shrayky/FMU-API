@@ -9,11 +9,12 @@ namespace FmuApiDomain.Models.Frontol
         [Column("MARK")]
         public string? Mark { get; set; }
         [Column("ISWARE")]
-        private int IsWareI {  get; set; }
+        public int IsWareI { get; set; }
         [Column("PARENTID")]
-        public int ParentId {  get; set; }
+        public int? ParentId { get; set; } = 0;
         [Column("PRINTGROUPCLOSE")]
-        public int PrintGroupForCheck { get; set; }
+        public int? PrintGroupFiscalCheck { get; set; }
         public bool IsWare() => (IsWareI == 1);
+        public int FiscalPrinterGroupCode() => PrintGroupFiscalCheck ?? 0;
     }
 }

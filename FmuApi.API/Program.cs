@@ -93,10 +93,9 @@ bool RunHttpApiService()
         {
             options.UseFirebird(Constants.Parametrs.FrontolConnectionSettings.ConnectionStringBuild());
         });
-        
-        services.AddScoped<FrontolSprtDataService>();
 
-    } 
+        services.AddScoped<FrontolSprtDataService>();
+    }
 
     services.AddHostedService<ClearOldLogsWorker>();
 

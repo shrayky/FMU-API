@@ -1,6 +1,7 @@
 import { InitProxy } from '../../js/utils/proxy.js';
 import { SettingsView } from "./fmuApiSettings/fmuApisettings.js";
 import { informationView } from './information/fmuInformation.js';
+import { barcodeScaner } from './Scaner/barcodeScaner.js';
 //import { InitUiProto } from '/../js/utils/ui.js';
 
 let currentPage = "";
@@ -94,6 +95,10 @@ webix.ready(function () {
                                     {
                                         id: "information",
                                         value: "Информация"
+                                    },
+                                    {
+                                        id: "scaner",
+                                        value: "Сканер"
                                     }
                                 ],
                             on:
@@ -112,6 +117,12 @@ webix.ready(function () {
                                             currentPage = "information";
                                             $$('sidebar').close("config");
                                             break;
+                                        case "scaner":
+                                            webix.ui(barcodeScaner(bodyId), $$(bodyId), $$(currentPage));
+                                            currentPage = "scaner";
+                                            $$('sidebar').close("config");
+                                            break;
+
                                         default:
                                             let elem = $$(id);
 
@@ -127,16 +138,21 @@ webix.ready(function () {
 
                                     switch (id) {
                                         case "config":
-                                            //webix.ui(SettingsView(bodyId), $$(bodyId));
                                             webix.ui(SettingsView(bodyId), $$(bodyId), $$(currentPage));
                                             currentPage = "config";
                                             $$('sidebar').unselect();
                                             break;
                                         case  "information":
-                                            //webix.ui(informationView(bodyId), $$(bodyId));
-                                            webix.ui(SettingsView(bodyId), $$(bodyId), $$(currentPage));
+                                            webix.ui(informationView(bodyId), $$(bodyId), $$(currentPage));
                                             currentPage = "information";
+                                            $$('sidebar').close("config");
                                             break;
+                                        case "scaner":
+                                            webix.ui(barcodeScaner(bodyId), $$(bodyId), $$(currentPage));
+                                            currentPage = "scaner";
+                                            $$('sidebar').close("config");
+                                            break;
+
                                         default:
                                             break;
                                     }
