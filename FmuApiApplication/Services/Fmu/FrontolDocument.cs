@@ -314,9 +314,7 @@ namespace FmuApiApplication.Services.Fmu
 
                     CodeDataTrueApi markData = trueApiCisData.Codes[0];
 
-                    if (markData.GroupIds.Contains(TrueApiGoup.Tobaco) || 
-                        markData.GroupIds.Contains(TrueApiGoup.Otp) || 
-                        markData.GroupIds.Contains(TrueApiGoup.Ncp))
+                    if (markData.GroupIds.Contains(TrueApiGoup.Tobaco))
                     {
                         var minPrice = Constants.Parametrs.MinimalPrices.Tabaco > markData.Smp ? Constants.Parametrs.MinimalPrices.Tabaco : markData.Smp;
 
@@ -330,7 +328,7 @@ namespace FmuApiApplication.Services.Fmu
                         if (markData.Mrp < position.Total_price * 100)
                         {
                             chekResult.Code = 3;
-                            chekResult.Error += "\r\n {position.Text} цена выше максимальной розничной!";
+                            chekResult.Error +=  $"\r\n {position.Text} цена выше максимальной розничной!";
                             chekResult.Marking_codes.Add(markB64);
                         }
                     }
@@ -363,7 +361,15 @@ namespace FmuApiApplication.Services.Fmu
                 foreach (var markB64 in position.Marking_codes)
                 {
                     MarkCode mark = await MarkCode.CreateAsync(markB64, _markStateCrud, _checkMarks);
-                 
+
+                    var trueApiData = mark.TrueApiData();
+
+                    if (trueApiData.Codes[0].InGroup(TrueApiGoup.Beer.ToString()) && trueApiData.Codes[0].InnerUnitCount != null)
+                    {
+                        if (trueApiData.Codes[0].InnerUnitCount - trueApiData.Codes[0].SoldUnitCount - position.Quantity * 1000 > 0)
+                            continue;
+                    }
+            
                     await _markStateCrud.SetStateAsync(mark.SGtin, state, saleData);
                 }
             }
