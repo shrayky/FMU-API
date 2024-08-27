@@ -366,7 +366,7 @@ namespace FmuApiApplication.Services.Fmu
 
                     if (trueApiData.Codes[0].InGroup(TrueApiGoup.Beer.ToString()) && trueApiData.Codes[0].InnerUnitCount != null)
                     {
-                        if (trueApiData.Codes[0].InnerUnitCount - trueApiData.Codes[0].SoldUnitCount - position.Quantity * 1000 > 0)
+                        if (trueApiData.Codes[0].InnerUnitCount - (trueApiData.Codes[0].SoldUnitCount ?? 0) - (position.Quantity) * 1000 > 0)
                             continue;
                     }
             

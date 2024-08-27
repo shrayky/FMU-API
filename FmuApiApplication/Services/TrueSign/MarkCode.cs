@@ -25,7 +25,11 @@ namespace FmuApiApplication.Services.TrueSign
         private MarkCode(string markCode, MarkInformationCrud markStateCrud, CheckMarks checkMarks)
         {
             Code = markCode;
-            
+
+            // некоторые производители ошибочно пишут стартовый GS
+            if (markCode.StartsWith(GsE) || markCode.StartsWith(Gs))
+                Code = markCode.Substring(1);
+                    
             _markStateCrud = markStateCrud;
             _trueApiCheck = checkMarks;
 
