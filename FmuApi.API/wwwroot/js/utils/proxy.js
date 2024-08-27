@@ -4,7 +4,6 @@ export function InitProxy() {
 
     const elementApiServerIpPort = document.getElementById("ApiServerIpPort"); 
 
-
     if (elementApiServerIpPort != null)
         apiIpPort = elementApiServerIpPort.value;
 

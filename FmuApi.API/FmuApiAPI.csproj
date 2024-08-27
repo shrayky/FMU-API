@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>fmu-api</AssemblyName>
+    <SignAssembly>False</SignAssembly>
   </PropertyGroup>
 
   <ItemGroup>

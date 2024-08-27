@@ -2,7 +2,6 @@ import { InitProxy } from '../../js/utils/proxy.js';
 import { SettingsView } from "./fmuApiSettings/fmuApisettings.js";
 import { informationView } from './information/fmuInformation.js';
 import { barcodeScaner } from './Scaner/barcodeScaner.js';
-//import { InitUiProto } from '/../js/utils/ui.js';
 
 let currentPage = "";
 
@@ -10,7 +9,6 @@ const windowInnerHeight = window.innerHeight;
 const bodyId = "body";
 
 InitProxy();
-//InitUiProto();
 
 webix.ready(function () {
     webix.ui({
@@ -96,10 +94,10 @@ webix.ready(function () {
                                         id: "information",
                                         value: "Информация"
                                     },
-                                    {
-                                        id: "scaner",
-                                        value: "Сканер"
-                                    }
+                                    //{
+                                    //    id: "scaner",
+                                    //    value: "Сканер"
+                                    //}
                                 ],
                             on:
                             {
@@ -169,6 +167,7 @@ webix.ready(function () {
     });
 
     $$('sidebar').open("config");
+
 });
 
 webix.event(window, "resize", function(e) {
