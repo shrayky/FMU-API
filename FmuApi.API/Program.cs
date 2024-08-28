@@ -97,7 +97,7 @@ bool RunHttpApiService()
         services.AddScoped<FrontolSprtDataService>();
     }
 
-    services.AddHostedService<ClearOldLogsWorker>();
+    //services.AddHostedService<ClearOldLogsWorker>();
 
     services.AddScoped<MarkInformationCrud>();
     services.AddScoped<FrontolDocumentCrud>();
@@ -148,13 +148,13 @@ void ConfigureLogging(WebApplicationBuilder builder)
 
     var logConfig = Constants.Parametrs.Logging.LogLevel.ToLower() switch
     {
-        "verbose" => LoggerConfig.Verbose(logFileName),
-        "debug" => LoggerConfig.Debug(logFileName),
-        "information" => LoggerConfig.Information(logFileName),
-        "warning" => LoggerConfig.Warning(logFileName),
-        "error" => LoggerConfig.Error(logFileName),
-        "fatal" => LoggerConfig.Fatal(logFileName),
-        _ => LoggerConfig.Information(logFileName)
+        "verbose" => LoggerConfig.Verbose(logFileName, Constants.Parametrs.Logging.LogDepth),
+        "debug" => LoggerConfig.Debug(logFileName, Constants.Parametrs.Logging.LogDepth),
+        "information" => LoggerConfig.Information(logFileName, Constants.Parametrs.Logging.LogDepth),
+        "warning" => LoggerConfig.Warning(logFileName, Constants.Parametrs.Logging.LogDepth),
+        "error" => LoggerConfig.Error(logFileName, Constants.Parametrs.Logging.LogDepth),
+        "fatal" => LoggerConfig.Fatal(logFileName, Constants.Parametrs.Logging.LogDepth),
+        _ => LoggerConfig.Information(logFileName, Constants.Parametrs.Logging.LogDepth)
     };
 
     builder.Logging.AddSerilog(logConfig);
