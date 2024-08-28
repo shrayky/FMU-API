@@ -26,6 +26,14 @@ namespace FmuApiSettings
             }
         }
 
+        private static void LogFolderCheck()
+        {
+            string path = string.Concat(DataFolderPath, "\\log");
+
+            if (!Directory.Exists(path))
+                Directory.CreateDirectory(path);
+        }
+
         public static void Init()
         {
             Init("");
@@ -34,6 +42,8 @@ namespace FmuApiSettings
         public static void Init(string dataFolder) 
         {
             ConfigurateDataFolder(dataFolder);
+
+            LogFolderCheck();
 
             Parametrs.Init(DataFolderPath);
             Cdn.LoadFromFile(DataFolderPath);
