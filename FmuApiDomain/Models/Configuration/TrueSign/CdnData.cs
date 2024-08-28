@@ -27,7 +27,16 @@ namespace FmuApiDomain.Models.Configuration.TrueSign
             if (cdnText == "")
                 return;
 
-            var loadedCdns = JsonSerializer.Deserialize<List<TrueSignCdn>>(cdnText);
+            List<TrueSignCdn>? loadedCdns = [];
+
+            try
+            {
+                loadedCdns = JsonSerializer.Deserialize<List<TrueSignCdn>>(cdnText);
+            }
+            catch
+            {
+                loadedCdns = [];
+            }
 
             loadedCdns ??= [];
 
