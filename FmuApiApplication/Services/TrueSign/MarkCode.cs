@@ -33,7 +33,7 @@ namespace FmuApiApplication.Services.TrueSign
             _markStateCrud = markStateCrud;
             _trueApiCheck = checkMarks;
 
-            SGtin = CalculateSgtin(markCode);
+            SGtin = CalculateSgtin(Code);
             CodeIsSgtin = (SGtin == Code);
 
             Barcode = SGtin.Substring(1, 13);
