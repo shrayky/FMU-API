@@ -9,7 +9,7 @@ namespace FmuApiDomain.Models.Configuration
     {
         public string AppName { get; } = "FMU-API";
         public int AppVersion { get; set; } = 9;
-        public int Assembly { get; set; } = 6;
+        public int Assembly { get; set; } = 7;
         public string NodeName { get; set; } = string.Empty;
         public ServerConfig ServerConfig { get; set; } = new();
         public List<StringValue> HostsToPing { get; set; } = [];

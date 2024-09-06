@@ -43,14 +43,14 @@ namespace FmuApiApplication.Services.Fmu
             if (document.Positions.Count == 1)
             {
                 if (document.Positions[0].Marking_codes.Count == 1)
-                    return await MarkCheckAsync(document.Positions[0].Marking_codes[0]);
+                    return await MarkCheckAsync(document.Positions[0].Marking_codes[0], document.Type == FmuDocumentsTypes.ReceiptReturn);
             }
 
             // для совместимости
             return await MarksCheckAsync(document);
         }
 
-        public async Task<Result<FmuAnswer>> MarkCheckAsync(string markCodeData)
+        public async Task<Result<FmuAnswer>> MarkCheckAsync(string markCodeData, bool isReturn)
         {
             FmuAnswer answer;
             CheckMarksDataTrueApi markDataFromTrueApi;
@@ -63,6 +63,10 @@ namespace FmuApiApplication.Services.Fmu
             _logger.LogInformation("Код организации {organisationId}", organisationId);
 
             (bool markIsOk, answer) = await mark.OfflineCheckAsync();
+
+            // frontol при возврате выдает ошибку, что марка уже продана, поменяем этот признак
+            if (isReturn)
+                answer.Truemark_response.MarkCodeAsNotSaled();
 
             if (markIsOk & mark.CodeIsSgtin & mark.DatabaseState().HaveTrueApiAnswer & mark.DatabaseState().State == MarkState.Sold)
                 return Result.Success(answer);
@@ -93,6 +97,9 @@ namespace FmuApiApplication.Services.Fmu
             {
                 _logger.LogWarning("[{Date}] - Ошибка отправки данных марки {Cis} в базу данных. \r\n {err}", DateTime.Now, mark.Code, ex.Message);
             }
+
+            if (isReturn)
+                mark.TrueApiData().MarkCodeAsNotSaled();
             
             answer = new()
             {

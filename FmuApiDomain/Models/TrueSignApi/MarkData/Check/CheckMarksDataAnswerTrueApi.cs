@@ -41,16 +41,21 @@ namespace FmuApiDomain.Models.TrueSignApi.MarkData.Check
             return expire == Codes.Count;
         }
 
-        // если в кдах маркировки у нас только 1 код, то помечает его его как проданый
+        // если в кодах маркировки у нас только 1 код, то помечает его его как проданый
         public void MarkCodeAsSaled()
         {
             if (Codes.Count != 1)
                 return;
 
-            foreach (CodeDataTrueApi codeData in Codes)
-            {
-                codeData.Sold = true;
-            }
+            Codes[0].Sold = true;
+        }
+
+        public void MarkCodeAsNotSaled()
+        {
+            if (Codes.Count != 1)
+                return;
+
+            Codes[0].Sold = false;
         }
     }
 }

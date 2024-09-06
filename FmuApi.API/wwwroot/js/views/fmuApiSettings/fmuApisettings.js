@@ -262,12 +262,13 @@ export function SettingsView(id) {
                             padding: padding,
                             elements: [
                                 CheckBox("Блокировать продажу возвращенных товаров", "banSalesReturnedWares"),
+                                CheckBox("Проверять товары из чеков возврата", "checkReceiptReturn"),
                                 TextBox("text", "Коды групп товаров игнорирующик проверку стутсов кода маркировки в Честном Знаке", "ignoreVerificationErrorForTrueApiGroups", {"id": "tbIgnoreVerificationErrorForTrueApiGroups"}),
                             ]
                         },
             
             
-                        Label("lLoggingLabel", "Настройка логгирования"),
+                        Label("lLoggingLabel", "Настройка логирования"),
                         {
                             view: "subform",
                             name: "logging",
@@ -277,7 +278,7 @@ export function SettingsView(id) {
                                 TextBox("number", "Сколько дней хранить файлы лога", "logDepth", {"format": "1111"}),
                                 {
                                     view: "select",
-                                    label: "Уровень логгирования",
+                                    label: "Уровень логирования",
                                     labelPosition: "top",
                                     id: "LogLevel",
                                     name: "logLevel",

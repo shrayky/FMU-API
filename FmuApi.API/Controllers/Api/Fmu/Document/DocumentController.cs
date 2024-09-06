@@ -98,7 +98,7 @@ namespace FmuApiAPI.Controllers.Api.Fmu.Document
         {
             // для документов возврата никаких проверок делать не надо
             // можно сразу возвращать 200
-            if (document.Type == FmuDocumentsTypes.ReceiptReturn)
+            if (document.Type == FmuDocumentsTypes.ReceiptReturn && !Constants.Parametrs.SaleControlConfig.CheckReceiptReturn)
                 return Ok();
 
             Result<FmuAnswer> result;
