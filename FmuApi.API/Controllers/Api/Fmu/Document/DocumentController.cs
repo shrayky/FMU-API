@@ -102,13 +102,13 @@ namespace FmuApiAPI.Controllers.Api.Fmu.Document
 
         private async Task<IActionResult> CheckMarkInDoument(RequestDocument document)
         {
-            Result<FmuAnswer> result;
-
             // для документов возврата никаких проверок делать не надо
             // можно сразу возвращать 200
             if (document.Type == FmuDocumentsTypes.ReceiptReturn && !Constants.Parametrs.SaleControlConfig.CheckReceiptReturn)
                 return Ok();
 
+            // фронтол шлет 2 запроса, 2 с штрикодом и серйиным номером, закешируем результат ответа, что 2 раза не опрашивать базу
+            // работать будет только с 1 кассой, думаю, нужно на кэш переходить
             if (Constants.LastCheckMarkInformation.SGtin() == document.Mark())
                 return Ok(Constants.LastCheckMarkInformation);
 
@@ -137,12 +137,8 @@ namespace FmuApiAPI.Controllers.Api.Fmu.Document
                     Error = result.Error
                 };
 
-                Constants.LastCheckMarkInformation = new();
-
                 return Ok(answer);
             }
-
-            Constants.LastCheckMarkInformation = result.Value;
 
             return Ok(result.Value);
         }
