@@ -3,7 +3,6 @@ using FmuApiDomain.Models.Fmu.Document;
 using FmuApiDomain.Models.MarkInformation;
 using FmuApiDomain.Models.TrueSignApi.MarkData.Check;
 using FmuApiSettings;
-using System.Diagnostics.Eventing.Reader;
 
 namespace FmuApiApplication.Services.TrueSign
 {
@@ -90,7 +89,7 @@ namespace FmuApiApplication.Services.TrueSign
             MarkCode markCode = new(decodedMarCode, markStateCrud, checkMarks);
 
             await markCode.OfflineCheckAsync();
-
+            
             return markCode;
         }
 

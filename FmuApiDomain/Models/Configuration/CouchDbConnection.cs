@@ -1,4 +1,6 @@
 ﻿
+using System.Text.Json.Serialization;
+
 namespace FmuApiDomain.Models.Configuration
 {
     public class CouchDbConnection
@@ -11,7 +13,9 @@ namespace FmuApiDomain.Models.Configuration
         public string FrontolDocumentsDbName {  get; set; } = string.Empty;
         public string AlcoStampsDbName { get; set; } = string.Empty;
 
+        [JsonIgnore]
         public bool ConfigurationIsEnabled => (NetAdres != string.Empty && UserName != string.Empty && Password != string.Empty);
+        [JsonIgnore]
         public bool OfflineCheckIsEnabled => (ConfigurationIsEnabled && MarksStateDbName.Length > 0);
 
         public void CheckDbNames()

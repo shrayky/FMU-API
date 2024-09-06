@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using FmuApiDomain.Models.Configuration.TrueSign;
+using System.Text.Json.Serialization;
 
 namespace FmuApiDomain.Models.Fmu.Document
 {
@@ -74,6 +75,18 @@ namespace FmuApiDomain.Models.Fmu.Document
             }
 
             return alcoholCheck;
+        }
+
+        public string Mark()
+        {
+            if (Positions.Count != 1)
+                return "";
+
+            if (Positions[0].Marking_codes.Count != 1)
+                return "";
+
+            return System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(Positions[0].Marking_codes[0]));
+
         }
     }
 }

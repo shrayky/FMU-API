@@ -57,5 +57,18 @@ namespace FmuApiDomain.Models.TrueSignApi.MarkData.Check
 
             Codes[0].Sold = false;
         }
+
+        public string SGtin()
+        {
+            if (Codes.Count != 1)
+                return "";
+
+            string code = Codes[0].PrintView ?? "";
+
+            if (code.StartsWith("01"))
+                code = $"{code.Substring(2, 14)}{code.Substring(18)}";
+
+            return code;
+        }
     }
 }

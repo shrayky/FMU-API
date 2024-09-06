@@ -50,6 +50,8 @@ namespace FmuApiAPI.Controllers.Api.Fmu.Document
             if (AlcoUnitIsEnabled)
                 await SendDocumentToAlcoUnitAsync(document);
 
+            Constants.LastCheckMarkInformation = new();
+
             return Ok();
         }
 
@@ -64,6 +66,8 @@ namespace FmuApiAPI.Controllers.Api.Fmu.Document
 
             if (AlcoUnitIsEnabled)
                 await SendDocumentToAlcoUnitAsync(document);
+
+            Constants.LastCheckMarkInformation = new();
 
             return resultCode == 200 ? Ok() : BadRequest();
         }
@@ -83,6 +87,8 @@ namespace FmuApiAPI.Controllers.Api.Fmu.Document
             if (document.IsAlcoholCheck() && AlcoUnitIsEnabled)
                 await SendDocumentToAlcoUnitAsync(document);
 
+            Constants.LastCheckMarkInformation = new();
+
             return Ok(answerData);
         }
 
@@ -96,12 +102,15 @@ namespace FmuApiAPI.Controllers.Api.Fmu.Document
 
         private async Task<IActionResult> CheckMarkInDoument(RequestDocument document)
         {
+            Result<FmuAnswer> result;
+
             // для документов возврата никаких проверок делать не надо
             // можно сразу возвращать 200
             if (document.Type == FmuDocumentsTypes.ReceiptReturn && !Constants.Parametrs.SaleControlConfig.CheckReceiptReturn)
                 return Ok();
 
-            Result<FmuAnswer> result;
+            if (Constants.LastCheckMarkInformation.SGtin() == document.Mark())
+                return Ok(Constants.LastCheckMarkInformation);
 
             try
             {
@@ -128,8 +137,12 @@ namespace FmuApiAPI.Controllers.Api.Fmu.Document
                     Error = result.Error
                 };
 
+                Constants.LastCheckMarkInformation = new();
+
                 return Ok(answer);
             }
+
+            Constants.LastCheckMarkInformation = result.Value;
 
             return Ok(result.Value);
         }

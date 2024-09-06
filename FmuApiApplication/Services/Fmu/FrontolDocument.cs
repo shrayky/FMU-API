@@ -9,6 +9,7 @@ using FmuApiCouhDb.DocumentModels;
 using FmuApiApplication.Services.Frontol;
 using FmuApiDomain.Models.TrueSignApi.MarkData;
 using FmuApiDomain.Models.MarkInformation;
+using FmuApiDomain.Models.Frontol;
 
 namespace FmuApiApplication.Services.Fmu
 {

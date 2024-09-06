@@ -16,6 +16,11 @@ namespace FmuApiDomain.Models.Fmu.Document
         public bool AllMarksIsSold() => Truemark_response.AllMarksIsSold();
         public bool AllMarksIsExpire() => Truemark_response.AllMarksIsExpire();
 
+        public string SGtin()
+        {
+            return Truemark_response.SGtin();
+        }
+
         public FmuAnswer()
         {
         }

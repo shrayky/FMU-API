@@ -1,5 +1,6 @@
 ﻿using FmuApiDomain.Models.Configuration;
 using FmuApiDomain.Models.Configuration.TrueSign;
+using FmuApiDomain.Models.Fmu.Document;
 
 namespace FmuApiSettings
 {
@@ -11,6 +12,7 @@ namespace FmuApiSettings
         public static bool Online { get; set; } = true;
         public static SignData TrueApiToken { get; set; } = new();
         public static SignData FmuToken { get; set; } = new();
+        public static FmuAnswer LastCheckMarkInformation { get; set; } = new();
 
         private static void ConfigurateDataFolder(string _dataFloderPath)
         {
