@@ -104,6 +104,7 @@ namespace FmuApiAPI.Controllers.Api.Fmu.Document
         {
             // для документов возврата никаких проверок делать не надо
             // можно сразу возвращать 200
+            // если в настройках иного не указано
             if (document.Type == FmuDocumentsTypes.ReceiptReturn && !Constants.Parametrs.SaleControlConfig.CheckReceiptReturn)
                 return Ok();
 
@@ -112,9 +113,11 @@ namespace FmuApiAPI.Controllers.Api.Fmu.Document
             if (Constants.LastCheckMarkInformation.SGtin() == document.Mark())
                 return Ok(Constants.LastCheckMarkInformation);
 
+            Result<FmuAnswer> markCheckReult;
+
             try
             {
-                result = await _frontolDocument.CheckAsync(document);
+                markCheckReult = await _frontolDocument.CheckAsync(document);
             }
             catch (Exception ex)
             {
@@ -129,18 +132,18 @@ namespace FmuApiAPI.Controllers.Api.Fmu.Document
                 return Ok(answer);
             }
 
-            if (result.IsFailure)
+            if (markCheckReult.IsFailure)
             {
                 FmuAnswer answer = new()
                 {
                     Code = 0,
-                    Error = result.Error
+                    Error = markCheckReult.Error
                 };
 
                 return Ok(answer);
             }
 
-            return Ok(result.Value);
+            return Ok(markCheckReult.Value);
         }
 
         private async Task<IActionResult> SendDocumentToAlcoUnitAsync(RequestDocument document)
