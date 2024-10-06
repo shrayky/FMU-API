@@ -10,10 +10,12 @@ namespace FmuApiAPI.Controllers.Api.FrontolData
     public class FrontolWarePrintGroupByBarcodeController : Controller
     {
         private readonly FrontolSprtDataService _frontolSprtDataService;
+        private readonly ILogger<FrontolWarePrintGroupByBarcodeController> _logger;
 
-        public FrontolWarePrintGroupByBarcodeController(FrontolSprtDataService frontolSprtDataService)
+        public FrontolWarePrintGroupByBarcodeController(FrontolSprtDataService frontolSprtDataService, ILogger<FrontolWarePrintGroupByBarcodeController> logger)
         {
             _frontolSprtDataService = frontolSprtDataService;
+            _logger = logger;
         }
 
         [HttpGet("{barcode}")]
@@ -22,9 +24,14 @@ namespace FmuApiAPI.Controllers.Api.FrontolData
             if (!Constants.Parametrs.FrontolConnectionSettings.ConnectionEnable())
                 return Ok(0);
 
-            int printGroup = await _frontolSprtDataService.PrintGroupCodeByBarcodeAsync(barcode);
+            var printGroup = await _frontolSprtDataService.PrintGroupCodeByBarcodeAsync(barcode);
 
-            return Ok(printGroup);
+            if (printGroup.IsFailure)
+            {
+                _logger.LogError("Ошибка при получении кода группы печати в базе фронтола: {eMessage}", printGroup.Error);
+            }
+                
+            return Ok(printGroup.Value);
         }
     }
 }

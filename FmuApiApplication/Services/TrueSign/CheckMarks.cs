@@ -5,7 +5,6 @@ using FmuApiDomain.Models.TrueSignApi.MarkData.Check;
 using FmuApiSettings;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
-using System.Diagnostics.Eventing.Reader;
 using System.Net.Http.Json;
 
 namespace FmuApiApplication.Services.TrueSign
@@ -14,7 +13,7 @@ namespace FmuApiApplication.Services.TrueSign
     {
         private readonly string _addres = "/api/v4/true-api/codes/check";
         private readonly int requestTimeoutSeconds = Constants.Parametrs.HttpRequestTimeouts.CheckMarkRequestTimeout;
-        private readonly int requestAttempts = Constants.Cdn.List.Count;
+        private readonly int requestAttempts = 1;
 
         private readonly ILogger<CheckMarks> _logger;
         private IHttpClientFactory _httpClientFactory;

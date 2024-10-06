@@ -40,24 +40,24 @@ namespace FmuApiApplication.Services.Fmu
 
         public async Task<Result<FmuAnswer>> CheckAsync(RequestDocument document)
         {
-            // согласно документации к fmu в запросе всегда приходит 1 марка или 1 код маркировки
-            if (document.Positions.Count == 1)
-            {
-                if (document.Positions[0].Marking_codes.Count == 1)
-                    return await MarkCheckAsync(document.Positions[0].Marking_codes[0], document.Type == FmuDocumentsTypes.ReceiptReturn);
-            }
+            string markInDoc = document.Mark();
 
-            // для совместимости
-            return await MarksCheckAsync(document);
+            if (markInDoc.Length > 0)
+                // согласно документации к fmu в запросе всегда приходит 1 марка или 1 код маркировки
+                return await MarkCheckAsync(markInDoc, document.Type == FmuDocumentsTypes.ReceiptReturn);
+            else
+                // для совместимости
+                return await MarksCheckAsync(document);
         }
 
-        public async Task<Result<FmuAnswer>> MarkCheckAsync(string markCodeData, bool isReturn)
+        public async Task<Result<FmuAnswer>> MarkCheckAsync(string markingCode, bool isReturn)
         {
             FmuAnswer answer;
             CheckMarksDataTrueApi markDataFromTrueApi;
 
-            MarkCode mark = MarkCode.Create(markCodeData, _markStateCrud, _checkMarks);
-            _logger.LogInformation("Марка для проверки {markCodeData}", mark.Code);
+            _logger.LogInformation("Марка для проверки {markCodeData}", markingCode);
+
+            MarkCode mark = MarkCode.Create(markingCode, _markStateCrud, _checkMarks);
 
             int organisationId = await WareOrganisationId(mark.Barcode);
             mark.SetPrintGroup(organisationId);
@@ -123,7 +123,15 @@ namespace FmuApiApplication.Services.Fmu
             if (barcode == string.Empty)
                 return 0;
 
-            return await _frontolSprtDataService.PrintGroupCodeByBarcodeAsync(barcode);
+            var printGroupAskResult = await _frontolSprtDataService.PrintGroupCodeByBarcodeAsync(barcode);
+
+            if (printGroupAskResult.IsFailure)
+            {
+                _logger.LogError("Ошибка при получении кода группы печати в базе фронтола: {eMessage}", printGroupAskResult.Error);
+                return 0;
+            }
+
+            return printGroupAskResult.Value;
         }
         
         private async Task<Result<FmuAnswer>> MarksCheckAsync(RequestDocument document)
@@ -181,7 +189,7 @@ namespace FmuApiApplication.Services.Fmu
 
             foreach (var trueApiMarkData in answer.Truemark_response.Codes)
             {
-                string markError = trueApiMarkData.MarkError();
+                string markError = trueApiMarkData.MarkErrorDescription();
 
                 trueApiMarkData.Cis = trueApiMarkData.Cis.Replace("\u001d", Convert.ToChar(29).ToString());
 

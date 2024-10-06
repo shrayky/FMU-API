@@ -1,6 +1,4 @@
-﻿using Microsoft.VisualBasic;
-using System.Reflection.Metadata;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace FmuApiDomain.Models.TrueSignApi.MarkData
 {
@@ -69,6 +67,8 @@ namespace FmuApiDomain.Models.TrueSignApi.MarkData
         public bool CodeFounded { get => ErrorCode != 10; }
         [JsonIgnore]
         public int DaysExpired { get => ExpireDate is null ? 999 : Convert.ToInt32((DateTime.Now - ExpireDate).Value.TotalDays); }
+        [JsonIgnore]
+        public bool Empty { get => Cis == string.Empty; }
 
         public bool InGroup(string ignoreVerificationErrorForTrueApiGroups)
         {
@@ -86,7 +86,7 @@ namespace FmuApiDomain.Models.TrueSignApi.MarkData
             return false;
         }
 
-        public string MarkError()
+        public string MarkErrorDescription()
         {
             if (Sold)
                 return "Товар с этой маркой уже продан!";

@@ -20,7 +20,7 @@ namespace FmuApiApplication.Services.Installer
             _logger = logger;
         }
 
-        public async  Task<bool> InstallAsync(string[] installerArgs)
+        public async Task<bool> InstallAsync(string[] installerArgs)
         {
             if (!Directory.Exists(_installDirectory))
                 Directory.CreateDirectory(_installDirectory);
@@ -62,6 +62,8 @@ namespace FmuApiApplication.Services.Installer
 
                 startInfo.Arguments = $"/c sc failure \"{_serviceName}\" reset= 5 actions= restart/5000";
                 process.Start();
+
+                //$"netsh advfirewall firewall show rule name = {_serviceName}"
 
                 startInfo.Arguments = $"/c netsh advfirewall firewall delete rule name = \"{_serviceName}\"";
                 process.Start();

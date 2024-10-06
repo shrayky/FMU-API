@@ -8,8 +8,8 @@ namespace FmuApiApplication.Services.TrueSign
 {
     public class MarkCode
     {
-        private readonly MarkInformationCrud _markStateCrud;
         private readonly CheckMarks _trueApiCheck;
+        private readonly MarkInformationCrud _markStateCrud;
         public string Code { get; } = string.Empty;
         public string SGtin { get; } = string.Empty;
         public bool CodeIsSgtin { get; } = false;
@@ -23,14 +23,14 @@ namespace FmuApiApplication.Services.TrueSign
 
         private MarkCode(string markCode, MarkInformationCrud markStateCrud, CheckMarks checkMarks)
         {
+            _markStateCrud = markStateCrud;
+            _trueApiCheck = checkMarks;
+
             Code = markCode.Trim();
 
             // некоторые производители ошибочно пишут стартовый GS
             if (markCode.StartsWith(GsE) || markCode.StartsWith(Gs))
                 Code = markCode.Substring(1);
-
-            _markStateCrud = markStateCrud;
-            _trueApiCheck = checkMarks;
 
             SGtin = CalculateSgtin(Code);
             CodeIsSgtin = (SGtin == Code);
@@ -73,18 +73,16 @@ namespace FmuApiApplication.Services.TrueSign
             return sgtin;
         }
 
-        public static MarkCode Create(string codeData, MarkInformationCrud markStateCrud, CheckMarks checkMarks)
+        public static MarkCode Create(string markingCode, MarkInformationCrud markStateCrud, CheckMarks checkMarks)
         {
-            var decodedMarCode = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(codeData));
-
-            MarkCode markCode = new(decodedMarCode, markStateCrud, checkMarks);
+            MarkCode markCode = new(markingCode, markStateCrud, checkMarks);
 
             return markCode;
         }
 
-        public static async Task<MarkCode> CreateAsync(string codeData, MarkInformationCrud markStateCrud, CheckMarks checkMarks)
+        public static async Task<MarkCode> CreateAsync(string encodedMarkingCode, MarkInformationCrud markStateCrud, CheckMarks checkMarks)
         {
-            var decodedMarCode = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(codeData));
+            var decodedMarCode = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(encodedMarkingCode));
 
             MarkCode markCode = new(decodedMarCode, markStateCrud, checkMarks);
 
@@ -163,10 +161,12 @@ namespace FmuApiApplication.Services.TrueSign
 
             string requestCode = Code;
 
-            if (CodeIsSgtin && TrueMarkData.Codes.Count > 0)
-                requestCode = TrueMarkData.Codes[0].Cis;
+            var trueSignMarkData = TrueMarkData.MarkData();
 
-            if (CodeIsSgtin && TrueMarkData.Codes.Count == 0)
+            if (CodeIsSgtin && !trueSignMarkData.Empty)
+                requestCode = trueSignMarkData.Cis;
+
+            if (CodeIsSgtin && trueSignMarkData.Empty)
             {
                 ErrorDescription = "Онлайн проверка по неполному коду невозможна!";
                 return false;
@@ -184,25 +184,22 @@ namespace FmuApiApplication.Services.TrueSign
                 return false;
             }
 
-            if (TrueMarkData.Codes.Count == 0)
+            trueSignMarkData = TrueMarkData.MarkData();
+
+            if (trueSignMarkData.Empty)
             {
                 ErrorDescription = $"Пустой результат проверки по коду марки {Code}";
                 return false;
             }
-
-            ResetErrorFields();
-
-            string markError = TrueMarkData.Codes[0].MarkError();
-
-            var row = TrueMarkData.Codes[0];
-
-            row.Cis = row.Cis.Replace(GsE, Gs.ToString());
-
-            if (markError != string.Empty)
+            else 
             {
-                ErrorDescription = markError;
+                ResetErrorFields();
+
+                ErrorDescription = trueSignMarkData.MarkErrorDescription();
+
+                trueSignMarkData.Cis = trueSignMarkData.Cis.Replace(GsE, Gs.ToString());
             }
-            
+
             return ErrorDescription == string.Empty;
         }
 
@@ -211,20 +208,20 @@ namespace FmuApiApplication.Services.TrueSign
             if (Constants.Parametrs.SaleControlConfig.IgnoreVerificationErrorForTrueApiGroups == string.Empty)
                 return;
 
-            if (TrueMarkData.Codes.Count != 1)
+            var trueSignMarkData = TrueMarkData.MarkData();
+
+            if (trueSignMarkData.Empty)
                 return;
 
-            var trueApiMarkData = TrueMarkData.Codes[0];
-
-            if (!trueApiMarkData.InGroup(Constants.Parametrs.SaleControlConfig.IgnoreVerificationErrorForTrueApiGroups))
+            if (!trueSignMarkData.InGroup(Constants.Parametrs.SaleControlConfig.IgnoreVerificationErrorForTrueApiGroups))
                 return;
 
-            trueApiMarkData.Found = true;
-            trueApiMarkData.Verified = true;
-            trueApiMarkData.Realizable = true;
-            trueApiMarkData.Utilised = true;
-            trueApiMarkData.Sold = false;
-            trueApiMarkData.ErrorCode = 0;
+            trueSignMarkData.Found = true;
+            trueSignMarkData.Verified = true;
+            trueSignMarkData.Realizable = true;
+            trueSignMarkData.Utilised = true;
+            trueSignMarkData.Sold = false;
+            trueSignMarkData.ErrorCode = 0;
         }
 
         public async Task<bool> Save()

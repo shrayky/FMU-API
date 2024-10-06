@@ -1,4 +1,4 @@
-﻿using FmuApiDomain.Models.Frontol;
+﻿using CSharpFunctionalExtensions;
 using FmuFrontolDb;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,7 +20,24 @@ namespace FmuApiApplication.Services.Frontol
             _db = frontolDbContext;
         }
 
-        public async Task<int> PrintGroupCodeByBarcodeAsync(string barCode)
+        public async Task<Result<int>> PrintGroupCodeByBarcodeAsync(string barCode)
+        {
+            var code = 0;
+            
+            try
+            {
+                 code = await PrintGroupCodeByWareBarcodeAsync(barCode);
+
+            }
+            catch (Exception e)
+            {
+                return Result.Failure<int>(e.Message);
+            }
+
+            return Result.Success<int>(code);
+        }
+
+        private async Task<int> PrintGroupCodeByWareBarcodeAsync(string barCode)
         {
             var barcode = await _db.Barcodes.FirstOrDefaultAsync(b => b.WareBarcode == barCode);
 

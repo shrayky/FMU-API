@@ -15,7 +15,7 @@ namespace FmuApiAPI.Controllers.Api.Configuration
         [HttpGet]
         public IActionResult ParametersGet()
         {
-            WebixDataPacket packet = new WebixDataPacket()
+            WebixDataPacket packet = new()
             {
                 Content = Constants.Parametrs
             };

@@ -9,7 +9,7 @@ namespace FmuApiAPI.Controllers.Api.Configuration
     public class AboutController : Controller
     {
         [HttpGet]
-        public IActionResult XApiKeyGet()
+        public IActionResult AboutGet()
         {
             return Ok($"{Constants.Parametrs.AppName} version {Constants.Parametrs.AppVersion} assembly {Constants.Parametrs.Assembly}");
         }

@@ -70,5 +70,13 @@ namespace FmuApiDomain.Models.TrueSignApi.MarkData.Check
 
             return code;
         }
+
+        public CodeDataTrueApi MarkData()
+        {
+            if (Codes.Count != 1)
+                return new();
+
+            return Codes[0];
+        }
     }
 }
