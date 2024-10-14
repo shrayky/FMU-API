@@ -1,7 +1,4 @@
-﻿using FmuApiDomain.Models.TrueSignApi.MarkData.Check;
-using System.Net.Http;
-
-namespace FmuApiApplication.Utilites
+﻿namespace FmuApiApplication.Utilites
 {
     public static class HttpRequestHelper
     {

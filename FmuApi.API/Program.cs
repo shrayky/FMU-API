@@ -15,6 +15,7 @@ using System.Net;
 using FmuFrontolDb;
 using Microsoft.EntityFrameworkCore;
 using FmuApiApplication.Services.Frontol;
+using AutoUpdateWorkerService;
 
 var slConsole = new LoggerConfiguration()
     .MinimumLevel.Debug().WriteTo
@@ -77,6 +78,7 @@ bool RunHttpApiService()
     services.AddScoped<AlcoUnitGateway>();
 
     services.AddHostedService<CdnLoaderWorker>();
+    AutoUpdateWorker.AddService(services);
 
     if (Constants.Parametrs.TrueSignTokenService.ConnectionAddres != string.Empty)
         services.AddHostedService<TrueSignTokenServiceLoaderWorker>();

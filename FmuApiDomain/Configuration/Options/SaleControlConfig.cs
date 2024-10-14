@@ -1,4 +1,4 @@
-﻿namespace FmuApiDomain.Configuration
+﻿namespace FmuApiDomain.Configuration.Options
 {
     public class SaleControlConfig
     {

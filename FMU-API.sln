@@ -21,6 +21,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Services", "Services", "{C1
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "View", "View", "{A46ADD21-5040-4A1E-AD61-CE964A3FB2DD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoUpdateWorkerService", "AutoUpdateWorkerService\AutoUpdateWorkerService.csproj", "{ED1479C0-9EAC-49A0-97F5-8FC3089F562C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +53,10 @@ Global
 		{19AA4200-6672-472F-A879-350DC082AD2A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{19AA4200-6672-472F-A879-350DC082AD2A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{19AA4200-6672-472F-A879-350DC082AD2A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ED1479C0-9EAC-49A0-97F5-8FC3089F562C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ED1479C0-9EAC-49A0-97F5-8FC3089F562C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ED1479C0-9EAC-49A0-97F5-8FC3089F562C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ED1479C0-9EAC-49A0-97F5-8FC3089F562C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -62,6 +68,7 @@ Global
 		{3C727947-7BCD-45AE-94C3-B89898B6B556} = {C157584E-0AAF-410F-AF70-8D431E630D0D}
 		{F8B68661-F8D5-4E44-914A-BC86E5BDFE79} = {C157584E-0AAF-410F-AF70-8D431E630D0D}
 		{19AA4200-6672-472F-A879-350DC082AD2A} = {C157584E-0AAF-410F-AF70-8D431E630D0D}
+		{ED1479C0-9EAC-49A0-97F5-8FC3089F562C} = {C157584E-0AAF-410F-AF70-8D431E630D0D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {853898A9-1472-4293-B761-F8E8DFA48C1F}

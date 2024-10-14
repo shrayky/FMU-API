@@ -1,4 +1,4 @@
-﻿namespace FmuApiDomain.Configuration.Organisation
+﻿namespace FmuApiDomain.Configuration.Options.Organisation
 {
     public class PrintGroupData
     {

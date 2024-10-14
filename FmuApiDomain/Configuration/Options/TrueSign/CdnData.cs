@@ -2,7 +2,7 @@
 using FmuApiDomain.JsonOptions;
 using System.Text.Json;
 
-namespace FmuApiDomain.Configuration.TrueSign
+namespace FmuApiDomain.Configuration.Options.TrueSign
 {
     public class CdnData
     {

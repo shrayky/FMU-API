@@ -1,6 +1,6 @@
 ﻿using CSharpFunctionalExtensions;
 using FmuApiApplication.Utilites;
-using FmuApiDomain.Configuration.TrueSign;
+using FmuApiDomain.Configuration.Options.TrueSign;
 using FmuApiDomain.TrueSignApi.MarkData.Check;
 using FmuApiSettings;
 using Microsoft.Extensions.Logging;

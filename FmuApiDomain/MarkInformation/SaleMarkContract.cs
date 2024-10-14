@@ -1,5 +1,4 @@
-﻿using FmuApiDomain.Models.TrueSignApi;
-
+﻿
 namespace FmuApiDomain.MarkInformation
 {
     public class SaleMarkContract

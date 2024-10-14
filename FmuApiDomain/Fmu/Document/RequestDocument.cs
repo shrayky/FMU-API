@@ -1,5 +1,4 @@
-﻿using FmuApiDomain.Models.Configuration.TrueSign;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace FmuApiDomain.Fmu.Document
 {

@@ -1,4 +1,4 @@
-﻿namespace FmuApiDomain.Configuration.TrueSign
+﻿namespace FmuApiDomain.Configuration.Options.TrueSign
 {
     public class TokenService
     {

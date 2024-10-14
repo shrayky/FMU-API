@@ -1,7 +1,7 @@
 ﻿
 using System.Text.Json.Serialization;
 
-namespace FmuApiDomain.Configuration
+namespace FmuApiDomain.Configuration.Options
 {
     public class CouchDbConnection
     {

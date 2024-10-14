@@ -53,6 +53,14 @@ webix.ready(function () {
                                                 value: "Организации"
                                             },
                                             {
+                                                id: "lLoggingLabel",
+                                                value: "Логрование"
+                                            },
+                                            {
+                                                id: "lAutoupdateLabel",
+                                                value: "Автоматическое обновление"
+                                            },
+                                            {
                                                 id: "lHostsToPing",
                                                 value: "Проверка интернета"
                                             },
@@ -83,10 +91,6 @@ webix.ready(function () {
                                             {
                                                 id: "lSaleseControlParametrs",
                                                 value: "Контроль продаж"
-                                            },
-                                            {
-                                                id: "lLoggingLabel",
-                                                value: "Логгирование"
                                             },
                                         ]
                                     },

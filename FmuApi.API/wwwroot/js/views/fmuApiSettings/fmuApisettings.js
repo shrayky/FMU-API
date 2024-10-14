@@ -3,15 +3,29 @@ import { TableToolabr, Label, TextBox, PasswordBox, TextBoxFormated, CheckBox } 
 import { HostToPingForm } from "./hostToPingForm.js";
 import { OrganisationForm } from "./organisationForm.js";
 
+const padding = {
+    top: 5,
+    bottom: 5,
+    left: 20,
+    right: 20
+};
+
+const optionsArray = (nums) => {
+    let vl;
+    const units = [];
+
+    for (let i = 1; i < nums + 1; i += 1) {
+        if (i >= 0 && i <= 10)
+            vl = "0" + (i - 1);
+        else
+            vl = i - 1;
+
+        units.push({ id: i, value: vl.toString() });
+    }
+    return units;
+}
 export function SettingsView(id) {
     $$("toolbarLabel").setValue("FMU-API: Настройка");
-
-    const padding = {
-        top: 5,
-        bottom: 5,
-        left: 20,
-        right: 20
-    };
 
     return {
         view: "form",
@@ -22,6 +36,12 @@ export function SettingsView(id) {
         {
             url: "api->/configuration/parameters",
             autoupdate: false
+        },
+        on: {
+            "onAfterLoad": () => {
+                let values = $$("AutoUpdate").getValue();
+                $$("AutoUpdate").setValues({ "fromHourW": values.fromHour + 1, "untilHourW": values.untilHour + 1 }, true)
+            }
         },
         elements: [
             {
@@ -42,7 +62,7 @@ export function SettingsView(id) {
 
             {
                 view: "scrollview",
-                borderless: false,
+                borderless: true,
                 id: `${id}_scroll`,
                 body: {
                     rows:
@@ -63,6 +83,132 @@ export function SettingsView(id) {
                                             ]
                                         }
                                     ]
+                                },
+                            ]
+                        },
+
+                            Label("lLoggingLabel", "Настройка логирования"),
+                            {
+                                view: "subform",
+                                name: "logging",
+                                padding: padding,
+                                elements: [
+                                    CheckBox("Иcпользовать", "isEnabled"),
+                                    TextBox("number", "Сколько дней хранить файлы лога", "logDepth", { "format": "1111" }),
+                                    {
+                                        view: "select",
+                                        label: "Уровень логирования",
+                                        labelPosition: "top",
+                                        id: "LogLevel",
+                                        name: "logLevel",
+                                        options: ["Verbose", "Debug", "Information", "Warning", "Error", "Fatal"]
+                                    },
+
+                                ]
+                            },
+
+                            Label("lAutoupdateLabel", "Настройка автообновления"),
+
+                            {
+                                view: "subform",
+                                name: "autoUpdate",
+                                id: "AutoUpdate",
+                                padding: padding,
+                                elements: [
+                                    CheckBox("Использовать", "enabled", { "id": "autoUpdate_enabled" }),
+
+                                    TextBox("text", "Каталог с файлами обновлений", "updateFilesCatalog"),
+
+                                    Label("AutoupdateTimeLabel", "Часы для автообновления"),
+
+                                    {
+                                        padding: { left: 20, },
+                                        cols: [
+                                            {
+                                                view: "combo",
+                                                id: "fromHourW",
+                                                name: "fromHourW",
+                                                options: optionsArray(24),
+                                                maxWidth: 60,
+                                                format: "1111",
+                                                newValues: false,
+                                                on: {
+                                                    "onChange": (newValue) => {
+                                                        $$("AutoUpdate").setValues({ "fromHour": newValue - 1 }, true)
+                                                    },
+                                                    "onViewShow": () => {
+                                                        let values = $$("AutoUpdate").getValue();
+
+                                                        console.log(values);
+                                                    }
+
+                                                }
+                                            },
+
+                                            Label("AutoupdateTimeSeparator", "-", { "maxWidth": 5 }),
+
+                                            {
+                                                view: "combo",
+                                                id: "untilHourW",
+                                                name: "untilHourW",
+                                                options: optionsArray(24),
+                                                maxWidth: 60,
+                                                format: "1111",
+                                                newValues: false,
+                                                on: {
+                                                    "onChange": (newValue) => {
+                                                        $$("AutoUpdate").setValues({ "untilHour": newValue - 1 }, true)
+                                                    }
+                                                }
+                                            },
+
+                                            {}
+                                        ]
+                                    },
+
+                                ],
+                            },
+
+                        Label("lHostsToPing", "Адреса сайтов для проверки доступности интернета (если проверка не нужна, то список должен быть пустым)"),
+            
+                        {
+                            padding: padding,
+                            rows: [
+                                TableToolabr("HostsToPing"),
+            
+                                {
+                                    view: "formtable",
+                                    id: "HostsToPing",
+                                    name: "hostsToPing",
+                                    resizeColumn: true,
+                                    resizeRow: true,
+                                    select: true,
+                                    minHeight: 250,
+                                    columns: [
+                                        { id: "id", header: "Код", hidden: true },
+                                        { id: "value", header: "Хост", fillspace: true },
+                                    ],
+                                    on:
+                                    {
+                                        onAfterSelect: _ => {
+                                            $$("delete_HostsToPing").enable();
+                                        },
+                                        onAfterDelete: (id) => {
+                                            $$("delete_HostsToPing").disable();
+            
+                                            if ($$("HostsToPing").count() == 0)
+                                                $$("deleteAll_HostsToPing").disable();
+                                        },
+                                        onBeforeAdd: (id, obj, idx) => {
+                                            if (obj.value == undefined) {
+                                                HostToPingForm("Новый сайт", "HostsToPing");
+                                                return false;
+                                            }
+                                        },
+                                        onItemDblClick: (id) => {
+                                            HostToPingForm("Cайт", "HostsToPing", id);
+                                        }
+                                    }
                                 },
                             ]
                         },
@@ -113,51 +259,7 @@ export function SettingsView(id) {
                                 }
                             ]
                         },
-            
-                        Label("lHostsToPing", "Адреса сайтов для проверки доступности интернета (если проверка не нужна, то список должен быть пустым)"),
-            
-                        {
-                            padding: padding,
-                            rows: [
-                                TableToolabr("HostsToPing"),
-            
-                                {
-                                    view: "formtable",
-                                    id: "HostsToPing",
-                                    name: "hostsToPing",
-                                    resizeColumn: true,
-                                    resizeRow: true,
-                                    select: true,
-                                    minHeight: 250,
-                                    columns: [
-                                        { id: "id", header: "Код", hidden: true },
-                                        { id: "value", header: "Хост", fillspace: true },
-                                    ],
-                                    on:
-                                    {
-                                        onAfterSelect: _ => {
-                                            $$("delete_HostsToPing").enable();
-                                        },
-                                        onAfterDelete: (id) => {
-                                            $$("delete_HostsToPing").disable();
-            
-                                            if ($$("HostsToPing").count() == 0)
-                                                $$("deleteAll_HostsToPing").disable();
-                                        },
-                                        onBeforeAdd: (id, obj, idx) => {
-                                            if (obj.value == undefined) {
-                                                HostToPingForm("Новый сайт", "HostsToPing");
-                                                return false;
-                                            }
-                                        },
-                                        onItemDblClick: (id) => {
-                                            HostToPingForm("Cайт", "HostsToPing", id);
-                                        }
-                                    }
-                                },
-                            ]
-                        },
-            
+                       
                         Label("lDatabase", "База данных"),
             
                         {
@@ -266,29 +368,6 @@ export function SettingsView(id) {
                                 TextBox("text", "Коды групп товаров игнорирующик проверку стутсов кода маркировки в Честном Знаке", "ignoreVerificationErrorForTrueApiGroups", {"id": "tbIgnoreVerificationErrorForTrueApiGroups"}),
                             ]
                         },
-            
-            
-                        Label("lLoggingLabel", "Настройка логирования"),
-                        {
-                            view: "subform",
-                            name: "logging",
-                            padding: padding,
-                            elements: [
-                                CheckBox("Иcпользовать", "isEnabled"),
-                                TextBox("number", "Сколько дней хранить файлы лога", "logDepth", {"format": "1111"}),
-                                {
-                                    view: "select",
-                                    label: "Уровень логирования",
-                                    labelPosition: "top",
-                                    id: "LogLevel",
-                                    name: "logLevel",
-                                    options: ["Verbose", "Debug", "Information", "Warning", "Error", "Fatal"]
-                                },
-            
-                            ]
-                        }
-
-
                     ]
                 }
             }

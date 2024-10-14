@@ -1,6 +1,8 @@
 ﻿using System.Text.Json;
-using FmuApiDomain.Configuration.Organisation;
-using FmuApiDomain.Configuration.TrueSign;
+using System.Text.Json.Serialization;
+using FmuApiDomain.Configuration.Options;
+using FmuApiDomain.Configuration.Options.Organisation;
+using FmuApiDomain.Configuration.Options.TrueSign;
 using FmuApiDomain.JsonOptions;
 
 namespace FmuApiDomain.Configuration
@@ -9,7 +11,7 @@ namespace FmuApiDomain.Configuration
     {
         public string AppName { get; } = "FMU-API";
         public int AppVersion { get; set; } = 9;
-        public int Assembly { get; set; } = 7;
+        public int Assembly { get; set; } = 8;
         public string NodeName { get; set; } = string.Empty;
         public ServerConfig ServerConfig { get; set; } = new();
         public List<StringValue> HostsToPing { get; set; } = [];
@@ -22,6 +24,8 @@ namespace FmuApiDomain.Configuration
         public LogSettings Logging { get; set; } = new();
         public FrontolConnectionSettings FrontolConnectionSettings { get; set; } = new();
         public SaleControlConfig SaleControlConfig { get; set; } = new();
+        [JsonInclude]
+        public AutoUpdateOptions AutoUpdate { get; private set; } = AutoUpdateOptions.Create();
 
         // устаревшие параметры
         public string? HostToPing { get; set; }
@@ -30,6 +34,12 @@ namespace FmuApiDomain.Configuration
         public SignData? SignData { get; set; }
 
         private string _dataFolder = string.Empty;
+        
+        [JsonConstructor]
+        public Parametrs()
+        {
+
+        }
 
         public void Init(string dataFolder)
         {
@@ -79,6 +89,7 @@ namespace FmuApiDomain.Configuration
             OrganisationConfig = loadedConstants.OrganisationConfig;
             NodeName = loadedConstants.NodeName;
             SaleControlConfig = loadedConstants.SaleControlConfig;
+            AutoUpdate = loadedConstants.AutoUpdate;
 
             if (NodeName == string.Empty)
                 NodeName = Environment.MachineName;

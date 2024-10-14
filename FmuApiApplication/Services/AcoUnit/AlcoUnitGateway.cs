@@ -1,6 +1,6 @@
 ﻿using Flurl;
 using FmuApiApplication.Utilites;
-using FmuApiDomain.Configuration;
+using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.Fmu.Token;
 using FmuApiSettings;
