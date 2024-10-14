@@ -4,18 +4,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FmuApiApplication.Services.Frontol
 {
-    public class FrontolSprtDataService
+    public class FrontolSprtDataHandler
     {
         private readonly string _connectionString = string.Empty;
         private readonly FrontolDbContext _db;
 
-        public FrontolSprtDataService(string connectionString)
+        public FrontolSprtDataHandler(string connectionString)
         {
             _connectionString = connectionString;
             _db = new FrontolDbContext(connectionString);
         }
 
-        public FrontolSprtDataService(FrontolDbContext frontolDbContext)
+        public FrontolSprtDataHandler(FrontolDbContext frontolDbContext)
         {
             _db = frontolDbContext;
         }

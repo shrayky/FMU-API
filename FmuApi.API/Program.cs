@@ -87,18 +87,10 @@ bool RunHttpApiService()
         services.AddHostedService<InternetConnectionCheckWorker>();
     }
 
-    if (Constants.Parametrs.FrontolConnectionSettings.ConnectionEnable())
-    {
-        services.AddDbContext<FrontolDbContext>(options =>
-        {
-            options.UseFirebird(Constants.Parametrs.FrontolConnectionSettings.ConnectionStringBuild());
-        });
-
-        services.AddScoped<FrontolSprtDataService>();
-    }
     ConfigureCors(services);
 
-    CouchDbRegistrtService.AddService(services);
+    CouchDbRegisterService.AddService(services);
+    FrontolDbRegisterService.AddService(services);
 
     ConfigureSwagger(services);
 

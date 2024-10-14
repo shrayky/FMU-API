@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace FmuApiCouhDb
 {
-    public class CouchDbRegistrtService
+    public class CouchDbRegisterService
     {
         public static void AddService(IServiceCollection services)
         {

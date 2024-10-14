@@ -9,7 +9,6 @@ using FmuApiCouhDb.DocumentModels;
 using FmuApiApplication.Services.Frontol;
 using FmuApiDomain.Models.TrueSignApi.MarkData;
 using FmuApiDomain.Models.MarkInformation;
-using FmuApiDomain.Models.Frontol;
 
 namespace FmuApiApplication.Services.Fmu
 {
@@ -18,15 +17,15 @@ namespace FmuApiApplication.Services.Fmu
         private readonly CheckMarks _checkMarks;
         private readonly MarkInformationHandler _markStateCrud;
         private readonly FrontolDocumentHandler _frontolDocumentCrud;
-        private readonly FrontolSprtDataService? _frontolSprtDataService;
+        private readonly FrontolSprtDataHandler? _frontolSprtDataHandler;
         private readonly ILogger<FrontolDocument> _logger;
 
-        public FrontolDocument(CheckMarks checkMarks, MarkInformationHandler markStateCrud, FrontolDocumentHandler frontolDocumentCrud, FrontolSprtDataService frontolSprtDataService, ILogger<FrontolDocument> logger)
+        public FrontolDocument(CheckMarks checkMarks, MarkInformationHandler markStateCrud, FrontolDocumentHandler frontolDocumentCrud, FrontolSprtDataHandler frontolSprtDataHandler, ILogger<FrontolDocument> logger)
         {
             _checkMarks = checkMarks;
             _markStateCrud = markStateCrud;
             _frontolDocumentCrud = frontolDocumentCrud;
-            _frontolSprtDataService = frontolSprtDataService;
+            _frontolSprtDataHandler = frontolSprtDataHandler;
             _logger = logger;
         }
 
@@ -114,7 +113,7 @@ namespace FmuApiApplication.Services.Fmu
 
         private async Task<int> WareOrganisationId(string barcode)
         {
-            if (_frontolSprtDataService == null)
+            if (_frontolSprtDataHandler == null)
                 return 0;
 
             if (!Constants.Parametrs.FrontolConnectionSettings.ConnectionEnable())
@@ -123,7 +122,7 @@ namespace FmuApiApplication.Services.Fmu
             if (barcode == string.Empty)
                 return 0;
 
-            var printGroupAskResult = await _frontolSprtDataService.PrintGroupCodeByBarcodeAsync(barcode);
+            var printGroupAskResult = await _frontolSprtDataHandler.PrintGroupCodeByBarcodeAsync(barcode);
 
             if (printGroupAskResult.IsFailure)
             {

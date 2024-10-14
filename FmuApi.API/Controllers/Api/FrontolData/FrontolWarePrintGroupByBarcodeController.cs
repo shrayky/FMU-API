@@ -9,12 +9,12 @@ namespace FmuApiAPI.Controllers.Api.FrontolData
     [ApiExplorerSettings(GroupName = "Frontol database")]
     public class FrontolWarePrintGroupByBarcodeController : Controller
     {
-        private readonly FrontolSprtDataService _frontolSprtDataService;
+        private readonly FrontolSprtDataHandler _frontolSprtDataHandler;
         private readonly ILogger<FrontolWarePrintGroupByBarcodeController> _logger;
 
-        public FrontolWarePrintGroupByBarcodeController(FrontolSprtDataService frontolSprtDataService, ILogger<FrontolWarePrintGroupByBarcodeController> logger)
+        public FrontolWarePrintGroupByBarcodeController(FrontolSprtDataHandler frontolSprtDataHandler, ILogger<FrontolWarePrintGroupByBarcodeController> logger)
         {
-            _frontolSprtDataService = frontolSprtDataService;
+            _frontolSprtDataHandler = frontolSprtDataHandler;
             _logger = logger;
         }
 
@@ -24,7 +24,7 @@ namespace FmuApiAPI.Controllers.Api.FrontolData
             if (!Constants.Parametrs.FrontolConnectionSettings.ConnectionEnable())
                 return Ok(0);
 
-            var printGroup = await _frontolSprtDataService.PrintGroupCodeByBarcodeAsync(barcode);
+            var printGroup = await _frontolSprtDataHandler.PrintGroupCodeByBarcodeAsync(barcode);
 
             if (printGroup.IsFailure)
             {
