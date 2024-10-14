@@ -1,5 +1,5 @@
 ﻿using FmuApiCouhDb.DocumentModels;
-using FmuApiDomain.Models.MarkInformation;
+using FmuApiDomain.MarkInformation;
 
 namespace FmuApiCouhDb.CrudServices
 {

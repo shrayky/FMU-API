@@ -1,4 +1,4 @@
-﻿using FmuApiDomain.Models.Configuration;
+﻿using FmuApiDomain.Configuration;
 using FmuApiSettings;
 using Microsoft.AspNetCore.Mvc;
 

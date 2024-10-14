@@ -1,5 +1,5 @@
 ﻿using FmuApiCouhDb.CrudServices;
-using FmuApiDomain.Models.MarkInformation;
+using FmuApiDomain.MarkInformation;
 using Microsoft.Extensions.Logging;
 
 namespace FmuApiApplication.Services.MarkStateSrv

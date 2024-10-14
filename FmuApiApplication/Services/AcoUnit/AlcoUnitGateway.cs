@@ -1,8 +1,8 @@
 ﻿using Flurl;
 using FmuApiApplication.Utilites;
-using FmuApiDomain.Models.Configuration;
-using FmuApiDomain.Models.Fmu.Document;
-using FmuApiDomain.Models.Fmu.Token;
+using FmuApiDomain.Configuration;
+using FmuApiDomain.Fmu.Document;
+using FmuApiDomain.Fmu.Token;
 using FmuApiSettings;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;

@@ -1,5 +1,5 @@
 ﻿using FmuApiApplication.Services.TrueSign;
-using FmuApiDomain.Models.TrueSignApi.MarkData.Check;
+using FmuApiDomain.TrueSignApi.MarkData.Check;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FmuApiAPI.Controllers.Api.TrueSign

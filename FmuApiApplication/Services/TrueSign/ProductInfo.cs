@@ -1,7 +1,7 @@
 ﻿using CSharpFunctionalExtensions;
 using FmuApiApplication.Utilites;
 using FmuApiDomain.Models.TrueSignApi;
-using FmuApiDomain.Models.TrueSignApi.ProductInfo;
+using FmuApiDomain.TrueSignApi.ProductInfo;
 using FmuApiSettings;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;

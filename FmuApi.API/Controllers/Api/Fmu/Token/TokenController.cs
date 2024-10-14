@@ -1,4 +1,4 @@
-﻿using FmuApiDomain.Models.Fmu.Token;
+﻿using FmuApiDomain.Fmu.Token;
 using FmuApiSettings;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;

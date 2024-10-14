@@ -1,6 +1,6 @@
 ﻿using FmuApiApplication.Utilites;
-using FmuApiDomain.Models.Configuration.TrueSign;
-using FmuApiDomain.Models.TrueSignApi.Cdn;
+using FmuApiDomain.Configuration.TrueSign;
+using FmuApiDomain.TrueSignApi.Cdn;
 using FmuApiSettings;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;

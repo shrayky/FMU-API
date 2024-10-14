@@ -1,7 +1,7 @@
 ﻿using CSharpFunctionalExtensions;
 using FmuApiApplication.Services.AcoUnit;
 using FmuApiApplication.Services.Fmu;
-using FmuApiDomain.Models.Fmu.Document;
+using FmuApiDomain.Fmu.Document;
 using FmuApiSettings;
 using Microsoft.AspNetCore.Mvc;
 

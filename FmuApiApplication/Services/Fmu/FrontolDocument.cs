@@ -1,14 +1,14 @@
-﻿using FmuApiDomain.Models.TrueSignApi.MarkData.Check;
-using FmuApiDomain.Models.Fmu.Document;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using FmuApiApplication.Services.TrueSign;
 using CSharpFunctionalExtensions;
 using FmuApiSettings;
 using FmuApiCouhDb.CrudServices;
 using FmuApiCouhDb.DocumentModels;
 using FmuApiApplication.Services.Frontol;
-using FmuApiDomain.Models.TrueSignApi.MarkData;
-using FmuApiDomain.Models.MarkInformation;
+using FmuApiDomain.MarkInformation;
+using FmuApiDomain.TrueSignApi.MarkData;
+using FmuApiDomain.Fmu.Document;
+using FmuApiDomain.TrueSignApi.MarkData.Check;
 
 namespace FmuApiApplication.Services.Fmu
 {

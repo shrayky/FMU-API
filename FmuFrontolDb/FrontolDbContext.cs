@@ -1,8 +1,8 @@
-﻿using FmuApiDomain.Models.Frontol;
+﻿using FmuApiDomain.Frontol;
 using FmuApiSettings;
 using Microsoft.EntityFrameworkCore;
 
-namespace FmuFrontolDb 
+namespace FmuFrontolDb
 {
     public class FrontolDbContext : DbContext
     {

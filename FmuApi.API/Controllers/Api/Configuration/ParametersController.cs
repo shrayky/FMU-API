@@ -1,6 +1,6 @@
-﻿using FmuApiDomain.JsonOptions;
-using FmuApiDomain.Models.Configuration;
-using FmuApiDomain.Models.Webix;
+﻿using FmuApiDomain.Configuration;
+using FmuApiDomain.JsonOptions;
+using FmuApiDomain.Webix;
 using FmuApiSettings;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;

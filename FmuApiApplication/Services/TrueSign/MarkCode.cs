@@ -1,7 +1,7 @@
 ﻿using FmuApiCouhDb.CrudServices;
-using FmuApiDomain.Models.Fmu.Document;
-using FmuApiDomain.Models.MarkInformation;
-using FmuApiDomain.Models.TrueSignApi.MarkData.Check;
+using FmuApiDomain.Fmu.Document;
+using FmuApiDomain.MarkInformation;
+using FmuApiDomain.TrueSignApi.MarkData.Check;
 using FmuApiSettings;
 
 namespace FmuApiApplication.Services.TrueSign

@@ -1,6 +1,6 @@
-﻿using FmuApiDomain.Models.Configuration;
-using FmuApiDomain.Models.Configuration.TrueSign;
-using FmuApiDomain.Models.Fmu.Document;
+﻿using FmuApiDomain.Configuration;
+using FmuApiDomain.Configuration.TrueSign;
+using FmuApiDomain.Fmu.Document;
 
 namespace FmuApiSettings
 {

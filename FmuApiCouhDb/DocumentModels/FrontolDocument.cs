@@ -1,5 +1,5 @@
 ﻿using CouchDB.Driver.Types;
-using FmuApiDomain.Models.Fmu.Document;
+using FmuApiDomain.Fmu.Document;
 
 namespace FmuApiCouhDb.DocumentModels
 {
