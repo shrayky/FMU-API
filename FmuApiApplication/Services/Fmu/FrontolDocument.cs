@@ -16,12 +16,12 @@ namespace FmuApiApplication.Services.Fmu
     public class FrontolDocument
     {
         private readonly CheckMarks _checkMarks;
-        private readonly MarkInformationCrud _markStateCrud;
-        private readonly FrontolDocumentCrud _frontolDocumentCrud;
+        private readonly MarkInformationHandler _markStateCrud;
+        private readonly FrontolDocumentHandler _frontolDocumentCrud;
         private readonly FrontolSprtDataService? _frontolSprtDataService;
         private readonly ILogger<FrontolDocument> _logger;
 
-        public FrontolDocument(CheckMarks checkMarks, MarkInformationCrud markStateCrud, FrontolDocumentCrud frontolDocumentCrud, FrontolSprtDataService frontolSprtDataService, ILogger<FrontolDocument> logger)
+        public FrontolDocument(CheckMarks checkMarks, MarkInformationHandler markStateCrud, FrontolDocumentHandler frontolDocumentCrud, FrontolSprtDataService frontolSprtDataService, ILogger<FrontolDocument> logger)
         {
             _checkMarks = checkMarks;
             _markStateCrud = markStateCrud;
@@ -30,7 +30,7 @@ namespace FmuApiApplication.Services.Fmu
             _logger = logger;
         }
 
-        public FrontolDocument(CheckMarks checkMarks, MarkInformationCrud markStateCrud, FrontolDocumentCrud frontolDocumentCrud, ILogger<FrontolDocument> logger)
+        public FrontolDocument(CheckMarks checkMarks, MarkInformationHandler markStateCrud, FrontolDocumentHandler frontolDocumentCrud, ILogger<FrontolDocument> logger)
         {
             _checkMarks = checkMarks;
             _markStateCrud = markStateCrud;

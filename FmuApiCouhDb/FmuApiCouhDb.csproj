@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="CouchDB.NET" Version="3.6.1" />
+    <PackageReference Include="CouchDB.NET.DependencyInjection" Version="3.6.1" />
   </ItemGroup>
 
   <ItemGroup>

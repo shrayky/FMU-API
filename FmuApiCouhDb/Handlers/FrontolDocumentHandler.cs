@@ -2,13 +2,13 @@
 
 namespace FmuApiCouhDb.CrudServices
 {
-    public class FrontolDocumentCrud
+    public class FrontolDocumentHandler
     {
         private CouchDbContext? _context;
 
-        public FrontolDocumentCrud() {}
+        public FrontolDocumentHandler() {}
 
-        public FrontolDocumentCrud(CouchDbContext couchDbContext)
+        public FrontolDocumentHandler(CouchDbContext couchDbContext)
         {
             _context = couchDbContext;
         }

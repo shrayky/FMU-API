@@ -9,7 +9,7 @@ namespace FmuApiApplication.Services.TrueSign
     public class MarkCode
     {
         private readonly CheckMarks _trueApiCheck;
-        private readonly MarkInformationCrud _markStateCrud;
+        private readonly MarkInformationHandler _markStateCrud;
         public string Code { get; } = string.Empty;
         public string SGtin { get; } = string.Empty;
         public bool CodeIsSgtin { get; } = false;
@@ -21,7 +21,7 @@ namespace FmuApiApplication.Services.TrueSign
         private char Gs { get; } = (char)29;
         private string GsE { get; } = @"\u001d";
 
-        private MarkCode(string markCode, MarkInformationCrud markStateCrud, CheckMarks checkMarks)
+        private MarkCode(string markCode, MarkInformationHandler markStateCrud, CheckMarks checkMarks)
         {
             _markStateCrud = markStateCrud;
             _trueApiCheck = checkMarks;
@@ -73,14 +73,14 @@ namespace FmuApiApplication.Services.TrueSign
             return sgtin;
         }
 
-        public static MarkCode Create(string markingCode, MarkInformationCrud markStateCrud, CheckMarks checkMarks)
+        public static MarkCode Create(string markingCode, MarkInformationHandler markStateCrud, CheckMarks checkMarks)
         {
             MarkCode markCode = new(markingCode, markStateCrud, checkMarks);
 
             return markCode;
         }
 
-        public static async Task<MarkCode> CreateAsync(string encodedMarkingCode, MarkInformationCrud markStateCrud, CheckMarks checkMarks)
+        public static async Task<MarkCode> CreateAsync(string encodedMarkingCode, MarkInformationHandler markStateCrud, CheckMarks checkMarks)
         {
             var decodedMarCode = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(encodedMarkingCode));
 

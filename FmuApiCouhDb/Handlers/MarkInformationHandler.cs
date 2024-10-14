@@ -3,12 +3,12 @@ using FmuApiDomain.Models.MarkInformation;
 
 namespace FmuApiCouhDb.CrudServices
 {
-    public class MarkInformationCrud
+    public class MarkInformationHandler
     {
         private CouchDbContext? _context;
 
-        public MarkInformationCrud() { }
-        public MarkInformationCrud(CouchDbContext couchDbContext)
+        public MarkInformationHandler() { }
+        public MarkInformationHandler(CouchDbContext couchDbContext)
         {
             _context = couchDbContext;
         }

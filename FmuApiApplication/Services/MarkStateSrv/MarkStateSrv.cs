@@ -6,10 +6,10 @@ namespace FmuApiApplication.Services.MarkStateSrv
 {
     public class MarkStateSrv
     {
-        private readonly MarkInformationCrud _markStateCrud;
+        private readonly MarkInformationHandler _markStateCrud;
         private readonly ILogger<MarkStateSrv> _logger;
 
-        public MarkStateSrv(MarkInformationCrud markStateCrud, ILogger<MarkStateSrv> logger)
+        public MarkStateSrv(MarkInformationHandler markStateCrud, ILogger<MarkStateSrv> logger)
         {
             _markStateCrud = markStateCrud;
             _logger = logger;

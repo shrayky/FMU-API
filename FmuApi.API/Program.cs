@@ -96,21 +96,9 @@ bool RunHttpApiService()
 
         services.AddScoped<FrontolSprtDataService>();
     }
-
-    //services.AddHostedService<ClearOldLogsWorker>();
-
-    services.AddScoped<MarkInformationCrud>();
-    services.AddScoped<FrontolDocumentCrud>();
-
     ConfigureCors(services);
 
-    if (Constants.Parametrs.Database.ConfigurationIsEnabled)
-    {
-        services.AddCouchContext<CouchDbContext>(opt =>
-            opt.UseEndpoint(Constants.Parametrs.Database.NetAdres)
-                .UseCookieAuthentication(Constants.Parametrs.Database.UserName, Constants.Parametrs.Database.Password)
-                .EnsureDatabaseExists());
-    }
+    CouchDbRegistrtService.AddService(services);
 
     ConfigureSwagger(services);
 

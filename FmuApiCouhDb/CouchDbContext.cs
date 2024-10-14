@@ -26,6 +26,14 @@ namespace FmuApiCouhDb
                 _alcoStampsDbName = Constants.Parametrs.Database.AlcoStampsDbName.ToLower();
         }
 
+        protected override void OnConfiguring(CouchOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder
+                .UseEndpoint(Constants.Parametrs.Database.NetAdres)
+                .EnsureDatabaseExists()
+                .UseBasicAuthentication(Constants.Parametrs.Database.UserName, Constants.Parametrs.Database.Password);
+        }
+
         protected override void OnDatabaseCreating(CouchDatabaseBuilder databaseBuilder)
         {
             databaseBuilder.Document<MarkStateDocument>().ToDatabase(_markDbName == string.Empty ? "engels" : _markDbName);
