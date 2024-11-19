@@ -1,4 +1,5 @@
 ﻿using FmuApiCouhDb.DocumentModels;
+using FmuApiDomain.Fmu.Document.Interface;
 
 namespace FmuApiCouhDb.CrudServices
 {
@@ -23,19 +24,25 @@ namespace FmuApiCouhDb.CrudServices
             return dataRecord;
         }
 
-        public async Task<FrontolDocumentData> AddAsync(FrontolDocumentData data)
+        public async Task<FrontolDocumentData> AddAsync(IFrontolDocumentData data)
         {
             if (_context == null)
                 return new();
 
+            FrontolDocumentData documentData = new()
+            {
+                Document = data.Document,
+                Id = data.Document.Uid
+            };
+
             var existDoc = await GetDocumentAsync(data.Document.Uid);
 
             if (existDoc.Rev != null)
-                data.Rev = existDoc.Rev;
+                documentData.Rev = existDoc.Rev;
 
-            data = await _context.FrontolDocuments.AddOrUpdateAsync(data);
+            documentData = await _context.FrontolDocuments.AddOrUpdateAsync(documentData);
 
-            return await GetDocumentAsync(data.Id);
+            return await GetDocumentAsync(documentData.Id);
         }
 
         public async Task DelteAsync(string uid)

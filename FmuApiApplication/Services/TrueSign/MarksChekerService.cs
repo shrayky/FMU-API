@@ -9,16 +9,16 @@ using System.Net.Http.Json;
 
 namespace FmuApiApplication.Services.TrueSign
 {
-    public class CheckMarks
+    public class MarksChekerService
     {
         private readonly string _addres = "/api/v4/true-api/codes/check";
         private readonly int requestTimeoutSeconds = Constants.Parametrs.HttpRequestTimeouts.CheckMarkRequestTimeout;
         private readonly int requestAttempts = 1;
 
-        private readonly ILogger<CheckMarks> _logger;
+        private readonly ILogger<MarksChekerService> _logger;
         private IHttpClientFactory _httpClientFactory;
 
-        public CheckMarks(ILogger<CheckMarks> logger, IHttpClientFactory httpClientFactory)
+        public MarksChekerService(ILogger<MarksChekerService> logger, IHttpClientFactory httpClientFactory)
         {
             _logger = logger;
             _httpClientFactory = httpClientFactory;
@@ -83,7 +83,7 @@ namespace FmuApiApplication.Services.TrueSign
                     if (answ is null)
                         continue;
 
-                    _logger.LogInformation("Получен ответ от четного знака {@answ}", answ);
+                    _logger.LogInformation("Получен ответ от чеcтного знака {@answ}", answ);
 
                     return Result.Success(answ);
                 }
@@ -98,7 +98,7 @@ namespace FmuApiApplication.Services.TrueSign
                     break;
             }
 
-            return Result.Failure<CheckMarksDataTrueApi>("Ни один cdn сервер не ответил");
+            return Result.Failure<CheckMarksDataTrueApi>("Ни один cdn сервер не ответил корректно.");
         }
 
         private static TrueSignCdn? Cdn()

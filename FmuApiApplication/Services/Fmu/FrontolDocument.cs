@@ -1,26 +1,26 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using CSharpFunctionalExtensions;
+using FmuApiApplication.Services.Frontol;
 using FmuApiApplication.Services.TrueSign;
-using CSharpFunctionalExtensions;
-using FmuApiSettings;
 using FmuApiCouhDb.CrudServices;
 using FmuApiCouhDb.DocumentModels;
-using FmuApiApplication.Services.Frontol;
+using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.MarkInformation;
 using FmuApiDomain.TrueSignApi.MarkData;
-using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.TrueSignApi.MarkData.Check;
+using FmuApiSettings;
+using Microsoft.Extensions.Logging;
 
 namespace FmuApiApplication.Services.Fmu
 {
     public class FrontolDocument
     {
-        private readonly CheckMarks _checkMarks;
+        private readonly MarksChekerService _checkMarks;
         private readonly MarkInformationHandler _markStateCrud;
         private readonly FrontolDocumentHandler _frontolDocumentCrud;
         private readonly FrontolSprtDataHandler? _frontolSprtDataHandler;
         private readonly ILogger<FrontolDocument> _logger;
 
-        public FrontolDocument(CheckMarks checkMarks, MarkInformationHandler markStateCrud, FrontolDocumentHandler frontolDocumentCrud, FrontolSprtDataHandler frontolSprtDataHandler, ILogger<FrontolDocument> logger)
+        public FrontolDocument(MarksChekerService checkMarks, MarkInformationHandler markStateCrud, FrontolDocumentHandler frontolDocumentCrud, FrontolSprtDataHandler frontolSprtDataHandler, ILogger<FrontolDocument> logger)
         {
             _checkMarks = checkMarks;
             _markStateCrud = markStateCrud;
@@ -29,7 +29,7 @@ namespace FmuApiApplication.Services.Fmu
             _logger = logger;
         }
 
-        public FrontolDocument(CheckMarks checkMarks, MarkInformationHandler markStateCrud, FrontolDocumentHandler frontolDocumentCrud, ILogger<FrontolDocument> logger)
+        public FrontolDocument(MarksChekerService checkMarks, MarkInformationHandler markStateCrud, FrontolDocumentHandler frontolDocumentCrud, ILogger<FrontolDocument> logger)
         {
             _checkMarks = checkMarks;
             _markStateCrud = markStateCrud;
@@ -59,19 +59,21 @@ namespace FmuApiApplication.Services.Fmu
             MarkCode mark = MarkCode.Create(markingCode, _markStateCrud, _checkMarks);
 
             int organisationId = await WareOrganisationId(mark.Barcode);
-            mark.SetPrintGroup(organisationId);
+            mark.SetPrintGroupCode(organisationId);
             _logger.LogInformation("Код организации {organisationId}", organisationId);
 
-            (bool markIsOk, answer) = await mark.OfflineCheckAsync();
+            var offlineCheckResult = await mark.OfflineCheckAsync();
+
+            answer = offlineCheckResult.Value;
 
             // frontol при возврате выдает ошибку, что марка уже продана, поменяем этот признак
             if (isReturn)
                 answer.Truemark_response.MarkCodeAsNotSaled();
 
-            if (markIsOk & mark.CodeIsSgtin & mark.DatabaseState().HaveTrueApiAnswer & mark.DatabaseState().State == MarkState.Sold)
-                return Result.Success(answer);
+            if (offlineCheckResult.IsFailure)
+                return Result.Success(mark.MarkDataAfterCheck());
 
-            if (!markIsOk)
+            if (mark.CodeIsSgtin & mark.DatabaseState().HaveTrueApiAnswer & mark.DatabaseState().State == MarkState.Sold)
                 return Result.Success(answer);
 
             markDataFromTrueApi = mark.TrueApiData();
@@ -82,11 +84,11 @@ namespace FmuApiApplication.Services.Fmu
             if (!Constants.Online && markDataFromTrueApi.Codes.Count > 0)
                 return Result.Success(answer);
 
-            bool onlineCheckResult = await mark.OnlineCheckAsync();
+            var onlineCheckResult = await mark.OnlineCheckAsync();
 
-            if (!onlineCheckResult)
+            if (onlineCheckResult.IsFailure)
             {
-                _logger.LogWarning("[{Date}] - Ошибка онлайн проверки кода марки {Code}: {Err}", DateTime.Now, mark.Code, mark.ErrorDescription);
+                _logger.LogWarning("[{Date}] - Ошибка онлайн проверки кода марки {Code}: {Err}", DateTime.Now, mark.Code, onlineCheckResult.Error);
             }
 
             try
@@ -100,7 +102,7 @@ namespace FmuApiApplication.Services.Fmu
 
             if (isReturn)
                 mark.TrueApiData().MarkCodeAsNotSaled();
-            
+
             answer = new()
             {
                 Code = mark.ErrorDescription == string.Empty ? 0 : 1,
@@ -132,7 +134,7 @@ namespace FmuApiApplication.Services.Fmu
 
             return printGroupAskResult.Value;
         }
-        
+
         private async Task<Result<FmuAnswer>> MarksCheckAsync(RequestDocument document)
         {
             FmuAnswer answer = new();
@@ -292,7 +294,7 @@ namespace FmuApiApplication.Services.Fmu
                         fmuMarkId = $"{mark.Substring(2, 14)}{mark.Substring(18, gsPos - 18)}";
                     else
                         fmuMarkId = mark;
-                    
+
                 }
                 else
                     fmuMarkId = mark;
@@ -310,7 +312,7 @@ namespace FmuApiApplication.Services.Fmu
                 Id = document.Uid,
                 Document = document
             };
-            
+
             await _frontolDocumentCrud.AddAsync(frontolDocument);
 
             foreach (var position in document.Positions)
@@ -318,7 +320,7 @@ namespace FmuApiApplication.Services.Fmu
                 if (position.Marking_codes.Count == 0)
                     continue;
 
-               foreach (var markB64 in position.Marking_codes)
+                foreach (var markB64 in position.Marking_codes)
                 {
                     MarkCode mark = await MarkCode.CreateAsync(markB64, _markStateCrud, _checkMarks);
 
@@ -336,21 +338,21 @@ namespace FmuApiApplication.Services.Fmu
                         if (minPrice > position.Total_price * 100)
                         {
                             chekResult.Code = 3;
-                            chekResult.Error +=  $"\r\n {position.Text} цена ниже минимальной розничной!";
+                            chekResult.Error += $"\r\n {position.Text} цена ниже минимальной розничной!";
                             chekResult.Marking_codes.Add(markB64);
                         }
 
                         if (markData.Mrp < position.Total_price * 100)
                         {
                             chekResult.Code = 3;
-                            chekResult.Error +=  $"\r\n {position.Text} цена выше максимальной розничной!";
+                            chekResult.Error += $"\r\n {position.Text} цена выше максимальной розничной!";
                             chekResult.Marking_codes.Add(markB64);
                         }
                     }
 
                 }
             }
-            
+
             return chekResult;
         }
 
@@ -384,7 +386,7 @@ namespace FmuApiApplication.Services.Fmu
                         if (trueApiData.Codes[0].InnerUnitCount - (trueApiData.Codes[0].SoldUnitCount ?? 0) - (position.Quantity) * 1000 > 0)
                             continue;
                     }
-            
+
                     await _markStateCrud.SetStateAsync(mark.SGtin, state, saleData);
                 }
             }

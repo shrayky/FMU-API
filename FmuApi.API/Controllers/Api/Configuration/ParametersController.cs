@@ -23,16 +23,6 @@ namespace FmuApiAPI.Controllers.Api.Configuration
             return Ok(packet);
         }
 
-        //[HttpPost]
-        //async public Task<IActionResult> ParametersPostAsync(Parametrs parametrs)
-        //{
-        //    Constants.Parametrs = parametrs;
-
-        //    await Constants.Parametrs.SaveAsync(Constants.Parametrs, Constants.DataFolderPath);
-
-        //    return Ok();
-        //}
-
         [HttpPost]
         async public Task<IActionResult> ParametersPostAsync()
         {

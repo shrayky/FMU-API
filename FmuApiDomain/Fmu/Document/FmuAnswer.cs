@@ -1,4 +1,5 @@
 ﻿using FmuApiDomain.TrueSignApi.MarkData.Check;
+using System.Text.Json.Serialization;
 
 namespace FmuApiDomain.Fmu.Document
 {
@@ -11,7 +12,7 @@ namespace FmuApiDomain.Fmu.Document
         public List<string> Marking_codes { get; set; } = [];
         public List<Organization> Organizations { get; set; } = [];
         public CheckMarksDataTrueApi Truemark_response { get; set; } = new();
-
+        [JsonIgnore]
         public bool IsEmpty => Stamps.Count == 0 && Marking_codes.Count == 0;
         public bool AllMarksIsSold() => Truemark_response.AllMarksIsSold();
         public bool AllMarksIsExpire() => Truemark_response.AllMarksIsExpire();

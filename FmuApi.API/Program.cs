@@ -1,21 +1,21 @@
-using FmuApiApplication.Services.Fmu;
-using FmuApiApplication.Services.Installer;
-using FmuApiApplication.Services.TrueSign;
-using FmuApiApplication.Workers;
-using Microsoft.AspNetCore.Mvc.Controllers;
-using CouchDB.Driver.DependencyInjection;
-using FmuApiApplication.Services.AcoUnit;
-using FmuApiSettings;
-using FmuApiApplication.Utilites;
-using Serilog;
-using FmuApiAPI;
-using FmuApiCouhDb;
-using FmuApiCouhDb.CrudServices;
-using System.Net;
-using FmuFrontolDb;
-using Microsoft.EntityFrameworkCore;
-using FmuApiApplication.Services.Frontol;
 using AutoUpdateWorkerService;
+using FmuApiAPI;
+using FmuApiApplication.Services.AcoUnit;
+using FmuApiApplication.Services.Fmu;
+using FmuApiApplication.Services.Fmu.Documents;
+using FmuApiApplication.Services.Installer;
+using FmuApiApplication.Services.MarkStateServices;
+using FmuApiApplication.Services.MarkStateSrv;
+using FmuApiApplication.Services.TrueSign;
+using FmuApiApplication.Utilites;
+using FmuApiApplication.Workers;
+using FmuApiCouhDb;
+using FmuApiDomain.MarkInformation.Interfaces;
+using FmuApiSettings;
+using FmuFrontolDb;
+using Microsoft.AspNetCore.Mvc.Controllers;
+using Serilog;
+using System.Net;
 
 var slConsole = new LoggerConfiguration()
     .MinimumLevel.Debug().WriteTo
@@ -27,7 +27,7 @@ using var loggerFactory = LoggerFactory.Create(builder =>
     builder.AddSerilog(slConsole);
 });
 
-ILogger < Program> logger = loggerFactory.CreateLogger<Program>();
+ILogger<Program> logger = loggerFactory.CreateLogger<Program>();
 
 _ = (args.Length == 0 ? "" : args[0]) switch
 {
@@ -65,10 +65,12 @@ bool RunHttpApiService()
 
     services.AddHttpClient();
 
-    services.AddScoped<CheckMarks>();
+    services.AddScoped<MarksChekerService>();
 
     services.AddScoped<FrontolDocument>();
     services.AddScoped<ProductInfo>();
+
+    services.AddScoped<MarkStateSrv>();
 
     services.AddHttpClient<AlcoUnitGateway>("alcoUnit", options =>
     {
@@ -93,6 +95,9 @@ bool RunHttpApiService()
 
     CouchDbRegisterService.AddService(services);
     FrontolDbRegisterService.AddService(services);
+
+    services.AddScoped<IMarkInformationService, MarkInformationService>();
+    services.AddTransient<FrontolDocumentServiceFactory>();
 
     ConfigureSwagger(services);
 
@@ -126,7 +131,7 @@ void ConfigureLogging(WebApplicationBuilder builder)
     if (!Constants.Parametrs.Logging.IsEnabled)
         return;
 
-    string logFileName = string.Concat(Constants.DataFolderPath, "\\log\\fmu-api.log");
+    string logFileName = string.Concat(Constants.DataFolderPath, "\\log\\", Constants.Parametrs.AppName.ToLower(), ".log");;
 
     var logConfig = Constants.Parametrs.Logging.LogLevel.ToLower() switch
     {

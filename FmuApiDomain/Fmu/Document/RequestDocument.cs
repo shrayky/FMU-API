@@ -15,7 +15,7 @@ namespace FmuApiDomain.Fmu.Document
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string Shift { get; set; } = string.Empty;
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-        public int Number { get; set; } = 0;
+        public string Number { get; set; } = string.Empty;
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string User { get; set; } = string.Empty;
         public List<Position> Positions { get; set; } = new();

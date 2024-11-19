@@ -9,9 +9,9 @@ namespace FmuApiAPI.Controllers.Api.TrueSign
     [ApiExplorerSettings(GroupName = "True API")]
     public class CheckMarkController : ControllerBase
     {
-        private readonly CheckMarks _checkMarks;
+        private readonly MarksChekerService _checkMarks;
 
-        public CheckMarkController(CheckMarks checkMarks)
+        public CheckMarkController(MarksChekerService checkMarks)
         {
             _checkMarks = checkMarks;
         }

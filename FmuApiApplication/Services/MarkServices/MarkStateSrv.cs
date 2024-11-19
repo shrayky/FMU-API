@@ -15,6 +15,11 @@ namespace FmuApiApplication.Services.MarkStateSrv
             _logger = logger;
         }
 
+        public async Task<MarkInformation> State(string sgtin)
+        {
+            return await _markStateCrud.GetAsync(sgtin);
+        }
+
         public async Task SetMarksSaled(SaleMarkContract saleMarkData)
         {
             foreach (var mark in saleMarkData.Marks)

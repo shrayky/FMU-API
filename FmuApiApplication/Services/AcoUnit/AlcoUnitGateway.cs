@@ -1,6 +1,4 @@
-﻿using Flurl;
-using FmuApiApplication.Utilites;
-using FmuApiDomain.Configuration.Options;
+﻿using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.Fmu.Token;
 using FmuApiSettings;
@@ -78,7 +76,6 @@ namespace FmuApiApplication.Services.AcoUnit
             return answer;
         }
 
-
         public async Task<string> AuthtorithationAsync()
         {
             if (Constants.Parametrs.FrontolAlcoUnit.NetAdres == string.Empty)
@@ -92,7 +89,7 @@ namespace FmuApiApplication.Services.AcoUnit
                 Id = Constants.Parametrs.FrontolAlcoUnit.UserName,
                 Password = id.ToLower()
             };
-            
+
             var hashedAuthData = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(authData.ToString()));
 
             Dictionary<string, string> headers = new()
@@ -113,7 +110,7 @@ namespace FmuApiApplication.Services.AcoUnit
 
             if (!answer.IsSuccessStatusCode)
                 throw new Exception($"Запос авторизации вернул код {answer.StatusCode}");
-            
+
             var content = await answer.Content.ReadAsStringAsync();
             var token = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(content));
 

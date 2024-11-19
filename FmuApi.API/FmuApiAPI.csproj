@@ -23,6 +23,7 @@
     <ProjectReference Include="..\AutoUpdateWorkerService\AutoUpdateWorkerService.csproj" />
     <ProjectReference Include="..\FmuApiApplication\FmuApiApplication.csproj" />
     <ProjectReference Include="..\FmuApiCouhDb\FmuApiCouhDb.csproj" />
+    <ProjectReference Include="..\LogService\LogService.csproj" />
   </ItemGroup>
 
 </Project>

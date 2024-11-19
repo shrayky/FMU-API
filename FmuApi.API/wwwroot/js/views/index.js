@@ -2,6 +2,8 @@ import { InitProxy } from '../../js/utils/proxy.js';
 import { SettingsView } from "./fmuApiSettings/fmuApisettings.js";
 import { informationView } from './information/fmuInformation.js';
 import { barcodeScaner } from './Scaner/barcodeScaner.js';
+import { cdnView } from './cdnList/cdnInforamtion.js';
+import { logsView } from './logs/logsViewer.js';
 
 let currentPage = "";
 
@@ -13,6 +15,7 @@ InitProxy();
 webix.ready(function () {
     webix.ui({
         container: "app",
+        type:"space",
         id: "root",
         responsive: true,
         rows: [
@@ -45,59 +48,82 @@ webix.ready(function () {
                                         value: "Настройка",
                                         data: [
                                             {
-                                                id: "LServerConfig",
+                                                id: "serverConfigData",
                                                 value: "Сервера"
                                             },
+                                            
                                             {
-                                                id: "lOrganizations",
-                                                value: "Организации"
-                                            },
-                                            {
-                                                id: "lLoggingLabel",
+                                                id: "loggingConfigData",
                                                 value: "Логрование"
                                             },
+                                            
                                             {
-                                                id: "lAutoupdateLabel",
+                                                id: "autoUpdateData",
                                                 value: "Автоматическое обновление"
                                             },
+
                                             {
-                                                id: "lHostsToPing",
+                                                id: "organisationsData",
+                                                value: "Организации"
+                                            },
+                                            
+                                            {
+                                                id: "checkInternetConnectionHosts",
                                                 value: "Проверка интернета"
                                             },
+                                            
                                             {
-                                                id: "lDatabase",
+                                                id: "couchDbData",
                                                 value: "База данных"
                                             },
+                                            
                                             {
-                                                id: "lMinimalPrices",
-                                                value: "Минимальные цены"
-                                            },
-                                            {
-                                                id: "lFrontolConnection",
+                                                id: "frontolDbConnection",
                                                 value: "Frontol"
                                             },
+
                                             {
-                                                id: "lFrontolAlcoUnit",
-                                                value: "Frontol AlcoUnit"
+                                                id: "frontolMarkUnit",
+                                                value: "Frontol Markunit"
                                             },
+
                                             {
-                                                id: "lTruesignService",
+                                                id: "tokenServiceData",
                                                 value: "Сервис получения токена ЧЗ"
                                             },
+
                                             {
-                                                id: "lTimeoutConfig",
+                                                id: "timeoutConfig",
                                                 value: "Таймауты"
                                             },
+
                                             {
-                                                id: "lSaleseControlParametrs",
+                                                id: "salesControl",
                                                 value: "Контроль продаж"
+                                            },
+
+                                            {
+                                                id: "minimalPrices",
+                                                value: "Минимальные цены"
                                             },
                                         ]
                                     },
+
+                                    {
+                                        id: "cdnListInfo",
+                                        value: "Список CDN"
+                                    },
+
+                                    {
+                                        id: "logsView",
+                                        value: "Логи"
+                                    },
+
                                     {
                                         id: "information",
                                         value: "Информация"
                                     },
+
                                     //{
                                     //    id: "scaner",
                                     //    value: "Сканер"
@@ -108,15 +134,25 @@ webix.ready(function () {
                                 onAfterSelect: function (id) {
                                     if (id == currentPage)
                                         return;
-                                    
+
                                     switch (id) {
                                         case "config":
                                             webix.ui(SettingsView(bodyId), $$(bodyId), $$(currentPage));
                                             currentPage = "config";
                                             break;
-                                        case  "information":
+                                        case "information":
                                             webix.ui(informationView(bodyId), $$(bodyId), $$(currentPage));
                                             currentPage = "information";
+                                            $$('sidebar').close("config");
+                                            break;
+                                        case "cdnListInfo":
+                                            webix.ui(cdnView(bodyId), $$(bodyId), $$(currentPage));
+                                            currentPage = "cdnListInfo";
+                                            $$('sidebar').close("config");
+                                            break;
+                                        case "logsView":
+                                            webix.ui(logsView(bodyId), $$(bodyId), $$(currentPage));
+                                            currentPage = "logsView";
                                             $$('sidebar').close("config");
                                             break;
                                         case "scaner":
@@ -144,9 +180,19 @@ webix.ready(function () {
                                             currentPage = "config";
                                             $$('sidebar').unselect();
                                             break;
-                                        case  "information":
+                                        case "information":
                                             webix.ui(informationView(bodyId), $$(bodyId), $$(currentPage));
                                             currentPage = "information";
+                                            $$('sidebar').close("config");
+                                            break;
+                                        case "cdnListInfo":
+                                            webix.ui(cdnView(bodyId), $$(bodyId), $$(currentPage));
+                                            currentPage = "cdnListInfo";
+                                            $$('sidebar').close("config");
+                                            break;
+                                        case "logsView":
+                                            webix.ui(cdnView(bodyId), $$(bodyId), $$(currentPage));
+                                            currentPage = "logsView";
                                             $$('sidebar').close("config");
                                             break;
                                         case "scaner":
@@ -174,7 +220,7 @@ webix.ready(function () {
 
 });
 
-webix.event(window, "resize", function(e) {
+webix.event(window, "resize", function (e) {
     $$("root").resize();
 })
 
@@ -194,23 +240,23 @@ webix.protoUI({
 }, webix.ui.form);
 
 webix.protoUI({
-	name:"formtable",
-	setValue:function(value){
-        this.clearAll(); 
+    name: "formtable",
+    setValue: function (value) {
+        this.clearAll();
         this.parse(value)
     },
-	getValue:function() {
-         return this.serialize();
+    getValue: function () {
+        return this.serialize();
     }
 }, webix.ui.datatable);
 
 webix.protoUI({
-	name:"formlists",
-	setValue:function(value){
-        this.clearAll(); 
+    name: "formlists",
+    setValue: function (value) {
+        this.clearAll();
         this.parse(value)
     },
-	getValue:function() {
-         return this.serialize();
+    getValue: function () {
+        return this.serialize();
     }
 }, webix.ui.list);

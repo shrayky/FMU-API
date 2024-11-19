@@ -18,6 +18,14 @@ namespace FmuApiAPI.Controllers.Api.MarkState
             _markStateSrv = markStateSrv;
         }
 
+        [HttpGet]
+        public async Task<IActionResult> StateMark(string mark)
+        {
+            var info = await _markStateSrv.State(mark);
+
+            return Ok(info);
+        }
+
         [HttpPost]
         public async Task<IActionResult> SaleMark(SaleMarkContract saleMark)
         {

@@ -1,6 +1,4 @@
-﻿using System.Reflection.Metadata;
-using System.Text.Json.Serialization;
-using FmuApiDomain.TrueSignApi.MarkData;
+﻿using System.Text.Json.Serialization;
 
 namespace FmuApiDomain.TrueSignApi.MarkData.Check
 {
@@ -92,6 +90,11 @@ namespace FmuApiDomain.TrueSignApi.MarkData.Check
                     data.ExpireDate = DateTime.Now.AddDays(1);
 
             }
+        }
+        public void ResetErrorFields()
+        {
+            foreach (CodeDataTrueApi data in Codes)
+                data.ResetErrorFileds();
         }
     }
 }

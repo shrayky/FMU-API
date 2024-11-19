@@ -105,5 +105,15 @@ namespace FmuApiDomain.TrueSignApi.MarkData
 
             return "";
         }
+
+        public void ResetErrorFileds()
+        {
+            Found = true;
+            Verified = true;
+            Realizable = true;
+            Utilised = true;
+            Sold = false;
+            ErrorCode = 0;
+        }   
     }
 }
