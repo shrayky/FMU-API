@@ -8,7 +8,6 @@ export function HostToPingForm(label, tableId, id) {
 
     webix.ui({
         view: "window",
-        container: "window",
         id: formName,
         position: "center",
         modal: true,

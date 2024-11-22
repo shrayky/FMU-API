@@ -25,7 +25,7 @@ export function cdnView(id) {
             },
         ],
 
-        autoheight: true,
+        //autoheight: true,
         scroll: false,
 
         on: {

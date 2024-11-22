@@ -34,7 +34,15 @@ namespace FmuApiApplication.Services.Fmu.Documents
         }
         public async Task<Result<FmuAnswer>> ActionAsync()
         {
-            return await MarkInformation(_document.Mark());
+            if (Constants.LastCheckMarkInformation.SGtin() == _document.Mark())
+                return Result.Success(Constants.LastCheckMarkInformation);
+
+            var checkResult =  await MarkInformation(_document.Mark());
+
+            if (checkResult.IsSuccess)
+                Constants.LastCheckMarkInformation = checkResult.Value;
+
+            return checkResult;
         }
 
         private async Task<Result<FmuAnswer>> MarkInformation(string markInbase64)

@@ -39,7 +39,7 @@ webix.ready(function () {
                             view: "sidebar",
                             id: "sidebar",
                             width: 200,
-                            height: windowInnerHeight - 80,
+                            //height: windowInnerHeight - 80,
                             collapsed: false,
                             data:
                                 [
@@ -49,7 +49,7 @@ webix.ready(function () {
                                         data: [
                                             {
                                                 id: "serverConfigData",
-                                                value: "Сервера"
+                                                value: "Сервер"
                                             },
                                             
                                             {
@@ -208,7 +208,7 @@ webix.ready(function () {
                             }
                         },
                         {
-                            id: bodyId
+                            id: bodyId,
                         }
                     ]
             }
@@ -221,7 +221,23 @@ webix.ready(function () {
 });
 
 webix.event(window, "resize", function (e) {
-    $$("root").resize();
+    //var app = $$("app");
+    //app.ajust();
+    //return;
+    
+    var root = $$("root");
+    var body = $$(bodyId);
+
+    //root.ajust();
+
+    const windowInnerWidth = window.innerWidth
+    const windowInnerHeight = window.innerHeight
+
+    root.$setSize(windowInnerWidth, windowInnerHeight)
+
+    body.resize();
+    //body.$setSize(windowInnerWidth, windowInnerHeight - body.height)
+
 })
 
 webix.protoUI({

@@ -1,6 +1,8 @@
-﻿namespace FmuApiApplication.Utilites
+﻿using System.Text.RegularExpressions;
+
+namespace FmuApiApplication.Utilites
 {
-    public static class StringHelper
+    public static partial class StringHelper
     {
         public static string ArgumentValue(string[] keyValues, string key, string defaultValue = "")
         {
@@ -20,5 +22,17 @@
 
             return defaultValue;
         }
+
+        public static bool IsDigitString(string stringValue)
+        {
+            foreach (var c in stringValue)
+            {
+                if (c is < '0' or > '9')
+                    return false;
+            }
+        
+            return true;
+        }
+
     }
 }

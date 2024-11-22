@@ -3,12 +3,11 @@ import { TableToolabr, Label, TextBox, PasswordBox, CheckBox } from "../../utils
 const formName = "OrganisationForm";
 
 export function OrganisationForm(label, tableId, id) {
-    let windowInnerWidth = window.innerWidth;
-    let windowInnerHeight = window.innerHeight;
+    const windowInnerWidth = window.innerWidth;
+    const windowInnerHeight = window.innerHeight;
 
     webix.ui({
         view: "window",
-        container: "window",
         id: formName,
         position: "center",
         modal: true,

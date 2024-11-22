@@ -1,4 +1,5 @@
 ﻿using CSharpFunctionalExtensions;
+using FmuApiApplication.Utilites;
 using FmuApiCouhDb.CrudServices;
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.MarkInformation;
@@ -85,24 +86,34 @@ namespace FmuApiApplication.Services.TrueSign
             return markCode;
         }
 
-        public static async Task<MarkCode> CreateAsync(string encodedMarkingCode, MarkInformationHandler markStateCrud, MarksChekerService checkMarks)
+        public static async Task<MarkCode> CreateAsync(string codeData, MarkInformationHandler markStateCrud, MarksChekerService checkMarks)
         {
-            string? decodedMarkCode;
+            bool isMarkDecoded = StringHelper.IsDigitString(codeData.Substring(0, 14));
 
-            try
-            {
-                decodedMarkCode = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(encodedMarkingCode));
-            }
-            catch 
-            {
-                decodedMarkCode = encodedMarkingCode;
-            }
+            if (!isMarkDecoded)
+                codeData = EncodeMark(codeData);
 
-            MarkCode markCode = new(decodedMarkCode, markStateCrud, checkMarks);
+            MarkCode markCode = new(codeData, markStateCrud, checkMarks);
 
             await markCode.OfflineCheckAsync();
             
             return markCode;
+        }
+
+        private static string EncodeMark(string markingCode)
+        {
+            string codeData = string.Empty;
+
+            try
+            {
+                codeData = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(markingCode));
+            }
+            catch
+            {
+                codeData = markingCode;
+            }
+
+            return codeData;
         }
 
         public CheckMarksDataTrueApi TrueApiData()
