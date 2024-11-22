@@ -1,10 +1,10 @@
-﻿using FmuApiDomain.General;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using TableTemplates;
 
 namespace FmuApiDomain.Frontol
 {
     [Table("BARCODE")]
-    public class Barcode : TableWIthId
+    public class Barcode : IdField
     {
         [Column("WAREID")]
         public int WareId { get; set; }

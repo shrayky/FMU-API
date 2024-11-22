@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace FmuApiAPI.Controllers.Api.Fmu
+namespace WebApi.Controllers.Api.Fmu
 {
     [Route("api/fmu")]
     [ApiController]
-    [ApiExplorerSettings (IgnoreApi =  true)]
+    [ApiExplorerSettings(IgnoreApi = true)]
     public class DefaultFmuController : ControllerBase
     {
         [HttpGet]

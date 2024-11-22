@@ -1,278 +1,65 @@
-import { InitProxy } from '../../js/utils/proxy.js';
-import { SettingsView } from "./fmuApiSettings/fmuApisettings.js";
-import { informationView } from './information/fmuInformation.js';
-import { barcodeScaner } from './Scaner/barcodeScaner.js';
-import { cdnView } from './cdnList/cdnInforamtion.js';
-import { logsView } from './logs/logsViewer.js';
+// js/views/index.js
+import "../utils/customComponents.js";
+import { InitProxy } from '../utils/proxy.js';
+import { RouterService } from '../services/RouterService.js';
+import { createLayout, createToolbar, createSidebar } from '../components/Layout.js';
+import { MENU_ITEMS } from '../config/menu.js';
 
-let currentPage = "";
+import SettingsView from '../modules/settings/SettingsView.js';
+import InformationView from '../modules/settings/informationView.js';
+import CdnView from '../modules/settings/cdnView.js';
+import LogsView from '../modules/settings/logsView.js';
 
-const windowInnerHeight = window.innerHeight;
-const bodyId = "body";
-
-InitProxy();
-
-webix.ready(function () {
-    webix.ui({
-        container: "app",
-        type:"space",
-        id: "root",
-        responsive: true,
-        rows: [
-            {
-                view: "toolbar",
-                padding: 5,
-                height: 60,
-                elements:
-                    [
-                        {
-                            view: "label",
-                            id: "toolbarLabel",
-                            label: "FMU-API"
-                        }
-                    ]
-            },
-            {
-                cols:
-                    [
-                        {
-                            view: "sidebar",
-                            id: "sidebar",
-                            width: 200,
-                            //height: windowInnerHeight - 80,
-                            collapsed: false,
-                            data:
-                                [
-                                    {
-                                        id: "config",
-                                        value: "Настройка",
-                                        data: [
-                                            {
-                                                id: "serverConfigData",
-                                                value: "Сервер"
-                                            },
-                                            
-                                            {
-                                                id: "loggingConfigData",
-                                                value: "Логрование"
-                                            },
-                                            
-                                            {
-                                                id: "autoUpdateData",
-                                                value: "Автоматическое обновление"
-                                            },
-
-                                            {
-                                                id: "organisationsData",
-                                                value: "Организации"
-                                            },
-                                            
-                                            {
-                                                id: "checkInternetConnectionHosts",
-                                                value: "Проверка интернета"
-                                            },
-                                            
-                                            {
-                                                id: "couchDbData",
-                                                value: "База данных"
-                                            },
-                                            
-                                            {
-                                                id: "frontolDbConnection",
-                                                value: "Frontol"
-                                            },
-
-                                            {
-                                                id: "frontolMarkUnit",
-                                                value: "Frontol Markunit"
-                                            },
-
-                                            {
-                                                id: "tokenServiceData",
-                                                value: "Сервис получения токена ЧЗ"
-                                            },
-
-                                            {
-                                                id: "timeoutConfig",
-                                                value: "Таймауты"
-                                            },
-
-                                            {
-                                                id: "salesControl",
-                                                value: "Контроль продаж"
-                                            },
-
-                                            {
-                                                id: "minimalPrices",
-                                                value: "Минимальные цены"
-                                            },
-                                        ]
-                                    },
-
-                                    {
-                                        id: "cdnListInfo",
-                                        value: "Список CDN"
-                                    },
-
-                                    {
-                                        id: "logsView",
-                                        value: "Логи"
-                                    },
-
-                                    {
-                                        id: "information",
-                                        value: "Информация"
-                                    },
-
-                                    //{
-                                    //    id: "scaner",
-                                    //    value: "Сканер"
-                                    //}
-                                ],
-                            on:
-                            {
-                                onAfterSelect: function (id) {
-                                    if (id == currentPage)
-                                        return;
-
-                                    switch (id) {
-                                        case "config":
-                                            webix.ui(SettingsView(bodyId), $$(bodyId), $$(currentPage));
-                                            currentPage = "config";
-                                            break;
-                                        case "information":
-                                            webix.ui(informationView(bodyId), $$(bodyId), $$(currentPage));
-                                            currentPage = "information";
-                                            $$('sidebar').close("config");
-                                            break;
-                                        case "cdnListInfo":
-                                            webix.ui(cdnView(bodyId), $$(bodyId), $$(currentPage));
-                                            currentPage = "cdnListInfo";
-                                            $$('sidebar').close("config");
-                                            break;
-                                        case "logsView":
-                                            webix.ui(logsView(bodyId), $$(bodyId), $$(currentPage));
-                                            currentPage = "logsView";
-                                            $$('sidebar').close("config");
-                                            break;
-                                        case "scaner":
-                                            webix.ui(barcodeScaner(bodyId), $$(bodyId), $$(currentPage));
-                                            currentPage = "scaner";
-                                            $$('sidebar').close("config");
-                                            break;
-
-                                        default:
-                                            let elem = $$(id);
-
-                                            if (elem == undefined)
-                                                return;
-                                            
-                                            $$(`${bodyId}_scroll`).showView(id);
-                                    }
-                                },
-                                onAfterOpen: function (id) {
-                                    if (id == currentPage)
-                                        return;
-
-                                    switch (id) {
-                                        case "config":
-                                            webix.ui(SettingsView(bodyId), $$(bodyId), $$(currentPage));
-                                            currentPage = "config";
-                                            $$('sidebar').unselect();
-                                            break;
-                                        case "information":
-                                            webix.ui(informationView(bodyId), $$(bodyId), $$(currentPage));
-                                            currentPage = "information";
-                                            $$('sidebar').close("config");
-                                            break;
-                                        case "cdnListInfo":
-                                            webix.ui(cdnView(bodyId), $$(bodyId), $$(currentPage));
-                                            currentPage = "cdnListInfo";
-                                            $$('sidebar').close("config");
-                                            break;
-                                        case "logsView":
-                                            webix.ui(cdnView(bodyId), $$(bodyId), $$(currentPage));
-                                            currentPage = "logsView";
-                                            $$('sidebar').close("config");
-                                            break;
-                                        case "scaner":
-                                            webix.ui(barcodeScaner(bodyId), $$(bodyId), $$(currentPage));
-                                            currentPage = "scaner";
-                                            $$('sidebar').close("config");
-                                            break;
-
-                                        default:
-                                            break;
-                                    }
-                                }
-                            }
-                        },
-                        {
-                            id: bodyId,
-                        }
-                    ]
-            }
-
-        ]
-    });
-
-    $$('sidebar').open("config");
-
-});
-
-webix.event(window, "resize", function (e) {
-    //var app = $$("app");
-    //app.ajust();
-    //return;
-    
-    var root = $$("root");
-    var body = $$(bodyId);
-
-    //root.ajust();
-
-    const windowInnerWidth = window.innerWidth
-    const windowInnerHeight = window.innerHeight
-
-    root.$setSize(windowInnerWidth, windowInnerHeight)
-
-    body.resize();
-    //body.$setSize(windowInnerWidth, windowInnerHeight - body.height)
-
-})
-
-webix.protoUI({
-    name: "subform",
-    defaults: {
-        borderless: true,
-        paddingX: 0,
-        paddingY: 0
-    },
-    getValue: function () {
-        return this.getValues();
-    },
-    setValue: function (values) {
-        this.setValues(values);
-    },
-}, webix.ui.form);
-
-webix.protoUI({
-    name: "formtable",
-    setValue: function (value) {
-        this.clearAll();
-        this.parse(value)
-    },
-    getValue: function () {
-        return this.serialize();
+class App {
+    constructor() {
+        this.router = new RouterService();
+        this.bodyId = "body";
+        this.initRoutes();
     }
-}, webix.ui.datatable);
 
-webix.protoUI({
-    name: "formlists",
-    setValue: function (value) {
-        this.clearAll();
-        this.parse(value)
-    },
-    getValue: function () {
-        return this.serialize();
+    initRoutes() {
+        this.router.register("config", () => SettingsView);
+        this.router.register("information", () => InformationView);
+        this.router.register("cdnListInfo", () => CdnView);
+        this.router.register("logsView", () => LogsView);
     }
-}, webix.ui.list);
+
+    createMainLayout() {
+        return createLayout({
+            rows: [
+                createToolbar("FMU-API"),
+                {
+                    cols: [
+                        createSidebar(
+                            Object.values(MENU_ITEMS),
+                            (id) => this.router.navigate(id, this.bodyId)
+                        ),
+                        { id: this.bodyId }
+                    ]
+                }
+            ]
+        });
+    }
+
+    init() {
+        InitProxy();
+
+        webix.ready(() => {
+            webix.ui(this.createMainLayout());
+
+            this.router.navigate("config", "body");
+
+            // Обработчик изменения размера окна
+            webix.event(window, "resize", () => {
+                const root = $$("root");
+                const body = $$(this.bodyId);
+
+                root.$setSize(window.innerWidth, window.innerHeight);
+            });
+        });
+    }
+}
+
+// Инициализация приложения
+const app = new App();
+app.init();

@@ -2,7 +2,7 @@
 using FmuApiDomain.MarkInformation;
 using FmuApiDomain.TrueSignApi.MarkData;
 
-namespace FmuApiCouhDb.DocumentModels
+namespace CouchDb.DocumentModels
 {
     public class MarkStateDocument : CouchDocument
     {

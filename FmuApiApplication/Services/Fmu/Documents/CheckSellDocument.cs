@@ -70,18 +70,19 @@ namespace FmuApiApplication.Services.Fmu.Documents
 
             CheckMarksDataTrueApi trueApiDataAboutMark = mark.TrueApiData();
 
-            if (!Constants.Online) {
-                if (trueApiDataAboutMark.Codes.Count > 0)
-                    return Result.Success(mark.MarkDataAfterCheck());
-
-                return Result.Failure<FmuAnswer>("Нет интеренета");
-            }
-
             var onlineCheckResult = await mark.OnlineCheckAsync();
 
             CheckMarksDataTrueApi Truemark_response;
 
-            if (onlineCheckResult.IsFailure && Constants.Parametrs.SaleControlConfig.SendEmptyTrueApiAnswerWhenTimeoutError)
+            if (onlineCheckResult.IsFailure && trueApiDataAboutMark.Codes.Count > 0)
+                return Result.Success(mark.MarkDataAfterCheck());
+
+            if (onlineCheckResult.IsFailure && !Constants.Parametrs.SaleControlConfig.SendEmptyTrueApiAnswerWhenTimeoutError)
+            {
+                return Result.Failure<FmuAnswer>(onlineCheckResult.Error);
+            }
+
+            if (onlineCheckResult.IsFailure)
             {
                 CodeDataTrueApi fakeCodeData = new()
                 {
@@ -103,7 +104,7 @@ namespace FmuApiApplication.Services.Fmu.Documents
                 Truemark_response = new()
                 {
                     Code = 0,
-                    Description = "Ошибка проверки маркировки.",
+                    Description = $"Ошибка проверки маркировки. {onlineCheckResult.Error}",
                     ReqId = "00000000-0000-0000-0000-000000000000",
                     ReqTimestamp = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds(),
                     Codes = [fakeCodeData]

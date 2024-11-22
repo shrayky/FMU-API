@@ -1,13 +1,14 @@
-﻿using FmuApiCouhDb.DocumentModels;
+﻿using CouchDb;
+using CouchDb.DocumentModels;
 using FmuApiDomain.Fmu.Document.Interface;
 
-namespace FmuApiCouhDb.CrudServices
+namespace CouchDb.Handlers
 {
     public class FrontolDocumentHandler
     {
         private CouchDbContext? _context;
 
-        public FrontolDocumentHandler() {}
+        public FrontolDocumentHandler() { }
 
         public FrontolDocumentHandler(CouchDbContext couchDbContext)
         {
@@ -81,7 +82,7 @@ namespace FmuApiCouhDb.CrudServices
             if (_context == null)
                 return new();
 
-            FrontolDocumentData ? answer = await _context.FrontolDocuments.FindAsync(uid);
+            FrontolDocumentData? answer = await _context.FrontolDocuments.FindAsync(uid);
 
             return answer ?? new();
         }

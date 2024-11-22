@@ -1,8 +1,8 @@
-﻿using FmuApiApplication.Services.Frontol;
-using FmuApiSettings;
+﻿using FmuApiSettings;
+using FrontolDb.Handlers;
 using Microsoft.AspNetCore.Mvc;
 
-namespace FmuApiAPI.Controllers.Api.FrontolData
+namespace WebApi.Controllers.Api.FrontolData
 {
     [Route("api/frontol/[controller]")]
     [ApiController]
@@ -30,7 +30,7 @@ namespace FmuApiAPI.Controllers.Api.FrontolData
             {
                 _logger.LogError("Ошибка при получении кода группы печати в базе фронтола: {eMessage}", printGroup.Error);
             }
-                
+
             return Ok(printGroup.Value);
         }
     }

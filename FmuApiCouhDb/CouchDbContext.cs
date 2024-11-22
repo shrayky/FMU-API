@@ -1,9 +1,9 @@
-﻿using CouchDB.Driver;
+﻿using CouchDb.DocumentModels;
+using CouchDB.Driver;
 using CouchDB.Driver.Options;
-using FmuApiCouhDb.DocumentModels;
 using FmuApiSettings;
 
-namespace FmuApiCouhDb
+namespace CouchDb
 {
     public class CouchDbContext : CouchContext
     {
@@ -18,7 +18,7 @@ namespace FmuApiCouhDb
         {
             if (Constants.Parametrs.Database.MarksStateDbName != string.Empty)
                 _markDbName = Constants.Parametrs.Database.MarksStateDbName.ToLower();
-            
+
             if (Constants.Parametrs.Database.FrontolDocumentsDbName != string.Empty)
                 _frontolDoumentsDbName = Constants.Parametrs.Database.FrontolDocumentsDbName.ToLower();
 
@@ -28,10 +28,19 @@ namespace FmuApiCouhDb
 
         protected override void OnConfiguring(CouchOptionsBuilder optionsBuilder)
         {
-            optionsBuilder
-                .UseEndpoint(Constants.Parametrs.Database.NetAdres)
-                .EnsureDatabaseExists()
-                .UseBasicAuthentication(Constants.Parametrs.Database.UserName, Constants.Parametrs.Database.Password);
+            if (string.IsNullOrEmpty(Constants.Parametrs.Database.NetAdres))
+            {
+                optionsBuilder
+                    .UseEndpoint("http://localhost:5984")
+                    .UseBasicAuthentication("nouser", "nopassword");
+            }
+            else
+            {
+                optionsBuilder
+                    .UseEndpoint(Constants.Parametrs.Database.NetAdres)
+                    .EnsureDatabaseExists()
+                    .UseBasicAuthentication(Constants.Parametrs.Database.UserName, Constants.Parametrs.Database.Password);
+            }
         }
 
         protected override void OnDatabaseCreating(CouchDatabaseBuilder databaseBuilder)

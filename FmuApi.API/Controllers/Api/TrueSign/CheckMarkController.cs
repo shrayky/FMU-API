@@ -2,7 +2,7 @@
 using FmuApiDomain.TrueSignApi.MarkData.Check;
 using Microsoft.AspNetCore.Mvc;
 
-namespace FmuApiAPI.Controllers.Api.TrueSign
+namespace WebApi.Controllers.Api.TrueSign
 {
     [Route("api/ts/[controller]")]
     [ApiController]

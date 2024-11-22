@@ -12,13 +12,14 @@
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
     <PackageReference Include="Microsoft.Net.Http.Headers" Version="8.0.11" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\FmuApiCouhDb\FmuApiCouhDb.csproj" />
+    <ProjectReference Include="..\FmuApiCouhDb\CouchDb.csproj" />
     <ProjectReference Include="..\FmuApiDomain\FmuApiDomain.csproj" />
     <ProjectReference Include="..\FmuApiSettings\FmuApiSettings.csproj" />
-    <ProjectReference Include="..\FmuFrontolDb\FmuFrontolDb.csproj" />
+    <ProjectReference Include="..\FmuFrontolDb\FrontolDb.csproj" />
   </ItemGroup>
 
 </Project>

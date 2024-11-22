@@ -1,8 +1,8 @@
 ﻿using CSharpFunctionalExtensions;
-using FmuFrontolDb;
+using FrontolDb;
 using Microsoft.EntityFrameworkCore;
 
-namespace FmuApiApplication.Services.Frontol
+namespace FrontolDb.Handlers
 {
     public class FrontolSprtDataHandler
     {
@@ -23,10 +23,10 @@ namespace FmuApiApplication.Services.Frontol
         public async Task<Result<int>> PrintGroupCodeByBarcodeAsync(string barCode)
         {
             var code = 0;
-            
+
             try
             {
-                 code = await PrintGroupCodeByWareBarcodeAsync(barCode);
+                code = await PrintGroupCodeByWareBarcodeAsync(barCode);
 
             }
             catch (Exception e)
@@ -34,7 +34,7 @@ namespace FmuApiApplication.Services.Frontol
                 return Result.Failure<int>(e.Message);
             }
 
-            return Result.Success<int>(code);
+            return Result.Success(code);
         }
 
         private async Task<int> PrintGroupCodeByWareBarcodeAsync(string barCode)
@@ -54,9 +54,9 @@ namespace FmuApiApplication.Services.Frontol
 
             var pg = await _db.PrintGroups.FirstOrDefaultAsync(pg => pg.Id == sprt.FiscalPrinterGroupCode());
 
-            if (pg == null) 
+            if (pg == null)
                 return 0;
-            
+
             return pg.Code;
         }
     }

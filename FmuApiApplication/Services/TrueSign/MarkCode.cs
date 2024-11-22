@@ -1,13 +1,11 @@
-﻿using CSharpFunctionalExtensions;
+﻿using CouchDb.Handlers;
+using CSharpFunctionalExtensions;
 using FmuApiApplication.Utilites;
-using FmuApiCouhDb.CrudServices;
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.MarkInformation;
 using FmuApiDomain.MarkInformation.Interfaces;
-using FmuApiDomain.TrueSignApi.MarkData;
 using FmuApiDomain.TrueSignApi.MarkData.Check;
 using FmuApiSettings;
-using System.Buffers.Text;
 
 namespace FmuApiApplication.Services.TrueSign
 {
@@ -189,21 +187,24 @@ namespace FmuApiApplication.Services.TrueSign
             if (CodeIsSgtin && trueSignMarkData.Empty)
                 Result.Failure("Онлайн проверка по неполному коду невозможна!");
 
+            if (!Constants.Online)
+                return Result.Failure("Нет интерента");
+
             CheckMarksRequestData checkMarksRequestData = new(requestCode);
 
             var trueMarkCheckResult = await _trueApiCheck.RequestMarkState(checkMarksRequestData, PrintGroupCode);
 
-            TrueMarkData = trueMarkCheckResult.Value;
-
             if (trueMarkCheckResult.IsFailure)
                 return Result.Failure(trueMarkCheckResult.Error);
+
+            TrueMarkData = trueMarkCheckResult.Value;
 
             trueSignMarkData = TrueMarkData.MarkData();
 
             if (trueSignMarkData.Empty)
                 return Result.Failure($"Пустой результат проверки по коду марки {Code}");
 
-            if (Constants.Parametrs.SaleControlConfig.CheckIsOwnerField && trueSignMarkData.IsOwner)
+            if (Constants.Parametrs.SaleControlConfig.CheckIsOwnerField && !trueSignMarkData.IsOwner)
             {
                 trueSignMarkData.Valid = false;
                 ErrorDescription = "Нельзя продавать чужую марку!";

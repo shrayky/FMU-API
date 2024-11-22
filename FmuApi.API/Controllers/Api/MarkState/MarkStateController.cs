@@ -1,8 +1,8 @@
-﻿using FmuApiApplication.Services.MarkStateSrv;
+﻿using FmuApiApplication.Services.MarkServices;
 using FmuApiDomain.MarkInformation;
 using Microsoft.AspNetCore.Mvc;
 
-namespace FmuApiAPI.Controllers.Api.MarkState
+namespace WebApi.Controllers.Api.MarkState
 {
     [Route("api/markstate")]
     [ApiController]
@@ -12,7 +12,7 @@ namespace FmuApiAPI.Controllers.Api.MarkState
         private readonly ILogger<MarkStateController> _logger;
         private MarkStateSrv _markStateSrv;
 
-        public MarkStateController(ILogger<MarkStateController> logger, MarkStateSrv markStateSrv) 
+        public MarkStateController(ILogger<MarkStateController> logger, MarkStateSrv markStateSrv)
         {
             _logger = logger;
             _markStateSrv = markStateSrv;

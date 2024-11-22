@@ -2,9 +2,9 @@
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.Fmu.Document.Interface;
 
-namespace FmuApiCouhDb.DocumentModels
+namespace CouchDb.DocumentModels
 {
-    public class FrontolDocumentData: CouchDocument, IFrontolDocumentData
+    public class FrontolDocumentData : CouchDocument, IFrontolDocumentData
     {
         public RequestDocument Document { get; set; } = new();
     }

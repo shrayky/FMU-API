@@ -3,7 +3,7 @@ using FmuApiSettings;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 
-namespace FmuApiAPI.Controllers.Api.Fmu.Token
+namespace WebApi.Controllers.Api.Fmu.Token
 {
     [Route("api/fmu/[controller]")]
     [Route("[controller]")]

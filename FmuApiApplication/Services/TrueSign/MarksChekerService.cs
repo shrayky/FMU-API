@@ -98,7 +98,7 @@ namespace FmuApiApplication.Services.TrueSign
                     break;
             }
 
-            return Result.Failure<CheckMarksDataTrueApi>("Ни один cdn сервер не ответил корректно.");
+            return Result.Failure<CheckMarksDataTrueApi>("Ни один cdn сервер не ответил.");
         }
 
         private static TrueSignCdn? Cdn()

@@ -1,7 +1,7 @@
 ﻿using LogService;
 using Microsoft.AspNetCore.Mvc;
 
-namespace FmuApiAPI.Controllers.Api.Configuration
+namespace WebApi.Controllers.Api.Configuration
 {
     [Route("api/configuration/[controller]")]
     [ApiController]

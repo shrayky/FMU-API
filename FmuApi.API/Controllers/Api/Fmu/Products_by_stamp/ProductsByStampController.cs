@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using FmuApiApplication.Services.AcoUnit;
 
-namespace FmuApiAPI.Controllers.Api.Fmu.Products_by_stamp
+namespace WebApi.Controllers.Api.Fmu.Products_by_stamp
 {
     [Route("api/fmu/products_by_stamp")]
     [ApiController]
@@ -16,7 +16,7 @@ namespace FmuApiAPI.Controllers.Api.Fmu.Products_by_stamp
         }
 
         [HttpGet("{stamp}")]
-        public async  Task<IActionResult> GetAsync(string stamp) 
+        public async Task<IActionResult> GetAsync(string stamp)
         {
             string answer = string.Empty;
 

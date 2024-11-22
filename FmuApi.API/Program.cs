@@ -1,19 +1,21 @@
+using ApllicationConfigurationService;
 using AutoUpdateWorkerService;
-using FmuApiAPI;
+using CentralServerExchange;
+using CouchDb;
 using FmuApiApplication.Services.AcoUnit;
 using FmuApiApplication.Services.Fmu;
 using FmuApiApplication.Services.Fmu.Documents;
 using FmuApiApplication.Services.Installer;
-using FmuApiApplication.Services.MarkStateServices;
-using FmuApiApplication.Services.MarkStateSrv;
+using FmuApiApplication.Services.MarkServices;
 using FmuApiApplication.Services.TrueSign;
 using FmuApiApplication.Utilites;
 using FmuApiApplication.Workers;
-using FmuApiCouhDb;
 using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiSettings;
-using FmuFrontolDb;
+using FrontolDb;
+using LoggerConfig;
 using Microsoft.AspNetCore.Mvc.Controllers;
+using Scalar.AspNetCore;
 using Serilog;
 using System.Net;
 
@@ -80,8 +82,7 @@ bool RunHttpApiService()
     services.AddScoped<AlcoUnitGateway>();
 
     services.AddHostedService<CdnLoaderWorker>();
-    AutoUpdateWorker.AddService(services);
-
+    
     if (Constants.Parametrs.TrueSignTokenService.ConnectionAddres != string.Empty)
         services.AddHostedService<TrueSignTokenServiceLoaderWorker>();
 
@@ -93,13 +94,19 @@ bool RunHttpApiService()
 
     ConfigureCors(services);
 
-    CouchDbRegisterService.AddService(services);
-    FrontolDbRegisterService.AddService(services);
+    ApplicationConfiguration.AddService(services);
+
+    CouchDbService.AddService(services);
+    FrontolDbService.AddService(services);
+    CentralServerExchangeWorker.AddService(services);
+    AutoUpdateWorker.AddService(services);
 
     services.AddScoped<IMarkInformationService, MarkInformationService>();
     services.AddTransient<FrontolDocumentServiceFactory>();
 
-    ConfigureSwagger(services);
+    services.AddControllers();
+
+    ConfigureOpenApi(services);
 
     if (OperatingSystem.IsWindows())
     {
@@ -110,8 +117,13 @@ bool RunHttpApiService()
 
     var app = builder.Build();
 
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwagger(options =>
+    {
+        options.RouteTemplate = "/openapi/{documentName}.json";
+    });
+    app.MapScalarApiReference();
+    
+    //app.UseSwaggerUI();
 
     app.UseCors();
 
@@ -133,21 +145,10 @@ void ConfigureLogging(WebApplicationBuilder builder)
 
     string logFileName = string.Concat(Constants.DataFolderPath, "\\log\\", Constants.Parametrs.AppName.ToLower(), ".log");;
 
-    var logConfig = Constants.Parametrs.Logging.LogLevel.ToLower() switch
-    {
-        "verbose" => LoggerConfig.Verbose(logFileName, Constants.Parametrs.Logging.LogDepth),
-        "debug" => LoggerConfig.Debug(logFileName, Constants.Parametrs.Logging.LogDepth),
-        "information" => LoggerConfig.Information(logFileName, Constants.Parametrs.Logging.LogDepth),
-        "warning" => LoggerConfig.Warning(logFileName, Constants.Parametrs.Logging.LogDepth),
-        "error" => LoggerConfig.Error(logFileName, Constants.Parametrs.Logging.LogDepth),
-        "fatal" => LoggerConfig.Fatal(logFileName, Constants.Parametrs.Logging.LogDepth),
-        _ => LoggerConfig.Information(logFileName, Constants.Parametrs.Logging.LogDepth)
-    };
-
-    builder.Logging.AddSerilog(logConfig);
+    builder.Logging.AddSerilog(SerilogConfiguration.LogToFile(Constants.Parametrs.Logging.LogLevel, logFileName, Constants.Parametrs.Logging.LogDepth));
 }
 
-void ConfigureSwagger(IServiceCollection services)
+void ConfigureOpenApi(IServiceCollection services)
 {
     services.AddSwaggerGen(option =>
     {
@@ -173,7 +174,6 @@ void ConfigureSwagger(IServiceCollection services)
         option.DocInclusionPredicate((name, api) => true);
     });
 
-    services.AddControllers();
     services.AddEndpointsApiExplorer();
     services.AddSwaggerGen();
 }

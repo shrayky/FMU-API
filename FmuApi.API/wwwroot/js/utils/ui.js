@@ -1,5 +1,12 @@
 import { OnDeleteAllRows, OnDeleteRow, OnAddRow } from "./tables.js";
 
+export const padding = {
+    top: 5,
+    bottom: 5,
+    left: 20,
+    right: 20
+};
+
 export function TableToolabr(tableName, prms = {}) {
     let newElement = {
         cols: [
@@ -76,6 +83,39 @@ export function TextBox(type, label, name, prms = {}) {
 
     return applyParameters(newElement, prms);
 
+}
+
+export function Text(label, name, value, prms = {}) {
+    let id = name;
+
+    let newElement = {
+        view: "text",
+        type: "text",
+        value: value,
+        label: label,
+        labelPosition: "top",
+        id: id,
+        name: name,
+    }
+
+    return applyParameters(newElement, prms);
+}
+
+export function Number(label, name, value, format, prms = {}) {
+    let id = name;
+
+    let newElement = {
+        view: "text",
+        type: "number",
+        id: id,
+        name: name,
+        value: value,
+        label: label,
+        labelPosition: "top",
+        "format": format
+    }
+
+    return applyParameters(newElement, prms);
 }
 
 export function PasswordBox(label, name, prms = {}) {

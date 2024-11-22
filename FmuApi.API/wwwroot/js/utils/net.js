@@ -9,6 +9,17 @@ export function ApiServerAdres(controllerName = "") {
     return `http://${window.location.hostname}:${apiIpPort}/api${controllerName}`;
 }
 
+export function ServerAdres(controllerName = "") {
+    let element = document.getElementById("ApiServerIpPort");
+
+    if (element == null)
+        return "";
+
+    let apiIpPort = element.value;
+
+    return `http://${window.location.hostname}:${apiIpPort}${controllerName}`;
+}
+
 export function SaveFormData(id, args) {
     let button = $$(id);
 

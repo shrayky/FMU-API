@@ -3,7 +3,7 @@ using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.MarkInformation.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
-namespace FmuApiAPI.Controllers.Api.Fmu.Document
+namespace WebApi.Controllers.Api.Fmu.Document
 {
     [Route("api/fmu/[controller]")]
     [Route("[controller]")]

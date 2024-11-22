@@ -2,7 +2,7 @@
 using FmuApiSettings;
 using Microsoft.EntityFrameworkCore;
 
-namespace FmuFrontolDb
+namespace FrontolDb
 {
     public class FrontolDbContext : DbContext
     {
@@ -16,7 +16,7 @@ namespace FmuFrontolDb
         public FrontolDbContext()
         {
             _connectionString = Constants.Parametrs.FrontolConnectionSettings.ConnectionStringBuild();
-            
+
         }
         public FrontolDbContext(string connectionString)
         {
@@ -29,7 +29,7 @@ namespace FmuFrontolDb
 
             if (_connectionString != "")
                 optionsBuilder.UseFirebird(_connectionString);
-             
+
             base.OnConfiguring(optionsBuilder);
         }
 

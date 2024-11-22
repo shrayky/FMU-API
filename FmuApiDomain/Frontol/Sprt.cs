@@ -1,10 +1,10 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
-using FmuApiDomain.General;
+using TableTemplates;
 
 namespace FmuApiDomain.Frontol
 {
     [Table("SPRT")]
-    public class Sprt : TableNameCode
+    public class Sprt : NameCodeFields
     {
         [Column("MARK")]
         public string? Mark { get; set; }

@@ -1,7 +1,8 @@
-﻿using FmuApiCouhDb.DocumentModels;
+﻿using CouchDb;
+using CouchDb.DocumentModels;
 using FmuApiDomain.MarkInformation;
 
-namespace FmuApiCouhDb.CrudServices
+namespace CouchDb.Handlers
 {
     public class MarkInformationHandler
     {

@@ -1,11 +1,11 @@
 ﻿using FmuApiDomain.Configuration;
-using FmuApiDomain.JsonOptions;
 using FmuApiDomain.Webix;
 using FmuApiSettings;
+using JsonSerilizerOptions;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 
-namespace FmuApiAPI.Controllers.Api.Configuration
+namespace WebApi.Controllers.Api.Configuration
 {
     [Route("api/configuration/[controller]")]
     [ApiController]
@@ -32,10 +32,10 @@ namespace FmuApiAPI.Controllers.Api.Configuration
                 return BadRequest("Пустое тело запроса");
 
             Parametrs? loadPrm;
-            
+
             try
             {
-                loadPrm = await JsonSerializer.DeserializeAsync<Parametrs>(body.BaseStream, GeneralJsonSerilizerOptions.SerializerOptions());
+                loadPrm = await JsonSerializer.DeserializeAsync<Parametrs>(body.BaseStream, GeneralJsonSerilizerOptions.Default());
             }
             catch (Exception ex)
             {

@@ -1,9 +1,9 @@
-﻿using System.Text.Json;
-using System.Text.Json.Serialization;
-using FmuApiDomain.Configuration.Options;
+﻿using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.Configuration.Options.Organisation;
 using FmuApiDomain.Configuration.Options.TrueSign;
-using FmuApiDomain.JsonOptions;
+using JsonSerilizerOptions;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace FmuApiDomain.Configuration
 {
@@ -11,7 +11,7 @@ namespace FmuApiDomain.Configuration
     {
         public string AppName { get; } = "FMU-API";
         public int AppVersion { get; set; } = 9;
-        public int Assembly { get; set; } = 9;
+        public int Assembly { get; set; } = 10;
         public string NodeName { get; set; } = string.Empty;
         public ServerConfig ServerConfig { get; set; } = new();
         public List<StringValue> HostsToPing { get; set; } = [];
@@ -24,6 +24,7 @@ namespace FmuApiDomain.Configuration
         public LogSettings Logging { get; set; } = new();
         public FrontolConnectionSettings FrontolConnectionSettings { get; set; } = new();
         public SaleControlConfig SaleControlConfig { get; set; } = new();
+        public CentralServerConnectionSettings CentralServerConnectionSettings { get; set; } = new();
         [JsonInclude]
         public AutoUpdateOptions AutoUpdate { get; private set; } = AutoUpdateOptions.Create();
 
@@ -34,7 +35,7 @@ namespace FmuApiDomain.Configuration
         public SignData? SignData { get; set; }
 
         private string _dataFolder = string.Empty;
-        
+
         [JsonConstructor]
         public Parametrs()
         {
@@ -90,6 +91,7 @@ namespace FmuApiDomain.Configuration
             NodeName = loadedConstants.NodeName;
             SaleControlConfig = loadedConstants.SaleControlConfig;
             AutoUpdate = loadedConstants.AutoUpdate;
+            CentralServerConnectionSettings = loadedConstants.CentralServerConnectionSettings;
 
             if (NodeName == string.Empty)
                 NodeName = Environment.MachineName;
@@ -163,7 +165,7 @@ namespace FmuApiDomain.Configuration
 
         public void Save(Parametrs constantsToSave, string configFileName)
         {
-            JsonSerializerOptions jsonOptions = GeneralJsonSerilizerOptions.SerializerOptions();
+            JsonSerializerOptions jsonOptions = GeneralJsonSerilizerOptions.Default();
 
             string configJson = JsonSerializer.Serialize(constantsToSave, jsonOptions);
 
@@ -177,11 +179,16 @@ namespace FmuApiDomain.Configuration
             { }
         }
 
+        async public Task<bool> SaveAsync(Parametrs constantsToSave)
+        {
+            return await SaveAsync(constantsToSave, _dataFolder);
+        }
+
         async public Task<bool> SaveAsync(Parametrs constantsToSave, string dataFolder)
         {
             string configFileName = $"{dataFolder}\\config.json";
 
-            JsonSerializerOptions jsonOptions = GeneralJsonSerilizerOptions.SerializerOptions();
+            JsonSerializerOptions jsonOptions = GeneralJsonSerilizerOptions.Default();
 
             using MemoryStream stream = new();
             await JsonSerializer.SerializeAsync(stream, constantsToSave, constantsToSave.GetType(), jsonOptions);
@@ -215,10 +222,8 @@ namespace FmuApiDomain.Configuration
 
             configJson ??= "";
 
-            var options = GeneralJsonSerilizerOptions.SerializerOptions();
-
             if (configJson != "")
-                constant = JsonSerializer.Deserialize<Parametrs>(configJson, options);
+                constant = JsonSerializer.Deserialize<Parametrs>(configJson, GeneralJsonSerilizerOptions.Default());
 
             if (constant == null)
                 return new Parametrs();

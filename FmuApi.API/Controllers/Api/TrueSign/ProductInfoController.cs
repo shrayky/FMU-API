@@ -3,7 +3,7 @@ using FmuApiApplication.Services.TrueSign;
 using FmuApiSettings;
 using Microsoft.AspNetCore.Mvc;
 
-namespace FmuApiAPI.Controllers.Api.TrueSign
+namespace WebApi.Controllers.Api.TrueSign
 {
     [Route("api/ts/[controller]")]
     [ApiController]
@@ -18,7 +18,7 @@ namespace FmuApiAPI.Controllers.Api.TrueSign
         }
 
         [HttpPost]
-        public async Task<IActionResult> PostAsync(List<string> gtins) 
+        public async Task<IActionResult> PostAsync(List<string> gtins)
         {
             if (!Constants.Online)
                 return BadRequest("Нет доступа к интеренету.");
