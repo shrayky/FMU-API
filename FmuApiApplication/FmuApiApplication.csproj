@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -20,6 +20,10 @@
     <ProjectReference Include="..\FmuApiDomain\FmuApiDomain.csproj" />
     <ProjectReference Include="..\FmuApiSettings\FmuApiSettings.csproj" />
     <ProjectReference Include="..\FmuFrontolDb\FrontolDb.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Interfaces\" />
   </ItemGroup>
 
 </Project>

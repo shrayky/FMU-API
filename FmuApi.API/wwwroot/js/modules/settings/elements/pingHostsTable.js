@@ -1,6 +1,5 @@
 import { Label, TableToolabr, Text, Number, padding } from "../../../utils/ui.js";
-import {hostnameValidation} from "../../../utils/validators.js"
-
+ы
 class CheckInternetConnectionElement {
     constructor(id) {
         this.id = id;

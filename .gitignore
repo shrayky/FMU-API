@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Webix library folder
+FmuApi.API/wwwroot/lib/webix/

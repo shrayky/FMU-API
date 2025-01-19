@@ -43,6 +43,7 @@
     <ProjectReference Include="..\JsonSerilizerOptions\JsonSerilizerOptions.csproj" />
     <ProjectReference Include="..\LoggerConfig\LoggerConfig.csproj" />
     <ProjectReference Include="..\LogService\LogService.csproj" />
+    <ProjectReference Include="..\MemoryCache\MemoryCache.csproj" />
   </ItemGroup>
 
 </Project>

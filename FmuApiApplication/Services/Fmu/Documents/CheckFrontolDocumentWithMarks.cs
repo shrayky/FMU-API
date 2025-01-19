@@ -1,4 +1,5 @@
 ﻿using CSharpFunctionalExtensions;
+using FmuApiDomain.Cache;
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.Fmu.Document.Interface;
 using FmuApiDomain.MarkInformation;
@@ -8,7 +9,7 @@ using FmuApiSettings;
 using Microsoft.Extensions.Logging;
 using System.Reflection.Metadata;
 
-// Это устаревший метод оставленный тут только для совместимости - вдркг фронтол начнет посылать много марок для проверки
+// Это устаревший метод оставленный тут только для совместимости - вдруг фронтол начнет посылать много марок для проверки
 
 namespace FmuApiApplication.Services.Fmu.Documents
 {
@@ -16,23 +17,25 @@ namespace FmuApiApplication.Services.Fmu.Documents
     {
         private RequestDocument _document { get; set; }
         private IMarkInformationService _markInformationService { get; set; }
+        private ICacheService _casCacheService { get; set; }
         private ILogger _logger { get; set; }
 
-        private CheckFrontolDocumentWithMarks(RequestDocument requestDocument, IMarkInformationService markInformationService, ILogger logger)
+        private CheckFrontolDocumentWithMarks(RequestDocument requestDocument, IMarkInformationService markInformationService, ICacheService cacheService, ILogger logger)
         {
             _document = requestDocument;
             _markInformationService = markInformationService;
+            _casCacheService = cacheService;
             _logger = logger;
         }
 
-        private static CheckFrontolDocumentWithMarks CreateObjext(RequestDocument requestDocument, IMarkInformationService markInformationService, ILogger logger)
+        private static CheckFrontolDocumentWithMarks CreateObjext(RequestDocument requestDocument, IMarkInformationService markInformationService, ICacheService cacheService, ILogger logger)
         {
-            return new CheckFrontolDocumentWithMarks(requestDocument, markInformationService, logger);
+            return new CheckFrontolDocumentWithMarks(requestDocument, markInformationService, cacheService, logger);
         }
 
-        public static IFrontolDocumentService Create(RequestDocument requestDocument, IMarkInformationService markInformationService, ILogger logger)
+        public static IFrontolDocumentService Create(RequestDocument requestDocument, IMarkInformationService markInformationService, ICacheService cacheService, ILogger logger)
         {
-            return CreateObjext(requestDocument, markInformationService, logger);
+            return CreateObjext(requestDocument, markInformationService, cacheService, logger);
         }
 
         public async Task<Result<FmuAnswer>> ActionAsync()

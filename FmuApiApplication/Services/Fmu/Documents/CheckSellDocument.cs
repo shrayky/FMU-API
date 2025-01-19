@@ -1,4 +1,5 @@
 ﻿using CSharpFunctionalExtensions;
+using FmuApiDomain.Cache;
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.Fmu.Document.Interface;
 using FmuApiDomain.MarkInformation;
@@ -14,33 +15,41 @@ namespace FmuApiApplication.Services.Fmu.Documents
     {
         private RequestDocument _document { get; set; }
         private IMarkInformationService _markInformationService { get; set; }
+        private ICacheService _memcachedClient;
         private ILogger _logger { get; set; }
+        private int _cacheExpirationMinutes = 30;
 
-        private CheckSellDocument(RequestDocument requestDocument, IMarkInformationService markInformationService, ILogger logger)
+        private CheckSellDocument(RequestDocument requestDocument, IMarkInformationService markInformationService, ICacheService cacheService, ILogger logger)
         {
             _document = requestDocument;
             _markInformationService = markInformationService;
             _logger = logger;
+            _memcachedClient = cacheService;
+
         }
 
-        private static CheckSellDocument CreateObjext(RequestDocument requestDocument, IMarkInformationService markInformationService, ILogger logger)
+        private static CheckSellDocument CreateObjext(RequestDocument requestDocument, IMarkInformationService markInformationService, ICacheService cacheService, ILogger logger)
         {
-            return new CheckSellDocument(requestDocument, markInformationService, logger);
+            return new CheckSellDocument(requestDocument, markInformationService, cacheService, logger);
         }
 
-        public static IFrontolDocumentService Create(RequestDocument requestDocument, IMarkInformationService markInformationService, ILogger logger)
+        public static IFrontolDocumentService Create(RequestDocument requestDocument, IMarkInformationService markInformationService, ICacheService cacheService, ILogger logger)
         {
-            return CreateObjext(requestDocument, markInformationService, logger);
+            return CreateObjext(requestDocument, markInformationService, cacheService, logger);
         }
         public async Task<Result<FmuAnswer>> ActionAsync()
         {
-            if (Constants.LastCheckMarkInformation.SGtin() == _document.Mark())
-                return Result.Success(Constants.LastCheckMarkInformation);
+            var cachedAnswer = _memcachedClient.Get<FmuAnswer>(_document.Mark());
+
+            if (cachedAnswer?.SGtin() == _document.Mark())
+                return Result.Success(cachedAnswer);
 
             var checkResult =  await MarkInformation(_document.Mark());
 
             if (checkResult.IsSuccess)
-                Constants.LastCheckMarkInformation = checkResult.Value;
+                _memcachedClient.Set<FmuAnswer>(checkResult.Value.SGtin(),
+                                                checkResult.Value,
+                                                TimeSpan.FromMinutes(_cacheExpirationMinutes));
 
             return checkResult;
         }

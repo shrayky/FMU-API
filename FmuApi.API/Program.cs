@@ -10,10 +10,12 @@ using FmuApiApplication.Services.MarkServices;
 using FmuApiApplication.Services.TrueSign;
 using FmuApiApplication.Utilites;
 using FmuApiApplication.Workers;
+using FmuApiDomain.Cache;
 using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiSettings;
 using FrontolDb;
 using LoggerConfig;
+using MemoryCache;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Scalar.AspNetCore;
 using Serilog;
@@ -58,6 +60,11 @@ bool RunHttpApiService()
 
     var services = builder.Services;
 
+    services.AddControllers();
+    builder.Services.AddMemoryCache();
+
+    builder.Services.AddSingleton<ICacheService, MemoryCacheService>();
+
     services.Configure<RouteOptions>(option =>
     {
         option.AppendTrailingSlash = true;
@@ -69,7 +76,9 @@ bool RunHttpApiService()
 
     services.AddScoped<MarksChekerService>();
 
-    services.AddScoped<FrontolDocument>();
+    // устарело
+    //services.AddScoped<FrontolDocument>();
+    
     services.AddScoped<ProductInfo>();
 
     services.AddScoped<MarkStateSrv>();
@@ -104,7 +113,7 @@ bool RunHttpApiService()
     services.AddScoped<IMarkInformationService, MarkInformationService>();
     services.AddTransient<FrontolDocumentServiceFactory>();
 
-    services.AddControllers();
+    
 
     ConfigureOpenApi(services);
 

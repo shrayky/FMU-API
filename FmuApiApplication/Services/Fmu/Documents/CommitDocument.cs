@@ -1,4 +1,5 @@
 ﻿using CSharpFunctionalExtensions;
+using FmuApiDomain.Cache;
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.Fmu.Document.Interface;
 using FmuApiDomain.MarkInformation;
@@ -13,24 +14,26 @@ namespace FmuApiApplication.Services.Fmu.Documents
     {
         private RequestDocument _document { get; set; }
         private IMarkInformationService _markInformationService { get; set; }
+        private ICacheService _cacheService { get; set; }
         private ILogger _logger { get; set; }
         const string saleDocumentType = "receipt";
 
-        private CommitDocument(RequestDocument requestDocument, IMarkInformationService markInformationService, ILogger logger)
+        private CommitDocument(RequestDocument requestDocument, IMarkInformationService markInformationService, ICacheService cacheService, ILogger logger)
         {
             _document = requestDocument;
             _markInformationService = markInformationService;
+            _cacheService = cacheService;
             _logger = logger;
         }
 
-        private static CommitDocument CreateObjext(RequestDocument requestDocument, IMarkInformationService markInformationService, ILogger logger)
+        private static CommitDocument CreateObjext(RequestDocument requestDocument, IMarkInformationService markInformationService, ICacheService cacheService, ILogger logger)
         {
-            return new CommitDocument(requestDocument, markInformationService, logger);
+            return new CommitDocument(requestDocument, markInformationService, cacheService, logger);
         }
 
-        public static IFrontolDocumentService Create(RequestDocument requestDocument, IMarkInformationService markInformationService, ILogger logger)
+        public static IFrontolDocumentService Create(RequestDocument requestDocument, IMarkInformationService markInformationService, ICacheService cacheService, ILogger logger)
         {
-            return CreateObjext(requestDocument, markInformationService, logger);
+            return CreateObjext(requestDocument, markInformationService, cacheService, logger);
         }
 
         public async Task<Result<FmuAnswer>> ActionAsync()
