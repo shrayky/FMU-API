@@ -1,5 +1,5 @@
 import { Label, TableToolabr, Text, Number, padding } from "../../../utils/ui.js";
-ы
+
 class CheckInternetConnectionElement {
     constructor(id) {
         this.id = id;

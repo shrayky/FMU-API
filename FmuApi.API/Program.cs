@@ -51,13 +51,7 @@ bool RunHttpApiService()
     string dataFolder = StringHelper.ArgumentValue(args, "--dataFolder", "");
     Constants.Init(dataFolder);
 
-    WebApplicationOptions webApplicationOptions = new()
-    {
-        ContentRootPath = AppContext.BaseDirectory,
-        ApplicationName = System.Diagnostics.Process.GetCurrentProcess().ProcessName
-    };
-
-    WebApplicationBuilder? builder = WebApplication.CreateBuilder(webApplicationOptions);
+    WebApplicationBuilder? builder = WebApplication.CreateBuilder();
 
     ConfigureLogging(builder);
 
@@ -79,9 +73,6 @@ bool RunHttpApiService()
     services.AddHttpClient();
 
     services.AddScoped<MarksChekerService>();
-
-    // устарело
-    //services.AddScoped<FrontolDocument>();
     
     services.AddScoped<ProductInfo>();
 
