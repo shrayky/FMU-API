@@ -117,9 +117,9 @@ bool RunHttpApiService()
     services.AddScoped<IMarkInformationService, MarkInformationService>();
     services.AddTransient<FrontolDocumentServiceFactory>();
 
-    services.AddRazorPages();
     services.AddControllers();
-    
+    services.AddRazorPages();
+
     ConfigureOpenApi(services);
 
     if (OperatingSystem.IsWindows())
