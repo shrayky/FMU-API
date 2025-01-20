@@ -3,7 +3,7 @@ using FmuApiApplication.Services.AcoUnit;
 
 namespace WebApi.Controllers.Api.Fmu.Products_by_stamp
 {
-    [Route("api/fmu/products_by_stamp")]
+    [Route("api/fmu/[controller]")]
     [ApiController]
     [ApiExplorerSettings(GroupName = "Frontol mark unit API")]
     public class ProductsByStampController : ControllerBase

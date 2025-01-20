@@ -1,7 +1,6 @@
 ﻿using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.Configuration.Options.TrueSign;
-using FmuApiDomain.Fmu.Document;
 
 namespace FmuApiSettings
 {
@@ -13,7 +12,6 @@ namespace FmuApiSettings
         public static bool Online { get; set; } = true;
         public static SignData TrueApiToken { get; set; } = new();
         public static SignData FmuToken { get; set; } = new();
-        public static FmuAnswer LastCheckMarkInformation { get; set; } = new();
 
         private static void ConfigurateDataFolder(string _dataFloderPath)
         {
@@ -25,13 +23,18 @@ namespace FmuApiSettings
 
             if (OperatingSystem.IsWindows())
             {
-                DataFolderPath = string.Concat(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "\\Automation\\", Parametrs.AppName);
+                DataFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Automation", Parametrs.AppName);
             }
+            else if (OperatingSystem.IsLinux())
+            {
+                DataFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Automation", Parametrs.AppName);
+            }
+            
         }
 
         private static void LogFolderCheck()
         {
-            string path = string.Concat(DataFolderPath, "\\log");
+            string path = Path.Combine(DataFolderPath, "log");
 
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);

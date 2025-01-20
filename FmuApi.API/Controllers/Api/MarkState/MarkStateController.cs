@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers.Api.MarkState
 {
-    [Route("api/markstate")]
+    [Route("api/[controller]")]
     [ApiController]
     [ApiExplorerSettings(GroupName = "Mark state API")]
     public class MarkStateController : ControllerBase

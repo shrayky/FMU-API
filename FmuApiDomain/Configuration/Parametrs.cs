@@ -51,7 +51,7 @@ namespace FmuApiDomain.Configuration
 
         private void LoadFromJson()
         {
-            string configFileName = $"{_dataFolder}\\config.json";
+            string configFileName = Path.Combine(_dataFolder,"config.json");
 
             if (!Directory.Exists(_dataFolder))
                 Directory.CreateDirectory(_dataFolder);
@@ -186,7 +186,7 @@ namespace FmuApiDomain.Configuration
 
         async public Task<bool> SaveAsync(Parametrs constantsToSave, string dataFolder)
         {
-            string configFileName = $"{dataFolder}\\config.json";
+            string configFileName = Path.Combine(dataFolder, "config.json");
 
             JsonSerializerOptions jsonOptions = GeneralJsonSerilizerOptions.Default();
 

@@ -34,8 +34,6 @@ namespace FmuApiApplication.Services.Fmu.Documents
 
         public async Task<Result<FmuAnswer>> ActionAsync()
         {
-            Constants.LastCheckMarkInformation = new();
-
             await SendDocumentToAlcoUnitAsync();
 
             return await CancelDocumentAsync();

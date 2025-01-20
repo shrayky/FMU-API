@@ -3,7 +3,6 @@ using AutoUpdateWorkerService;
 using CentralServerExchange;
 using CouchDb;
 using FmuApiApplication.Services.AcoUnit;
-using FmuApiApplication.Services.Fmu;
 using FmuApiApplication.Services.Fmu.Documents;
 using FmuApiApplication.Services.Installer;
 using FmuApiApplication.Services.MarkServices;
@@ -33,13 +32,19 @@ using var loggerFactory = LoggerFactory.Create(builder =>
 
 ILogger<Program> logger = loggerFactory.CreateLogger<Program>();
 
-_ = (args.Length == 0 ? "" : args[0]) switch
+if (OperatingSystem.IsLinux())
+    RunHttpApiService();
+
+if (OperatingSystem.IsWindows())
 {
-    "--service" => RunHttpApiService(),
-    "--install" => await InstallAsWindowsServiceAsync(),
-    "--uninstall" => UninstallWindowsService(),
-    _ => ShowAppInfo()
-};
+    _ = (args.Length == 0 ? "" : args[0]) switch
+    {
+        "--service" => RunHttpApiService(),
+        "--install" => await InstallAsWindowsServiceAsync(),
+        "--uninstall" => UninstallWindowsService(),
+        _ => ShowAppInfo()
+    };
+}
 
 bool RunHttpApiService()
 {
@@ -60,7 +65,6 @@ bool RunHttpApiService()
 
     var services = builder.Services;
 
-    services.AddControllers();
     builder.Services.AddMemoryCache();
 
     builder.Services.AddSingleton<ICacheService, MemoryCacheService>();
@@ -113,16 +117,15 @@ bool RunHttpApiService()
     services.AddScoped<IMarkInformationService, MarkInformationService>();
     services.AddTransient<FrontolDocumentServiceFactory>();
 
+    services.AddRazorPages();
+    services.AddControllers();
     
-
     ConfigureOpenApi(services);
 
     if (OperatingSystem.IsWindows())
     {
         builder.Host.UseWindowsService();
     }
-
-    builder.Services.AddRazorPages();
 
     var app = builder.Build();
 
