@@ -12,7 +12,7 @@ namespace FmuApiDomain.Configuration.Options.TrueSign
 
         public void LoadFromFile(string dataFolder)
         {
-            string fullFileName = $"{dataFolder}\\{fileName}.json";
+            string fullFileName = Path.Combine(dataFolder, $"{fileName}.json");
 
             if (!File.Exists(fullFileName))
                 return;
@@ -45,7 +45,7 @@ namespace FmuApiDomain.Configuration.Options.TrueSign
 
         public async Task<Result<CdnData>> SaveAsync(string dataFolder)
         {
-            string fullFileName = $"{dataFolder}\\{fileName}.json";
+            string fullFileName = Path.Combine(dataFolder, $"{fileName}json");
 
             var saveData = await ListToStringJson();
 

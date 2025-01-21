@@ -146,7 +146,7 @@ void ConfigureLogging(WebApplicationBuilder builder)
     if (!Constants.Parametrs.Logging.IsEnabled)
         return;
 
-    string logFileName = string.Concat(Constants.DataFolderPath, "\\log\\", Constants.Parametrs.AppName.ToLower(), ".log");;
+    string logFileName = Path.Combine(Constants.DataFolderPath, "log", $"{Constants.Parametrs.AppName.ToLower()}.log");
 
     builder.Logging.AddSerilog(SerilogConfiguration.LogToFile(Constants.Parametrs.Logging.LogLevel, logFileName, Constants.Parametrs.Logging.LogDepth));
 }

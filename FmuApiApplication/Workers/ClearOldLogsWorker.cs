@@ -10,7 +10,7 @@ namespace FmuApiApplication.Workers
 
         private DateTime nextWorkDate = DateTime.Now;
         private int CheckPeriodHours = 12;
-        private string logFolderPath  = string.Concat(Constants.DataFolderPath, "\\log\\");
+        private string logFolderPath  = Path.Combine(Constants.DataFolderPath, "log");
 
         public ClearOldLogsWorker(ILogger<ClearOldLogsWorker> logger)
         {

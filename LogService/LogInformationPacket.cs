@@ -9,7 +9,7 @@ namespace LogService
         {
             LogDataPacket defaultAnswer = new();
 
-            string logFolderPath = string.Concat(Constants.DataFolderPath, "\\log");
+            string logFolderPath = Path.Combine(Constants.DataFolderPath, "log");
 
             if (!Directory.Exists(logFolderPath))
                 return defaultAnswer;
@@ -55,7 +55,7 @@ namespace LogService
             if (string.IsNullOrEmpty(uploadLogFileName))
                 return string.Empty;
 
-            string templog = string.Concat(Path.GetDirectoryName(uploadLogFileName), "\\templog.txt");
+            string templog = Path.Combine(Path.GetDirectoryName(uploadLogFileName), "templog.txt");
 
             try
             {
