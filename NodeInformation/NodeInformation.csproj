@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FmuApiDomain\FmuApiDomain.csproj" />
+    <ProjectReference Include="..\TrueApiCdn\TrueApiCdn.csproj" />
     <ProjectReference Include="..\ValueObjects\ValueObjects.csproj" />
   </ItemGroup>
 

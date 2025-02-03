@@ -1,6 +1,5 @@
 ﻿using FmuApiDomain.Configuration;
 using FmuApiDomain.Frontol;
-using Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace FrontolDb

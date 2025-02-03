@@ -1,6 +1,6 @@
 ﻿using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration;
-using FmuApiDomain.Configuration.Options.TrueSign;
+using TrueApiCdn.Models;
 using ValueObjects;
 
 namespace NodeInformation
@@ -10,9 +10,9 @@ namespace NodeInformation
         public NodeName Name { get; }
         public NodeToken Token { get; }
         public Parameters Parameters { get; }
-        public CdnData CdnData { get; }
+        public IReadOnlyList<TrueSignCdn> CdnData { get; }
 
-        private NodeDataRequest(NodeName name, NodeToken token, Parameters parameters, CdnData cdnData)
+        private NodeDataRequest(NodeName name, NodeToken token, Parameters parameters, IReadOnlyList<TrueSignCdn> cdnData)
         {
             Name = name;
             Token = token;
@@ -24,7 +24,7 @@ namespace NodeInformation
             string name,
             string token,
             Parameters parameters,
-            CdnData cdnData)
+            IReadOnlyList<TrueSignCdn> cdnData)
         {
             var nodeName = NodeName.Create(name);
             if (nodeName.IsFailure)

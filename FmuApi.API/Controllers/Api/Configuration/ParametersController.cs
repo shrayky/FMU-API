@@ -1,7 +1,5 @@
 ﻿using FmuApiDomain.Configuration;
 using FmuApiDomain.Webix;
-using FmuApiSettings;
-using Interfaces;
 using JsonSerialShared.Json;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;

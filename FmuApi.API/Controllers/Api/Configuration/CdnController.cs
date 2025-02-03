@@ -1,5 +1,6 @@
 ﻿using FmuApiSettings;
 using Microsoft.AspNetCore.Mvc;
+using TrueApiCdn.Interface;
 
 namespace WebApi.Controllers.Api.Configuration
 {
@@ -8,10 +9,16 @@ namespace WebApi.Controllers.Api.Configuration
     [ApiExplorerSettings(GroupName = "App configuration")]
     public class CdnController : Controller
     {
-        [HttpGet]
-        public IActionResult CdnList()
+        private readonly ICdnService _cdnService;
+        public CdnController(ICdnService cdnService) 
         {
-            return Ok(Constants.Cdn.List);
+            _cdnService = cdnService;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> CdnListAwait()
+        {
+            return Ok(await _cdnService.GetCdnsAsync());
         }
     }
 }

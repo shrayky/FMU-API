@@ -7,6 +7,7 @@ using LoggerConfig;
 using Serilog;
 using Shared.FilesFolders;
 using System.Net;
+using TrueApiCdn;
 
 
 namespace WebApi.Extensions
@@ -37,6 +38,8 @@ namespace WebApi.Extensions
                 options.BaseAddress = new Uri(settings.FrontolAlcoUnit.NetAdres);
                 options.Timeout = TimeSpan.FromSeconds(20);
             });
+
+            TrueApiCdnRegistration.AddService(builder.Services);
 
             ConfigureLogging(builder, settings.Logging);
 

@@ -1,6 +1,5 @@
 ﻿using FmuApiDomain.Cache;
 using FmuApiDomain.Configuration;
-using Interfaces;
 using MemoryCache;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -12,7 +11,6 @@ namespace ApplicationConfigurationService
         {
             services.AddSingleton<ICacheService, MemoryCacheService>();
             services.AddSingleton<IParametersService, SimpleParametersService>();
-            services.AddSingleton<ICdnService, SimpleCdnService>();
         }
     }
 }

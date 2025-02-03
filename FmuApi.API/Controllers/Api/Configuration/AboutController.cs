@@ -1,6 +1,4 @@
 ﻿using FmuApiDomain.Configuration;
-using FmuApiSettings;
-using Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers.Api.Configuration

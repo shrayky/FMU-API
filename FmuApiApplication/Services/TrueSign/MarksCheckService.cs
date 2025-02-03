@@ -1,13 +1,13 @@
 ﻿using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration;
-using FmuApiDomain.Configuration.Options.TrueSign;
 using FmuApiDomain.TrueSignApi.MarkData.Check;
 using FmuApiSettings;
-using Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
 using Shared.Http;
 using System.Net.Http.Json;
+using TrueApiCdn.Interface;
+using TrueApiCdn.Models;
 
 namespace FmuApiApplication.Services.TrueSign
 {
@@ -20,14 +20,19 @@ namespace FmuApiApplication.Services.TrueSign
         private readonly ILogger<MarksCheckService> _logger;
         private IHttpClientFactory _httpClientFactory;
         private readonly IParametersService _parametersService;
+        private readonly ICdnService _cdnService;
 
         private Parameters _configuration;
         
-        public MarksCheckService(IParametersService parametersService, IHttpClientFactory httpClientFactory, ILogger<MarksCheckService> logger)
+        public MarksCheckService(IParametersService parametersService,
+                                 ICdnService cdnService,
+                                 IHttpClientFactory httpClientFactory,
+                                 ILogger<MarksCheckService> logger)
         {
             _logger = logger;
             _httpClientFactory = httpClientFactory;
             _parametersService = parametersService;
+            _cdnService = cdnService;
 
             _configuration = _parametersService.Current();
             requestTimeoutSeconds = _configuration.HttpRequestTimeouts.CheckMarkRequestTimeout;
@@ -62,10 +67,12 @@ namespace FmuApiApplication.Services.TrueSign
             if (!Constants.Online)
                 return Result.Failure<CheckMarksDataTrueApi>("Нет интернета");
 
-            if (Constants.Cdn.List.Count == 0)
+            IReadOnlyList<TrueSignCdn> cdns = await _cdnService.GetCdnsAsync();
+
+            if (cdns.Count == 0)
                 return Result.Failure<CheckMarksDataTrueApi>("Нет загруженных cdn");
 
-            TrueSignCdn? cdn = Cdn();
+            TrueSignCdn? cdn = await _cdnService.GetActiveCdnAsync(0);
 
             if (cdn is null)
                 return Result.Failure<CheckMarksDataTrueApi>("Нет загруженных cdn");
@@ -111,41 +118,6 @@ namespace FmuApiApplication.Services.TrueSign
             }
 
             return Result.Failure<CheckMarksDataTrueApi>("Ни один cdn сервер не ответил.");
-        }
-
-        private static TrueSignCdn? Cdn()
-        {
-            if (Constants.Cdn.List.Count == 0)
-                return null;
-
-            foreach (var cdn in Constants.Cdn.List)
-            {
-                if (!cdn.IsOffline)
-                    continue;
-
-                if ((DateTime.Now - cdn.OfflineSetDate).TotalMinutes > 15)
-                    cdn.BringOnline();
-            }
-
-            var cdns = Constants.Cdn.List.Where(p => p.IsOffline == false).ToList();
-
-            if (cdns.Count == 0)
-            {
-                foreach (var cdn in Constants.Cdn.List)
-                {
-                    cdn.BringOnline();
-                }
-            }
-
-            foreach (var cdn in Constants.Cdn.List)
-            {
-                if (cdn.IsOffline)
-                    continue;
-
-                return cdn;
-            }
-
-            return null;
         }
     }
 }

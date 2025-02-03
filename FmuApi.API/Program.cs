@@ -75,7 +75,6 @@ bool RunHttpApiService()
     services.AddScoped<MarkStateSrv>();
     services.AddScoped<ProductInfo>();
     services.AddScoped<AlcoUnitGateway>();
-    services.AddHostedService<CdnLoaderWorker>();
     
     CouchDbService.AddService(services);
     FrontolDbService.AddService(services);

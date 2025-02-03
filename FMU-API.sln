@@ -59,6 +59,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MemoryCache", "MemoryCache\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared", "Shared\Shared.csproj", "{71FE7610-1D5E-4CBF-8F1D-DAB5DC363BDB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrueApiCdn", "TrueApiCdn\TrueApiCdn.csproj", "{B6B9D7C2-CFA3-4770-82EF-5181E2EF3B69}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -141,6 +143,10 @@ Global
 		{71FE7610-1D5E-4CBF-8F1D-DAB5DC363BDB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{71FE7610-1D5E-4CBF-8F1D-DAB5DC363BDB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{71FE7610-1D5E-4CBF-8F1D-DAB5DC363BDB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B6B9D7C2-CFA3-4770-82EF-5181E2EF3B69}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B6B9D7C2-CFA3-4770-82EF-5181E2EF3B69}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B6B9D7C2-CFA3-4770-82EF-5181E2EF3B69}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B6B9D7C2-CFA3-4770-82EF-5181E2EF3B69}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -172,6 +178,7 @@ Global
 		{70B9E928-2F8A-478B-9700-6D0F39A16F53} = {1C4FAA2F-697F-4B42-B9C4-E55A64B1DB2C}
 		{AFD36968-CB76-4CE9-B5E5-1AF193966FD4} = {1C4FAA2F-697F-4B42-B9C4-E55A64B1DB2C}
 		{71FE7610-1D5E-4CBF-8F1D-DAB5DC363BDB} = {BA12B9D2-52BB-4FB7-B911-5DDA0A75919B}
+		{B6B9D7C2-CFA3-4770-82EF-5181E2EF3B69} = {1C4FAA2F-697F-4B42-B9C4-E55A64B1DB2C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {853898A9-1472-4293-B761-F8E8DFA48C1F}

@@ -31,7 +31,7 @@ namespace ApplicationConfigurationService.Settings
         // устаревшие параметры
         public string? HostToPing { get; set; }
         public string? XAPIKEY { get; set; }
-        public List<TrueSignCdn>? Cdn { get; set; }
+        //public List<TrueSignCdn>? Cdn { get; set; }
         public SignData? SignData { get; set; }
     }
 }

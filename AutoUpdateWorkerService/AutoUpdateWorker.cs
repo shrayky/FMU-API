@@ -2,7 +2,6 @@
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Options;
 using FmuApiSettings;
-using Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;

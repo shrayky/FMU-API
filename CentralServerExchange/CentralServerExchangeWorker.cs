@@ -1,10 +1,10 @@
 ﻿using FmuApiDomain.Configuration;
-using Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NodeInformation;
 using System.Net.Http.Headers;
+using TrueApiCdn.Interface;
 
 namespace CentralServerExchange
 {
@@ -57,7 +57,7 @@ namespace CentralServerExchange
             _logger.LogInformation("Starting exchange with central server");
 
             var parameters = await _parametersService.CurrentAsync();
-            var cdnData = await _cdnService.CurrentAsync();
+            var cdnData = await _cdnService.GetCdnsAsync();
 
             var requestData = NodeDataRequest.Create(parameters.NodeName, parameters.CentralServerConnectionSettings.Token, parameters, cdnData);
 

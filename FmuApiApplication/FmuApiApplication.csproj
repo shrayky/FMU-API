@@ -25,6 +25,7 @@
     <ProjectReference Include="..\FmuApiSettings\FmuApiSettings.csproj" />
     <ProjectReference Include="..\FmuFrontolDb\FrontolDb.csproj" />
     <ProjectReference Include="..\Interfaces\Interfaces.csproj" />
+    <ProjectReference Include="..\TrueApiCdn\TrueApiCdn.csproj" />
   </ItemGroup>
 
   <ItemGroup>

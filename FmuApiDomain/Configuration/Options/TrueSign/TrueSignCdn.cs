@@ -1,6 +1,8 @@
-﻿namespace FmuApiDomain.Configuration.Options.TrueSign
+﻿using FmuApiDomain.TrueApiCdn;
+
+namespace FmuApiDomain.Configuration.Options.TrueSign
 {
-    public class TrueSignCdn
+    public class TrueSignCdn_old
     {
         public string Host { get; set; } = string.Empty;
         public int Latency { get; set; } = 0;
@@ -16,6 +18,11 @@
         public void BringOnline()
         {
             IsOffline = false;
+        }
+
+        public bool Offline()
+        {
+            return IsOffline;
         }
     }
 }

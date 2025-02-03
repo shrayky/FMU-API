@@ -1,13 +1,14 @@
 ﻿using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.Configuration.Options.TrueSign;
+using FmuApiDomain.TrueApiCdn;
 
 namespace FmuApiSettings
 {
     public static class Constants
     {
         public static Parameters Parameters { get; set; } = new Parameters();
-        public static CdnData Cdn { get; set; } = new();
+        //public static ICdnRepository Cdn { get; set; } = new CdnData();
         public static string DataFolderPath { get; set; } = string.Empty;
         public static bool Online { get; set; } = true;
         public static SignData TrueApiToken { get; set; } = new();
@@ -50,7 +51,7 @@ namespace FmuApiSettings
             //LogFolderCheck();
             //Parameters.Init(DataFolderPath);
 
-            Cdn.LoadFromFile(DataFolderPath);
+            //Cdn.LoadFromFile(DataFolderPath);
         }
 
     }

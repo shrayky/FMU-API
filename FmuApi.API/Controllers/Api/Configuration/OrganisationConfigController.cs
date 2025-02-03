@@ -1,6 +1,5 @@
 ﻿using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Options.Organisation;
-using Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers.Api.Configuration

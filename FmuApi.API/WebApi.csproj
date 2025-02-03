@@ -44,6 +44,7 @@
     <ProjectReference Include="..\LogService\LogService.csproj" />
     <ProjectReference Include="..\MemoryCache\MemoryCache.csproj" />
     <ProjectReference Include="..\Shared\Shared.csproj" />
+    <ProjectReference Include="..\TrueApiCdn\TrueApiCdn.csproj" />
   </ItemGroup>
 
 </Project>

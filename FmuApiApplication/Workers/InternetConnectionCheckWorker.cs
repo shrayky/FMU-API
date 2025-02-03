@@ -1,6 +1,5 @@
 ﻿using FmuApiDomain.Configuration;
 using FmuApiSettings;
-using Interfaces;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;

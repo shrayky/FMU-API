@@ -5,7 +5,6 @@ using FmuApiDomain.Configuration;
 using FmuApiDomain.MarkInformation;
 using FmuApiDomain.TrueSignApi.MarkData.Check;
 using FmuApiDomain.TrueSignApi.MarkData;
-using Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace FmuApiApplication.Mark.Services

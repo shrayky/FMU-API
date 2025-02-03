@@ -2,7 +2,6 @@
 using CouchDB.Driver;
 using CouchDB.Driver.Options;
 using FmuApiDomain.Configuration;
-using Interfaces;
 
 namespace CouchDb
 {
