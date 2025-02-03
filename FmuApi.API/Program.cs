@@ -3,12 +3,13 @@ using AutoUpdateWorkerService;
 using CentralServerExchange;
 using CouchDb;
 using FmuApiApplication.Documents;
+using FmuApiApplication.Installer;
 using FmuApiApplication.Mark;
 using FmuApiApplication.Services.AcoUnit;
-using FmuApiApplication.Services.Installer;
 using FmuApiApplication.Services.MarkServices;
 using FmuApiApplication.Services.TrueSign;
 using FmuApiApplication.Workers;
+using FmuApiDomain.Configuration;
 using FmuApiSettings;
 using FrontolDb;
 using Microsoft.AspNetCore.Mvc.Controllers;
@@ -145,22 +146,40 @@ bool ShowAppInfo()
 {
     logger.LogInformation("Ключи запуска приложения:\r\n" +
             "  --service запуск в режиме службы. рабочий режим\r\n" +
-            "    --dataFolder катлог хранения настроек и лога (необязательный)\r\n" +
-            "  --install запуск установки или обноления службы\r\n" +
+            "    --dataFolder каталог хранения настроек и лога (необязательный)\r\n" +
+            "  --install запуск установки или обновления службы\r\n" +
             "    --xapikey параметр установки - записывает в настройки ключ для Честного знака (необязательный)\r\n" +
-            "  --unisntall удаление службы");
+            "  --uninstall удаление службы");
 
     return true;
 }
 
 async Task<bool> InstallAsWindowsServiceAsync()
 {
-    WindowsInstallerService installerService = new(logger);
+    var builder = Host.CreateDefaultBuilder()
+        .ConfigureServices(services =>
+        {
+            services.AddMemoryCache();
+            services.AddSingleton<IParametersService, SimpleParametersService>();
+            services.AddSingleton<WindowsSrvInstallerService>();
+        });
+
+    using var host = builder.Build();
+    var installerService = host.Services.GetRequiredService<WindowsSrvInstallerService>();
+  
     return await installerService.InstallAsync(args);
 }
 
 bool UninstallWindowsService()
 {
-    WindowsInstallerService installerService = new(logger);
+    var builder = Host.CreateDefaultBuilder()
+        .ConfigureServices(services =>
+        {
+            services.AddSingleton<WindowsSrvInstallerService>();
+        });
+
+    using var host = builder.Build();
+    var installerService = host.Services.GetRequiredService<WindowsSrvInstallerService>();
+
     return installerService.Uninstall();
 }

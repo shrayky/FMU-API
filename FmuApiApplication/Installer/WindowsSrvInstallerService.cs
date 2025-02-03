@@ -1,23 +1,28 @@
-﻿using FmuApiSettings;
+﻿using FmuApiDomain.Configuration;
+using FmuApiSettings;
 using Shared.Strings;
 using System.Diagnostics;
 using System.Reflection;
 using System.ServiceProcess;
 
-namespace FmuApiApplication.Services.Installer
+namespace FmuApiApplication.Installer
 {
-    public class WindowsInstallerService
+    public class WindowsSrvInstallerService
     {
-        private readonly string _serviceName = "fmu-api";
-        private readonly string _serviceDisplayName = "DS:FMU-API";
+        private readonly IParametersService _parametersService;
+
+        private readonly string _serviceName = ApplicationInformationConstants.AppName.ToLower();
+        private readonly string _serviceDisplayName = ApplicationInformationConstants.ServiceName;
         private readonly string _installDirectory = string.Empty;
+        private readonly Parameters _configuration;
 
-        private readonly Microsoft.Extensions.Logging.ILogger _logger;
-
-        public WindowsInstallerService(Microsoft.Extensions.Logging.ILogger logger)
+        public WindowsSrvInstallerService(IParametersService parametersService)
         {
+            _parametersService = parametersService;
+            
             _installDirectory = Path.Combine(Path.GetPathRoot(Environment.SystemDirectory) ?? "", "Program Files", "Automation", "FMU-API");
-            _logger = logger;
+            
+            _configuration = _parametersService.Current();
         }
 
         public async Task<bool> InstallAsync(string[] installerArgs)
@@ -71,13 +76,12 @@ namespace FmuApiApplication.Services.Installer
                 startInfo.Arguments = $"/c netsh advfirewall firewall add rule name = \"{_serviceName}\" dir =in action = allow protocol = TCP localport = 2578";
                 process.Start();
             }
-            
-            Constants.Init();
-            
-            var xapikey = StringHelpers.ArgumentValue(installerArgs, "--xapikey", Constants.Parameters.OrganisationConfig.XapiKey());
-            Constants.Parameters.OrganisationConfig.SetXapiKey(xapikey);
 
-            await Constants.Parameters.SaveAsync(Constants.Parameters, Constants.DataFolderPath);
+            var xapikey = StringHelpers.ArgumentValue(installerArgs, "--xapikey", _configuration.OrganisationConfig.XapiKey());
+
+            _configuration.OrganisationConfig.SetXapiKey(xapikey);
+
+            await _parametersService.UpdateAsync(_configuration);
 
             return true;
 
@@ -123,7 +127,7 @@ namespace FmuApiApplication.Services.Installer
             {
                 Directory.CreateDirectory(dirPath.Replace(sourcePath, targetPath));
             }
-            
+
             foreach (string newPath in Directory.GetFiles(sourcePath, "*.*", SearchOption.AllDirectories))
             {
                 File.Copy(newPath, newPath.Replace(sourcePath, targetPath), true);
