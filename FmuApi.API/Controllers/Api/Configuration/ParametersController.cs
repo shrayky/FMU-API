@@ -1,7 +1,8 @@
 ﻿using FmuApiDomain.Configuration;
 using FmuApiDomain.Webix;
 using FmuApiSettings;
-using JsonSerilizerOptions;
+using Interfaces;
+using JsonSerialShared.Json;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 
@@ -12,12 +13,21 @@ namespace WebApi.Controllers.Api.Configuration
     [ApiExplorerSettings(GroupName = "App configuration")]
     public class ParametersController : Controller
     {
+        private readonly IParametersService _parametersService;
+        private readonly Parameters _configuration;
+
+        public ParametersController(IParametersService parametersService)
+        {
+            _parametersService = parametersService;
+            _configuration = _parametersService.Current();
+        }
+
         [HttpGet]
         public IActionResult ParametersGet()
         {
             WebixDataPacket packet = new()
             {
-                Content = Constants.Parametrs
+                Content = _configuration
             };
 
             return Ok(packet);
@@ -31,11 +41,11 @@ namespace WebApi.Controllers.Api.Configuration
             if (body is null)
                 return BadRequest("Пустое тело запроса");
 
-            Parametrs? loadPrm;
+            Parameters? loadPrm;
 
             try
             {
-                loadPrm = await JsonSerializer.DeserializeAsync<Parametrs>(body.BaseStream, GeneralJsonSerilizerOptions.Default());
+                loadPrm = await JsonSerializer.DeserializeAsync<Parameters>(body.BaseStream, JsonSerializeOptionsProvider.Default());
             }
             catch (Exception ex)
             {
@@ -45,9 +55,7 @@ namespace WebApi.Controllers.Api.Configuration
             if (loadPrm == null)
                 return BadRequest();
 
-            Constants.Parametrs = loadPrm;
-
-            await Constants.Parametrs.SaveAsync(Constants.Parametrs, Constants.DataFolderPath);
+            await _parametersService.UpdateAsync(loadPrm);
 
             return Ok();
         }

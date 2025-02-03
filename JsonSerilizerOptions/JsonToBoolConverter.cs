@@ -2,7 +2,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace JsonSerilizerOptions
+namespace JsonSerializerOptionsProvider
 {
     public class JsonToBoolConverter : JsonConverter<bool>
     {

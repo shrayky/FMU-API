@@ -10,7 +10,6 @@ namespace FmuApiDomain.MarkInformation
         public TrueApiAnswerProperties TrueApiAnswerProperties { get; set; } = new();
         public SaleData SaleData { get; set; } = new();
         public bool HaveTrueApiAnswer => TrueApiAnswerProperties.ReqId != string.Empty;
-
         public bool IsSold => State == MarkState.Sold;
     }
 }

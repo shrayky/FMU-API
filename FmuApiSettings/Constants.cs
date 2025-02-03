@@ -6,30 +6,29 @@ namespace FmuApiSettings
 {
     public static class Constants
     {
-        public static Parametrs Parametrs { get; set; } = new Parametrs();
+        public static Parameters Parameters { get; set; } = new Parameters();
         public static CdnData Cdn { get; set; } = new();
         public static string DataFolderPath { get; set; } = string.Empty;
         public static bool Online { get; set; } = true;
         public static SignData TrueApiToken { get; set; } = new();
         public static SignData FmuToken { get; set; } = new();
 
-        private static void ConfigurateDataFolder(string _dataFloderPath)
+        private static void ConfigurateDataFolder(string _dataFolderPath)
         {
-            if (_dataFloderPath != string.Empty)
+            if (_dataFolderPath != string.Empty)
             {
-                DataFolderPath = _dataFloderPath;
+                DataFolderPath = _dataFolderPath;
                 return;
             }
 
             if (OperatingSystem.IsWindows())
             {
-                DataFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Automation", Parametrs.AppName);
+                DataFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Automation", Parameters.AppName);
             }
             else if (OperatingSystem.IsLinux())
             {
-                DataFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Automation", Parametrs.AppName);
+                DataFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Automation", Parameters.AppName);
             }
-            
         }
 
         private static void LogFolderCheck()
@@ -51,7 +50,7 @@ namespace FmuApiSettings
 
             LogFolderCheck();
 
-            Parametrs.Init(DataFolderPath);
+            Parameters.Init(DataFolderPath);
             Cdn.LoadFromFile(DataFolderPath);
         }
 

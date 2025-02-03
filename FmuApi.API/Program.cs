@@ -1,24 +1,21 @@
-using ApllicationConfigurationService;
+using ApplicationConfigurationService;
 using AutoUpdateWorkerService;
 using CentralServerExchange;
 using CouchDb;
+using FmuApiApplication.Documents;
+using FmuApiApplication.Mark;
 using FmuApiApplication.Services.AcoUnit;
-using FmuApiApplication.Services.Fmu.Documents;
 using FmuApiApplication.Services.Installer;
 using FmuApiApplication.Services.MarkServices;
 using FmuApiApplication.Services.TrueSign;
-using FmuApiApplication.Utilites;
 using FmuApiApplication.Workers;
-using FmuApiDomain.Cache;
-using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiSettings;
 using FrontolDb;
-using LoggerConfig;
-using MemoryCache;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Scalar.AspNetCore;
 using Serilog;
-using System.Net;
+using Shared.Strings;
+using WebApi.Extensions;
 
 var slConsole = new LoggerConfiguration()
     .MinimumLevel.Debug().WriteTo
@@ -48,20 +45,21 @@ if (OperatingSystem.IsWindows())
 
 bool RunHttpApiService()
 {
-    string dataFolder = StringHelper.ArgumentValue(args, "--dataFolder", "");
+    string dataFolder = StringHelpers.ArgumentValue(args, "--dataFolder", "");
     Constants.Init(dataFolder);
 
     WebApplicationBuilder? builder = WebApplication.CreateBuilder();
-
-    ConfigureLogging(builder);
-
-    builder.WebHost.UseUrls($"http://+:{Constants.Parametrs.ServerConfig.ApiIpPort}");
-
     var services = builder.Services;
 
+    services.AddControllers();
+    services.AddRazorPages();
+    services.AddEndpointsApiExplorer();
+    services.AddSwaggerGen();
     builder.Services.AddMemoryCache();
 
-    builder.Services.AddSingleton<ICacheService, MemoryCacheService>();
+    ApplicationConfiguration.AddService(services);
+
+    builder.ApplyAppConfigurationExtension();
 
     services.Configure<RouteOptions>(option =>
     {
@@ -72,44 +70,19 @@ bool RunHttpApiService()
 
     services.AddHttpClient();
 
-    services.AddScoped<MarksChekerService>();
-    
-    services.AddScoped<ProductInfo>();
-
+    services.AddScoped<MarksCheckService>();
     services.AddScoped<MarkStateSrv>();
-
-    services.AddHttpClient<AlcoUnitGateway>("alcoUnit", options =>
-    {
-        options.BaseAddress = new Uri(Constants.Parametrs.FrontolAlcoUnit.NetAdres);
-        options.Timeout = TimeSpan.FromSeconds(20);
-    });
+    services.AddScoped<ProductInfo>();
     services.AddScoped<AlcoUnitGateway>();
-
     services.AddHostedService<CdnLoaderWorker>();
     
-    if (Constants.Parametrs.TrueSignTokenService.ConnectionAddres != string.Empty)
-        services.AddHostedService<TrueSignTokenServiceLoaderWorker>();
-
-    if (Constants.Parametrs.HostsToPing.Count > 0)
-    {
-        services.AddHttpClient("internetCheck");
-        services.AddHostedService<InternetConnectionCheckWorker>();
-    }
-
-    ConfigureCors(services);
-
-    ApplicationConfiguration.AddService(services);
-
     CouchDbService.AddService(services);
     FrontolDbService.AddService(services);
     CentralServerExchangeWorker.AddService(services);
     AutoUpdateWorker.AddService(services);
 
-    services.AddScoped<IMarkInformationService, MarkInformationService>();
+    services.AddMarkServices();
     services.AddTransient<FrontolDocumentServiceFactory>();
-
-    services.AddControllers();
-    services.AddRazorPages();
 
     ConfigureOpenApi(services);
 
@@ -125,9 +98,7 @@ bool RunHttpApiService()
         options.RouteTemplate = "/openapi/{documentName}.json";
     });
     app.MapScalarApiReference();
-    
-    //app.UseSwaggerUI();
-
+  
     app.UseCors();
 
     app.UseStaticFiles();
@@ -139,16 +110,6 @@ bool RunHttpApiService()
     app.Run();
 
     return true;
-}
-
-void ConfigureLogging(WebApplicationBuilder builder)
-{
-    if (!Constants.Parametrs.Logging.IsEnabled)
-        return;
-
-    string logFileName = Path.Combine(Constants.DataFolderPath, "log", $"{Constants.Parametrs.AppName.ToLower()}.log");
-
-    builder.Logging.AddSerilog(SerilogConfiguration.LogToFile(Constants.Parametrs.Logging.LogLevel, logFileName, Constants.Parametrs.Logging.LogDepth));
 }
 
 void ConfigureOpenApi(IServiceCollection services)
@@ -176,28 +137,9 @@ void ConfigureOpenApi(IServiceCollection services)
         });
         option.DocInclusionPredicate((name, api) => true);
     });
-
-    services.AddEndpointsApiExplorer();
-    services.AddSwaggerGen();
 }
 
-void ConfigureCors(IServiceCollection services)
-{
-    List<string> hostAdreses = [];
 
-    hostAdreses.Add($"http://{Dns.GetHostName()}:{Constants.Parametrs.ServerConfig.ApiIpPort}");
-    hostAdreses.Add($"http://localhost:{Constants.Parametrs.ServerConfig.ApiIpPort}");
-    hostAdreses.Add($"http://127.0.0.1:{Constants.Parametrs.ServerConfig.ApiIpPort}");
-
-    services.AddCors(opt =>
-    {
-        opt.AddDefaultPolicy(
-            policy =>
-            {
-                policy.WithOrigins(hostAdreses.ToArray()).AllowAnyMethod();
-            });
-    });
-}
 
 bool ShowAppInfo()
 {

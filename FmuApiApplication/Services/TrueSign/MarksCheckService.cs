@@ -1,46 +1,58 @@
 ﻿using CSharpFunctionalExtensions;
-using FmuApiApplication.Utilites;
+using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Options.TrueSign;
 using FmuApiDomain.TrueSignApi.MarkData.Check;
 using FmuApiSettings;
+using Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
+using Shared.Http;
 using System.Net.Http.Json;
 
 namespace FmuApiApplication.Services.TrueSign
 {
-    public class MarksChekerService
+    public class MarksCheckService
     {
-        private readonly string _addres = "/api/v4/true-api/codes/check";
-        private readonly int requestTimeoutSeconds = Constants.Parametrs.HttpRequestTimeouts.CheckMarkRequestTimeout;
+        private readonly string _address = "/api/v4/true-api/codes/check";
+        private readonly int requestTimeoutSeconds = 2;
         private readonly int requestAttempts = 1;
 
-        private readonly ILogger<MarksChekerService> _logger;
+        private readonly ILogger<MarksCheckService> _logger;
         private IHttpClientFactory _httpClientFactory;
+        private readonly IParametersService _parametersService;
 
-        public MarksChekerService(ILogger<MarksChekerService> logger, IHttpClientFactory httpClientFactory)
+        private Parameters _configuration;
+        
+        public MarksCheckService(IParametersService parametersService, IHttpClientFactory httpClientFactory, ILogger<MarksCheckService> logger)
         {
             _logger = logger;
             _httpClientFactory = httpClientFactory;
+            _parametersService = parametersService;
+
+            _configuration = _parametersService.Current();
+            requestTimeoutSeconds = _configuration.HttpRequestTimeouts.CheckMarkRequestTimeout;
         }
 
-        public async Task<Result<CheckMarksDataTrueApi>> RequestMarkState(CheckMarksRequestData marks, int ogranisationCode)
+        public async Task<Result<CheckMarksDataTrueApi>> RequestMarkState(CheckMarksRequestData marks, int organizationCode)
         {
             string xApiKey;
 
-            if (ogranisationCode == 0)
-                xApiKey = Constants.Parametrs.OrganisationConfig.XapiKey();
+            if (organizationCode == 0)
+                xApiKey = _configuration.OrganisationConfig.XapiKey() ?? "";
             else
-                xApiKey = Constants.Parametrs.OrganisationConfig.XapiKey(ogranisationCode);
+                xApiKey = _configuration.OrganisationConfig.XapiKey(organizationCode) ?? "";
+
+            if (string.IsNullOrEmpty(xApiKey))
+                return Result.Failure<CheckMarksDataTrueApi>($"Не получен XAPIKEY для организации с кодом {organizationCode}");
 
             _logger.LogInformation(xApiKey);
 
-            return await DoRequest(marks, xApiKey);
+            return await DoRequest(marks, xApiKey!);
         }
 
         public async Task<Result<CheckMarksDataTrueApi>> RequestMarkState(CheckMarksRequestData marks)
         {
-            string xApiKey = Constants.Parametrs.OrganisationConfig.XapiKey();
+            string xApiKey = _configuration.OrganisationConfig.XapiKey();
 
             return await DoRequest(marks, xApiKey);
         }
@@ -48,7 +60,7 @@ namespace FmuApiApplication.Services.TrueSign
         private async Task<Result<CheckMarksDataTrueApi>> DoRequest(CheckMarksRequestData marks, string xApiKey)
         {
             if (!Constants.Online)
-                return Result.Failure<CheckMarksDataTrueApi>("Нет интеренета");
+                return Result.Failure<CheckMarksDataTrueApi>("Нет интернета");
 
             if (Constants.Cdn.List.Count == 0)
                 return Result.Failure<CheckMarksDataTrueApi>("Нет загруженных cdn");
@@ -75,21 +87,21 @@ namespace FmuApiApplication.Services.TrueSign
             {
                 try
                 {
-                    var answ = await HttpRequestHelper.PostAsync<CheckMarksDataTrueApi>($"{cdn.Host}{_addres}",
+                    var answer = await HttpHelpers.PostAsync<CheckMarksDataTrueApi>($"{cdn.Host}{_address}",
                                                                                     headers,
                                                                                     content,
                                                                                     _httpClientFactory,
                                                                                     TimeSpan.FromSeconds(requestTimeoutSeconds));
-                    if (answ is null)
+                    if (answer is null)
                         continue;
 
-                    _logger.LogInformation("Получен ответ от чеcтного знака {@answ}", answ);
+                    _logger.LogInformation("Получен ответ от честного знака {@answer}", answer);
 
-                    return Result.Success(answ);
+                    return Result.Success(answer);
                 }
                 catch
                 {
-                    _logger.LogWarning($"[{DateTime.Now}] {cdn.Host} не ответил за {requestTimeoutSeconds} секунды, помечаем его offline");
+                    _logger.LogWarning("{Host} не ответил за {requestTimeoutSeconds} секунды, помечаем его offline", cdn.Host, requestTimeoutSeconds);
                     cdn.BringOffline();
                     attemptLost--;
                 }

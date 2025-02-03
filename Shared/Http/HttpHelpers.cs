@@ -1,6 +1,9 @@
-﻿namespace FmuApiApplication.Utilites
+﻿using Shared.Json;
+using System.Net.Http;
+
+namespace Shared.Http
 {
-    public static class HttpRequestHelper
+    public class HttpHelpers
     {
         async public static ValueTask<T?> GetJsonFromHttpAsync<T>(string url, Dictionary<string, string> headers, IHttpClientFactory httpClientFactory, TimeSpan timeout)
         {
@@ -22,7 +25,7 @@
             if (stream is null)
                 return default;
 
-            return await JsonHelper.DeserializeAsync<T>(stream);
+            return await JsonHelpers.DeserializeAsync<T>(stream);
         }
 
         async public static Task<string> GetHttpAsync(string url, Dictionary<string, string> headers, IHttpClientFactory httpClientFactory, TimeSpan timeout)
@@ -68,7 +71,7 @@
 
             Stream? stream = await httpResponseMessage.Content.ReadAsStreamAsync();
 
-            return await JsonHelper.DeserializeAsync<T>(stream);
+            return await JsonHelpers.DeserializeAsync<T>(stream);
         }
     }
 }

@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\JsonSerilizerOptions\JsonSerilizerOptions.csproj" />
+    <ProjectReference Include="..\Shared\Shared.csproj" />
     <ProjectReference Include="..\TableTemplates\TableTemplates.csproj" />
   </ItemGroup>
 

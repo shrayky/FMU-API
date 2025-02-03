@@ -1,5 +1,6 @@
-﻿using FmuApiDomain.Configuration.Options;
-using FmuApiSettings;
+﻿using FmuApiDomain.Configuration;
+using FmuApiDomain.Configuration.Options;
+using Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers.Api.Configuration
@@ -9,18 +10,28 @@ namespace WebApi.Controllers.Api.Configuration
     [ApiExplorerSettings(GroupName = "App configuration")]
     public class MinimalPricesController : Controller
     {
+        private readonly IParametersService _parametersService;
+        private readonly Parameters _configuration;
+
+        public MinimalPricesController(IParametersService parametersService)
+        {
+            _parametersService = parametersService;
+
+            _configuration = _parametersService.Current();
+        }
+
         [HttpGet]
         public IActionResult Get()
         {
-            return Ok(Constants.Parametrs.MinimalPrices);
+            return Ok(_configuration.MinimalPrices);
         }
 
         [HttpPost]
         async public Task<IActionResult> PostAsync(MinimalPrices minimalPrices)
         {
-            Constants.Parametrs.MinimalPrices = minimalPrices;
+            _configuration.MinimalPrices = minimalPrices;
 
-            await Constants.Parametrs.SaveAsync(Constants.Parametrs, Constants.DataFolderPath);
+            await _parametersService.UpdateAsync(_configuration);
 
             return Ok();
         }

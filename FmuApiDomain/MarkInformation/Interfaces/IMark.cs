@@ -14,9 +14,7 @@ namespace FmuApiDomain.MarkInformation.Interfaces
         public CheckMarksDataTrueApi TrueApiData();
         public void SetPrintGroupCode(int code);
         public MarkInformation DatabaseState();
-        public Task<Result<FmuAnswer>> OfflineCheckAsync();
-        public Task<Result> OnlineCheckAsync();
-        public Task<Result> SaveAsync();
         public FmuAnswer MarkDataAfterCheck();
+        public Task<Result<FmuAnswer>> PerformCheckAsync();
     }
 }

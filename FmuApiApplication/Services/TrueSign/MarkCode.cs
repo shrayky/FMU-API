@@ -1,17 +1,17 @@
 ﻿using CouchDb.Handlers;
 using CSharpFunctionalExtensions;
-using FmuApiApplication.Utilites;
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.MarkInformation;
 using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.TrueSignApi.MarkData.Check;
 using FmuApiSettings;
+using Shared.Strings;
 
 namespace FmuApiApplication.Services.TrueSign
 {
     public class MarkCode : IMark
     {
-        private readonly MarksChekerService _trueApiCheck;
+        private readonly MarksCheckService _trueApiCheck;
         private readonly MarkInformationHandler _markStateCrud;
         public string Code { get; } = string.Empty;
         public string SGtin { get; } = string.Empty;
@@ -25,7 +25,7 @@ namespace FmuApiApplication.Services.TrueSign
         private char Gs { get; } = (char)29;
         private string GsE { get; } = @"\u001d";
 
-        private MarkCode(string markCode, MarkInformationHandler markStateCrud, MarksChekerService checkMarks)
+        private MarkCode(string markCode, MarkInformationHandler markStateCrud, MarksCheckService checkMarks)
         {
             _markStateCrud = markStateCrud;
             _trueApiCheck = checkMarks;
@@ -77,16 +77,16 @@ namespace FmuApiApplication.Services.TrueSign
             return sgtin;
         }
 
-        public static MarkCode Create(string markingCode, MarkInformationHandler markStateCrud, MarksChekerService checkMarks)
+        public static MarkCode Create(string markingCode, MarkInformationHandler markStateCrud, MarksCheckService checkMarks)
         {
             MarkCode markCode = new(markingCode, markStateCrud, checkMarks);
 
             return markCode;
         }
 
-        public static async Task<MarkCode> CreateAsync(string codeData, MarkInformationHandler markStateCrud, MarksChekerService checkMarks)
+        public static async Task<MarkCode> CreateAsync(string codeData, MarkInformationHandler markStateCrud, MarksCheckService checkMarks)
         {
-            bool isMarkDecoded = StringHelper.IsDigitString(codeData.Substring(0, 14));
+            bool isMarkDecoded = StringHelpers.IsDigitString(codeData.Substring(0, 14));
 
             if (!isMarkDecoded)
                 codeData = EncodeMark(codeData);
@@ -119,13 +119,13 @@ namespace FmuApiApplication.Services.TrueSign
             return TrueMarkData ?? new();
         }
 
-        // Метод извлекает дааные по марке из базы данных (если она подключена)
+        // Метод извлекает данные по марке из базы данных (если она подключена)
         //
         public async Task<Result<FmuAnswer>> OfflineCheckAsync()
         {
             MarkCheckAnswer = new();
 
-            if (!Constants.Parametrs.Database.OfflineCheckIsEnabled)
+            if (!Constants.Parameters.Database.OfflineCheckIsEnabled)
                 return Result.Success(MarkCheckAnswer);
 
             InformationAboutMark = await _markStateCrud.GetAsync(SGtin);
@@ -162,7 +162,7 @@ namespace FmuApiApplication.Services.TrueSign
             if (TrueMarkData.AllMarksIsSold())
                 return Result.Failure<FmuAnswer>("Марка продана");
 
-            if (InformationAboutMark.State == MarkState.Returned & Constants.Parametrs.SaleControlConfig.BanSalesReturnedWares)
+            if (InformationAboutMark.State == MarkState.Returned & Constants.Parameters.SaleControlConfig.BanSalesReturnedWares)
             {
                 MarkCheckAnswer.Truemark_response.MarkCodeAsSaled();
                 return Result.Failure<FmuAnswer>("Данные получены в offline режиме. Продажа возвращенного покупателем товара запрещена!");
@@ -188,7 +188,7 @@ namespace FmuApiApplication.Services.TrueSign
                 Result.Failure("Онлайн проверка по неполному коду невозможна!");
 
             if (!Constants.Online)
-                return Result.Failure("Нет интерента");
+                return Result.Failure("Нет интернета");
 
             CheckMarksRequestData checkMarksRequestData = new(requestCode);
 
@@ -204,7 +204,7 @@ namespace FmuApiApplication.Services.TrueSign
             if (trueSignMarkData.Empty)
                 return Result.Failure($"Пустой результат проверки по коду марки {Code}");
 
-            if (Constants.Parametrs.SaleControlConfig.CheckIsOwnerField && !trueSignMarkData.IsOwner)
+            if (Constants.Parameters.SaleControlConfig.CheckIsOwnerField && !trueSignMarkData.IsOwner)
             {
                 trueSignMarkData.Valid = false;
                 ErrorDescription = "Нельзя продавать чужую марку!";
@@ -221,7 +221,7 @@ namespace FmuApiApplication.Services.TrueSign
 
         public void ResetErrorFields()
         {
-            if (Constants.Parametrs.SaleControlConfig.IgnoreVerificationErrorForTrueApiGroups == string.Empty)
+            if (Constants.Parameters.SaleControlConfig.IgnoreVerificationErrorForTrueApiGroups == string.Empty)
                 return;
 
             var trueSignMarkData = TrueMarkData.MarkData();
@@ -229,7 +229,7 @@ namespace FmuApiApplication.Services.TrueSign
             if (trueSignMarkData.Empty)
                 return;
 
-            if (!trueSignMarkData.InGroup(Constants.Parametrs.SaleControlConfig.IgnoreVerificationErrorForTrueApiGroups))
+            if (!trueSignMarkData.InGroup(Constants.Parameters.SaleControlConfig.IgnoreVerificationErrorForTrueApiGroups))
                 return;
 
             trueSignMarkData.ResetErrorFileds();
@@ -237,7 +237,7 @@ namespace FmuApiApplication.Services.TrueSign
 
         public async Task<bool> Save()
         {
-            if (!Constants.Parametrs.Database.OfflineCheckIsEnabled)
+            if (!Constants.Parameters.Database.OfflineCheckIsEnabled)
                 return false;
 
             MarkInformation currentMarkState = await _markStateCrud.GetAsync(SGtin);

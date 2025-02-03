@@ -1,4 +1,5 @@
-﻿using FmuApiSettings;
+﻿using FmuApiDomain.Configuration;
+using Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers.Api.Configuration
@@ -8,18 +9,28 @@ namespace WebApi.Controllers.Api.Configuration
     [ApiExplorerSettings(GroupName = "App configuration")]
     public class XapiKeyController : Controller
     {
-        [HttpGet]
-        public IActionResult XApiKeyGet()
+        private readonly IParametersService _parametersService;
+        private readonly Parameters _configuration;
+
+        public XapiKeyController(IParametersService parametersService)
         {
-            return Ok(Constants.Parametrs.OrganisationConfig.XapiKey());
+            _parametersService = parametersService;
+
+            _configuration = _parametersService.Current();
+        }
+
+        [HttpGet]
+        public IActionResult XApiKeyGet(IParametersService parametersService)
+        {
+            return Ok(_configuration.OrganisationConfig.XapiKey());
         }
 
         [HttpPost]
         async public Task<IActionResult> XApiKeyPostAsync(string xapi)
         {
-            Constants.Parametrs.OrganisationConfig.SetXapiKey(xapi);
+            _configuration.OrganisationConfig.SetXapiKey(xapi);
 
-            await Constants.Parametrs.SaveAsync(Constants.Parametrs, Constants.DataFolderPath);
+            await _parametersService.UpdateAsync(_configuration);
 
             return Ok();
         }

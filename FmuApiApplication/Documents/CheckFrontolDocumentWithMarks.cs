@@ -1,5 +1,6 @@
 ﻿using CSharpFunctionalExtensions;
 using FmuApiDomain.Cache;
+using FmuApiDomain.Configuration;
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.Fmu.Document.Interface;
 using FmuApiDomain.MarkInformation;
@@ -7,35 +8,55 @@ using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.TrueSignApi.MarkData.Check;
 using FmuApiSettings;
 using Microsoft.Extensions.Logging;
-using System.Reflection.Metadata;
 
 // Это устаревший метод оставленный тут только для совместимости - вдруг фронтол начнет посылать много марок для проверки
 
-namespace FmuApiApplication.Services.Fmu.Documents
+namespace FmuApiApplication.Documents
 {
     public class CheckFrontolDocumentWithMarks : IFrontolDocumentService
     {
         private RequestDocument _document { get; set; }
         private IMarkInformationService _markInformationService { get; set; }
         private ICacheService _casCacheService { get; set; }
+        private IParametersService _parametersService { get; set; }
         private ILogger _logger { get; set; }
 
-        private CheckFrontolDocumentWithMarks(RequestDocument requestDocument, IMarkInformationService markInformationService, ICacheService cacheService, ILogger logger)
+        private Parameters _configuration;
+
+        private CheckFrontolDocumentWithMarks(
+            RequestDocument requestDocument,
+            IMarkInformationService markInformationService,
+            ICacheService cacheService,
+            IParametersService parametersService,
+            ILogger logger)
         {
             _document = requestDocument;
             _markInformationService = markInformationService;
             _casCacheService = cacheService;
+            _parametersService = parametersService;
             _logger = logger;
+
+            _configuration = _parametersService.Current();
         }
 
-        private static CheckFrontolDocumentWithMarks CreateObjext(RequestDocument requestDocument, IMarkInformationService markInformationService, ICacheService cacheService, ILogger logger)
+        private static CheckFrontolDocumentWithMarks CreateObject(
+            RequestDocument requestDocument,
+            IMarkInformationService markInformationService,
+            ICacheService cacheService,
+            IParametersService parametersService, 
+            ILogger logger)
         {
-            return new CheckFrontolDocumentWithMarks(requestDocument, markInformationService, cacheService, logger);
+            return new CheckFrontolDocumentWithMarks(requestDocument, markInformationService, cacheService, parametersService, logger);
         }
 
-        public static IFrontolDocumentService Create(RequestDocument requestDocument, IMarkInformationService markInformationService, ICacheService cacheService, ILogger logger)
+        public static IFrontolDocumentService Create(
+            RequestDocument requestDocument,
+            IMarkInformationService markInformationService,
+            ICacheService cacheService,
+            IParametersService parametersService, 
+            ILogger logger)
         {
-            return CreateObjext(requestDocument, markInformationService, cacheService, logger);
+            return CreateObject(requestDocument, markInformationService, cacheService, parametersService, logger);
         }
 
         public async Task<Result<FmuAnswer>> ActionAsync()
@@ -59,7 +80,7 @@ namespace FmuApiApplication.Services.Fmu.Documents
             {
                 if (answer.Truemark_response.Codes.Count == 0)
                     return Result.Failure<FmuAnswer>("Нет интернета");
-                
+
                 return Result.Success(answer);
             }
 
@@ -88,15 +109,15 @@ namespace FmuApiApplication.Services.Fmu.Documents
                     continue;
 
                 answer.Truemark_response = new()
-                    {
-                        Code = 0,
-                        Description = tApiData.TrueApiAnswerProperties.Description,
-                        ReqId = tApiData.TrueApiAnswerProperties.ReqId,
-                        ReqTimestamp = tApiData.TrueApiAnswerProperties.ReqTimestamp,
-                    };
-                
+                {
+                    Code = 0,
+                    Description = tApiData.TrueApiAnswerProperties.Description,
+                    ReqId = tApiData.TrueApiAnswerProperties.ReqId,
+                    ReqTimestamp = tApiData.TrueApiAnswerProperties.ReqTimestamp,
+                };
+
                 // если статус марки продана, то не даем ее повторно продать
-                tApiData.TrueApiCisData.Sold = (tApiData.State == MarkState.Sold);
+                tApiData.TrueApiCisData.Sold = tApiData.State == MarkState.Sold;
 
                 answer.Truemark_response.Codes.Add(tApiData.TrueApiCisData);
             }

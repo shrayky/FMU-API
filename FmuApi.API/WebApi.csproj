@@ -34,16 +34,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ApllicationConfigurationService\ApllicationConfigurationService.csproj" />
+    <ProjectReference Include="..\ApllicationConfigurationService\ApplicationConfigurationService.csproj" />
     <ProjectReference Include="..\AutoUpdateWorkerService\AutoUpdateWorkerService.csproj" />
     <ProjectReference Include="..\CentralServerExchange\CentralServerExchange.csproj" />
     <ProjectReference Include="..\FmuApiApplication\FmuApiApplication.csproj" />
     <ProjectReference Include="..\FmuApiCouhDb\CouchDb.csproj" />
     <ProjectReference Include="..\FmuFrontolDb\FrontolDb.csproj" />
-    <ProjectReference Include="..\JsonSerilizerOptions\JsonSerilizerOptions.csproj" />
     <ProjectReference Include="..\LoggerConfig\LoggerConfig.csproj" />
     <ProjectReference Include="..\LogService\LogService.csproj" />
     <ProjectReference Include="..\MemoryCache\MemoryCache.csproj" />
+    <ProjectReference Include="..\Shared\Shared.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,7 @@
 ﻿using CouchDb.DocumentModels;
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Cache;
+using FmuApiDomain.Configuration;
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.Fmu.Document.Interface;
 using FmuApiDomain.MarkInformation.Interfaces;
@@ -9,31 +10,52 @@ using FmuApiDomain.TrueSignApi.MarkData.Check;
 using FmuApiSettings;
 using Microsoft.Extensions.Logging;
 
-namespace FmuApiApplication.Services.Fmu.Documents
+namespace FmuApiApplication.Documents
 {
     public class BeginDocument : IFrontolDocumentService
     {
         private RequestDocument _document { get; set; }
         private IMarkInformationService _markInformationService { get; set; }
         private ICacheService _cacheService { get; set; }
+        private IParametersService _parametersService { get; set; }
         private ILogger _logger { get; set; }
 
-        private BeginDocument(RequestDocument requestDocument, IMarkInformationService markInformationService, ICacheService cacheService, ILogger logger)
+        private Parameters _configuration;
+
+        private BeginDocument(
+            RequestDocument requestDocument,
+            IMarkInformationService markInformationService,
+            ICacheService cacheService,
+            IParametersService parametersService,
+            ILogger logger)
         {
             _document = requestDocument;
             _markInformationService = markInformationService;
             _cacheService = cacheService;
             _logger = logger;
+            _parametersService = parametersService;
+
+            _configuration = _parametersService.Current();
         }
 
-        private static BeginDocument CreateObjext(RequestDocument requestDocument, IMarkInformationService markInformationService, ICacheService cacheService, ILogger logger)
+        private static BeginDocument CreateObject(
+            RequestDocument requestDocument,
+            IMarkInformationService markInformationService,
+            ICacheService cacheService,
+            IParametersService parametersService,
+            ILogger logger)
         {
-            return new BeginDocument(requestDocument, markInformationService, cacheService, logger);
+            return new BeginDocument(requestDocument, markInformationService, cacheService, parametersService, logger);
         }
 
-        public static IFrontolDocumentService Create(RequestDocument requestDocument, IMarkInformationService markInformationService, ICacheService cacheService, ILogger logger)
+        public static IFrontolDocumentService Create(
+            RequestDocument requestDocument,
+            IMarkInformationService markInformationService,
+            ICacheService cacheService,
+            IParametersService parametersService,
+            ILogger logger)
         {
-            return CreateObjext(requestDocument, markInformationService, cacheService, logger);
+            return CreateObject(requestDocument, markInformationService, cacheService, parametersService, logger);
         }
 
         public async Task<Result<FmuAnswer>> ActionAsync()
@@ -45,10 +67,10 @@ namespace FmuApiApplication.Services.Fmu.Documents
 
         private async Task<Result<FmuAnswer>> BeginDocumentAsync()
         {
-            FmuAnswer chekResult = new();
+            FmuAnswer checkResult = new();
 
-            if (Constants.Parametrs.Database.FrontolDocumentsDbName == string.Empty)
-                return Result.Success(chekResult);
+            if (_configuration.Database.FrontolDocumentsDbName == string.Empty)
+                return Result.Success(checkResult);
 
             FrontolDocumentData frontolDocument = new()
             {
@@ -63,9 +85,9 @@ namespace FmuApiApplication.Services.Fmu.Documents
                 if (position.Marking_codes.Count == 0)
                     continue;
 
-                foreach (var markInbase64 in position.Marking_codes)
+                foreach (var markInBase64 in position.Marking_codes)
                 {
-                    var mark = await _markInformationService.MarkAsync(markInbase64);
+                    var mark = await _markInformationService.MarkAsync(markInBase64);
 
                     CheckMarksDataTrueApi trueApiCisData = mark.TrueApiData();
 
@@ -76,27 +98,27 @@ namespace FmuApiApplication.Services.Fmu.Documents
 
                     if (markData.GroupIds.Contains(TrueApiGoup.Tobaco))
                     {
-                        var minPrice = Constants.Parametrs.MinimalPrices.Tabaco > markData.Smp ? Constants.Parametrs.MinimalPrices.Tabaco : markData.Smp;
+                        var minPrice = _configuration.MinimalPrices.Tabaco > markData.Smp ? _configuration.MinimalPrices.Tabaco : markData.Smp;
 
                         if (minPrice > position.Total_price * 100)
                         {
-                            chekResult.Code = 3;
-                            chekResult.Error += $"\r\n {position.Text} цена ниже минимальной розничной!";
-                            chekResult.Marking_codes.Add(markInbase64);
+                            checkResult.Code = 3;
+                            checkResult.Error += $"\r\n {position.Text} цена ниже минимальной розничной!";
+                            checkResult.Marking_codes.Add(markInBase64);
                         }
 
                         if (markData.Mrp < position.Total_price * 100)
                         {
-                            chekResult.Code = 3;
-                            chekResult.Error += $"\r\n {position.Text} цена выше максимальной розничной!";
-                            chekResult.Marking_codes.Add(markInbase64);
+                            checkResult.Code = 3;
+                            checkResult.Error += $"\r\n {position.Text} цена выше максимальной розничной!";
+                            checkResult.Marking_codes.Add(markInBase64);
                         }
                     }
 
                 }
             }
 
-            return Result.Success(chekResult);
+            return Result.Success(checkResult);
 
         }
 
@@ -104,7 +126,7 @@ namespace FmuApiApplication.Services.Fmu.Documents
         {
             RequestDocument auDoc = _document;
 
-            if (Constants.Parametrs.FrontolAlcoUnit.NetAdres == string.Empty)
+            if (_configuration.FrontolAlcoUnit.NetAdres == string.Empty)
                 return Result.Success(auDoc);
 
             var positionsForDelete = new List<Position>();

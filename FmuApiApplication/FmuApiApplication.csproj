@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Services\TrueSign\MarkCode.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="CSharpFunctionalExtensions" Version="3.2.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.11" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.1" />
@@ -20,10 +24,7 @@
     <ProjectReference Include="..\FmuApiDomain\FmuApiDomain.csproj" />
     <ProjectReference Include="..\FmuApiSettings\FmuApiSettings.csproj" />
     <ProjectReference Include="..\FmuFrontolDb\FrontolDb.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Interfaces\" />
+    <ProjectReference Include="..\Interfaces\Interfaces.csproj" />
   </ItemGroup>
 
 </Project>

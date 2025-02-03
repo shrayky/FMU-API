@@ -1,5 +1,6 @@
-﻿using FmuApiDomain.Frontol;
-using FmuApiSettings;
+﻿using FmuApiDomain.Configuration;
+using FmuApiDomain.Frontol;
+using Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace FrontolDb
@@ -12,10 +13,14 @@ namespace FrontolDb
         public DbSet<Barcode> Barcodes { get; set; }
         public DbSet<PrintGroup> PrintGroups { get; set; }
 
+        private readonly IParametersService _parametersService;
+        private readonly Parameters _configuration;
 
-        public FrontolDbContext()
+        public FrontolDbContext(IParametersService parametersService)
         {
-            _connectionString = Constants.Parametrs.FrontolConnectionSettings.ConnectionStringBuild();
+            _parametersService = parametersService;
+            _configuration = _parametersService.Current();
+            _connectionString = _configuration.FrontolConnectionSettings.ConnectionStringBuild();
 
         }
         public FrontolDbContext(string connectionString)

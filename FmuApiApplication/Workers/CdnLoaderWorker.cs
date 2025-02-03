@@ -1,27 +1,35 @@
-﻿using FmuApiApplication.Utilites;
+﻿using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Options.TrueSign;
 using FmuApiDomain.TrueSignApi.Cdn;
 using FmuApiSettings;
+using Interfaces;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
+using Shared.Http;
 
 namespace FmuApiApplication.Workers
 {
     public class CdnLoaderWorker : BackgroundService
     {
-        private readonly string _cdnUrl = @"https://cdn.crpt.ru/api/v4/true-api/cdn/info";
-        
+        private readonly IParametersService _parametersService;
         private readonly ILogger<CdnLoaderWorker> _logger;
         private readonly IHttpClientFactory _httpClientFactory;
 
+        private readonly string _cdnUrl = @"https://cdn.crpt.ru/api/v4/true-api/cdn/info";
+        private readonly string _healthCheckAddress = @"api/v4/true-api/cdn/health/check";
         private DateTime nextWorkDate = DateTime.Now;
+        private readonly int _checkInterval = 10_000;
         private readonly int checkPeriodMinutes = 120;
-      
-        public CdnLoaderWorker(ILogger<CdnLoaderWorker> logger, IHttpClientFactory httpClientFactory)
+        private Parameters _configuration;
+
+        public CdnLoaderWorker(IParametersService parametersService, IHttpClientFactory httpClientFactory, ILogger<CdnLoaderWorker> logger)
         {
             _logger = logger;
             _httpClientFactory = httpClientFactory;
+            _parametersService = parametersService;
+
+            _configuration = _parametersService.Current();
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -30,9 +38,11 @@ namespace FmuApiApplication.Workers
             {
                 if (nextWorkDate >= DateTime.Now)
                 {
-                    await Task.Delay(10_000, stoppingToken);
+                    await Task.Delay(_checkInterval, stoppingToken);
                     continue;
                 }
+
+                _configuration = _parametersService.Current();
 
                 _logger.LogInformation("Загружаю список cdn");
 
@@ -44,9 +54,9 @@ namespace FmuApiApplication.Workers
                     continue;
                 }
 
-                string xapikey = Constants.Parametrs.OrganisationConfig.XapiKey();
+                string xApiKey = _configuration.OrganisationConfig.XapiKey();
 
-                if (xapikey == string.Empty)
+                if (xApiKey == string.Empty)
                 {
                     _logger.LogWarning("Не настроен XAPIKEY");
                     continue;
@@ -54,7 +64,7 @@ namespace FmuApiApplication.Workers
 
                 try
                 {
-                    _ = await UpadteCdnList(xapikey);
+                    _ = await UpdateCdnList(xApiKey);
                 }
                 catch (Exception ex)
                 {
@@ -63,7 +73,7 @@ namespace FmuApiApplication.Workers
             }
         }
 
-        private async Task<bool> UpadteCdnList(string xapikey)
+        private async Task<bool> UpdateCdnList(string xapikey)
         {
             Dictionary<string, string> headers = new()
             {
@@ -71,10 +81,10 @@ namespace FmuApiApplication.Workers
                 { "X-API-KEY", xapikey }
             };
 
-            CdnListAnswerTrueApi? cdns = await HttpRequestHelper.GetJsonFromHttpAsync<CdnListAnswerTrueApi>(_cdnUrl,
-                                                                                                            headers,
-                                                                                                            _httpClientFactory,
-                                                                                                            TimeSpan.FromSeconds(Constants.Parametrs.HttpRequestTimeouts.CdnRequestTimeout));
+            CdnListAnswerTrueApi? cdns = await HttpHelpers.GetJsonFromHttpAsync<CdnListAnswerTrueApi>(_cdnUrl,
+                                                                                                      headers,
+                                                                                                      _httpClientFactory,
+                                                                                                      TimeSpan.FromSeconds(_configuration.HttpRequestTimeouts.CdnRequestTimeout));
 
             cdns ??= new();
 
@@ -88,10 +98,10 @@ namespace FmuApiApplication.Workers
 
                 try
                 {
-                    cdnHealth = await HttpRequestHelper.GetJsonFromHttpAsync<CdnHealth>($"{cdnHost.Host}/api/v4/true-api/cdn/health/check",
-                                                                                            headers,
-                                                                                            _httpClientFactory,
-                                                                                             TimeSpan.FromSeconds(Constants.Parametrs.HttpRequestTimeouts.CdnRequestTimeout));
+                    cdnHealth = await HttpHelpers.GetJsonFromHttpAsync<CdnHealth>($"{cdnHost.Host}/{_healthCheckAddress}",
+                                                                                  headers,
+                                                                                  _httpClientFactory,
+                                                                                  TimeSpan.FromSeconds(_configuration.HttpRequestTimeouts.CdnRequestTimeout));
                 }
                 catch (Exception ex)
                 {
@@ -115,8 +125,6 @@ namespace FmuApiApplication.Workers
             {
                 Constants.Cdn.List = trueSignCdns.OrderBy(p => p.Latency).ToList();
                 await Constants.Cdn.SaveAsync(Constants.DataFolderPath);
-                //Constants.Parametrs.Cdn = trueSignCdns.OrderBy(p => p.Latency).ToList();
-                //await Constants.Parametrs.SaveAsync(Constants.Parametrs, Constants.DataFolderPath);
             }
 
             return true;

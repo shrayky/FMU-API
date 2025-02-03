@@ -52,6 +52,8 @@ namespace CouchDb.Handlers
 
             var dataRecord = await GetDocumentAsync(markState.MarkId);
 
+            dataRecord.Rev = dataRecord.Rev ?? "";
+
             if (dataRecord.Rev != "")
             {
                 document.Rev = dataRecord.Rev;

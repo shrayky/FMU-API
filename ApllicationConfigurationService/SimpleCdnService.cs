@@ -3,7 +3,7 @@ using FmuApiSettings;
 using Interfaces;
 using Microsoft.Extensions.Logging;
 
-namespace ApllicationConfigurationService
+namespace ApplicationConfigurationService
 {
     public class SimpleCdnService : ICdnService
     {
@@ -15,7 +15,7 @@ namespace ApllicationConfigurationService
         }
         public async Task<CdnData> CurrentAsync()
         {
-            return await Task.Run(() => {return Constants.Cdn; });
+            return await Task.Run(() => { return Constants.Cdn; });
         }
     }
 }

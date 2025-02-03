@@ -9,9 +9,9 @@ namespace WebApi.Controllers.Api.TrueSign
     [ApiExplorerSettings(GroupName = "True API")]
     public class CheckMarkController : ControllerBase
     {
-        private readonly MarksChekerService _checkMarks;
+        private readonly MarksCheckService _checkMarks;
 
-        public CheckMarkController(MarksChekerService checkMarks)
+        public CheckMarkController(MarksCheckService checkMarks)
         {
             _checkMarks = checkMarks;
         }

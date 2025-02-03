@@ -9,10 +9,10 @@ namespace NodeInformation
     {
         public NodeName Name { get; }
         public NodeToken Token { get; }
-        public Parametrs Parameters { get; }
+        public Parameters Parameters { get; }
         public CdnData CdnData { get; }
 
-        private NodeDataRequest(NodeName name, NodeToken token, Parametrs parameters, CdnData cdnData)
+        private NodeDataRequest(NodeName name, NodeToken token, Parameters parameters, CdnData cdnData)
         {
             Name = name;
             Token = token;
@@ -23,7 +23,7 @@ namespace NodeInformation
         public static Result<NodeDataRequest> Create(
             string name,
             string token,
-            Parametrs parameters,
+            Parameters parameters,
             CdnData cdnData)
         {
             var nodeName = NodeName.Create(name);

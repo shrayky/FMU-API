@@ -1,13 +1,13 @@
 ﻿using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.Configuration.Options.Organisation;
 using FmuApiDomain.Configuration.Options.TrueSign;
-using JsonSerilizerOptions;
+using JsonSerialShared.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace FmuApiDomain.Configuration
 {
-    public class Parametrs : ICloneable
+    public class Parameters : ICloneable
     {
         public string AppName { get; } = "FMU-API";
         public int AppVersion { get; set; } = 9;
@@ -37,7 +37,7 @@ namespace FmuApiDomain.Configuration
         private string _dataFolder = string.Empty;
 
         [JsonConstructor]
-        public Parametrs()
+        public Parameters()
         {
 
         }
@@ -56,7 +56,7 @@ namespace FmuApiDomain.Configuration
             if (!Directory.Exists(_dataFolder))
                 Directory.CreateDirectory(_dataFolder);
 
-            Parametrs loadedConstants = new();
+            Parameters loadedConstants = new();
 
             if (File.Exists(configFileName))
                 loadedConstants = LoadFromFile(configFileName);
@@ -163,9 +163,9 @@ namespace FmuApiDomain.Configuration
             return answer;
         }
 
-        public void Save(Parametrs constantsToSave, string configFileName)
+        public void Save(Parameters constantsToSave, string configFileName)
         {
-            JsonSerializerOptions jsonOptions = GeneralJsonSerilizerOptions.Default();
+            JsonSerializerOptions jsonOptions = JsonSerializeOptionsProvider.Default();
 
             string configJson = JsonSerializer.Serialize(constantsToSave, jsonOptions);
 
@@ -179,16 +179,16 @@ namespace FmuApiDomain.Configuration
             { }
         }
 
-        async public Task<bool> SaveAsync(Parametrs constantsToSave)
+        async public Task<bool> SaveAsync(Parameters constantsToSave)
         {
             return await SaveAsync(constantsToSave, _dataFolder);
         }
 
-        async public Task<bool> SaveAsync(Parametrs constantsToSave, string dataFolder)
+        async public Task<bool> SaveAsync(Parameters constantsToSave, string dataFolder)
         {
             string configFileName = Path.Combine(dataFolder, "config.json");
 
-            JsonSerializerOptions jsonOptions = GeneralJsonSerilizerOptions.Default();
+            JsonSerializerOptions jsonOptions = JsonSerializeOptionsProvider.Default();
 
             using MemoryStream stream = new();
             await JsonSerializer.SerializeAsync(stream, constantsToSave, constantsToSave.GetType(), jsonOptions);
@@ -211,9 +211,9 @@ namespace FmuApiDomain.Configuration
             return true;
         }
 
-        private static Parametrs LoadFromFile(string configFileName)
+        private static Parameters LoadFromFile(string configFileName)
         {
-            Parametrs? constant = new Parametrs();
+            Parameters? constant = new Parameters();
 
             StreamReader file = new(configFileName);
 
@@ -223,10 +223,10 @@ namespace FmuApiDomain.Configuration
             configJson ??= "";
 
             if (configJson != "")
-                constant = JsonSerializer.Deserialize<Parametrs>(configJson, GeneralJsonSerilizerOptions.Default());
+                constant = JsonSerializer.Deserialize<Parameters>(configJson, JsonSerializeOptionsProvider.Default());
 
             if (constant == null)
-                return new Parametrs();
+                return new Parameters();
 
             return constant;
         }

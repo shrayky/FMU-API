@@ -1,5 +1,6 @@
 ﻿using FmuApiDomain.Webix;
 using FmuApiSettings;
+using Shared.FilesFolders;
 
 namespace LogService
 {
@@ -9,7 +10,21 @@ namespace LogService
         {
             LogDataPacket defaultAnswer = new();
 
-            string logFolderPath = Path.Combine(Constants.DataFolderPath, "log");
+            string logFolderPath = string.Empty;
+
+            if (OperatingSystem.IsWindows())
+            {
+                logFolderPath = Path.Combine(Folders.LogFolder(),
+                                             ApplicationInformationConstants.Manufacture, ApplicationInformationConstants.AppName,
+                                             "log");
+            }
+            else if (OperatingSystem.IsLinux())
+            {
+                logFolderPath = Path.Combine(Folders.LogFolder(),
+                                             ApplicationInformationConstants.Manufacture.ToLower(),
+                                             ApplicationInformationConstants.AppName.ToLower());
+            }
+
 
             if (!Directory.Exists(logFolderPath))
                 return defaultAnswer;
@@ -25,7 +40,7 @@ namespace LogService
 
             foreach (var file in files)
             {
-                fileNameWithoutPrefix = Path.GetFileNameWithoutExtension(file).Replace(Constants.Parametrs.AppName.ToLower(), "");
+                fileNameWithoutPrefix = Path.GetFileNameWithoutExtension(file).Replace(ApplicationInformationConstants.AppName.ToLower(), "");
 
                 defaultAnswer.FileNames.Add(fileNameWithoutPrefix);
 

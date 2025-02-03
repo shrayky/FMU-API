@@ -1,10 +1,10 @@
-﻿using System.Text.Json;
+﻿using JsonSerialShared.Json;
+using System.Text.Json;
 
-namespace FmuApiApplication.Utilites
+namespace Shared.Json
 {
-    public static class JsonHelper
+    public class JsonHelpers
     {
-        private static JsonSerializerOptions jsonSerializerOptions = new() { PropertyNameCaseInsensitive = true};
         async public static ValueTask<T?> DeserializeAsync<T>(byte[] jData)
         {
             MemoryStream? stream = new(jData);
@@ -14,18 +14,16 @@ namespace FmuApiApplication.Utilites
         }
         async public static ValueTask<T?> DeserializeAsync<T>(MemoryStream stream)
         {
-            var data = await JsonSerializer.DeserializeAsync<T>(stream, jsonSerializerOptions);
+            var data = await JsonSerializer.DeserializeAsync<T>(stream, JsonSerializeOptionsProvider.Default());
 
             return data;
         }
 
         async public static ValueTask<T?> DeserializeAsync<T>(Stream stream)
         {
-            var data = await JsonSerializer.DeserializeAsync<T>(stream, jsonSerializerOptions);
+            var data = await JsonSerializer.DeserializeAsync<T>(stream, JsonSerializeOptionsProvider.Default());
 
             return data;
         }
-
     }
 }
-

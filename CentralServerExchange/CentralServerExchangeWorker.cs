@@ -1,4 +1,5 @@
-﻿using Interfaces;
+﻿using FmuApiDomain.Configuration;
+using Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -25,7 +26,7 @@ namespace CentralServerExchange
 
             var configuration = _parametersService.Current();
 
-            _exchangeService = CentralServerExchangeService.Create(_httpClient, _logger, configuration.CentralServerConnectionSettings.Adres);
+            _exchangeService = CentralServerExchangeService.Create(_httpClient, _logger, configuration.CentralServerConnectionSettings.Address);
             nextExchangeTime = DateTime.Now.AddMinutes(configuration.CentralServerConnectionSettings.ExchangeRequestInterval);
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)

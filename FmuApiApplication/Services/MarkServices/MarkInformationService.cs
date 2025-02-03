@@ -1,5 +1,6 @@
 ﻿using CouchDb.Handlers;
 using FmuApiApplication.Services.TrueSign;
+using FmuApiDomain.Configuration;
 using FmuApiDomain.Fmu.Document.Interface;
 using FmuApiDomain.MarkInformation;
 using FmuApiDomain.MarkInformation.Interfaces;
@@ -11,19 +12,39 @@ namespace FmuApiApplication.Services.MarkServices
 {
     public class MarkInformationService : IMarkInformationService
     {
+        private readonly Func<string, Task<IMark>> _markFactory;
         private readonly ILogger<MarkInformationService> _logger;
-        private readonly MarksChekerService _checkMarks;
+        private readonly MarksCheckService _checkMarks;
         private readonly MarkInformationHandler _markStateService;
         private readonly FrontolDocumentHandler _frontolDocumentService;
         private readonly FrontolSprtDataHandler? _frontolSprtDataService;
+        private readonly IParametersService _parametersService;
 
-        public MarkInformationService(ILogger<MarkInformationService> logger, MarksChekerService checkMarks, MarkInformationHandler markStateService, FrontolDocumentHandler frontolDocumentService, FrontolSprtDataHandler? frontolSprtDataService)
+        private readonly Parameters _configuration;
+
+        public MarkInformationService(
+            Func<string, Task<IMark>> markFactory,
+            ILogger<MarkInformationService> logger,
+            MarksCheckService checkMarks,
+            MarkInformationHandler markStateService,
+            FrontolDocumentHandler frontolDocumentService,
+            FrontolSprtDataHandler? frontolSprtDataService,
+            IParametersService parametersService)
         {
+            _markFactory = markFactory;
             _logger = logger;
             _checkMarks = checkMarks;
             _markStateService = markStateService;
             _frontolDocumentService = frontolDocumentService;
             _frontolSprtDataService = frontolSprtDataService;
+            _parametersService = parametersService;
+
+            _configuration = _parametersService.Current();
+        
+        }
+        public async Task<IMark> MarkAsync(string markInBase64)
+        {
+            return await _markFactory(markInBase64);
         }
 
         public async Task<IFrontolDocumentData> AddDocumentToDbAsync(IFrontolDocumentData data)
@@ -41,26 +62,21 @@ namespace FmuApiApplication.Services.MarkServices
             await _frontolDocumentService.DelteAsync(uid);
         }
 
-        public async Task<IMark> MarkAsync(string markInbase64)
-        {
-            return await MarkCode.CreateAsync(markInbase64, _markStateService, _checkMarks);
-        }
-
         public async Task<MarkInformation> MarkChangeState(string id, string newState, SaleData saleData)
         {
             bool isSold = newState == MarkState.Sold;
 
-            var exsitMark = await _markStateService.GetAsync(id);
+            var existMark = await _markStateService.GetAsync(id);
 
-            exsitMark.State = newState;
-            exsitMark.TrueApiCisData.Sold = isSold;
+            existMark.State = newState;
+            existMark.TrueApiCisData.Sold = isSold;
 
             MarkInformation markInformation = new()
             {
                 MarkId = id,
-                State = exsitMark.State,
-                TrueApiCisData = exsitMark.TrueApiCisData,
-                TrueApiAnswerProperties = exsitMark.TrueApiAnswerProperties,
+                State = existMark.State,
+                TrueApiCisData = existMark.TrueApiCisData,
+                TrueApiAnswerProperties = existMark.TrueApiAnswerProperties,
                 SaleData = saleData,
             };
 
@@ -72,9 +88,9 @@ namespace FmuApiApplication.Services.MarkServices
             return await _markStateService.GetAsync(id);
         }
 
-        public async Task<int> WareSaleOrganisationFromFrontolBaseAsync(string wareBarcode)
+        public async Task<int> WareSaleOrganizationFromFrontolBaseAsync(string wareBarcode)
         {
-            if (!Constants.Parametrs.FrontolConnectionSettings.ConnectionEnable())
+            if (!_configuration.FrontolConnectionSettings.ConnectionEnable())
                 return 0;
 
             if (wareBarcode.Length == 0)

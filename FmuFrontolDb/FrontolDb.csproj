@@ -15,6 +15,7 @@
   <ItemGroup>
     <ProjectReference Include="..\FmuApiDomain\FmuApiDomain.csproj" />
     <ProjectReference Include="..\FmuApiSettings\FmuApiSettings.csproj" />
+    <ProjectReference Include="..\Interfaces\Interfaces.csproj" />
   </ItemGroup>
 
 </Project>

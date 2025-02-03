@@ -1,17 +1,17 @@
 ﻿using CSharpFunctionalExtensions;
-using FmuApiApplication.Utilites;
 using FmuApiDomain.TrueSignApi;
 using FmuApiDomain.TrueSignApi.ProductInfo;
 using FmuApiSettings;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
+using Shared.Http;
 using System.Net.Http.Json;
 
 namespace FmuApiApplication.Services.TrueSign
 {
     public class ProductInfo
     {
-        private readonly string _addres = "https://markirovka.crpt.ru/api/v4/true-api/product/info";
+        private readonly string _address = "https://markirovka.crpt.ru/api/v4/true-api/product/info";
         private readonly int requestTimeoutSeconds = 5;
 
         private readonly ILogger<ProductInfo> _logger;
@@ -34,21 +34,21 @@ namespace FmuApiApplication.Services.TrueSign
 
             try
             {
-                var infomation = await HttpRequestHelper.PostAsync<ProductsInformationTrueApi>(_addres,
-                                                                                               headers,
-                                                                                               JsonContent.Create(new GtinsArray(gtins)),
-                                                                                               _httpClientFactory,
-                                                                                               TimeSpan.FromSeconds(requestTimeoutSeconds));
+                var infomation = await HttpHelpers.PostAsync<ProductsInformationTrueApi>(_address,
+                                                                                         headers,
+                                                                                         JsonContent.Create(new GtinsArray(gtins)),
+                                                                                              _httpClientFactory,
+                                                                                         TimeSpan.FromSeconds(requestTimeoutSeconds));
 
                 if (infomation == null)
-                    return Result.Failure<ProductsInformationTrueApi>("Ошибка выполенения запроса");
+                    return Result.Failure<ProductsInformationTrueApi>("Ошибка выполнения запроса");
                     
                 return Result.Success(infomation);
 
             }
             catch (Exception ex)
             {
-                return Result.Failure<ProductsInformationTrueApi>($"Ошибка выполенения запроса {ex.Message}");
+                return Result.Failure<ProductsInformationTrueApi>($"Ошибка выполнения запроса {ex.Message}");
             }
             
         }

@@ -1,8 +1,6 @@
-﻿using System.Text.RegularExpressions;
-
-namespace FmuApiApplication.Utilites
+﻿namespace Shared.Strings
 {
-    public static partial class StringHelper
+    public class StringHelpers
     {
         public static string ArgumentValue(string[] keyValues, string key, string defaultValue = "")
         {
@@ -30,9 +28,8 @@ namespace FmuApiApplication.Utilites
                 if (c is < '0' or > '9')
                     return false;
             }
-        
+
             return true;
         }
-
     }
 }

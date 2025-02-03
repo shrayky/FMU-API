@@ -1,5 +1,6 @@
-﻿using FmuApiDomain.Configuration.Options.Organisation;
-using FmuApiSettings;
+﻿using FmuApiDomain.Configuration;
+using FmuApiDomain.Configuration.Options.Organisation;
+using Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers.Api.Configuration
@@ -9,18 +10,27 @@ namespace WebApi.Controllers.Api.Configuration
     [ApiExplorerSettings(GroupName = "App configuration")]
     public class OrganisationConfigController : Controller
     {
+        private readonly IParametersService _parametersService;
+        private readonly Parameters _configuration;
+
+        public OrganisationConfigController(IParametersService parametersService)
+        {
+            _parametersService = parametersService;
+            _configuration = _parametersService.Current();
+        }
+
         [HttpGet]
         public IActionResult Get()
         {
-            return Ok(Constants.Parametrs.OrganisationConfig);
+            return Ok(_configuration.OrganisationConfig);
         }
 
         [HttpPost]
         async public Task<IActionResult> PostAsync(OrganisationConfigurution organisationConfigurution)
         {
-            Constants.Parametrs.OrganisationConfig = organisationConfigurution;
+            _configuration.OrganisationConfig = organisationConfigurution;
 
-            await Constants.Parametrs.SaveAsync(Constants.Parametrs, Constants.DataFolderPath);
+            await _parametersService.UpdateAsync(_configuration);
 
             return Ok();
         }

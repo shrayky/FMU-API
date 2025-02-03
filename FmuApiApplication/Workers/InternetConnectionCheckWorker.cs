@@ -1,25 +1,31 @@
-﻿using FmuApiSettings;
+﻿using FmuApiDomain.Configuration;
+using FmuApiSettings;
+using Interfaces;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
 using System.Net;
-using System.Net.Http;
-using System.Threading;
 
 namespace FmuApiApplication.Workers
 {
     public class InternetConnectionCheckWorker : BackgroundService
     {
-        private readonly ILogger<InternetConnectionCheckWorker> _logger;
+        private readonly IParametersService _parametersService;
         private readonly IHttpClientFactory _httpClientFactory;
-
+        private readonly ILogger<InternetConnectionCheckWorker> _logger;
+        
         private readonly int CheckPeriodMinutes = 2;
         private DateTime nextWorkDate = DateTime.Now;
+        private readonly int _checkInterval = 60_000;
+        private Parameters _configuration;
 
-        public InternetConnectionCheckWorker(ILogger<InternetConnectionCheckWorker> logger, IHttpClientFactory httpClientFactory)
+        public InternetConnectionCheckWorker(IParametersService parametersService, IHttpClientFactory httpClientFactory, ILogger<InternetConnectionCheckWorker> logger)
         {
             _logger = logger;
             _httpClientFactory = httpClientFactory;
+            _parametersService = parametersService;
+
+            _configuration = _parametersService.Current();
         }
         
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -33,17 +39,19 @@ namespace FmuApiApplication.Workers
             {
                 if (nextWorkDate >= DateTime.Now)
                 {
-                    await Task.Delay(60_000, stoppingToken);
+                    await Task.Delay(_checkInterval, stoppingToken);
                     continue;
                 }
-                 
+
+                _configuration = _parametersService.Current();
+
                 nextWorkDate = DateTime.Now.AddMinutes(CheckPeriodMinutes);
 
                 bool online = false;
 
-                foreach (var siteAdres in Constants.Parametrs.HostsToPing)
+                foreach (var siteAddress in _configuration.HostsToPing)
                 {
-                    var adr = siteAdres.Value.Trim();
+                    var adr = siteAddress.Value.Trim();
 
                     if (adr == string.Empty)
                         continue;
@@ -51,7 +59,7 @@ namespace FmuApiApplication.Workers
                     if (!adr.StartsWith("https://"))
                         adr = $"https://{adr}";
 
-                    online = await CheckAsyns(adr);
+                    online = await CheckAsync(adr);
 
                     if (online)
                         break;
@@ -62,14 +70,14 @@ namespace FmuApiApplication.Workers
             }
         }
 
-        private async Task<bool> CheckAsyns(string siteAdres)
+        private async Task<bool> CheckAsync(string siteAddress)
         {
             try
             {
                 var client = _httpClientFactory.CreateClient("internetCheck");
-                client.Timeout = TimeSpan.FromSeconds(Constants.Parametrs.HttpRequestTimeouts.CheckInternetConnectionTimeout);
+                client.Timeout = TimeSpan.FromSeconds(_configuration.HttpRequestTimeouts.CheckInternetConnectionTimeout);
 
-                client.BaseAddress = new Uri(siteAdres);
+                client.BaseAddress = new Uri(siteAddress);
 
                 var answer = await client.GetAsync("");
 
@@ -77,7 +85,7 @@ namespace FmuApiApplication.Workers
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("Ошибка проверки доступности интеренета: {err}", ex.Message);
+                _logger.LogWarning("Ошибка проверки доступности интернета: {err}", ex.Message);
                 return false;
             }
         }

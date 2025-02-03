@@ -4,9 +4,8 @@ namespace Interfaces
 {
     public interface IParametersService
     {
-        Task<Parametrs> CurrentAsync();
-
-        Parametrs Current();
-        Task UpdateAsync(Parametrs parametrs);
+        Task<Parameters> CurrentAsync();
+        Parameters Current();
+        Task UpdateAsync(Parameters parameters);
     }
 }

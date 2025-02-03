@@ -1,7 +1,7 @@
-﻿using FmuApiDomain.Configuration.Options;
+﻿using FmuApiDomain.Configuration;
+using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.Fmu.Token;
-using FmuApiSettings;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -13,13 +13,17 @@ namespace FmuApiApplication.Services.AcoUnit
     public class AlcoUnitGateway
     {
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IParametersService _parameters;
         private readonly ILogger<AlcoUnitGateway> _logger;
-        private readonly AlcoUnitConfig frontolAlcoUnit = Constants.Parametrs.FrontolAlcoUnit;
+        private readonly AlcoUnitConfig frontolAlcoUnit;
 
-        public AlcoUnitGateway(IHttpClientFactory httpClientFactory, ILogger<AlcoUnitGateway> logger)
+        public AlcoUnitGateway(IHttpClientFactory httpClientFactory, IParametersService parameters, ILogger<AlcoUnitGateway> logger)
         {
             _httpClientFactory = httpClientFactory;
+            _parameters = parameters;
             _logger = logger;
+
+            frontolAlcoUnit = parameters.Current().FrontolAlcoUnit;
         }
 
         private async Task CheckTokenAsync()
@@ -78,7 +82,7 @@ namespace FmuApiApplication.Services.AcoUnit
 
         public async Task<string> AuthtorithationAsync()
         {
-            if (Constants.Parametrs.FrontolAlcoUnit.NetAdres == string.Empty)
+            if (frontolAlcoUnit.NetAdres == string.Empty)
                 throw new Exception("Не задан сетевой адрес алкоюнита!");
 
             var hash = MD5.HashData(Encoding.ASCII.GetBytes($"{frontolAlcoUnit.UserName}:{frontolAlcoUnit.Password}"));
@@ -86,7 +90,7 @@ namespace FmuApiApplication.Services.AcoUnit
 
             AuthorizationData authData = new()
             {
-                Id = Constants.Parametrs.FrontolAlcoUnit.UserName,
+                Id = frontolAlcoUnit.UserName,
                 Password = id.ToLower()
             };
 

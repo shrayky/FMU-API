@@ -1,4 +1,6 @@
-﻿using FmuApiSettings;
+﻿using FmuApiDomain.Configuration;
+using FmuApiSettings;
+using Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers.Api.Configuration
@@ -8,10 +10,20 @@ namespace WebApi.Controllers.Api.Configuration
     [ApiExplorerSettings(GroupName = "App configuration")]
     public class AboutController : ControllerBase
     {
+        private readonly IParametersService _parametersService;
+        private readonly Parameters _configuration;
+
+        public AboutController(IParametersService parametersService)
+        {
+            _parametersService = parametersService;
+
+            _configuration = _parametersService.Current();
+        }
+
         [HttpGet]
         public IActionResult AboutGet()
         {
-            return Ok($"{Constants.Parametrs.AppName} version {Constants.Parametrs.AppVersion} assembly {Constants.Parametrs.Assembly}");
+            return Ok($"{_configuration.AppName} version {_configuration.AppVersion} assembly {_configuration.Assembly}");
         }
     }
 }

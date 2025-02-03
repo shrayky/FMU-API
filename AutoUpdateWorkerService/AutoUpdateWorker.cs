@@ -1,6 +1,8 @@
 ﻿using CSharpFunctionalExtensions;
+using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Options;
 using FmuApiSettings;
+using Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -11,21 +13,30 @@ namespace AutoUpdateWorkerService
 {
     public class AutoUpdateWorker : BackgroundService
     {
+        private readonly IParametersService _parametersService;
         private readonly ILogger<AutoUpdateWorker> _logger;
 
-        public AutoUpdateWorker(ILogger<AutoUpdateWorker> logger)
+        private Parameters _configuration;
+        private readonly int _checkInterval = 60_000;
+
+        public AutoUpdateWorker(IParametersService parametersService, ILogger<AutoUpdateWorker> logger)
         {
+            _parametersService = parametersService;
             _logger = logger;
+
+            _configuration = _parametersService.Current();
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                await Task.Delay(60_000, stoppingToken);
+                await Task.Delay(_checkInterval, stoppingToken);
 
                 if (stoppingToken.IsCancellationRequested)
                     break;
+
+                _configuration = _parametersService.Current();
 
                 Result updateResult = СheckUpdates();
 
@@ -36,7 +47,7 @@ namespace AutoUpdateWorkerService
 
         private Result СheckUpdates()
         {
-            AutoUpdateOptions options = Constants.Parametrs.AutoUpdate;
+            AutoUpdateOptions options = _configuration.AutoUpdate;
 
             if (!options.Enabled)
                 return Result.Failure("Not enabled");
@@ -53,7 +64,7 @@ namespace AutoUpdateWorkerService
             {
                 _logger.LogInformation("Найдено обновление, запускаю установку.");
 
-                var installerPath = Path.Combine(Path.GetTempPath(), Constants.Parametrs.AppName);
+                var installerPath = Path.Combine(Path.GetTempPath(), ApplicationInformationConstants.AppName);
 
                 if (Directory.Exists(installerPath))
                     Directory.Delete(installerPath, true);
@@ -70,7 +81,7 @@ namespace AutoUpdateWorkerService
                     WindowStyle = ProcessWindowStyle.Hidden,
                     FileName = "cmd.exe",
                     CreateNoWindow = true,
-                    Arguments = $"/c {installerPath}\\{Constants.Parametrs.AppName}.exe --install",
+                    Arguments = $"/c {installerPath}\\{ApplicationInformationConstants.AppName}.exe --install",
                     RedirectStandardOutput = true,
                 };
 

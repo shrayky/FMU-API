@@ -1,5 +1,5 @@
-﻿using FmuApiApplication.Utilites;
-using FmuApiSettings;
+﻿using FmuApiSettings;
+using Shared.Strings;
 using System.Diagnostics;
 using System.Reflection;
 using System.ServiceProcess;
@@ -74,10 +74,10 @@ namespace FmuApiApplication.Services.Installer
             
             Constants.Init();
             
-            var xapikey = StringHelper.ArgumentValue(installerArgs, "--xapikey", Constants.Parametrs.OrganisationConfig.XapiKey());
-            Constants.Parametrs.OrganisationConfig.SetXapiKey(xapikey);
+            var xapikey = StringHelpers.ArgumentValue(installerArgs, "--xapikey", Constants.Parameters.OrganisationConfig.XapiKey());
+            Constants.Parameters.OrganisationConfig.SetXapiKey(xapikey);
 
-            await Constants.Parametrs.SaveAsync(Constants.Parametrs, Constants.DataFolderPath);
+            await Constants.Parameters.SaveAsync(Constants.Parameters, Constants.DataFolderPath);
 
             return true;
 

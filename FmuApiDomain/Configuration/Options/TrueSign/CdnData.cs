@@ -1,5 +1,5 @@
 ﻿using CSharpFunctionalExtensions;
-using JsonSerilizerOptions;
+using JsonSerialShared.Json;
 using System.Text.Json;
 
 namespace FmuApiDomain.Configuration.Options.TrueSign
@@ -60,7 +60,7 @@ namespace FmuApiDomain.Configuration.Options.TrueSign
         private async Task<string> ListToStringJson()
         {
             using MemoryStream stream = new();
-            await JsonSerializer.SerializeAsync(stream, List, List.GetType(), GeneralJsonSerilizerOptions.Default());
+            await JsonSerializer.SerializeAsync(stream, List, List.GetType(), JsonSerializeOptionsProvider.Default());
 
             stream.Position = 0;
             using var reader = new StreamReader(stream);
