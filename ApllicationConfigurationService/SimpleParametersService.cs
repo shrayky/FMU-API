@@ -6,6 +6,7 @@ using FmuApiSettings;
 using JsonSerialShared.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Shared.FilesFolders;
 using System.Text.Json;
 
 namespace ApplicationConfigurationService
@@ -17,6 +18,7 @@ namespace ApplicationConfigurationService
         private readonly IServiceProvider _services;
 
         private readonly string _configPath = string.Empty;
+        private readonly string _configBackUpPath = string.Empty;
         private readonly string _cacheKey = "app_settings";
         private readonly int _cacheExpirationMinutes = 600;
         private static readonly object _lock = new();
@@ -28,21 +30,11 @@ namespace ApplicationConfigurationService
             _services = services;
             _logger = _services.GetRequiredService<ILogger<SimpleParametersService>>();
             _cacheService = _services.GetRequiredService<ICacheService>();
-            
-            if (OperatingSystem.IsWindows())
-            {
-                _configPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-                                           ApplicationInformationConstants.Manufacture,
-                                           ApplicationInformationConstants.AppName,
-                                           "config.json");
-            }
-            else if (OperatingSystem.IsLinux())
-            {
-                _configPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                                           ApplicationInformationConstants.Manufacture,
-                                           ApplicationInformationConstants.AppName,
-                                           "config.json");
-            }
+
+            string configFolder = Folders.CommonApplicationDataFolder(ApplicationInformationConstants.Manufacture, ApplicationInformationConstants.AppName);
+
+            _configPath = Path.Combine(configFolder, "config.json");
+            _configBackUpPath = Path.Combine(configFolder, "config.bkp");
 
             InitializeConfiguration();
 
@@ -70,17 +62,76 @@ namespace ApplicationConfigurationService
 
         private ApplicationSettings LoadConfiguration()
         {
-            ApplicationSettings loadedConfiguration;
-
-            lock (_lock)
+            try
             {
-                string jsonContent = File.ReadAllText(_configPath);
-                loadedConfiguration = JsonSerializer.Deserialize<ApplicationSettings>(jsonContent) ?? DefaultConfiguration();
+                string jsonContent;
+                try
+                {
+                    _semaphore.Wait();
+                    jsonContent = File.ReadAllText(_configPath);
+                }
+                finally
+                {
+                    _semaphore.Release();
+                }
+
+                var loadedConfiguration = JsonSerializer.Deserialize<ApplicationSettings>(jsonContent);
+
+                if (loadedConfiguration == null)
+                {
+                    if (File.Exists(_configBackUpPath))
+                    {
+                        _logger.LogWarning("Файл конфигурации поврежден или пуст. Пробую загрузить резервную копию");
+                        return LoadBackupConfiguration();
+                    }
+                    else
+                    { 
+                        _logger.LogWarning("Файл конфигурации поврежден или пуст. Создаю новый файл с настройками по умолчанию");
+                        return DefaultConfiguration();
+                    }
+                }
+
+                loadedConfiguration = CheckMigration(loadedConfiguration);
+                CacheSettings(loadedConfiguration);
+
+                return loadedConfiguration;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка чтения файла конфигурации. Создаю новый файл с настройками по умолчанию");
+                return DefaultConfiguration();
+            }
+        }
+
+        private ApplicationSettings LoadBackupConfiguration()
+        {
+            string jsonContent;
+          
+            try
+            {
+                _semaphore.Wait();
+                jsonContent = File.ReadAllText(_configBackUpPath);
+            }
+            finally
+            {
+                _semaphore.Release();
             }
 
-            loadedConfiguration = CheckMigration(loadedConfiguration);
+            var loadedConfiguration = JsonSerializer.Deserialize<ApplicationSettings>(jsonContent);
+          
+            if (loadedConfiguration == null)
+            {
+                _logger.LogWarning("Резервная копия конфигурации повреждена. Создаю новый файл с настройками по умолчанию");
+                return DefaultConfiguration();
+            }
 
+            _logger.LogInformation("Конфигурация успешно загружена из резервной копии");
+           
+            loadedConfiguration = CheckMigration(loadedConfiguration);
             CacheSettings(loadedConfiguration);
+
+            // Восстанавливаем основной файл из резервной копии
+            SaveConfiguration(loadedConfiguration);
 
             return loadedConfiguration;
         }
@@ -135,7 +186,6 @@ namespace ApplicationConfigurationService
                 await _semaphore.WaitAsync();
 
                 string? directoryPath = Path.GetDirectoryName(_configPath);
-
                 if (directoryPath == null)
                     return;
 
@@ -146,6 +196,7 @@ namespace ApplicationConfigurationService
 
                 string jsonContent = JsonSerializer.Serialize(settings, JsonSerializeOptionsProvider.Default());
 
+                await File.WriteAllTextAsync(_configBackUpPath, jsonContent);
                 await File.WriteAllTextAsync(_configPath, jsonContent);
 
                 CacheSettings(settings);

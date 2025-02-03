@@ -18,5 +18,25 @@
 
             return logFolder;
         }
+
+        public static string CommonApplicationDataFolder(string Manufacture, string AppName)
+        {
+            string configFolder = string.Empty;
+
+            if (OperatingSystem.IsWindows())
+            {
+                configFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                                           Manufacture,
+                                           AppName);
+            }
+            else if (OperatingSystem.IsLinux())
+            {
+                configFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                                           Manufacture,
+                                           AppName);
+            }
+
+            return configFolder;
+        }
     }
 }

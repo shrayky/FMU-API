@@ -1,0 +1,68 @@
+[
+  {
+    "Host": "https://cdn05.crpt.ru",
+    "Latency": 1450665,
+    "IsOffline": false,
+    "OfflineSetDate": "0001-01-01T00:00:00"
+  },
+  {
+    "Host": "https://cdn10.crpt.ru",
+    "Latency": 1467310,
+    "IsOffline": false,
+    "OfflineSetDate": "0001-01-01T00:00:00"
+  },
+  {
+    "Host": "https://cdn11.crpt.ru",
+    "Latency": 3308365,
+    "IsOffline": false,
+    "OfflineSetDate": "0001-01-01T00:00:00"
+  },
+  {
+    "Host": "https://cdn03.crpt.ru",
+    "Latency": 3342165,
+    "IsOffline": false,
+    "OfflineSetDate": "0001-01-01T00:00:00"
+  },
+  {
+    "Host": "https://cdn02.crpt.ru",
+    "Latency": 3395362,
+    "IsOffline": false,
+    "OfflineSetDate": "0001-01-01T00:00:00"
+  },
+  {
+    "Host": "https://cdn01.crpt.ru",
+    "Latency": 3707033,
+    "IsOffline": false,
+    "OfflineSetDate": "0001-01-01T00:00:00"
+  },
+  {
+    "Host": "https://cdn08.crpt.ru",
+    "Latency": 3742498,
+    "IsOffline": false,
+    "OfflineSetDate": "0001-01-01T00:00:00"
+  },
+  {
+    "Host": "https://cdn06.crpt.ru",
+    "Latency": 3807810,
+    "IsOffline": false,
+    "OfflineSetDate": "0001-01-01T00:00:00"
+  },
+  {
+    "Host": "https://cdn07.crpt.ru",
+    "Latency": 5676619,
+    "IsOffline": false,
+    "OfflineSetDate": "0001-01-01T00:00:00"
+  },
+  {
+    "Host": "https://cdn09.crpt.ru",
+    "Latency": 6555784,
+    "IsOffline": false,
+    "OfflineSetDate": "0001-01-01T00:00:00"
+  },
+  {
+    "Host": "https://cdn04.crpt.ru",
+    "Latency": 7921647,
+    "IsOffline": false,
+    "OfflineSetDate": "0001-01-01T00:00:00"
+  }
+]

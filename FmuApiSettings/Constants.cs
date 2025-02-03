@@ -46,11 +46,10 @@ namespace FmuApiSettings
 
         public static void Init(string dataFolder) 
         {
-            ConfigurateDataFolder(dataFolder);
+            //ConfigurateDataFolder(dataFolder);
+            //LogFolderCheck();
+            //Parameters.Init(DataFolderPath);
 
-            LogFolderCheck();
-
-            Parameters.Init(DataFolderPath);
             Cdn.LoadFromFile(DataFolderPath);
         }
 
