@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\FmuApiDomain\FmuApiDomain.csproj" />
+    <ProjectReference Include="..\..\Core\Shared\Shared.csproj" />
+    <ProjectReference Include="..\MemoryCache\MemoryCache.csproj" />
+  </ItemGroup>
+
+</Project>

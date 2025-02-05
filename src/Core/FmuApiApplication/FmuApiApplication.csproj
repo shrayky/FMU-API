@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Services\TrueSign\MarkCode.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CSharpFunctionalExtensions" Version="3.2.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Net.Http.Headers" Version="8.0.11" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Infrastructure\CouchDb\CouchDb.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\FrontolDb\FrontolDb.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\TrueApiCdn\TrueApiCdn.csproj" />
+    <ProjectReference Include="..\FmuApiDomain\FmuApiDomain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Installer\Interfaces\" />
+  </ItemGroup>
+
+</Project>

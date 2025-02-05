@@ -1,0 +1,49 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>fmu-api</AssemblyName>
+    <SignAssembly>False</SignAssembly>
+	<Version>9.11.0</Version>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CSharpFunctionalExtensions" Version="3.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Net.Http.Headers" Version="8.0.11" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Scalar.AspNetCore" Version="1.2.42" />
+    <PackageReference Include="Serilog" Version="4.1.0" />
+    <PackageReference Include="Serilog.Extensions.Hosting" Version="8.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\FmuApiApplication\FmuApiApplication.csproj" />
+    <ProjectReference Include="..\..\Core\Shared\Shared.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\ApllicationConfigurationService\ApplicationConfigurationService.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\AutoUpdateWorkerService\AutoUpdateWorkerService.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\CentralServerExchange\CentralServerExchange.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\CouchDb\CouchDb.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\FrontolDb\FrontolDb.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\LogService\LogService.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\MemoryCache\MemoryCache.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\TrueApiCdn\TrueApiCdn.csproj" />
+  </ItemGroup>
+
+</Project>
