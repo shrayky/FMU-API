@@ -22,12 +22,12 @@ namespace ApplicationConfigurationService.Migrations
             return settings;
         }
 
-        private static OrganisationConfigurution MoveXapiConfiguration(string? XAPIKEY)
+        private static OrganizationConfiguration MoveXapiConfiguration(string? XAPIKEY)
         {
             if (XAPIKEY == null)
                 return new();
 
-            OrganisationConfigurution answer = new();
+            OrganizationConfiguration answer = new();
 
             PrintGroupData xapi = new()
             {

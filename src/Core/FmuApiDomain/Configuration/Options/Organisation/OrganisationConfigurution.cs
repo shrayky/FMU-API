@@ -1,10 +1,10 @@
 ﻿namespace FmuApiDomain.Configuration.Options.Organisation
 {
-    public class OrganisationConfigurution
+    public class OrganizationConfiguration
     {
         public List<PrintGroupData> PrintGroups { get; set; } = [];
 
-        public void FillIfEMpty()
+        public void FillIfEmpty()
         {
             if (PrintGroups.Count > 0)
                 return;

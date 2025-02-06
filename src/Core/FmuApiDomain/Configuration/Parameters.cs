@@ -14,7 +14,7 @@ namespace FmuApiDomain.Configuration
         public ServerConfig ServerConfig { get; set; } = new();
         public List<StringValue> HostsToPing { get; set; } = [];
         public MinimalPrices MinimalPrices { get; set; } = new();
-        public OrganisationConfigurution OrganisationConfig { get; set; } = new();
+        public OrganizationConfiguration OrganisationConfig { get; set; } = new();
         public AlcoUnitConfig FrontolAlcoUnit { get; set; } = new();
         public CouchDbConnection Database { get; set; } = new();
         public TokenServiceConfiguration TrueSignTokenService { get; set; } = new();

@@ -53,7 +53,7 @@ namespace ApplicationConfigurationService
             Parameters settings = new();
 
             settings.NodeName = Environment.MachineName;
-            settings.OrganisationConfig.FillIfEMpty();
+            settings.OrganisationConfig.FillIfEmpty();
 
             SaveConfiguration(settings);
 

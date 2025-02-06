@@ -26,7 +26,7 @@ namespace WebApi.Controllers.Api.Configuration
         }
 
         [HttpPost]
-        async public Task<IActionResult> PostAsync(OrganisationConfigurution organisationConfigurution)
+        async public Task<IActionResult> PostAsync(OrganizationConfiguration organisationConfigurution)
         {
             _configuration.OrganisationConfig = organisationConfigurution;
 
