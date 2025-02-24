@@ -4,7 +4,9 @@ using FmuApiApplication.Workers;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.Constants;
+using FmuApiDomain.LocalModule.Models;
 using FmuApiDomain.State.Interfaces;
+using LocalModuleIntegration;
 using Serilog;
 using Shared.FilesFolders;
 using Shared.Logging;
@@ -42,6 +44,7 @@ namespace WebApi.Extensions
             });
 
             TrueApiCdnRegistration.AddService(builder.Services);
+            LocalModuleRegistration.AddService(builder.Services);
 
             builder.Services.AddSingleton<IApplicationState, ApplicationState>();
 

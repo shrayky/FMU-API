@@ -7,7 +7,7 @@ export const padding = {
     right: 20
 };
 
-export function TableToolabr(tableName, prms = {}) {
+export function TableToolbar(tableName, prms = {}) {
     let newElement = {
         cols: [
             {
@@ -43,7 +43,6 @@ export function TableToolabr(tableName, prms = {}) {
         ]
 
     }
-
     return applyParameters(newElement, prms);
 }
 

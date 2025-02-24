@@ -54,8 +54,6 @@ namespace FmuApiApplication.Services.TrueSign
             if (string.IsNullOrEmpty(xApiKey))
                 return Result.Failure<CheckMarksDataTrueApi>($"Не получен XAPIKEY для организации с кодом {organizationCode}");
 
-            _logger.LogInformation(xApiKey);
-
             return await DoRequest(marks, xApiKey!);
         }
 

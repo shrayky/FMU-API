@@ -1,4 +1,6 @@
-﻿namespace FmuApiDomain.Configuration.Options.Organisation
+﻿using FmuApiDomain.Webix;
+
+namespace FmuApiDomain.Configuration.Options.Organization
 {
     public class OrganizationConfiguration
     {
@@ -24,6 +26,9 @@
         {
             if (PrintGroups.Count == 0)
                 return "";
+
+            if (id == 0)
+                return XapiKey();
 
             PrintGroupData? row = PrintGroups.FirstOrDefault(x => x.Id == id);
 
@@ -73,6 +78,18 @@
                 return;
 
             PrintGroups.Remove(row);
+        }
+
+        public LocalModuleConnection LocalModuleConnection(int organizationId)
+        {
+            organizationId = organizationId == 0 ? 1 : organizationId;
+
+            PrintGroupData? pgData = PrintGroups.FirstOrDefault(x => x.Id == organizationId);
+
+            if (pgData == null)
+                return new();
+
+            return pgData.LocalModuleConnection;
         }
     }
 }

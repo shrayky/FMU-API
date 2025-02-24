@@ -1,0 +1,95 @@
+﻿using FmuApiDomain.Configuration.Interfaces;
+using FmuApiDomain.LocalModule.Enums;
+using FmuApiDomain.LocalModule.Models;
+using FmuApiDomain.State.Interfaces;
+using LocalModuleIntegration.Interfaces;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+
+namespace LocalModuleIntegration.Workers
+{
+    public class LocalModuleStatusWorker : BackgroundService
+    {
+        private readonly ILogger<LocalModuleStatusWorker> _logger;
+        private readonly ILocalModuleService _localModuleService;
+        private readonly IParametersService _parametersService;
+        private readonly IApplicationState _applicationState;
+
+        private readonly Dictionary<int, LocalModuleStatus> _localModulesStatusCache = new();
+
+        private readonly TimeSpan _checkInterval = TimeSpan.FromSeconds(10);
+
+        public LocalModuleStatusWorker(
+            ILogger<LocalModuleStatusWorker> logger,
+            ILocalModuleService localModuleService,
+            IParametersService parametersService,
+            IApplicationState applicationState)
+        {
+            _logger = logger;
+            _localModuleService = localModuleService;
+            _parametersService = parametersService;
+            _applicationState = applicationState;
+        }
+
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                await Task.Delay(_checkInterval, stoppingToken);
+                await CheckLocalModuleStatuses(stoppingToken);
+            }
+        }
+
+        private async Task CheckLocalModuleStatuses(CancellationToken stoppingToken)
+        {
+            var config = await _parametersService.CurrentAsync();
+
+            if (config?.OrganisationConfig == null) return;
+
+            foreach (var organization in config.OrganisationConfig.PrintGroups)
+            {
+                if (stoppingToken.IsCancellationRequested)
+                    return;
+
+                if (!organization.LocalModuleConnection.Enable)
+                    continue;
+
+                LocalModuleState state = new();
+                LocalModuleStatus currentStatus = _applicationState.OrganizationLocalModuleStatus(organization.Id);
+
+                try
+                {
+                    state = await _localModuleService.StateAsync(organization.LocalModuleConnection);
+                    currentStatus = state.Status;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogInformation(
+                                        "Ошибка проверки статуса локального модуля для организации {OrganizationId}, причина: {ErrorReason} ",
+                                        organization.Id,
+                                        ex.Message);
+
+                    currentStatus = LocalModuleStatus.Unknown;
+                }
+
+                var lastStatus = _localModulesStatusCache.FirstOrDefault(p => p.Key == organization.Id);
+
+                if (lastStatus.Value == currentStatus)
+                    continue;
+
+                _logger.LogInformation(
+                        "Изменение статуса ЛМ для организации {OrganizationId}: {OldStatus} -> {NewStatus}",
+                        organization.Id,
+                        lastStatus.Value.ToString() ?? LocalModuleStatus.Unknown.ToString(),
+                        currentStatus.ToString() ?? LocalModuleStatus.Unknown.ToString()
+                    );
+
+                _localModulesStatusCache[organization.Id] = currentStatus;
+
+                _applicationState.UpdateOrganizationLocalModuleStatus(organization.Id, currentStatus);
+
+
+            }
+        }
+    }
+}

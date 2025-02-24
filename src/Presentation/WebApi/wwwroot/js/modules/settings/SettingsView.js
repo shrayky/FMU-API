@@ -1,16 +1,18 @@
+import { saveConfiguration } from '../../utils/saveConfiguration.js';
+
 const SETTINGS_MODULES = {
     serverConfigData: () => import("./elements/serverConfiguration.js"),
-    loggingConfigData: () => import("./elements/loggingConfiguration.js"),
-    autoUpdateData: () => import("./elements/autoUpdate.js"),
-    organistaionsTable: () => import("./elements/organistaionsTable.js"),
+    salesControl: () => import("./elements/salesControl.js"),
+    minimalPrices: () => import("./elements/minimalPrices.js"),
+    organizationsTable: () => import("./elements/organizationsTable.js"),
     pingHosts: () => import("./elements/pingHostsTable.js"),
     databaseConnection: () => import("./elements/databaseConnection.js"),
     frontolDbConnection: () => import("./elements/frontolDb.js"),
     markUnit: () => import("./elements/markUnit.js"),
     tokenServiceData: () => import("./elements/tokenService.js"),
     timeoutConfig: () => import("./elements/timeouts.js"),
-    salesControl: () => import("./elements/salesControl.js"),
-    minimalPrices: () => import("./elements/minimalPrices.js")
+    loggingConfigData: () => import("./elements/loggingConfiguration.js"),
+    autoUpdateData: () => import("./elements/autoUpdate.js"),
 };
 
 export default function SettingsView(id) {
@@ -36,24 +38,7 @@ export default function SettingsView(id) {
                         width: 120,
                         hidden: true,
                         click: function () {
-                            const form = $$(id);
-
-                            let data = JSON.stringify(form.getValues());
-
-                            webix.ajax()
-                                .post("api/configuration/parameters", data)
-                                .then(answer => {
-                                    let packet = answer.json();
-
-                                    if (!packet.isSuccess) {
-                                        webix.message(packet.message);
-                                        return;
-                                    }
-                                })
-                                .finally(_ => {
-                                    form.enable();
-                                });
-
+                            saveConfiguration(id);
                         }
                     },
                     {}

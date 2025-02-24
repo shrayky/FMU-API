@@ -72,5 +72,30 @@ namespace FmuApiApplication.Mark.Services
             }
             return codeData;
         }
+
+        public string CalculateCis(string markCode)
+        {
+            // вся маркировка (кроме штучного табака)
+            if (markCode.StartsWith("01"))
+            {
+                markCode = markCode.Replace(GsE, Gs.ToString());
+
+                int gsSymbolPosition = markCode.IndexOf(Gs);
+
+                if (gsSymbolPosition > 0)
+                {
+                    return markCode.Substring(0, gsSymbolPosition);
+                }
+            }
+
+            // штучный табак
+            if (markCode.Length == 29)
+            {
+                return markCode.Substring(0, 21);
+            }
+
+            // если нам в проверку прилетел сразу sgtin
+            return "";
+        }
     }
 }

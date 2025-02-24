@@ -100,7 +100,7 @@ namespace FmuApiApplication.Documents
 
                     CodeDataTrueApi markData = trueApiCisData.Codes[0];
 
-                    if (markData.GroupIds.Contains(TrueApiGoup.Tobaco))
+                    if (markData.GroupIds.Contains(TrueApiGroup.Tobaco))
                     {
                         var minPrice = _configuration.MinimalPrices.Tabaco > markData.Smp ? _configuration.MinimalPrices.Tabaco : markData.Smp;
 

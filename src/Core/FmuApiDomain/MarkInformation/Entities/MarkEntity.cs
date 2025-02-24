@@ -13,5 +13,10 @@ namespace FmuApiDomain.MarkInformation.Entities
         public SaleData SaleData { get; set; } = new();
         public bool HaveTrueApiAnswer => TrueApiAnswerProperties.ReqId != string.Empty;
         public bool IsSold => State == MarkState.Sold;
+
+        public static implicit operator List<object>(MarkEntity v)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

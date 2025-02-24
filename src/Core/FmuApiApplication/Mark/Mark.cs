@@ -23,6 +23,7 @@ namespace FmuApiApplication.Mark
 
         public string Code { get; }
         public string SGtin { get; }
+        public string Cis { get; }
         public bool CodeIsSgtin { get; }
         public string Barcode { get; }
         public int PrintGroupCode { get; private set; }
@@ -48,6 +49,7 @@ namespace FmuApiApplication.Mark
 
             Code = _markParser.ParseCode(markCode);
             SGtin = _markParser.CalculateSGtin(Code);
+            Cis = _markParser.CalculateCis(Code);
             CodeIsSgtin = (SGtin == Code);
             Barcode = _markParser.CalculateBarcode(SGtin);
 
@@ -87,11 +89,13 @@ namespace FmuApiApplication.Mark
 
             var delegates = new CheckDelegate[]
             {
-                () => _markChecker.OnlineCheck(Code, SGtin, CodeIsSgtin, PrintGroupCode),
-                () => _markChecker.OfflineCheck(SGtin, _markStateManager)
+                async () => await _markChecker.OnlineCheck(Code, SGtin, CodeIsSgtin, PrintGroupCode),
+                async () => await _markChecker.OfflineCheckAsync(Cis, PrintGroupCode),
+                async() => await _markChecker.FmuApiDatabaseCheck(SGtin, _markStateManager)
             };
 
             List<string> checkErrors = [];
+            var currentState = await _markStateManager.GetMarkInformation(SGtin);
 
             foreach (var check in delegates)
             {
@@ -105,6 +109,9 @@ namespace FmuApiApplication.Mark
                 
                 if (!_lastCheckResult.HasTrueApiAnswer())
                     continue;
+
+                if (currentState.State == MarkState.Sold)
+                    _lastCheckResult.TrueMarkData.Codes.ForEach(code => code.Sold = true);
                 
                 var validationResult = ValidateMarkData();
                 
@@ -119,20 +126,26 @@ namespace FmuApiApplication.Mark
                                        validationResult.Error);
                 }
 
-                if (!_lastCheckResult.FmuAnswer.Offline)
+                if (!_lastCheckResult.FmuAnswer.Offline && validationResult.IsSuccess)
                     await _markStateManager.SaveMarkInformation(SGtin, _lastCheckResult.TrueMarkData);
 
-                return Result.Success(_lastCheckResult.FmuAnswer);
+                checkErrors.Clear();
+
+                break;
             }
 
+            if (checkErrors.Count == 0)
+                return Result.Success(_lastCheckResult.FmuAnswer);
+                
             return Result.Failure<FmuAnswer>($"Проверка марки {Code} не удалась по причине: {string.Join(", ", checkErrors)}");
 
         }
 
-        private Result ValidateMarkData()
+        public Result ValidateMarkData()
         {
             var trueMarkData = _lastCheckResult.TrueMarkData;
             var markData = trueMarkData.MarkData();
+            var markDbInfo = _lastCheckResult.MarkInformation;
 
             // Проверка владельца
             if (_configuration.SaleControlConfig.CheckIsOwnerField && !markData.IsOwner)
@@ -144,14 +157,12 @@ namespace FmuApiApplication.Mark
             // Проверка срока годности
             if (trueMarkData.AllMarksIsExpire())
             {
-                _logger.LogWarning("Срок годности {SGtin} истек", SGtin);
                 return Result.Failure("Срок годности истек");
             }
 
             // Проверка продажи
-            if (trueMarkData.AllMarksIsSold())
+            if (trueMarkData.AllMarksIsSold() || markDbInfo.State == MarkState.Sold)
             {
-                _logger.LogWarning("Марка {SGtin} уже продана", SGtin);
                 return Result.Failure("Марка продана");
             }
 
@@ -159,8 +170,6 @@ namespace FmuApiApplication.Mark
             if (_lastCheckResult.MarkInformation.State == MarkState.Returned &&
                 _configuration.SaleControlConfig.BanSalesReturnedWares)
             {
-                _logger.LogWarning("Попытка продажи возвращенного товара {SGtin}", SGtin);
-                
                 _lastCheckResult.FmuAnswer.Truemark_response.MarkCodeAsSaled();
 
                 return Result.Failure("Продажа возвращенного покупателем товара запрещена!");

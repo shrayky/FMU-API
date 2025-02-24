@@ -1,7 +1,7 @@
 ﻿using ApplicationConfigurationService.Settings;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Options;
-using FmuApiDomain.Configuration.Options.Organisation;
+using FmuApiDomain.Configuration.Options.Organization;
 
 namespace ApplicationConfigurationService.Migrations
 {

@@ -12,6 +12,10 @@ namespace FmuApiDomain.TrueApi.MarkData.Check
         public string ReqId { get; set; } = string.Empty;
         [JsonPropertyName("reqTimestamp")]
         public long ReqTimestamp { get; set; } = 0;
+        [JsonPropertyName("inst")]
+        public string Inst { get; set; } = "";
+        [JsonPropertyName("version")]
+        public string Version { get; set; } = "";
         [JsonPropertyName("codes")]
         public List<CodeDataTrueApi> Codes { get; set; } = [];
 

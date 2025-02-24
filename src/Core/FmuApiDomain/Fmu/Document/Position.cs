@@ -17,6 +17,8 @@ namespace FmuApiDomain.Fmu.Document
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public double Quantity { get; set; } = 0;
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public double Volume { get; set; } = 0;
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public Organization Organization { get; set; } = new();
     }
 }

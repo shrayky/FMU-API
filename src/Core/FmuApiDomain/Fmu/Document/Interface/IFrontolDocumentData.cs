@@ -2,9 +2,9 @@
 {
     public interface IFrontolDocumentData
     {
-        public RequestDocument Document { get; set; }
-        public string Id { get; set; }
-        public string Rev {  get; set; }
-        public bool Deleted { get; }
+        RequestDocument Document { get; set; }
+        string Id { get; set; }
+        string Rev {  get; set; }
+        bool Deleted { get; }
     }
 }

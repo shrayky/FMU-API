@@ -26,7 +26,7 @@ export default function informationView(id) {
                     },
                     {
                         view: "label",
-                        id: "browswerRecomendation",
+                        id: "browserRecommendation",
                         label: "Для работы рекомендуется использовать браузер Vivaldi, Edge, Opera, Chrome - в общем все на базе Chromium."
                     },
                     {

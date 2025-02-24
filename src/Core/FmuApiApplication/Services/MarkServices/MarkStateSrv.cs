@@ -21,7 +21,7 @@ namespace FmuApiApplication.Services.MarkServices
             return await _markStateCrud.GetAsync(sgtin);
         }
 
-        public async Task SetMarksSaled(CheckWithMarks saleMarkData)
+        public async Task SetMarksSold(CheckWithMarks saleMarkData)
         {
             foreach (var mark in saleMarkData.Marks)
             {

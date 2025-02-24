@@ -3,6 +3,7 @@ using CouchDb.DocumentModels;
 using FmuApiDomain.MarkInformation.Entities;
 using FmuApiDomain.MarkInformation.Enums;
 using FmuApiDomain.MarkInformation.Models;
+using System.Runtime.CompilerServices;
 
 namespace CouchDb.Handlers
 {
@@ -94,7 +95,7 @@ namespace CouchDb.Handlers
             };
         }
 
-        public async Task DelteAsync(string Id)
+        public async Task DeleteAsync(string Id)
         {
             if (_context == null)
                 return;
@@ -137,7 +138,7 @@ namespace CouchDb.Handlers
             if (_context == null)
                 return;
 
-            List<MarkStateDocument> MarkStateDocumements = new();
+            List<MarkStateDocument> MarkStateDocuments = new();
 
             foreach (var markState in markStates)
             {
@@ -150,10 +151,10 @@ namespace CouchDb.Handlers
                     SaleInforamtion = markState.SaleData
                 };
 
-                MarkStateDocumements.Add(markStateDocument);
+                MarkStateDocuments.Add(markStateDocument);
             }
 
-            await _context.MarksState.DeleteRangeAsync(MarkStateDocumements);
+            await _context.MarksState.DeleteRangeAsync(MarkStateDocuments);
 
         }
 
@@ -165,6 +166,32 @@ namespace CouchDb.Handlers
             MarkStateDocument? answer = await _context.MarksState.FindAsync(Id);
 
             return answer ?? new();
+        }
+
+        public async Task<List<MarkEntity>> GetDocumentsAsync(List<string> gtins)
+        {
+            if (_context == null)
+                return new();
+
+            var docs = await _context.MarksState.FindManyAsync(gtins);
+
+            List<MarkEntity> answer = [];
+
+            foreach (var doc in docs)
+            {
+                MarkEntity markEntity = new()
+                {
+                    MarkId = doc.Id,
+                    State = doc.State,
+                    TrueApiCisData = doc.TrueApiInformation,
+                    TrueApiAnswerProperties = doc.TrueApiAnswerProperties,
+                    SaleData = doc.SaleInforamtion
+                };
+
+                answer.Add(markEntity);
+            }
+
+            return answer;
         }
     }
 }

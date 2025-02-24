@@ -1,4 +1,4 @@
-import { Label, TableToolabr, Text, Number, padding } from "../../../utils/ui.js";
+import { Label, TableToolbar, Text, Number, padding } from "../../../utils/ui.js";
 
 class CheckInternetConnectionElement {
     constructor(id) {
@@ -32,7 +32,7 @@ class CheckInternetConnectionElement {
         elements.push({
             padding: padding,
             rows: [
-                TableToolabr("HostsToPing"),
+                TableToolbar("HostsToPing"),
                 this._createFormTable()
             ]
         });

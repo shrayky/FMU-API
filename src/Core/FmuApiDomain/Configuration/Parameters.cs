@@ -1,6 +1,6 @@
 ﻿using FmuApiDomain.Authentication.Models;
 using FmuApiDomain.Configuration.Options;
-using FmuApiDomain.Configuration.Options.Organisation;
+using FmuApiDomain.Configuration.Options.Organization;
 using System.Text.Json.Serialization;
 
 namespace FmuApiDomain.Configuration

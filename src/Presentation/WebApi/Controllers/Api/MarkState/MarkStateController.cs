@@ -32,7 +32,7 @@ namespace WebApi.Controllers.Api.MarkState
             try
             {
                 if (saleMark.CheckData.IsSale)
-                    await _markStateSrv.SetMarksSaled(saleMark);
+                    await _markStateSrv.SetMarksSold(saleMark);
                 else
                     await _markStateSrv.SetMarksInStok(saleMark);
             }

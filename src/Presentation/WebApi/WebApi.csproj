@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>fmu-api</AssemblyName>
     <SignAssembly>False</SignAssembly>
-	<Version>9.11.0</Version>
+	<Version>10.1.0</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -41,6 +41,7 @@
     <ProjectReference Include="..\..\Infrastructure\CentralServerExchange\CentralServerExchange.csproj" />
     <ProjectReference Include="..\..\Infrastructure\CouchDb\CouchDb.csproj" />
     <ProjectReference Include="..\..\Infrastructure\FrontolDb\FrontolDb.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\LocalModuleIntegration\LocalModuleIntegration.csproj" />
     <ProjectReference Include="..\..\Infrastructure\LogService\LogService.csproj" />
     <ProjectReference Include="..\..\Infrastructure\MemoryCache\MemoryCache.csproj" />
     <ProjectReference Include="..\..\Infrastructure\TrueApiCdn\TrueApiCdn.csproj" />

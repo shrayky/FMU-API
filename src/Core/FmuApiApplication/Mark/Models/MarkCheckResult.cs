@@ -1,5 +1,6 @@
 ﻿using CSharpFunctionalExtensions;
 using FmuApiDomain.Fmu.Document;
+using FmuApiDomain.MarkInformation.Entities;
 using FmuApiDomain.MarkInformation.Enums;
 using FmuApiDomain.TrueApi.MarkData.Check;
 
@@ -10,7 +11,7 @@ namespace FmuApiApplication.Mark.Models
         public bool IsSuccess { get; private set; }
         public string ErrorDescription { get; private set; } = string.Empty;
         public CheckMarksDataTrueApi TrueMarkData { get; private set; } = new();
-        public FmuApiDomain.MarkInformation.Entities.MarkEntity MarkInformation { get; private set; } = new();
+        public MarkEntity MarkInformation { get; private set; } = new();
         public FmuAnswer FmuAnswer { get; private set; } = new();
 
         private MarkCheckResult() { }
@@ -22,7 +23,7 @@ namespace FmuApiApplication.Mark.Models
 
         public static MarkCheckResult Success(
             CheckMarksDataTrueApi trueMarkData,
-            FmuApiDomain.MarkInformation.Entities.MarkEntity markInfo,
+            MarkEntity markInfo,
             FmuAnswer fmuAnswer)
         {
             return new MarkCheckResult
@@ -42,28 +43,7 @@ namespace FmuApiApplication.Mark.Models
                 ErrorDescription = error
             };
         }
-
-        public static MarkCheckResult FromOfflineCheck(Result<FmuAnswer> offlineCheckResult, FmuApiDomain.MarkInformation.Entities.MarkEntity markInfo)
-        {
-            if (offlineCheckResult.IsFailure)
-            {
-                return Failure(offlineCheckResult.Error);
-            }
-
-            var fmuAnswer = offlineCheckResult.Value;
-            fmuAnswer.Offline = true;
-            fmuAnswer.OfflineRegime = true;
-
-            return new MarkCheckResult
-            {
-                IsSuccess = true,
-                TrueMarkData = fmuAnswer.Truemark_response,
-                MarkInformation = markInfo,
-                FmuAnswer = fmuAnswer
-            };
-        }
-
-        public static MarkCheckResult FromOnlineCheck(Result<CheckMarksDataTrueApi> onlineCheckResult)
+        public static MarkCheckResult FromCheck(Result<CheckMarksDataTrueApi> onlineCheckResult)
         {
             if (onlineCheckResult.IsFailure)
             {
@@ -102,7 +82,7 @@ namespace FmuApiApplication.Mark.Models
             IsSuccess = false;
         }
 
-        public void SetMarkInformation(FmuApiDomain.MarkInformation.Entities.MarkEntity markInfo)
+        public void SetMarkInformation(MarkEntity markInfo)
         {
             MarkInformation = markInfo;
         }

@@ -3,6 +3,7 @@ using FmuApiApplication.Services.TrueSign;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Fmu.Document.Interface;
+using FmuApiDomain.MarkInformation.Entities;
 using FmuApiDomain.MarkInformation.Enums;
 using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.MarkInformation.Models;
@@ -63,7 +64,7 @@ namespace FmuApiApplication.Services.MarkServices
             await _frontolDocumentService.DelteAsync(uid);
         }
 
-        public async Task<FmuApiDomain.MarkInformation.Entities.MarkEntity> MarkChangeState(string id, string newState, SaleData saleData)
+        public async Task<MarkEntity> MarkChangeState(string id, string newState, SaleData saleData)
         {
             bool isSold = newState == MarkState.Sold;
 
@@ -72,7 +73,7 @@ namespace FmuApiApplication.Services.MarkServices
             existMark.State = newState;
             existMark.TrueApiCisData.Sold = isSold;
 
-            FmuApiDomain.MarkInformation.Entities.MarkEntity markInformation = new()
+            MarkEntity markInformation = new()
             {
                 MarkId = id,
                 State = existMark.State,
@@ -84,7 +85,7 @@ namespace FmuApiApplication.Services.MarkServices
             return await _markStateService.AddAsync(markInformation);
         }
 
-        public async Task<FmuApiDomain.MarkInformation.Entities.MarkEntity> MarkInformationAsync(string id)
+        public async Task<MarkEntity> MarkInformationAsync(string id)
         {
             return await _markStateService.GetAsync(id);
         }
@@ -106,6 +107,23 @@ namespace FmuApiApplication.Services.MarkServices
                 return 0;
 
             return result.Value;
+        }
+
+        public async Task<List<MarkEntity>> MarkInformationBulkAsync(List<string> sgtins)
+        {
+            return await _markStateService.GetDocumentsAsync(sgtins);
+        }
+
+        public async Task DraftBeerUpdateAsync(string SGtin, int Quantity)
+        {
+            var markData = await _markStateService.GetAsync(SGtin);
+
+            if (markData == null)
+                return;
+
+            markData.TrueApiCisData.InnerUnitCount = Quantity;
+
+            await _markStateService.AddAsync(markData);
         }
     }
 }

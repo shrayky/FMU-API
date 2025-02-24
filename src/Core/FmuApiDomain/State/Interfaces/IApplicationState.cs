@@ -1,4 +1,5 @@
 ﻿using FmuApiDomain.Authentication.Models;
+using FmuApiDomain.LocalModule.Enums;
 
 namespace FmuApiDomain.State.Interfaces
 {
@@ -9,6 +10,10 @@ namespace FmuApiDomain.State.Interfaces
         TokenData TrueApiToken();
         void UpdateTrueApiToken(TokenData token);
         TokenData FmuToken();
-        public void UpdateFmuToken(TokenData token);
+        void UpdateFmuToken(TokenData token);
+        LocalModuleStatus OrganizationLocalModuleStatus(int id);
+        void UpdateOrganizationLocalModuleStatus(int organizationId, LocalModuleStatus status);
+        bool WithoutOnlineCheck();
+        void UpdateWithoutOnlineCheck(bool value);
     }
 }

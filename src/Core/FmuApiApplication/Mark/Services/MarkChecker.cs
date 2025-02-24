@@ -11,6 +11,9 @@ using FmuApiDomain.MarkInformation.Entities;
 using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.MarkInformation.Enums;
 using FmuApiApplication.Mark.Models;
+using LocalModuleIntegration.Interfaces;
+using FmuApiDomain.Configuration.Options;
+using FmuApiDomain.LocalModule.Enums;
 
 namespace FmuApiApplication.Mark.Services
 {
@@ -21,27 +24,29 @@ namespace FmuApiApplication.Mark.Services
         private readonly MarksCheckService _trueApiCheck;
         private readonly Parameters _configuration;
         private readonly IApplicationState _applicationState;
+        private readonly ILocalModuleService _localModuleService;
 
-        public MarkChecker(
-            ILogger<MarkChecker> logger,
+        public MarkChecker(ILogger<MarkChecker> logger,
             IParametersService parametersService,
             MarksCheckService trueApiCheck,
-            IApplicationState applicationState)
+            IApplicationState applicationState,
+            ILocalModuleService localModuleService)
         {
             _logger = logger;
             _parametersService = parametersService;
             _trueApiCheck = trueApiCheck;
             _configuration = _parametersService.Current();
             _applicationState = applicationState;
+            _localModuleService = localModuleService;
         }
 
-        public async Task<MarkCheckResult> OfflineCheck(string sgtin, IMarkStateManager stateManager)
+        public async Task<MarkCheckResult> FmuApiDatabaseCheck(string sgtin, IMarkStateManager stateManager)
         {
-            _logger.LogInformation("Начало offline проверки марки {Sgtin}", sgtin);
+            _logger.LogInformation("Начало database проверки марки {Sgtin}", sgtin);
 
             if (!_configuration.Database.OfflineCheckIsEnabled)
             {
-                _logger.LogInformation("Offline проверка отключена");
+                _logger.LogInformation("Database проверка отключена");
                 return MarkCheckResult.Success(new(), new(), new());
             }
 
@@ -59,7 +64,6 @@ namespace FmuApiApplication.Mark.Services
             fmuAnswer.Offline = true;
 
             return MarkCheckResult.Success(trueMarkData, markInfo, fmuAnswer);
-
         }
 
         public async Task<MarkCheckResult> OnlineCheck(string code, string sgtin, bool codeIsSgtin, int printGroupCode)
@@ -71,6 +75,9 @@ namespace FmuApiApplication.Mark.Services
 
             if (!_applicationState.IsOnline())
                 return MarkCheckResult.Failure("Нет интернета");
+
+            if (!_applicationState.WithoutOnlineCheck())
+                return MarkCheckResult.Failure("Онлайн проверка отключена");
 
             Result<CheckMarksDataTrueApi> trueMarkCheckResult;
 
@@ -97,9 +104,8 @@ namespace FmuApiApplication.Mark.Services
                 return MarkCheckResult.Failure($"Пустой результат проверки по коду марки {code}");
             }
 
-            var result = MarkCheckResult.FromOnlineCheck(trueMarkCheckResult);
+            var result = MarkCheckResult.FromCheck(trueMarkCheckResult);
 
-            // Создаем и устанавливаем информацию о марке через метод
             var markInfo = new MarkEntity()
             {
                 MarkId = sgtin,
@@ -119,15 +125,9 @@ namespace FmuApiApplication.Mark.Services
             return result;
         }
 
-        private bool ValidateOnlineCheckPossibility(bool codeisSgtin)
+        private bool ValidateOnlineCheckPossibility(bool codeIsSgtin)
         {
-            return !codeisSgtin || _applicationState.IsOnline();
-        }
-
-        private bool IsReturnedAndBanned(FmuApiDomain.MarkInformation.Entities.MarkEntity markInfo)
-        {
-            return markInfo.State == MarkState.Returned &&
-                   _configuration.SaleControlConfig.BanSalesReturnedWares;
+            return !codeIsSgtin || _applicationState.IsOnline();
         }
 
         private static CheckMarksDataTrueApi CreateTrueMarkDataFromInfo(FmuApiDomain.MarkInformation.Entities.MarkEntity markInfo)
@@ -152,6 +152,86 @@ namespace FmuApiApplication.Mark.Services
                 Error = "Данные получены в offline режиме",
                 Truemark_response = trueMarkData
             };
+        }
+
+        public async Task<MarkCheckResult> OfflineCheckAsync(string cis, int organizationId)
+        {
+            string xApiKey = _configuration.OrganisationConfig.XapiKey(organizationId);
+
+            if (string.IsNullOrEmpty(xApiKey))
+                return MarkCheckResult.Failure($"Не получен XAPIKEY для организации с кодом {organizationId}, offline проверка {cis} невозможна.");
+
+            LocalModuleConnection connection = _configuration.OrganisationConfig.LocalModuleConnection(organizationId);
+
+            if (!connection.Enable)
+                return MarkCheckResult.Failure($"Локальный модуль отключен для организации с кодом {organizationId}, offline проверка {cis} невозможна.");
+
+            var lmState = _applicationState.OrganizationLocalModuleStatus(organizationId);
+
+            if (lmState != LocalModuleStatus.Ready)
+                return MarkCheckResult.Failure($"Локальный модуль для организации с кодом {organizationId} находится в состоянии {lmState}, offline проверка {cis} невозможна.");
+
+            Result<CheckMarksDataTrueApi> trueMarkCheckResult;
+
+            try
+            {
+                trueMarkCheckResult = await _localModuleService.OutCheckAsync(connection, cis, xApiKey);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при offline проверке марки {Code}", cis);
+                return MarkCheckResult.Failure($"Ошибка offline проверки: {ex.Message}");
+            }
+
+            if (trueMarkCheckResult.IsFailure)
+            {
+                _logger.LogWarning("Ошибка проверки марки {Code}: {Error}", cis, trueMarkCheckResult.Error);
+                return MarkCheckResult.Failure(trueMarkCheckResult.Error);
+            }
+
+            var markData = trueMarkCheckResult.Value.MarkData();
+            if (markData.Empty)
+            {
+                return MarkCheckResult.Failure($"Пустой результат проверки по коду марки {cis}");
+            }
+
+            markData.Found = true;
+            markData.Valid = true;
+            markData.Utilised = true;
+            markData.IsOwner = true;
+            markData.Verified = true;
+            markData.Realizable = true;
+
+            var result = MarkCheckResult.FromCheck(trueMarkCheckResult);
+
+            result.FmuAnswer.OfflineRegime = true;
+
+            var markInfo = new MarkEntity()
+            {
+                MarkId = cis,
+                State = markData.Sold ? MarkState.Sold : MarkState.Stock,
+                TrueApiCisData = markData,
+                TrueApiAnswerProperties = new()
+                {
+                    Code = trueMarkCheckResult.Value.Code,
+                    Description = trueMarkCheckResult.Value.Description,
+                    ReqId = _configuration.SaleControlConfig.SendLocalModuleInformationalInRequestId ? 
+                                                             trueMarkCheckResult.Value.ReqId : 
+                                                             $"{trueMarkCheckResult.Value.ReqId}&{trueMarkCheckResult.Value.Inst}&{trueMarkCheckResult.Value.Version}",
+                    ReqTimestamp = trueMarkCheckResult.Value.ReqTimestamp,
+                    Inst = trueMarkCheckResult.Value.Inst,
+                    Version = trueMarkCheckResult.Value.Version
+                },
+            };
+
+            if (_configuration.SaleControlConfig.SendLocalModuleInformationalInRequestId)
+                result.TrueMarkData.ReqId = $"{trueMarkCheckResult.Value.ReqId}&Inst{trueMarkCheckResult.Value.Inst}&Ver{trueMarkCheckResult.Value.Version}";
+            else
+                result.TrueMarkData.ReqId = trueMarkCheckResult.Value.ReqId;
+
+            result.SetMarkInformation(markInfo);
+
+            return result;
         }
     }
 }

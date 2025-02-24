@@ -1,6 +1,6 @@
 ﻿namespace FmuApiDomain.TrueApi.MarkData
 {
-    public static class TrueApiGoup
+    public static class TrueApiGroup
     {
         public static int Lp { get; } = 1;
         public static int Shoes { get; } = 2;

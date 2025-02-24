@@ -84,23 +84,19 @@ namespace FmuApiApplication.Documents
             _logger.LogInformation("Марка для проверки {markCodeData}", markInBase64);
 
             IMark mark = await _markInformationService.MarkAsync(markInBase64);
-            await SetOrganiztaionIdAsync(mark);
+            await SetOrganizationIdAsync(mark);
 
             var checkResult = await mark.PerformCheckAsync();
 
-            if (!checkResult.IsSuccess)
-            {
-                // Если настроено не отправлять пустой ответ при ошибке
-                if (!_configuration.SaleControlConfig.SendEmptyTrueApiAnswerWhenTimeoutError)
-                {
-                    return checkResult;
-                }
+            if (checkResult.IsSuccess)
+                return checkResult;
 
-                // Создаем фейковый ответ при ошибке
+            _logger.LogError(checkResult.Error);
+
+            if (_configuration.SaleControlConfig.SendEmptyTrueApiAnswerWhenTimeoutError)
                 return Result.Success(CreateFakeAnswer(mark, checkResult.Error));
-            }
-
-            return checkResult;
+            else
+                return checkResult;
         }
 
         private FmuAnswer CreateFakeAnswer(IMark mark, string error)
@@ -142,7 +138,7 @@ namespace FmuApiApplication.Documents
             };
         }
 
-        private async Task SetOrganiztaionIdAsync(IMark mark)
+        private async Task SetOrganizationIdAsync(IMark mark)
         {
             if (_configuration.OrganisationConfig.PrintGroups.Count == 1)
                 return;
