@@ -8,8 +8,10 @@ using FmuApiApplication.Mark;
 using FmuApiApplication.Services.AcoUnit;
 using FmuApiApplication.Services.MarkServices;
 using FmuApiApplication.Services.TrueSign;
+using FmuApiDomain.Cache.Interfaces;
 using FmuApiDomain.Configuration.Interfaces;
 using FrontolDb;
+using MemoryCache;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Scalar.AspNetCore;
 using Serilog;
@@ -157,6 +159,7 @@ async Task<bool> InstallAsWindowsServiceAsync()
         {
             services.AddMemoryCache();
             services.AddSingleton<IParametersService, SimpleParametersService>();
+            services.AddSingleton<ICacheService, MemoryCacheService>();
             services.AddSingleton<WindowsSrvInstallerService>();
         });
 
@@ -171,6 +174,9 @@ bool UninstallWindowsService()
     var builder = Host.CreateDefaultBuilder()
         .ConfigureServices(services =>
         {
+            services.AddMemoryCache();
+            services.AddSingleton<IParametersService, SimpleParametersService>();
+            services.AddSingleton<ICacheService, MemoryCacheService>();
             services.AddSingleton<WindowsSrvInstallerService>();
         });
 

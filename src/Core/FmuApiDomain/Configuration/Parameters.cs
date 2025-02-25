@@ -1,6 +1,7 @@
 ﻿using FmuApiDomain.Authentication.Models;
 using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.Configuration.Options.Organization;
+using FmuApiDomain.Constants;
 using System.Text.Json.Serialization;
 
 namespace FmuApiDomain.Configuration
@@ -8,8 +9,8 @@ namespace FmuApiDomain.Configuration
     public class Parameters
     {
         public string AppName { get; } = "FMU-API";
-        public int AppVersion { get; set; } = 9;
-        public int Assembly { get; set; } = 10;
+        public int AppVersion { get; set; } = ApplicationInformation.AppVersion;
+        public int Assembly { get; set; } = ApplicationInformation.Assembly;
         public string NodeName { get; set; } = string.Empty;
         public ServerConfig ServerConfig { get; set; } = new();
         public List<StringValue> HostsToPing { get; set; } = [];

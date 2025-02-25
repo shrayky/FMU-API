@@ -30,8 +30,6 @@ class SaleControllsConfigurationElement {
             this.rejectSalesWithoutCheckInformationFrom = new Date(config.saleControlConfig.rejectSalesWithoutCheckInformationFrom);
         }
 
-        console.log(this.rejectSalesWithoutCheckInformationFrom);
-
         return this;
     }
 
