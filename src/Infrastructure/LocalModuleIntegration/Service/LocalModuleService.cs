@@ -84,10 +84,7 @@ namespace LocalModuleIntegration.Service
         public async Task<LocalModuleState> StateAsync(LocalModuleConnection connection)
         {
             if (!connection.Enable)
-            {
-                _logger.LogWarning("Попытка инициализации отключенного ЛМ");
                 return new();
-            }
 
             using var httpClient = _httpClientFactory.CreateClient("LocalModule");
 

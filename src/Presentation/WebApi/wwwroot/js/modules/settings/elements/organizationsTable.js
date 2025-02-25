@@ -216,7 +216,9 @@ class OrganizationsConfigurationElement {
               
                 Label("LocalModuleTitle", this.LABELS.LocalModuleTitle),
                 CheckBox(this.LABELS.enable, "LocalModuleEnable"),
-                Text(this.LABELS.connectionAddress, "LocalModuleConnectionAddress"),
+                Text(this.LABELS.connectionAddress, "LocalModuleConnectionAddress", "", {
+                    placeholder: "http://hostname:port"
+                }),
                 Text(this.LABELS.userName, "LocalModuleUserName"),
                 PasswordBox(this.LABELS.password, "LocalModulePassword"),
 
@@ -382,9 +384,7 @@ class OrganizationsConfigurationElement {
         const isEnabled = connection.enable && 
             connection.connectionAddress && 
             connection.userName && 
-            connection.password &&
-            (item.localModuleStatus === this.LOCAL_MODULE_STATUS.NOT_CONFIGURED || 
-             item.localModuleStatus === this.LOCAL_MODULE_STATUS.READY);
+            connection.password;
 
         if (isEnabled) {
             initButton.enable();

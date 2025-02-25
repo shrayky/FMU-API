@@ -53,6 +53,13 @@ namespace TrueApiCdn.Workers
                     continue;
                 }
 
+                nextWorkDate = DateTime.Now.AddMinutes(checkPeriodMinutes);
+
+                var loadedCdnList = await _cdnService.GetCdnsAsync();
+
+                if (!_cdnService.ShouldUpdateCdnList() & loadedCdnList.Count > 0)
+                    continue;                    
+
                 _configuration = _parametersService.Current();
 
                 _logger.LogInformation("Загружаю список CDN");
@@ -79,9 +86,6 @@ namespace TrueApiCdn.Workers
                 {
                     _logger.LogWarning("Ошибка загрузки CDN серверов: {Message} \r\n {InnerException}", ex.Message, ex.InnerException);
                 }
-
-                nextWorkDate = DateTime.Now.AddMinutes(checkPeriodMinutes);
-
             }
         }
 

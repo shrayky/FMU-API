@@ -16,6 +16,7 @@ namespace TrueApiCdn.Services
         private readonly string _cdnPath;
         private const string CACHE_KEY = "cdn_list";
         private readonly int _cacheExpirationMinutes = 60;
+        private readonly TimeSpan _cdnFileLifeTime = TimeSpan.FromHours(7);
 
         private readonly SemaphoreSlim _semaphore = new(1, 1);
 
@@ -165,6 +166,16 @@ namespace TrueApiCdn.Services
                 await SaveCdnsAsync([]);
                 return [];
             }
+        }
+        public bool ShouldUpdateCdnList()
+        {
+            if (!File.Exists(_cdnPath))
+                return true;
+
+            var fileInfo = new FileInfo(_cdnPath);
+            var timeSinceLastUpdate = DateTime.Now - fileInfo.LastWriteTime;
+
+            return timeSinceLastUpdate > _cdnFileLifeTime;
         }
 
         private void CacheCdns(List<TrueSignCdn> cdns)

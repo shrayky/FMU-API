@@ -7,7 +7,7 @@ class DatabaseConnectionConfigurationElement {
         this.SETTINGS_ID = "loggingSettings";
         this.LABELS = {
             title: "База данных",
-            serverDbAddres: "Адрес сервера CouchDb",
+            serverDbAddress: "Адрес сервера CouchDb",
             user: "Пользователь",
             password: "Пароль",
             dbMarks: "База данных марок",
@@ -18,7 +18,7 @@ class DatabaseConnectionConfigurationElement {
 
     loadConfig(config) {
         if (config?.logging) {
-            this.serverDbAddres = config.database.netAdres;
+            this.serverDbAddress = config.database.netAdres;
             this.userName = config.database.userName;
             this.userPassword = config.database.password;
             this.marksStateDbName = config.database.marksStateDbName;
@@ -40,7 +40,7 @@ class DatabaseConnectionConfigurationElement {
             {
                 padding: padding,
                 rows: [
-                    Text(this.LABELS.serverDbAddres, "database.netAdres", this.serverDbAddres, httpAddressValidation),
+                    Text(this.LABELS.serverDbAddress, "database.netAdres", this.serverDbAddress, httpAddressValidation),
                     {
                         cols: [
                             Text(this.LABELS.user, "database.userName", this.userName),

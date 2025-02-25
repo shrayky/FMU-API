@@ -38,6 +38,7 @@ namespace FmuApiDomain.LocalModule.Models
             "ready" => LocalModuleStatus.Ready,
             "initialization" => LocalModuleStatus.Initialization,
             "sync_error" => LocalModuleStatus.SyncError,
+            "not_configured" => LocalModuleStatus.NotConfigured,
             _ => LocalModuleStatus.Unknown
         };
 
