@@ -157,6 +157,9 @@ namespace ApplicationConfigurationService
         {
             _logger.LogWarning("Записываю данные в файл конфигурации");
 
+            settings.AppVersion = ApplicationInformation.AppVersion;
+            settings.Assembly = ApplicationInformation.Assembly;
+
             lock (_lock)
             {
                 string? directoryPath = Path.GetDirectoryName(_configPath);

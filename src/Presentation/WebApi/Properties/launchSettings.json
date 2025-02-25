@@ -2,7 +2,7 @@
   "profiles": {
     "http": {
       "commandName": "Project",
-      "commandLineArgs": "--service\r\n",
+      "commandLineArgs": "--service",
       "launchUrl": "swagger",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
@@ -21,7 +21,7 @@
     },
     "http без онлайн проверки": {
       "commandName": "Project",
-      "commandLineArgs": "--service --c",
+      "commandLineArgs": "--service --noOnlineCheck",
       "launchUrl": "swagger",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
