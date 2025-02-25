@@ -4,6 +4,7 @@ using FmuApiApplication.Mark.Models;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Fmu.Document;
+using FmuApiDomain.Fmu.Document.Enums;
 using FmuApiDomain.MarkInformation.Enums;
 using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.TrueApi.MarkData.Check;
@@ -83,7 +84,7 @@ namespace FmuApiApplication.Mark
             return markCode;
         }
 
-        public async Task<Result<FmuAnswer>> PerformCheckAsync()
+        public async Task<Result<FmuAnswer>> PerformCheckAsync(OperationType operation)
         {
             _logger.LogInformation("Начало проверки марки {Code}", Code);
 
@@ -112,8 +113,11 @@ namespace FmuApiApplication.Mark
 
                 if (currentState.State == MarkState.Sold)
                     _lastCheckResult.TrueMarkData.Codes.ForEach(code => code.Sold = true);
-                
-                var validationResult = ValidateMarkData();
+
+                if (_lastCheckResult.MarkInformation.State != currentState.State)
+                    _lastCheckResult.MarkInformation.State = currentState.State;
+
+                var validationResult = ValidateMarkData(operation);
                 
                 if (validationResult.IsFailure)
                 {
@@ -141,44 +145,54 @@ namespace FmuApiApplication.Mark
 
         }
 
-        public Result ValidateMarkData()
+        public Result ValidateMarkData(OperationType operation)
         {
             var trueMarkData = _lastCheckResult.TrueMarkData;
             var markData = trueMarkData.MarkData();
             var markDbInfo = _lastCheckResult.MarkInformation;
+            var markError = string.Empty;
 
-            // Проверка владельца
-            if (_configuration.SaleControlConfig.CheckIsOwnerField && !markData.IsOwner)
+            if (operation == OperationType.ReturnSale)
             {
-                markData.Valid = false;
-                return Result.Failure("Нельзя продавать чужую марку!");
+                if (!trueMarkData.AllMarksIsSold() && markDbInfo.State == MarkState.Sold)
+                    return Result.Failure("Вернуть можно только проданные марки");
+            }
+            else
+            {
+                // Проверка владельца
+                if (_configuration.SaleControlConfig.CheckIsOwnerField && !markData.IsOwner)
+                {
+                    markData.Valid = false;
+                    return Result.Failure("Нельзя продавать чужую марку!");
+                }
+
+                // Проверка срока годности
+                if (trueMarkData.AllMarksIsExpire())
+                {
+                    return Result.Failure("Срок годности истек");
+                }
+
+                // Проверка продажи
+                if (trueMarkData.AllMarksIsSold() || markDbInfo.State == MarkState.Sold)
+                {
+                    return Result.Failure("Марка продана");
+                }
+
+                // Проверка продажи возвращенного товара
+                if (_lastCheckResult.MarkInformation.State == MarkState.Returned &&
+                    _configuration.SaleControlConfig.BanSalesReturnedWares)
+                {
+                    _lastCheckResult.FmuAnswer.Truemark_response.MarkCodeAsSaled();
+
+                    return Result.Failure("Продажа возвращенного покупателем товара запрещена!");
+                }
+
+                // Сброс ошибок верификации, для указанных в настройках групп
+                ResetErrorFields();
+
+                markError = markData.MarkErrorDescription();
             }
 
-            // Проверка срока годности
-            if (trueMarkData.AllMarksIsExpire())
-            {
-                return Result.Failure("Срок годности истек");
-            }
-
-            // Проверка продажи
-            if (trueMarkData.AllMarksIsSold() || markDbInfo.State == MarkState.Sold)
-            {
-                return Result.Failure("Марка продана");
-            }
-
-            // Проверка возврата
-            if (_lastCheckResult.MarkInformation.State == MarkState.Returned &&
-                _configuration.SaleControlConfig.BanSalesReturnedWares)
-            {
-                _lastCheckResult.FmuAnswer.Truemark_response.MarkCodeAsSaled();
-
-                return Result.Failure("Продажа возвращенного покупателем товара запрещена!");
-            }
-
-            // Сброс ошибок верификации, для указанных в настройках групп
-            ResetErrorFields();
-
-            var markError = markData.MarkErrorDescription();
             if (!string.IsNullOrEmpty(markError))
             {
                 return Result.Failure(markError);

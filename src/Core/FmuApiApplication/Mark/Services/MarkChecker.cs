@@ -76,7 +76,7 @@ namespace FmuApiApplication.Mark.Services
             if (!_applicationState.IsOnline())
                 return MarkCheckResult.Failure("Нет интернета");
 
-            if (!_applicationState.WithoutOnlineCheck())
+            if (_applicationState.WithoutOnlineCheck())
                 return MarkCheckResult.Failure("Онлайн проверка отключена");
 
             Result<CheckMarksDataTrueApi> trueMarkCheckResult;

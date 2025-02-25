@@ -1,8 +1,10 @@
 ﻿using CSharpFunctionalExtensions;
+using FmuApiApplication.Services.MarkServices;
 using FmuApiDomain.Cache.Interfaces;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Fmu.Document;
+using FmuApiDomain.Fmu.Document.Enums;
 using FmuApiDomain.Fmu.Document.Interface;
 using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.State.Interfaces;
@@ -12,12 +14,12 @@ namespace FmuApiApplication.Documents
 {
     public class CheckReturnDocument : IFrontolDocumentService
     {
-        private RequestDocument Document { get; set; }
-        private IMarkService MarkInformationService { get; set; }
+        private RequestDocument _document { get; set; }
+        private IMarkService _markInformationService { get; set; }
         private IFrontolDocumentService CheckService { get; set; }
         private ICacheService CacheService { get; set; }
         IParametersService _parametersService { get; set; }
-        private ILogger Logger { get; set; }
+        private ILogger _logger { get; set; }
 
         private Parameters _configuration;
 
@@ -29,15 +31,15 @@ namespace FmuApiApplication.Documents
             IApplicationState applicationStateService,
             ILogger logger)
         {
-            Document = requestDocument;
-            MarkInformationService = markInformationService;
+            _document = requestDocument;
+            _markInformationService = markInformationService;
             CacheService = cacheService;
-            Logger = logger;
+            _logger = logger;
             _parametersService = parametersService;
 
             _configuration = _parametersService.Current();
 
-            CheckService = CheckSellDocument.Create(Document, MarkInformationService, cacheService, _parametersService, applicationStateService, Logger);
+            CheckService = CheckSellDocument.Create(_document, _markInformationService, cacheService, _parametersService, applicationStateService, _logger);
         }
 
         private static CheckReturnDocument CreateObject(
@@ -71,7 +73,7 @@ namespace FmuApiApplication.Documents
             if (!_configuration.SaleControlConfig.CheckReceiptReturn)
                 return Result.Success(answer);
 
-            var checkResult = await CheckService.ActionAsync();
+            var checkResult = await MarkInformation(_document.Mark());
 
             if (checkResult.IsFailure)
                 return checkResult;
@@ -89,7 +91,38 @@ namespace FmuApiApplication.Documents
             answer.Truemark_response.CorrectExpireDate();
 
             return Result.Success(answer);
+        }
 
+        private async Task<Result<FmuAnswer>> MarkInformation(string markInBase64)
+        {
+            _logger.LogInformation("Марка для проверки {markCodeData}", markInBase64);
+
+            IMark mark = await _markInformationService.MarkAsync(markInBase64);
+            await SetOrganizationIdAsync(mark);
+
+            var checkResult = await mark.PerformCheckAsync(OperationType.ReturnSale);
+
+            if (checkResult.IsSuccess)
+                return checkResult;
+
+            _logger.LogError(checkResult.Error);
+
+            return checkResult;
+        }
+
+        private async Task SetOrganizationIdAsync(IMark mark)
+        {
+            if (_configuration.OrganisationConfig.PrintGroups.Count == 1)
+                return;
+
+            int pgCode = await _markInformationService.WareSaleOrganizationFromFrontolBaseAsync(mark.Barcode);
+
+            if (pgCode == 0)
+                return;
+
+            _logger.LogInformation("Код группы печати организации {pgCode}", pgCode);
+
+            mark.SetPrintGroupCode(pgCode);
         }
 
     }

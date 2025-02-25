@@ -13,6 +13,12 @@ namespace FmuApiApplication.Services.State
         private List<OrganizationLocalModuleState> _localModules { get; set; } = new();
         private bool _withoutOnlineCheck { get; set; } = false;
 
+        public ApplicationState()
+        {
+            var args = Environment.GetCommandLineArgs();
+            _withoutOnlineCheck = args.Contains("--noOnlineCheck");
+        }
+
         public void SetOnlineStatus(bool isOnline)
         {
             if (_online != isOnline)

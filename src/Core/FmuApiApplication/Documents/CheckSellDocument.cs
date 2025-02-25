@@ -3,6 +3,7 @@ using FmuApiDomain.Cache.Interfaces;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Fmu.Document;
+using FmuApiDomain.Fmu.Document.Enums;
 using FmuApiDomain.Fmu.Document.Interface;
 using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.State.Interfaces;
@@ -86,14 +87,15 @@ namespace FmuApiApplication.Documents
             IMark mark = await _markInformationService.MarkAsync(markInBase64);
             await SetOrganizationIdAsync(mark);
 
-            var checkResult = await mark.PerformCheckAsync();
+            var checkResult = await mark.PerformCheckAsync(OperationType.Sale);
 
             if (checkResult.IsSuccess)
                 return checkResult;
 
             _logger.LogError(checkResult.Error);
 
-            if (_configuration.SaleControlConfig.SendEmptyTrueApiAnswerWhenTimeoutError)
+            if (_configuration.SaleControlConfig.SendEmptyTrueApiAnswerWhenTimeoutError 
+                && _configuration.SaleControlConfig.RejectSalesWithoutCheckInformationFrom <  DateTime.Now)
                 return Result.Success(CreateFakeAnswer(mark, checkResult.Error));
             else
                 return checkResult;

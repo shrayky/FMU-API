@@ -2,6 +2,7 @@
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.TrueApi.MarkData.Check;
 using FmuApiDomain.MarkInformation.Entities;
+using FmuApiDomain.Fmu.Document.Enums;
 
 namespace FmuApiDomain.MarkInformation.Interfaces
 {
@@ -16,6 +17,6 @@ namespace FmuApiDomain.MarkInformation.Interfaces
         public void SetPrintGroupCode(int code);
         public MarkEntity DatabaseState();
         public FmuAnswer MarkDataAfterCheck();
-        public Task<Result<FmuAnswer>> PerformCheckAsync();
+        public Task<Result<FmuAnswer>> PerformCheckAsync(OperationType operation);
     }
 }

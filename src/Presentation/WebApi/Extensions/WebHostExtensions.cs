@@ -4,7 +4,6 @@ using FmuApiApplication.Workers;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.Constants;
-using FmuApiDomain.LocalModule.Models;
 using FmuApiDomain.State.Interfaces;
 using LocalModuleIntegration;
 using Serilog;

@@ -9,7 +9,6 @@ using FmuApiApplication.Services.AcoUnit;
 using FmuApiApplication.Services.MarkServices;
 using FmuApiApplication.Services.TrueSign;
 using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.State.Interfaces;
 using FrontolDb;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Scalar.AspNetCore;
@@ -59,7 +58,7 @@ bool RunHttpApiService()
     ApplicationConfiguration.AddService(services);
 
     builder.ApplyAppConfigurationExtension();
-    
+
     services.Configure<RouteOptions>(option =>
     {
         option.AppendTrailingSlash = true;
@@ -104,11 +103,6 @@ bool RunHttpApiService()
 
     app.MapRazorPages();
     app.MapControllers();
-
-    using var scope = builder.Services.BuildServiceProvider().CreateScope();
-    var applicationState = scope.ServiceProvider.GetRequiredService<IApplicationState>();
-    bool useOnlineCheck = args.Contains("--noOnlineCheck", StringComparer.Ordinal);
-    applicationState.UpdateWithoutOnlineCheck(useOnlineCheck);
 
     app.Run();
 

@@ -14,9 +14,6 @@ namespace LocalModuleIntegration.Workers
         private readonly ILocalModuleService _localModuleService;
         private readonly IParametersService _parametersService;
         private readonly IApplicationState _applicationState;
-
-        private readonly Dictionary<int, LocalModuleStatus> _localModulesStatusCache = new();
-
         private readonly TimeSpan _checkInterval = TimeSpan.FromSeconds(10);
 
         public LocalModuleStatusWorker(
@@ -72,19 +69,17 @@ namespace LocalModuleIntegration.Workers
                     currentStatus = LocalModuleStatus.Unknown;
                 }
 
-                var lastStatus = _localModulesStatusCache.FirstOrDefault(p => p.Key == organization.Id);
+                var lastStatus = _applicationState.OrganizationLocalModuleStatus(organization.Id);
 
-                if (lastStatus.Value == currentStatus)
+                if (lastStatus == currentStatus)
                     continue;
 
                 _logger.LogInformation(
                         "Изменение статуса ЛМ для организации {OrganizationId}: {OldStatus} -> {NewStatus}",
                         organization.Id,
-                        lastStatus.Value.ToString() ?? LocalModuleStatus.Unknown.ToString(),
+                        lastStatus.ToString() ?? LocalModuleStatus.Unknown.ToString(),
                         currentStatus.ToString() ?? LocalModuleStatus.Unknown.ToString()
                     );
-
-                _localModulesStatusCache[organization.Id] = currentStatus;
 
                 _applicationState.UpdateOrganizationLocalModuleStatus(organization.Id, currentStatus);
 
