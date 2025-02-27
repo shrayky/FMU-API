@@ -41,7 +41,7 @@ if (OperatingSystem.IsWindows())
         "--install" => await InstallAsWindowsServiceAsync(),
         "--register" => RegisterWindowsService(),
         "--uninstall" => UninstallWindowsService(),
-        "--unregister" => UnregisterWindowsService()
+        "--unregister" => UnregisterWindowsService(),
         _ => ShowAppInfo()
     };
 }

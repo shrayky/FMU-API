@@ -81,7 +81,7 @@ begin
   if WizardIsTaskSelected('installcouchdb') then
   begin
     Result := Result + 'После установки будут доступны следующие параметры CouchDB:' + NewLine;
-    Result := Result + Space + 'Адрес: http://localhost:6985' + #13#10;
+    Result := Result + Space + 'Адрес: http://localhost:6984' + #13#10;
     Result := Result + Space + 'Логин: admin' + #13#10;
     Result := Result + Space + 'Пароль: admin' + #13#10;
   end;
@@ -99,7 +99,7 @@ begin
     if WizardIsTaskSelected('installcouchdb') then
     begin
       MsgBox('Параметры подключения к CouchDB:' + #13#13 +
-             'Адрес: http://localhost:6985' + #13#10 +
+             'Адрес: http://localhost:6984' + #13#10 +
              'Логин: admin' + #13#10 +
              'Пароль: admin', mbInformation, MB_OK);
     end;
@@ -111,7 +111,7 @@ Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
 
 [Files]
 Source: "D:\DesignSharpC\FmuApi\builds\x64 full\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\DesignSharpC\FmuApi\FMU-API\src\Presentation\WebApi\wwwroot*"; DestDir: "{app}\wwwroot"; Flags: ignoreversion recursesubdirs createallsubdirs;
+Source: "D:\DesignSharpC\FmuApi\builds\wwwroot\*"; DestDir: "{app}\wwwroot"; Flags: ignoreversion recursesubdirs createallsubdirs;
 Source: "D:\DesignSharpC\FmuApi\builds\CouchDB\*"; DestDir: "{app}\couchdb"; Flags: ignoreversion recursesubdirs createallsubdirs; Tasks: installcouchdb
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 

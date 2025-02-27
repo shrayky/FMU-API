@@ -123,7 +123,7 @@ namespace FmuApiApplication.Documents
             foreach (var mark in marks)
             {
                 var trueApiData = entityBySGtin[mark.SGtin].TrueApiCisData;
-                var quantity = quantityByMark[mark.SGtin];
+                var quantity = quantityByMark[mark.Code];
 
                 marksToChangeState.Add(mark.SGtin);
 
