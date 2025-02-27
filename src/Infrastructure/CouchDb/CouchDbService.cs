@@ -15,18 +15,20 @@ namespace CouchDb
 
             services.AddCouchContext<CouchDbContext>(options =>
             {
-                if (string.IsNullOrEmpty(settings.Database.NetAdres))
+                if (string.IsNullOrEmpty(settings.Database.NetAddress))
                 {
                     options.UseEndpoint("http://localhost:5984");
                     options.UseBasicAuthentication("no", "no");
                 }
                 else
                 {
-                    options.UseEndpoint(settings.Database.NetAdres);
+                    options.UseEndpoint(settings.Database.NetAddress);
                     options.UseBasicAuthentication(settings.Database.UserName, settings.Database.Password);
                     options.EnsureDatabaseExists();
                 }
             });
+
+            DatabaseNames.Initialize(settings.Database);
 
             services.AddScoped<FrontolDocumentHandler>();
             services.AddScoped<MarkInformationHandler>();

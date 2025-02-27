@@ -130,7 +130,7 @@ namespace FmuApiApplication.Mark
                                        validationResult.Error);
                 }
 
-                if (!_lastCheckResult.FmuAnswer.Offline && validationResult.IsSuccess)
+                if (!_lastCheckResult.FmuAnswer.Offline)
                     await _markStateManager.SaveMarkInformation(SGtin, _lastCheckResult.TrueMarkData);
 
                 checkErrors.Clear();

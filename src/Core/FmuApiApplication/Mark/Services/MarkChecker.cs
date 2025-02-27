@@ -44,7 +44,7 @@ namespace FmuApiApplication.Mark.Services
         {
             _logger.LogInformation("Начало database проверки марки {Sgtin}", sgtin);
 
-            if (!_configuration.Database.OfflineCheckIsEnabled)
+            if (!_configuration.Database.DatabaseCheckIsEnabled)
             {
                 _logger.LogInformation("Database проверка отключена");
                 return MarkCheckResult.Success(new(), new(), new());

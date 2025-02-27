@@ -1,9 +1,7 @@
-﻿using CouchDb;
-using CouchDb.DocumentModels;
+﻿using CouchDb.DocumentModels;
 using FmuApiDomain.MarkInformation.Entities;
 using FmuApiDomain.MarkInformation.Enums;
 using FmuApiDomain.MarkInformation.Models;
-using System.Runtime.CompilerServices;
 
 namespace CouchDb.Handlers
 {

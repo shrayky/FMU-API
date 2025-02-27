@@ -39,7 +39,9 @@ if (OperatingSystem.IsWindows())
     {
         "--service" => RunHttpApiService(),
         "--install" => await InstallAsWindowsServiceAsync(),
+        "--register" => RegisterWindowsService(),
         "--uninstall" => UninstallWindowsService(),
+        "--unregister" => UnregisterWindowsService()
         _ => ShowAppInfo()
     };
 }
@@ -145,9 +147,11 @@ bool ShowAppInfo()
     logger.LogInformation("Ключи запуска приложения:\r\n" +
             "  --service запуск в режиме службы. рабочий режим\r\n" +
             "    --dataFolder каталог хранения настроек и лога (необязательный)\r\n" +
-            "  --install запуск установки или обновления службы\r\n" +
+            "  --install запуск установки или обновления службы с копированием файлов\r\n" +
             "    --xapikey параметр установки - записывает в настройки ключ для Честного знака (необязательный)\r\n" +
-            "  --uninstall удаление службы");
+            "  --uninstall удаление службы и файлов\r\n" +
+            "  --register регистрация как службы windows\r\n" +
+            "  --unregister удаление службы windows");
 
     return true;
 }
@@ -169,6 +173,23 @@ async Task<bool> InstallAsWindowsServiceAsync()
     return await installerService.InstallAsync(args);
 }
 
+bool RegisterWindowsService()
+{
+    var builder = Host.CreateDefaultBuilder()
+        .ConfigureServices(services =>
+        {
+            services.AddMemoryCache();
+            services.AddSingleton<IParametersService, SimpleParametersService>();
+            services.AddSingleton<ICacheService, MemoryCacheService>();
+            services.AddSingleton<WindowsSrvInstallerService>();
+        });
+
+    using var host = builder.Build();
+    var installerService = host.Services.GetRequiredService<WindowsSrvInstallerService>();
+
+    return installerService.RegisterWindowsService(args);
+}
+
 bool UninstallWindowsService()
 {
     var builder = Host.CreateDefaultBuilder()
@@ -184,4 +205,21 @@ bool UninstallWindowsService()
     var installerService = host.Services.GetRequiredService<WindowsSrvInstallerService>();
 
     return installerService.Uninstall();
+}
+
+bool UnregisterWindowsService()
+{
+    var builder = Host.CreateDefaultBuilder()
+        .ConfigureServices(services =>
+        {
+            services.AddMemoryCache();
+            services.AddSingleton<IParametersService, SimpleParametersService>();
+            services.AddSingleton<ICacheService, MemoryCacheService>();
+            services.AddSingleton<WindowsSrvInstallerService>();
+        });
+
+    using var host = builder.Build();
+    var installerService = host.Services.GetRequiredService<WindowsSrvInstallerService>();
+
+    return installerService.Unregister();
 }

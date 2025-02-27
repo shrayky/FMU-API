@@ -29,13 +29,13 @@ namespace FmuApiApplication.Mark.Services
             _configuration = _parametersService.Current();
         }
 
-        public async Task<FmuApiDomain.MarkInformation.Entities.MarkEntity> GetMarkInformation(string sgtin)
+        public async Task<MarkEntity> GetMarkInformation(string sgtin)
         {
             try
             {
-                if (!_configuration.Database.OfflineCheckIsEnabled)
+                if (!_configuration.Database.DatabaseCheckIsEnabled)
                 {
-                    _logger.LogInformation("Offline проверка отключена");
+                    _logger.LogInformation("Database проверка отключена");
                     return new MarkEntity();
                 }
 
@@ -54,7 +54,7 @@ namespace FmuApiApplication.Mark.Services
         {
             try
             {
-                if (!_configuration.Database.OfflineCheckIsEnabled)
+                if (!_configuration.Database.DatabaseCheckIsEnabled)
                 {
                     _logger.LogInformation("Сохранение в базу данных отключено");
                     return Result.Success();
@@ -82,7 +82,7 @@ namespace FmuApiApplication.Mark.Services
         {
             try
             {
-                if (!_configuration.Database.OfflineCheckIsEnabled)
+                if (!_configuration.Database.DatabaseCheckIsEnabled)
                 {
                     return Result.Success();
                 }
@@ -103,7 +103,7 @@ namespace FmuApiApplication.Mark.Services
 
         public async Task<bool> MarkIsSold(string sgtin)
         {
-            if (!_configuration.Database.OfflineCheckIsEnabled)
+            if (!_configuration.Database.DatabaseCheckIsEnabled)
             {
                 return false;
             }
@@ -112,10 +112,10 @@ namespace FmuApiApplication.Mark.Services
             return markInfo.State == MarkState.Sold;
         }
 
-        private static FmuApiDomain.MarkInformation.Entities.MarkEntity CreateMarkState(
+        private static MarkEntity CreateMarkState(
             string sgtin,
             CodeDataTrueApi markCodeData,
-            FmuApiDomain.MarkInformation.Entities.MarkEntity currentMarkState,
+            MarkEntity currentMarkState,
             CheckMarksDataTrueApi trueMarkData)
         {
             string state = string.IsNullOrEmpty(currentMarkState.State)

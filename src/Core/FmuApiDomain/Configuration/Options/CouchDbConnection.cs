@@ -5,18 +5,18 @@ namespace FmuApiDomain.Configuration.Options
 {
     public class CouchDbConnection
     {
-        public string NetAdres { get; set; } = "http://localhost:5984";
+        public bool Enable { get; set; } = false;
+        public string NetAddress { get; set; } = string.Empty;
         public string UserName { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
-
         public string MarksStateDbName { get; set; } = string.Empty;
         public string FrontolDocumentsDbName { get; set; } = string.Empty;
         public string AlcoStampsDbName { get; set; } = string.Empty;
 
         [JsonIgnore]
-        public bool ConfigurationIsEnabled => NetAdres != string.Empty && UserName != string.Empty && Password != string.Empty;
+        public bool ConfigurationIsEnabled => NetAddress != string.Empty && UserName != string.Empty && Password != string.Empty && Enable;
         [JsonIgnore]
-        public bool OfflineCheckIsEnabled => ConfigurationIsEnabled && MarksStateDbName.Length > 0;
+        public bool DatabaseCheckIsEnabled => ConfigurationIsEnabled && MarksStateDbName.Length > 0 && Enable;
 
         public void CheckDbNames()
         {

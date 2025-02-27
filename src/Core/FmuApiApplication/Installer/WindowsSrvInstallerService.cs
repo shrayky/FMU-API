@@ -1,6 +1,7 @@
 ﻿using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Constants;
+using Humanizer;
 using Shared.Strings;
 using System.Diagnostics;
 using System.Reflection;
@@ -90,6 +91,74 @@ namespace FmuApiApplication.Installer
 
         public bool Uninstall()
         {
+            Unregister();
+
+            Directory.Delete(_installDirectory);
+
+            return true;
+        }
+
+        private static void CopyFilesRecursively(string sourcePath, string targetPath)
+        {
+            foreach (string dirPath in Directory.GetDirectories(sourcePath, "*", SearchOption.AllDirectories))
+            {
+                Directory.CreateDirectory(dirPath.Replace(sourcePath, targetPath));
+            }
+
+            foreach (string newPath in Directory.GetFiles(sourcePath, "*.*", SearchOption.AllDirectories))
+            {
+                File.Copy(newPath, newPath.Replace(sourcePath, targetPath), true);
+            }
+        }
+
+        public bool RegisterWindowsService(string[] args)
+        {
+            ServiceController? existingService = ServiceController.GetServices().FirstOrDefault(ser => ser.ServiceName == _serviceName);
+
+            Process process = new();
+            ProcessStartInfo startInfo = new()
+            {
+                WindowStyle = ProcessWindowStyle.Hidden
+            };
+
+            if (existingService != null)
+            {
+                if (existingService.Status == ServiceControllerStatus.Running)
+                {
+                    existingService.Stop();
+                    existingService.WaitForStatus(ServiceControllerStatus.Stopped);
+                }
+            }
+            else
+            {
+                var bin = Path.Combine(_installDirectory, "fmu-api.exe");
+                
+                process.StartInfo = startInfo;
+                startInfo.FileName = "cmd.exe";
+
+                startInfo.Arguments = $"/c sc create {_serviceName} binPath= \"{bin} --service\" DisplayName= \"{_serviceDisplayName}\" type= own start= auto";
+                process.Start();
+
+                startInfo.Arguments = $"/c sc failure \"{_serviceName}\" reset= 5 actions= restart/5000";
+                process.Start();
+
+                //$"netsh advfirewall firewall show rule name = {_serviceName}"
+
+                startInfo.Arguments = $"/c netsh advfirewall firewall delete rule name = \"{_serviceName}\"";
+                process.Start();
+
+                startInfo.Arguments = $"/c netsh advfirewall firewall add rule name = \"{_serviceName}\" dir =in action = allow protocol = TCP localport = 2578";
+                process.Start();
+            }
+
+            startInfo.Arguments = $"/с sc start {_serviceName}";
+            process.Start();
+
+            return true;
+        }
+
+        public bool Unregister()
+        {
             ServiceController? existingService = ServiceController.GetServices().FirstOrDefault(ser => ser.ServiceName == _serviceName);
 
             if (existingService is null)
@@ -113,27 +182,7 @@ namespace FmuApiApplication.Installer
             startInfo.Arguments = $"/c sc delete {_serviceName}";
             process.Start();
 
-            var bin = Path.Combine(_installDirectory, "fmu-api.exe");
-
-            if (File.Exists(bin))
-                File.Delete(bin);
-
             return true;
-
         }
-
-        private static void CopyFilesRecursively(string sourcePath, string targetPath)
-        {
-            foreach (string dirPath in Directory.GetDirectories(sourcePath, "*", SearchOption.AllDirectories))
-            {
-                Directory.CreateDirectory(dirPath.Replace(sourcePath, targetPath));
-            }
-
-            foreach (string newPath in Directory.GetFiles(sourcePath, "*.*", SearchOption.AllDirectories))
-            {
-                File.Copy(newPath, newPath.Replace(sourcePath, targetPath), true);
-            }
-        }
-
     }
 }

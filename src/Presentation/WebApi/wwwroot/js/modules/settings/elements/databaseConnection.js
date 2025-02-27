@@ -1,12 +1,13 @@
-import { Label, Text, PasswordBox, padding } from "../../../utils/ui.js";
+import { Label, Text, PasswordBox, padding, CheckBox } from "../../../utils/ui.js";
 import { couchDbNameValidation, httpAddressValidation } from "../../../utils/validators.js";
 
 class DatabaseConnectionConfigurationElement {
     constructor(id) {
         this.id = id;
-        this.SETTINGS_ID = "loggingSettings";
+        this.SETTINGS_ID = "databaseConnection";
         this.LABELS = {
             title: "База данных",
+            enable: "Использовать",
             serverDbAddress: "Адрес сервера CouchDb",
             user: "Пользователь",
             password: "Пароль",
@@ -18,12 +19,13 @@ class DatabaseConnectionConfigurationElement {
 
     loadConfig(config) {
         if (config?.logging) {
-            this.serverDbAddress = config.database.netAdres;
+            this.serverDbAddress = config.database.netAddress;
             this.userName = config.database.userName;
             this.userPassword = config.database.password;
             this.marksStateDbName = config.database.marksStateDbName;
             this.frontolDocumentsDbName = config.database.frontolDocumentsDbName;
             this.alcoStampsDbName = config.database.alcoStampsDbName;
+            this.enable = config.database.enable;
         }
 
         return this;
@@ -40,16 +42,35 @@ class DatabaseConnectionConfigurationElement {
             {
                 padding: padding,
                 rows: [
-                    Text(this.LABELS.serverDbAddress, "database.netAdres", this.serverDbAddress, httpAddressValidation),
+                    CheckBox(this.LABELS.enable, "database.enable", {
+                        value: this.enable,
+                        on: {
+                            onChange: (enabled) => {
+                                if (enabled) {
+                                    $$(this.SETTINGS_ID).enable();
+                                }
+                                else {
+                                    $$(this.SETTINGS_ID).disable();
+                                }
+                            }
+                        }
+                    }),
                     {
-                        cols: [
-                            Text(this.LABELS.user, "database.userName", this.userName),
-                            PasswordBox(this.LABELS.password, "database.password", {value: this.userPassword})
+                        id: this.SETTINGS_ID,
+                        disabled: !this.enable,
+                        rows: [
+                            Text(this.LABELS.serverDbAddress, "database.netAddress", this.serverDbAddress, httpAddressValidation),
+                            {
+                                cols: [
+                                    Text(this.LABELS.user, "database.userName", this.userName),
+                                    PasswordBox(this.LABELS.password, "database.password", { value: this.userPassword })
+                                ]
+                            },
+                            Text(this.LABELS.dbMarks, "database.marksStateDbName", this.marksStateDbName, couchDbNameValidation),
+                            Text(this.LABELS.dbCashDocs, "database.frontolDocumentsDbName", this.frontolDocumentsDbName, couchDbNameValidation),
+                            Text(this.LABELS.dbAlcoStamps, "database.alcoStampsDbName", this.alcoStampsDbName, couchDbNameValidation),
                         ]
-                    },
-                    Text(this.LABELS.dbMarks, "database.marksStateDbName", this.marksStateDbName, couchDbNameValidation),
-                    Text(this.LABELS.dbCashDocs, "database.frontolDocumentsDbName", this.frontolDocumentsDbName, couchDbNameValidation),
-                    Text(this.LABELS.dbAlcoStamps, "database.alcoStampsDbName", this.alcoStampsDbName, couchDbNameValidation),
+                    }
                 ]
             }
         );
@@ -62,10 +83,10 @@ class DatabaseConnectionConfigurationElement {
                 inputWidth: 180,
                 inputHeight: 40,
                 click: _ => {
-                    let adres = $$("database.netAdres").getValue();
-    
-                    if (adres != "")
-                        window.open(`${adres}/_utils`, "_blank").focus();
+                    let address = $$("database.netAddress").getValue();
+
+                    if (address != "")
+                        window.open(`${address}/_utils`, "_blank").focus();
                 }
             },
         );

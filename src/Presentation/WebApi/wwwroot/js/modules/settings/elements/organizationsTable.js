@@ -217,7 +217,7 @@ class OrganizationsConfigurationElement {
                 Label("LocalModuleTitle", this.LABELS.LocalModuleTitle),
                 CheckBox(this.LABELS.enable, "LocalModuleEnable"),
                 Text(this.LABELS.connectionAddress, "LocalModuleConnectionAddress", "", {
-                    placeholder: "http://hostname:port"
+                    placeholder: "http://hostname:5995"
                 }),
                 Text(this.LABELS.userName, "LocalModuleUserName"),
                 PasswordBox(this.LABELS.password, "LocalModulePassword"),
@@ -228,7 +228,6 @@ class OrganizationsConfigurationElement {
                     },
                     cols: [
                         {
-
                             view: "button",
                             value: this.LABELS.add,
                             id: "addButton",

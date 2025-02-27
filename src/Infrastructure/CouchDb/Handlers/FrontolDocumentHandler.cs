@@ -1,5 +1,4 @@
-﻿using CouchDb;
-using CouchDb.DocumentModels;
+﻿using CouchDb.DocumentModels;
 using FmuApiDomain.Fmu.Document.Interface;
 
 namespace CouchDb.Handlers

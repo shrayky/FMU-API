@@ -39,8 +39,15 @@ class AutoUpdateElement {
         if (config?.autoUpdate) {
             this.enabled = config.autoUpdate.enabled ?? false;
             this.updateFilesCatalog = config.autoUpdate.updateFilesCatalog ?? "";
-            this.fromHour = config?.autoUpdate?.fromHour ?? 0;
-            this.untilHour = config?.autoUpdate?.untilHour ?? 0;
+                
+            var fromHour = parseInt(config?.autoUpdate?.fromHour);
+            fromHour = fromHour <= 0 ? 1: fromHour;
+
+            var untilHour = parseInt(config?.autoUpdate?.untilHour);
+            untilHour = untilHour <= 0 ? 24: untilHour;
+
+            this.fromHour = fromHour - 1 || 0;
+            this.untilHour = untilHour - 1 || 0;
         }
         return this;
     }

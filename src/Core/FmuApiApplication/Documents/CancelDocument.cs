@@ -70,6 +70,9 @@ namespace FmuApiApplication.Documents
         {
             FmuAnswer checkResult = new();
 
+            if (!_configuration.Database.ConfigurationIsEnabled)
+                return Result.Success(checkResult);
+
             if (_configuration.Database.FrontolDocumentsDbName == string.Empty)
                 return Result.Success(checkResult);
 

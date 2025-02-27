@@ -1,6 +1,7 @@
 ﻿using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Configuration.Options.Organization;
+using FmuApiDomain.LocalModule.Enums;
 using FmuApiDomain.State.Interfaces;
 using LocalModuleIntegration.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -48,6 +49,8 @@ namespace WebApi.Controllers.Api.LocaleModule
 
                 if (!initResult)
                     return BadRequest();
+
+                _applicationState.UpdateOrganizationLocalModuleStatus(printGroup.Id, LocalModuleStatus.Initialization);
             }
             catch (Exception ex)
             {

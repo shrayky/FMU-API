@@ -71,57 +71,12 @@ namespace FmuApiApplication.Documents
             return await CommitDocumentAsync();
         }
 
-        private async Task<Result<FmuAnswer>> CommitDocumentAsync_old()
-        {
-            FmuAnswer checkResult = new();
-
-            if (_configuration.Database.FrontolDocumentsDbName == string.Empty)
-                return Result.Success(checkResult);
-
-            IFrontolDocumentData frontolDocument = await _markInformationService.DocumentFromDbAsync(_document.Uid);
-
-            if (frontolDocument.Id == string.Empty)
-                return Result.Failure<FmuAnswer>($"Невозможно закрыть документ {_document.Uid}! Он не найден в базе документов!");
-
-            SaleData saleData = new()
-            {
-                CheckNumber = frontolDocument.Document.Number,
-                SaleDate = DateTime.Now,
-                Pos = frontolDocument.Document.Pos,
-                IsSale = frontolDocument.Document.Type == saleDocumentType
-            };
-
-            string state = saleData.IsSale ? MarkState.Sold : MarkState.Returned;
-
-            foreach (var position in frontolDocument.Document.Positions)
-            {
-                foreach (string markInBase64 in position.Marking_codes)
-                {
-                    var mark = await _markInformationService.MarkAsync(markInBase64);
-                    var markEntity = await _markInformationService.MarkInformationAsync(mark.SGtin);
-
-                    var trueApiData = markEntity.TrueApiCisData;
-
-                    if (trueApiData.InGroup(TrueApiGroup.Beer.ToString()) && trueApiData.InnerUnitCount != null)
-                    {
-                        if (trueApiData.InnerUnitCount - (trueApiData.SoldUnitCount ?? 0) - position.Quantity * 1000 > 0)
-                            continue;
-                    }
-
-                    //mark.TrueApiData = markEntity;
-
-                    await _markInformationService.MarkChangeState(mark.SGtin, state, saleData);
-                }
-            }
-
-            await _markInformationService.DeleteDocumentFromDbAsync(_document.Uid);
-
-            return Result.Success(checkResult);
-        }
-
         private async Task<Result<FmuAnswer>> CommitDocumentAsync()
         {
             FmuAnswer checkResult = new();
+
+            if (!_configuration.Database.ConfigurationIsEnabled)
+                return Result.Success(checkResult);
 
             if (_configuration.Database.FrontolDocumentsDbName == string.Empty)
                 return Result.Success(checkResult);
