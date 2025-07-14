@@ -7,7 +7,6 @@ using FmuApiDomain.MarkInformation.Entities;
 using FmuApiDomain.MarkInformation.Enums;
 using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.MarkInformation.Models;
-using FmuApiDomain.Repositories;
 using FrontolDb.Handlers;
 using Microsoft.Extensions.Logging;
 
@@ -18,7 +17,7 @@ namespace FmuApiApplication.Services.MarkServices
         private readonly Func<string, Task<IMark>> _markFactory;
         private readonly ILogger<MarkInformationService> _logger;
         private readonly MarksCheckService _checkMarks;
-        private readonly IMarkInformationRepository _markStateService;
+        private readonly MarkInformationHandler _markStateService;
         private readonly FrontolDocumentHandler _frontolDocumentService;
         private readonly FrontolSprtDataHandler? _frontolSprtDataService;
         private readonly IParametersService _parametersService;
@@ -29,7 +28,7 @@ namespace FmuApiApplication.Services.MarkServices
             Func<string, Task<IMark>> markFactory,
             ILogger<MarkInformationService> logger,
             MarksCheckService checkMarks,
-            IMarkInformationRepository markStateService,
+            MarkInformationHandler markStateService,
             FrontolDocumentHandler frontolDocumentService,
             FrontolSprtDataHandler? frontolSprtDataService,
             IParametersService parametersService)
@@ -62,7 +61,7 @@ namespace FmuApiApplication.Services.MarkServices
 
         public async Task DeleteDocumentFromDbAsync(string uid)
         {
-            await _frontolDocumentService.DeleteAsync(uid);
+            await _frontolDocumentService.DelteAsync(uid);
         }
 
         public async Task<MarkEntity> MarkChangeState(string id, string newState, SaleData saleData)
@@ -122,7 +121,7 @@ namespace FmuApiApplication.Services.MarkServices
             if (markData == null)
                 return;
 
-            markData.TrueApiCisData.SoldUnitCount += Quantity;
+            markData.TrueApiCisData.InnerUnitCount = Quantity;
 
             await _markStateService.AddAsync(markData);
         }

@@ -15,7 +15,6 @@ class SaleControllsConfigurationElement {
             correctExpireDateInReturns: "Исправлять истекший срок годности в чеках возврата",
             sendLocalModuleInformationalInRequestId: "Отправлять информацию о локальном модуле для тега 1265 в requestId",
             dateRejectsSalesWithoutCheckData: "Дата отказа в продаже данных проверки (оффлайн режим)",
-            resetSoldStatusForReturn: "Для возвратов - изменять стаус `Проданно` для товаров (тарифный фронтол до 25 версии)",
         };
     }
 
@@ -29,7 +28,6 @@ class SaleControllsConfigurationElement {
             this.correctExpireDateInSaleReturn = config.saleControlConfig.correctExpireDateInSaleReturn;
             this.sendLocalModuleInformationalInRequestId = config.saleControlConfig.sendLocalModuleInformationalInRequestId;
             this.rejectSalesWithoutCheckInformationFrom = new Date(config.saleControlConfig.rejectSalesWithoutCheckInformationFrom);
-            this.resetSoldStatusForReturn = config.saleControlConfig.resetSoldStatusForReturn;
         }
 
         return this;
@@ -57,17 +55,15 @@ class SaleControllsConfigurationElement {
                     CheckBox(this.LABELS.banSalesReturnedWares, "saleControlConfig.banSalesReturnedWares", {value: this.banSalesReturnedWares}),
                     Text(this.LABELS.ignoreVerificationErrorForTrueApiGroups, "saleControlConfig.ignoreVerificationErrorForTrueApiGroups", this.ignoreVerificationErrorForTrueApiGroups),
                     CheckBox(this.LABELS.checkIsOwnerField, "saleControlConfig.checkIsOwnerField", {value: this.checkIsOwnerField}),
-                    CheckBox(this.LABELS.correctExpireDateInReturns, "saleControlConfig.correctExpireDateInSaleReturn", {value: this.correctExpireDateInSaleReturn}),
+                    CheckBox(this.LABELS.correctExpireDateInReturns, "saleControlConfig.correctExpireDateInReturns", {value: this.correctExpireDateInReturns}),
                     CheckBox(this.LABELS.sendLocalModuleInformationalInRequestId, "saleControlConfig.sendLocalModuleInformationalInRequestId", {value: this.sendLocalModuleInformationalInRequestId}),
-
                     Label("scForFrontolMoreThen21", this.LABELS.forFrontolMoreThen205),
 
                     {
                         padding: { left: 20, },
                         rows: [
-                            CheckBox(this.LABELS.checkReceiptReturn, "saleControlConfig.checkReceiptReturn", { value: this.checkReceiptReturn }),
-                            CheckBox(this.LABELS.sendEmptyTrueApiAnswerWhenTimeoutError, "saleControlConfig.sendEmptyTrueApiAnswerWhenTimeoutError", { value: this.sendEmptyTrueApiAnswerWhenTimeoutError }),
-                            CheckBox(this.LABELS.resetSoldStatusForReturn, "saleControlConfig.resetSoldStatusForReturn", { value: this.resetSoldStatusForReturn }),
+                            CheckBox(this.LABELS.checkReceiptReturn, "saleControlConfig.checkReceiptReturn", {value: this.checkReceiptReturn}),
+                            CheckBox(this.LABELS.sendEmptyTrueApiAnswerWhenTimeoutError, "saleControlConfig.sendEmptyTrueApiAnswerWhenTimeoutError", {value: this.sendEmptyTrueApiAnswerWhenTimeoutError}),
                         ]
                     }
                 ]

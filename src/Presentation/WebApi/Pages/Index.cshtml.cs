@@ -1,5 +1,4 @@
 using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.Constants;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -12,6 +11,7 @@ namespace WebApi.Pages
 
         [BindProperty]
         public int ApiServerIpPort { get; set; } = 2578;
+
         public IndexModel(ILogger<IndexModel> logger, IParametersService parametersService)
         {
             _logger = logger;

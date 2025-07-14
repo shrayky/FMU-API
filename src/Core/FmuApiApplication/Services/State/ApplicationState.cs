@@ -10,11 +10,8 @@ namespace FmuApiApplication.Services.State
         private bool _online { get; set; } = true;
         private TokenData _trueApiToken { get; set; } = new();
         private TokenData _fmuToken { get; set; } = new();
-        private List<OrganizationLocalModuleState> _localModules { get; set; } = [];
-        private Dictionary<int, LocalModuleState> _localModuleInformation { get; set; } = [];
+        private List<OrganizationLocalModuleState> _localModules { get; set; } = new();
         private bool _withoutOnlineCheck { get; set; } = false;
-        private bool _couchDbIsOnline { get; set; } = false;
-        private bool _needRestartService { get; set; } = false;
 
         public ApplicationState()
         {
@@ -90,43 +87,8 @@ namespace FmuApiApplication.Services.State
                 }
             else
                 lmStatusInfo.Status = status;
+
         }
 
-        public void UpdateOrganizationLocalModuleInformation(int organizationId, LocalModuleState localModuleInfo)
-        {
-            if (_localModuleInformation.ContainsKey(organizationId))
-                _localModuleInformation.Remove(organizationId);
-
-            _localModuleInformation.Add(organizationId, localModuleInfo);
-        }
-
-        public LocalModuleState LocalModuleInformation(int organizationId)
-        {
-            LocalModuleState lmInfo = new();
-
-            _localModuleInformation.TryGetValue(organizationId, out lmInfo);
-
-            return lmInfo;
-        }
-
-        public bool CouchDbOnline()
-        {
-            return _couchDbIsOnline;
-        }
-
-        public void UpdateCouchDbState(bool value)
-        {
-            _couchDbIsOnline = value;
-        }
-
-        public void NeedRestartService(bool flag)
-        {
-            _needRestartService = flag;
-        }
-
-        public bool NeedRestartService()
-        {
-            return _needRestartService;
-        }
     }
 }

@@ -9,25 +9,24 @@ namespace FmuApiDomain.Configuration.Options
         public string NetAddress { get; set; } = string.Empty;
         public string UserName { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
-        public int BulkBatchSize { get; set; } = 1000;
-        public int BulkParallelTasks { get; set; } = 4;
-
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string? NetAdres { get; set; } = string.Empty;
-        
-        //Эти поля сохранены для совместимости со старыми версиями, сейчас имена баз жестко прописаны в коде
         public string MarksStateDbName { get; set; } = string.Empty;
         public string FrontolDocumentsDbName { get; set; } = string.Empty;
         public string AlcoStampsDbName { get; set; } = string.Empty;
 
         [JsonIgnore]
-        public bool ConfigurationIsEnabled => !string.IsNullOrWhiteSpace(NetAddress) &&
-                                                !string.IsNullOrWhiteSpace(UserName) &&
-                                                !string.IsNullOrWhiteSpace(Password) &&
-                                                Enable;
-
+        public bool ConfigurationIsEnabled => NetAddress != string.Empty && UserName != string.Empty && Password != string.Empty && Enable;
         [JsonIgnore]
-        public bool DatabaseCheckIsEnabled => ConfigurationIsEnabled && Enable;
+        public bool DatabaseCheckIsEnabled => ConfigurationIsEnabled && MarksStateDbName.Length > 0 && Enable;
 
+        public void CheckDbNames()
+        {
+            MarksStateDbName = MarksStateDbName.ToLower();
+            FrontolDocumentsDbName = FrontolDocumentsDbName.ToLower();
+            AlcoStampsDbName = AlcoStampsDbName.ToLower();
+
+            MarksStateDbName = MarksStateDbName.Replace(@".", "_");
+            FrontolDocumentsDbName = FrontolDocumentsDbName.Replace(@".", "_");
+            AlcoStampsDbName = AlcoStampsDbName.Replace(@".", "_");
+        }
     }
 }

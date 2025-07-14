@@ -1,16 +1,16 @@
-﻿using FmuApiDomain.MarkInformation.Enums;
+﻿using CouchDb.Handlers;
+using FmuApiDomain.MarkInformation.Enums;
 using FmuApiDomain.MarkInformation.Models;
-using FmuApiDomain.Repositories;
 using Microsoft.Extensions.Logging;
 
 namespace FmuApiApplication.Services.MarkServices
 {
     public class MarkStateSrv
     {
-        private readonly IMarkInformationRepository _markStateCrud;
+        private readonly MarkInformationHandler _markStateCrud;
         private readonly ILogger<MarkStateSrv> _logger;
 
-        public MarkStateSrv(IMarkInformationRepository markStateCrud, ILogger<MarkStateSrv> logger)
+        public MarkStateSrv(MarkInformationHandler markStateCrud, ILogger<MarkStateSrv> logger)
         {
             _markStateCrud = markStateCrud;
             _logger = logger;

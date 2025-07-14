@@ -118,7 +118,7 @@ namespace FmuApiApplication.Mark
                     _lastCheckResult.MarkInformation.State = currentState.State;
 
                 var validationResult = ValidateMarkData(operation);
-
+                
                 if (validationResult.IsFailure)
                 {
                     _lastCheckResult.UpdateErrorDescription(validationResult.Error);
@@ -130,14 +130,10 @@ namespace FmuApiApplication.Mark
                                        validationResult.Error);
                 }
 
-                _lastCheckResult.FmuAnswer.PrintGroupCode = PrintGroupCode;
-
                 if (!_lastCheckResult.FmuAnswer.Offline)
                     await _markStateManager.SaveMarkInformation(SGtin, _lastCheckResult.TrueMarkData);
 
                 checkErrors.Clear();
-
-                _lastCheckResult.FmuAnswer.FillFieldsFor6255();
 
                 break;
             }
@@ -212,27 +208,9 @@ namespace FmuApiApplication.Mark
                 PrintGroupCode, Code);
         }
 
-        async public Task<CheckMarksDataTrueApi> TrueApiData()
+        public CheckMarksDataTrueApi TrueApiData()
         {
-            if (_lastCheckResult.TrueMarkData.Codes.Count > 0)
-                return _lastCheckResult.TrueMarkData;
-
-            var markInfo = await _markStateManager.GetMarkInformation(SGtin);
-
-            if (!markInfo.HaveTrueApiAnswer)
-                return _lastCheckResult.TrueMarkData;
-
-            markInfo.TrueApiCisData.Sold = markInfo.IsSold;
-
-            return new CheckMarksDataTrueApi
-            {
-                Code = markInfo.TrueApiAnswerProperties.Code,
-                Description = markInfo.TrueApiAnswerProperties.Description,
-                ReqId = markInfo.TrueApiAnswerProperties.ReqId,
-                ReqTimestamp = markInfo.TrueApiAnswerProperties.ReqTimestamp,
-                Codes = [markInfo.TrueApiCisData]
-            };
-
+            return _lastCheckResult.TrueMarkData;
         }
 
         public FmuApiDomain.MarkInformation.Entities.MarkEntity DatabaseState()
@@ -253,7 +231,7 @@ namespace FmuApiApplication.Mark
             var markData = _lastCheckResult.TrueMarkData.MarkData();
             if (!markData.Empty && markData.InGroup(_configuration.SaleControlConfig.IgnoreVerificationErrorForTrueApiGroups))
             {
-                markData.ResetErrorFileds(false);
+                markData.ResetErrorFileds();
             }
         }
 

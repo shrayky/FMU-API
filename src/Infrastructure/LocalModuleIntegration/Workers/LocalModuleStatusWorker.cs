@@ -57,6 +57,7 @@ namespace LocalModuleIntegration.Workers
                 try
                 {
                     state = await _localModuleService.StateAsync(organization.LocalModuleConnection);
+                    currentStatus = state.Status;
                 }
                 catch (Exception ex)
                 {
@@ -70,26 +71,15 @@ namespace LocalModuleIntegration.Workers
 
                 var lastStatus = _applicationState.OrganizationLocalModuleStatus(organization.Id);
 
-                _applicationState.UpdateOrganizationLocalModuleInformation(organization.Id, state);
-
-                currentStatus = state.Status;
-
                 if (lastStatus == currentStatus)
                     continue;
 
-                if (currentStatus != LocalModuleStatus.Ready)
-                    _logger.LogWarning("Изменение статуса ЛМ для организации {OrganizationId}: {OldStatus} -> {NewStatus}",
+                _logger.LogInformation(
+                        "Изменение статуса ЛМ для организации {OrganizationId}: {OldStatus} -> {NewStatus}",
                         organization.Id,
                         lastStatus.ToString() ?? LocalModuleStatus.Unknown.ToString(),
                         currentStatus.ToString() ?? LocalModuleStatus.Unknown.ToString()
                     );
-                else
-                    _logger.LogInformation(
-                            "Изменение статуса ЛМ для организации {OrganizationId}: {OldStatus} -> {NewStatus}",
-                            organization.Id,
-                            lastStatus.ToString() ?? LocalModuleStatus.Unknown.ToString(),
-                            currentStatus.ToString() ?? LocalModuleStatus.Unknown.ToString()
-                        );
 
                 _applicationState.UpdateOrganizationLocalModuleStatus(organization.Id, currentStatus);
 

@@ -65,9 +65,7 @@ namespace LocalModuleIntegration.Service
             httpClient.BaseAddress = new Uri(connection.ConnectionAddress);
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", connection.GetBasicAuthorizationHeader());
 
-            var encodedCis = Uri.EscapeDataString(cis);
-
-            string address = $"{outCheckAddress}?cis={encodedCis}";
+            string address = $"{outCheckAddress}?cis={cis}";
 
             var response = await httpClient.GetAsync(address);
 
@@ -77,18 +75,8 @@ namespace LocalModuleIntegration.Service
 
             if (response.StatusCode != System.Net.HttpStatusCode.OK)
             {
-                var err = status == null ? responseContent : status.Description;
-                _logger.LogWarning("Ошибка в ответе от локального модуля: {err}", responseContent);
-            }
 
-            if (status == null)
-                return new();
-
-            if (status.Code != 0)
-            {
-                _logger.LogWarning("Ошибка в ответе от локального модуля: {err}", status.Description);
-                return new();
-            }
+            } 
 
             return status;
         }
@@ -107,13 +95,13 @@ namespace LocalModuleIntegration.Service
 
             var responseContent = await response.Content.ReadAsStringAsync();
 
-            var state = await JsonHelpers.DeserializeAsync<LocalModuleState>(await response.Content.ReadAsStreamAsync());
+            var status = await JsonHelpers.DeserializeAsync<LocalModuleState>(await response.Content.ReadAsStreamAsync());
 
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
                 _logger.LogError(
-                    "Ошибка получения статуса ЛМ. Код: {StatusCode}, Причина: {ReasonPhrase}, Тело: {ErrorContent}",
+                    "Ошибка при инициализации ЛМ. Код: {StatusCode}, Причина: {ReasonPhrase}, Тело: {ErrorContent}",
                     (int)response.StatusCode,
                     response.ReasonPhrase,
                     errorContent
@@ -122,7 +110,7 @@ namespace LocalModuleIntegration.Service
 
             }
 
-            return state ?? new();
+            return status ?? new();
         }
 
     }

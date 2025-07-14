@@ -365,4 +365,3 @@ FodyWeavers.xsd
 # Webix library folder
 FmuApi.API/wwwroot/lib/webix/
 /FmuApi.API/images/fmu-api-container-image.tar.gz
-.vscode
