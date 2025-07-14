@@ -1,4 +1,4 @@
-export function ApiServerAdres(controllerName = "") {
+export function ApiServerAddress(controllerName = "") {
     let element = document.getElementById("ApiServerIpPort");
 
     if (element == null)
@@ -33,7 +33,7 @@ export function SaveFormData(id, args) {
 
     form.disable();
 
-    let upadteDateTableId = form.config.dataTableId;
+    let updateDateTableId = form.config.dataTableId;
     let closeWindowAfterSave = form.config.closeWindowAfterSave;
 
     let controllerName = form.config.save.url;
@@ -47,13 +47,13 @@ export function SaveFormData(id, args) {
         controllerName = controllerNameSplited[1];
     }
 
-    let apiServerAdres = ApiServerAdres(controllerName);
+    let apiServerAddress = ApiServerAddress(controllerName);
 
     let fd = form.getValues();
     let data = JSON.stringify(form.getValues());
 
     webix.ajax()
-        .post(apiServerAdres, data)
+        .post(apiServerAddress, data)
         .then(answer =>
         {
             let packet = answer.json();
@@ -63,15 +63,15 @@ export function SaveFormData(id, args) {
                 return;
             }
 
-            if (upadteDateTableId != undefined) {
-                let upadteTable = $$(upadteDateTableId);
+            if (updateDateTableId != undefined) {
+                let updateTable = $$(updateDateTableId);
 
-                let element = upadteTable.getItem(packet.content.id);
+                let element = updateTable.getItem(packet.content.id);
 
                 if (element == undefined)
-                    upadteTable.add(packet.content);
+                    updateTable.add(packet.content);
                 else
-                    upadteTable.updateItem(packet.content.id, packet.content);
+                    updateTable.updateItem(packet.content.id, packet.content);
 
                 if (closeWindowAfterSave != undefined) {
                     if (closeWindowAfterSave) {

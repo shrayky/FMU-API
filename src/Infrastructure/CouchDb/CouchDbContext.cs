@@ -1,14 +1,20 @@
 ﻿using CouchDb.DocumentModels;
+using CouchDb.Documents;
 using CouchDB.Driver;
 using CouchDB.Driver.Options;
+using FmuApiDomain.MarkInformation.Entities;
 
 namespace CouchDb
 {
     public class CouchDbContext : CouchContext
     {
+        public CouchDatabase<CouchDoc<MarkEntity>> Marks { get; set; }
+        public CouchDatabase<CouchDoc<FrontolDocumentData>> Documents { get; set; }
+        
+        // устаревшие:
         public CouchDatabase<MarkStateDocument> MarksState { get; set; }
         public CouchDatabase<FrontolDocumentData> FrontolDocuments { get; set; }
-
+        
         public CouchDbContext(CouchOptions<CouchDbContext> options) : base(options)
         {
         }
@@ -19,11 +25,23 @@ namespace CouchDb
 
         protected override void OnDatabaseCreating(CouchDatabaseBuilder databaseBuilder)
         {
+            databaseBuilder.Document<CouchDoc<MarkEntity>>().ToDatabase("fmu-api-marks");
+            databaseBuilder.Document<CouchDoc<FrontolDocumentData>>().ToDatabase("fmu-api-documents");
+
+            // устаревшие базы, для совместимости:
+            Сompatibility9_102(databaseBuilder);
+        }
+
+        private void Сompatibility9_102(CouchDatabaseBuilder databaseBuilder)
+        {
             string _markStateDbName = DatabaseNames.MarksStateDb;
             string _frontolDocumentsDbName = DatabaseNames.FrontolDocumentsDb;
 
-            databaseBuilder.Document<MarkStateDocument>().ToDatabase(_markStateDbName == string.Empty ? "fmu-marks" : _markStateDbName);
-            databaseBuilder.Document<FrontolDocumentData>().ToDatabase(_frontolDocumentsDbName == string.Empty ? "fmu-cashdocs" : _frontolDocumentsDbName);
+            if (!string.IsNullOrEmpty(_markStateDbName))
+                databaseBuilder.Document<MarkStateDocument>().ToDatabase(_markStateDbName);
+
+            if (!string.IsNullOrEmpty(_frontolDocumentsDbName))
+                databaseBuilder.Document<FrontolDocumentData>().ToDatabase(_frontolDocumentsDbName);
         }
     }
 }
