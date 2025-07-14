@@ -73,19 +73,11 @@ namespace FmuApiApplication.Documents
         {
             FmuAnswer checkResult = new();
 
-            if (!_configuration.Database.ConfigurationIsEnabled)
-                return Result.Success(checkResult);
-
-            if (_configuration.Database.FrontolDocumentsDbName == string.Empty)
-                return Result.Success(checkResult);
-
             FrontolDocumentData frontolDocument = new()
             {
                 Id = _document.Uid,
                 Document = _document
             };
-
-            await _markInformationService.AddDocumentToDbAsync(frontolDocument);
 
             foreach (var position in _document.Positions)
             {
@@ -96,7 +88,7 @@ namespace FmuApiApplication.Documents
                 {
                     var mark = await _markInformationService.MarkAsync(markInBase64);
 
-                    CheckMarksDataTrueApi trueApiCisData = mark.TrueApiData();
+                    CheckMarksDataTrueApi trueApiCisData = await mark.TrueApiData();
 
                     if (trueApiCisData.Codes.Count == 0)
                         continue;
@@ -125,8 +117,12 @@ namespace FmuApiApplication.Documents
                 }
             }
 
-            return Result.Success(checkResult);
+            if (_configuration.Database.ConfigurationIsEnabled)
+                await _markInformationService.AddDocumentToDbAsync(frontolDocument);
+            else
+                _cacheService.Set($"cashDoc_{_document.Uid}", _document, TimeSpan.FromMinutes(5));
 
+            return Result.Success(checkResult);
         }
 
         private async Task<Result> SendDocumentToAlcoUnitAsync()
