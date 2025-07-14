@@ -95,10 +95,10 @@ namespace FmuApiDomain.TrueApi.MarkData.Check
 
             }
         }
-        public void ResetErrorFields()
+        public void ResetErrorFields(bool resetSoldStatusForReturn = false)
         {
             foreach (CodeDataTrueApi data in Codes)
-                data.ResetErrorFileds();
+                data.ResetErrorFileds(resetSoldStatusForReturn);
         }
     }
 }

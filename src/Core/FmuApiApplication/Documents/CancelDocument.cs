@@ -73,9 +73,6 @@ namespace FmuApiApplication.Documents
             if (!_configuration.Database.ConfigurationIsEnabled)
                 return Result.Success(checkResult);
 
-            if (_configuration.Database.FrontolDocumentsDbName == string.Empty)
-                return Result.Success(checkResult);
-
             await _markInformationService.DeleteDocumentFromDbAsync(_document.Uid);
 
             return Result.Success(checkResult);

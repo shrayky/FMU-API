@@ -23,7 +23,7 @@ DefaultGroupName=fmu-api
 DisableProgramGroupPage=yes
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
 ;PrivilegesRequired=lowest
-OutputDir=D:\DesignSharpC\FmuApi\FMU-API\setup
+OutputDir=D:\DesignSharpC\FmuApi\builds
 OutputBaseFilename=setup-x64
 SetupIconFile=D:\DesignSharpC\FmuApi\builds\favicon.ico
 Compression=lzma
@@ -32,7 +32,6 @@ WizardStyle=modern
 PrivilegesRequired=admin
 ArchitecturesAllowed=x64
 ArchitecturesInstallIn64BitMode=x64
-;InfoAfterFile=info_after.txt
 
 [Tasks]
 Name: "installcouchdb"; Description: "Install CouchDB"; GroupDescription: "Additional components:"; Flags: unchecked
@@ -80,7 +79,7 @@ begin
   Result := '';
   if WizardIsTaskSelected('installcouchdb') then
   begin
-    Result := Result + 'После установки будут доступны следующие параметры CouchDB:' + NewLine;
+    Result := Result + 'После установки CouchDB будет доступна со следующими параметрами:' + NewLine;
     Result := Result + Space + 'Адрес: http://localhost:6984' + #13#10;
     Result := Result + Space + 'Логин: admin' + #13#10;
     Result := Result + Space + 'Пароль: admin' + #13#10;
@@ -92,19 +91,23 @@ begin
     Result := Result + MemoTasksInfo + NewLine + NewLine;
 end;
 
-procedure CurStepChanged(CurStep: TSetupStep);
+procedure CurPageChanged(CurPageID: Integer);
 begin
-  if CurStep = ssPostInstall then
+  if CurPageID = wpFinished then
   begin
-    if WizardIsTaskSelected('installcouchdb') then
-    begin
-      MsgBox('Параметры подключения к CouchDB:' + #13#13 +
-             'Адрес: http://localhost:6984' + #13#10 +
-             'Логин: admin' + #13#10 +
-             'Пароль: admin', mbInformation, MB_OK);
-    end;
+    WizardForm.FinishedLabel.Caption := 'Установка программы [name] выполнена успешно.';
+
+
+    if WizardIsTaskSelected('couchdb') then
+      WizardForm.FinishedLabel.Caption := 
+        WizardForm.FinishedLabel.Caption + #13#10 + #13#10 +
+        'Параметры подключения к CouchDB:' + #13#10 +
+        '  Адрес: http://localhost:6984' + #13#10 +
+        '  Логин: admin' + #13#10 +
+        '  Пароль: admin';
   end;
 end;
+
 
 [Languages]
 Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"

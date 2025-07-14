@@ -65,12 +65,12 @@ namespace FmuApiApplication.Documents
 
         public async Task<Result<FmuAnswer>> ActionAsync()
         {
-            var cachedAnswer = _memcachedClient.Get<FmuAnswer>(_document.Mark());
+            var cachedAnswer = _memcachedClient.Get<FmuAnswer>(_document.Mark);
 
-            if (cachedAnswer?.SGtin() == _document.Mark())
+            if (cachedAnswer?.SGtin() == _document.Mark)
                 return Result.Success(cachedAnswer);
 
-            var checkResult = await MarkInformation(_document.Mark());
+            var checkResult = await MarkInformation();
 
             if (checkResult.IsSuccess)
                 _memcachedClient.Set(checkResult.Value.SGtin(),
@@ -78,6 +78,26 @@ namespace FmuApiApplication.Documents
                                      TimeSpan.FromMinutes(_cacheExpirationMinutes));
 
             return checkResult;
+        }
+
+        private async Task<Result<FmuAnswer>> MarkInformation()
+        {
+            _logger.LogInformation("Марка для проверки {markCodeData}", _document.Mark);
+            IMark mark = await _markInformationService.MarkAsync(_document.Mark);
+
+            await SetOrganizationIdAsync(mark);
+            var checkResult = await mark.PerformCheckAsync(OperationType.Sale);
+
+            if (checkResult.IsSuccess)
+                return checkResult;
+
+            _logger.LogError(checkResult.Error);
+
+            if (_configuration.SaleControlConfig.SendEmptyTrueApiAnswerWhenTimeoutError
+                && _configuration.SaleControlConfig.RejectSalesWithoutCheckInformationFrom < DateTime.Now)
+                return Result.Success(CreateFakeAnswer(mark, checkResult.Error));
+            else
+                return checkResult;
         }
 
         private async Task<Result<FmuAnswer>> MarkInformation(string markInBase64)
@@ -145,7 +165,18 @@ namespace FmuApiApplication.Documents
             if (_configuration.OrganisationConfig.PrintGroups.Count == 1)
                 return;
 
-            int pgCode = await _markInformationService.WareSaleOrganizationFromFrontolBaseAsync(mark.Barcode);
+            int pgCode = 0;
+            string inn = _document.Inn;
+
+            if (inn != string.Empty)
+            {
+                var organisation = _configuration.OrganisationConfig.PrintGroups.FirstOrDefault(p => p.INN == inn);
+
+                if (organisation != null)
+                    pgCode = organisation.Id;
+            }
+            else
+                pgCode = await _markInformationService.WareSaleOrganizationFromFrontolBaseAsync(mark.Barcode);
 
             if (pgCode == 0)
                 return;

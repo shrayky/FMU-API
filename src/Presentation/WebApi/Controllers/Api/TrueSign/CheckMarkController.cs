@@ -17,7 +17,7 @@ namespace WebApi.Controllers.Api.TrueSign
         }
 
         [HttpPost]
-        public async Task<IActionResult> CheckMarkGet(List<string> marks)
+        public async Task<IActionResult> CheckMark(List<string> marks)
         {
             CheckMarksRequestData checkMarksRequestData = new(marks);
 

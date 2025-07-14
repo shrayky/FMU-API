@@ -84,11 +84,11 @@ namespace CentralServerExchange
             if (exchangeResult.Value.ConfigurationUpdateAvailable)
             {
                 _logger.LogInformation("New configuration ready to download from central server");
-                await DownloadConfigureation();
+                await DownloadConfiguration();
             }
         }
 
-        private async Task DownloadConfigureation()
+        private async Task DownloadConfiguration()
         {
             throw new NotImplementedException();
         }

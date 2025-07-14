@@ -78,9 +78,6 @@ namespace FmuApiApplication.Documents
             if (!_configuration.Database.ConfigurationIsEnabled)
                 return Result.Success(checkResult);
 
-            if (_configuration.Database.FrontolDocumentsDbName == string.Empty)
-                return Result.Success(checkResult);
-
             IFrontolDocumentData frontolDocument = await _markInformationService.DocumentFromDbAsync(_document.Uid);
 
             if (frontolDocument.Id == string.Empty)
@@ -132,14 +129,16 @@ namespace FmuApiApplication.Documents
 
                 if (trueApiData.InGroup(TrueApiGroup.Beer.ToString()) && 
                     trueApiData.InnerUnitCount != null &&
-                    trueApiData.InnerUnitCount - (trueApiData.SoldUnitCount ?? 0) - quantity * 1000> 0)
+                    trueApiData.InnerUnitCount - (trueApiData.SoldUnitCount ?? 0) + quantity> 0)
                 {
-                    draftBeerUpdates.Add((mark.SGtin, quantity * 1000));
+                    draftBeerUpdates.Add((mark.SGtin, quantity));
+                    state = MarkState.Stock;
                 }
             }
             
             await MarkChangeStateBulk(marksToChangeState, state, saleData);
             await DraftBeerUpdateBulk(draftBeerUpdates);
+
             await _markInformationService.DeleteDocumentFromDbAsync(_document.Uid);
 
             return Result.Success(checkResult);

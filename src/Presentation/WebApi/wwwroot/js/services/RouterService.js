@@ -1,4 +1,3 @@
-// js/services/RouterService.js
 export class RouterService {
     constructor() {
         this.currentPage = "";
@@ -9,19 +8,23 @@ export class RouterService {
         this.routes.set(id, viewFactory);
     }
 
-    navigate(id, bodyId) {
+    async navigate(id, bodyId) {
         if (id === this.currentPage) return;
 
         const viewFactory = this.routes.get(id);
         if (!viewFactory) return;
 
-        // Получаем конфигурацию view напрямую
-        const view = viewFactory();
-        
-        //console.log(view(bodyId));
-        webix.ui(view(bodyId), $$(bodyId));
-        $$(bodyId).show();
+        try {
+            // Получаем view через await, так как viewFactory возвращает Promise
+            const view = await viewFactory();
+            
+            // view теперь функция из module.default
+            webix.ui(view(bodyId), $$(bodyId));
+            $$(bodyId).show();
 
-        this.currentPage = id;
+            this.currentPage = id;
+        } catch (error) {
+            console.error("Ошибка при навигации:", error);
+        }
     }
 }

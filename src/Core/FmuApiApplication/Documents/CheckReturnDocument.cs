@@ -73,7 +73,7 @@ namespace FmuApiApplication.Documents
             if (!_configuration.SaleControlConfig.CheckReceiptReturn)
                 return Result.Success(answer);
 
-            var checkResult = await MarkInformation(_document.Mark());
+            var checkResult = await MarkInformation();
 
             if (checkResult.IsFailure)
                 return checkResult;
@@ -82,15 +82,33 @@ namespace FmuApiApplication.Documents
 
             // фронтол показывает ошибку, если статус марки продан, даже при возврате!
             // Приходится, вот так некрасиво, исправлять.
-            answer.Truemark_response.MarkCodeAsNotSaled();
+            if (_configuration.SaleControlConfig.ResetSoldStatusForReturn)
+                answer.Truemark_response.MarkCodeAsNotSaled();
 
             // зачем нам анализировать поля с ошибками при возврате...
-            answer.Truemark_response.ResetErrorFields();
+            answer.Truemark_response.ResetErrorFields(_configuration.SaleControlConfig.ResetSoldStatusForReturn);
 
             // фронтол зачем то проверяет срок годности при возврате, поменяем дату
             answer.Truemark_response.CorrectExpireDate();
 
             return Result.Success(answer);
+        }
+
+        private async Task<Result<FmuAnswer>> MarkInformation()
+        {
+            _logger.LogInformation("Марка для проверки {markCodeData}", _document.Mark);
+
+            IMark mark = await _markInformationService.MarkAsync(_document.Mark);
+            await SetOrganizationIdAsync(mark);
+
+            var checkResult = await mark.PerformCheckAsync(OperationType.ReturnSale);
+
+            if (checkResult.IsSuccess)
+                return checkResult;
+
+            _logger.LogError(checkResult.Error);
+
+            return checkResult;
         }
 
         private async Task<Result<FmuAnswer>> MarkInformation(string markInBase64)
@@ -115,7 +133,18 @@ namespace FmuApiApplication.Documents
             if (_configuration.OrganisationConfig.PrintGroups.Count == 1)
                 return;
 
-            int pgCode = await _markInformationService.WareSaleOrganizationFromFrontolBaseAsync(mark.Barcode);
+            int pgCode = 0;
+            string inn = _document.Inn;
+
+            if (inn != string.Empty)
+            {
+                var organisation = _configuration.OrganisationConfig.PrintGroups.FirstOrDefault(p => p.INN == inn);
+
+                if (organisation != null)
+                    pgCode = organisation.Id;
+            }
+            else
+                pgCode = await _markInformationService.WareSaleOrganizationFromFrontolBaseAsync(mark.Barcode);
 
             if (pgCode == 0)
                 return;

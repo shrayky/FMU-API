@@ -50,7 +50,7 @@ namespace FmuApiApplication.Documents
             IApplicationState applicationStateService,
             ILogger logger)
         {
-            if (document.Mark() == string.Empty)
+            if (document.Mark == string.Empty)
                 return CheckFrontolDocumentWithMarks.Create(document, markInformationService, cacheService, parametersService, applicationStateService, logger);
 
             if (document.Type == FmuDocumentsTypes.ReceiptReturn)

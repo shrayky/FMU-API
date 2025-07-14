@@ -1,5 +1,9 @@
 // js/config/menu.js
 export const MENU_ITEMS = {
+    MONITOR: {
+        id: "monitorView",
+        value: "Мониторинг"
+    },
     CONFIG: {
         id: "config",
         value: "Настройка",

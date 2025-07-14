@@ -23,7 +23,12 @@ namespace WebApi.Controllers.Api.FrontolData
         [HttpGet("{barcode}")]
         public async Task<IActionResult> GetAsync(string barcode)
         {
-            if (!_parametersService.Current().FrontolConnectionSettings.ConnectionEnable())
+            var appParams = _parametersService.Current();
+
+            if (appParams.OrganisationConfig.PrintGroups.Count <= 1)
+                return Ok(0);
+
+            if (!appParams.FrontolConnectionSettings.ConnectionEnable())
                 return Ok(0);
 
             var printGroup = await _frontolSprtDataHandler.PrintGroupCodeByBarcodeAsync(barcode);

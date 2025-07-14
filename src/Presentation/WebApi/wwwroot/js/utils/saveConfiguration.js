@@ -10,9 +10,17 @@ export function saveConfiguration(formId) {
         .then(answer => {
             let packet = answer.json();
 
+            console.log(packet);
+
             if (!packet.isSuccess) {
-                webix.message(packet.message);
+                webix.message(packet);
                 return;
+            }
+
+            var needToRestart = packet.needToRestart;
+
+            if (needToRestart) {
+                webix.message("Изменения будут применены после перезапуска службы DS:Fmu-Api (она произойдет в течение одной минуты)");
             }
         })
         .finally(_ => {
