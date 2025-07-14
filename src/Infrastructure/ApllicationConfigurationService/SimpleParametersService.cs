@@ -3,7 +3,6 @@ using FmuApiDomain.Cache.Interfaces;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Constants;
-using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shared.FilesFolders;
@@ -14,10 +13,9 @@ namespace ApplicationConfigurationService
 {
     public class SimpleParametersService : IParametersService
     {
-        private readonly IServiceProvider _services;
         private readonly ILogger<SimpleParametersService> _logger;
         private readonly ICacheService _cacheService;
-        private readonly IApplicationState _appState;
+        private readonly IServiceProvider _services;
 
         private readonly string _configPath = string.Empty;
         private readonly string _configBackUpPath = string.Empty;
@@ -32,14 +30,14 @@ namespace ApplicationConfigurationService
             _services = services;
             _logger = _services.GetRequiredService<ILogger<SimpleParametersService>>();
             _cacheService = _services.GetRequiredService<ICacheService>();
-            _appState = _services.GetRequiredService<IApplicationState>();            
-            
+
             string configFolder = Folders.CommonApplicationDataFolder(ApplicationInformation.Manufacture, ApplicationInformation.AppName);
 
             _configPath = Path.Combine(configFolder, "config.json");
             _configBackUpPath = Path.Combine(configFolder, "config.bkp");
 
             InitializeConfiguration();
+
         }
 
         private void InitializeConfiguration()
@@ -57,35 +55,27 @@ namespace ApplicationConfigurationService
             settings.NodeName = Environment.MachineName;
             settings.OrganisationConfig.FillIfEmpty();
 
-            SaveConfiguration(settings, true);
+            SaveConfiguration(settings);
 
             return settings;
         }
+
         private Parameters LoadConfiguration()
         {
             try
             {
-                string jsonContent = string.Empty;
-                Parameters? loadedConfiguration = null;
-
+                string jsonContent;
                 try
                 {
                     _semaphore.Wait();
                     jsonContent = File.ReadAllText(_configPath);
-                }
-                catch (Exception e)
-                {
-                    _logger.LogError(e.Message);
                 }
                 finally
                 {
                     _semaphore.Release();
                 }
 
-                if (jsonContent != "")
-                {
-                    loadedConfiguration = JsonSerializer.Deserialize<Parameters>(jsonContent);
-                }
+                var loadedConfiguration = JsonSerializer.Deserialize<Parameters>(jsonContent);
 
                 if (loadedConfiguration == null)
                 {
@@ -148,33 +138,27 @@ namespace ApplicationConfigurationService
 
         private Parameters CheckMigration(Parameters settings)
         {
-            var isUpToDate = (settings.AppVersion == ApplicationInformation.AppVersion && settings.Assembly == ApplicationInformation.Assembly);
-            
-            if (!isUpToDate)
+            if (settings.AppVersion != ApplicationInformation.AppVersion)
             {
                 if (settings.AppVersion < 9)
+                {
                     settings = MigrationTo9.DoMigration(settings);
-
-                if (settings.AppVersion == 10 & settings.Assembly < 2)
-                    settings = MigrationTo10_2.DoMigration(settings);
+                }
 
                 settings.AppVersion = ApplicationInformation.AppVersion;
 
-                SaveConfiguration(settings, true);
+                SaveConfiguration(settings);
             }
 
             return settings;
         }
 
-        public void SaveConfiguration(Parameters settings, bool onStart = false)
+        public void SaveConfiguration(Parameters settings)
         {
             _logger.LogWarning("Записываю данные в файл конфигурации");
 
             settings.AppVersion = ApplicationInformation.AppVersion;
             settings.Assembly = ApplicationInformation.Assembly;
-
-            if (!onStart)
-                NeedToRestartAfterSaveConfiguration(settings);
 
             lock (_lock)
             {
@@ -191,18 +175,14 @@ namespace ApplicationConfigurationService
                 string jsonContent = JsonSerializer.Serialize(settings, JsonSerializeOptionsProvider.Default());
 
                 File.WriteAllText(_configPath, jsonContent);
-                File.WriteAllText(_configPath, jsonContent);
 
                 CacheSettings(settings);
             }
         }
 
-        public async Task SaveConfigurationAsync(Parameters settings, bool onStart = false)
+        public async Task SaveConfigurationAsync(Parameters settings)
         {
             _logger.LogWarning("Записываю данные в файл конфигурации");
-
-            if (!onStart)
-                NeedToRestartAfterSaveConfiguration(settings);
 
             try
             {
@@ -228,27 +208,6 @@ namespace ApplicationConfigurationService
             {
                 _semaphore.Release();
             }
-        }
-
-        private void NeedToRestartAfterSaveConfiguration(Parameters newSettings)
-        {
-            var needToRestartService = false;
-
-            var currentSettings = GetSettings();
-
-            needToRestartService = (currentSettings.ServerConfig.ApiIpPort != newSettings.ServerConfig.ApiIpPort
-                || currentSettings.Database.NetAddress != newSettings.Database.NetAddress
-                || currentSettings.Database.UserName != newSettings.Database.UserName
-                || currentSettings.Database.Password != newSettings.Database.Password
-                || currentSettings.Database.Enable != newSettings.Database.Enable
-                || currentSettings.Logging.LogLevel != newSettings.Logging.LogLevel
-                || currentSettings.Logging.IsEnabled != newSettings.Logging.IsEnabled
-                || currentSettings.Logging.LogDepth != newSettings.Logging.LogDepth);
-
-            _appState.NeedRestartService(needToRestartService);
-
-            if (needToRestartService)
-                _logger.LogWarning("Изменились критически важные параметры, необходим перезапуск службы.");
         }
 
         private void CacheSettings(Parameters settings)

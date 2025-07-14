@@ -10,6 +10,5 @@
         public bool CheckIsOwnerField { get; set; } = false;
         public bool SendLocalModuleInformationalInRequestId { get; set; } = false;
         public DateTime RejectSalesWithoutCheckInformationFrom { get; set; } = new DateTime(2025, 3, 1);
-        public bool ResetSoldStatusForReturn { get; set; } = false;
     }
 }

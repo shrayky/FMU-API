@@ -1,4 +1,4 @@
-import { ApiServerAddress } from '../../utils/net.js';
+import { ApiServerAdres } from '../../utils/net.js';
 
 class LogsView {
     constructor(id) {
@@ -17,18 +17,10 @@ class LogsView {
             errorDownload: "Ошибка при выгрузке логов",
             errorLoad: "Ошибка при загрузке логов"
         };
-
-        this.NAMES = {
-            toolbarLabel: "toolbarLabel",
-            logFiles: "logFiles",
-            refreshLogBtn: "refreshLogBtn",
-            uploadLogBtn: "uploadLogBtn",
-            log: "log"
-        };
     }
 
     render() {
-        $$(this.NAMES.toolbarLabel).setValue(this.LABELS.formTitle);
+        $$("toolbarLabel").setValue("FMU-API: Логи работы");
 
         var formElements = [this._logToolbar(), this._logTextArea()];
 
@@ -59,7 +51,7 @@ class LogsView {
     _logsCombo() {
         return {
             view: "combo",
-            id: this.NAMES.logFiles,
+            id: "logFiles",
             label: this.LABELS.logFile,
             labelWidth: 100,
             newvalues: false,
@@ -76,11 +68,11 @@ class LogsView {
         return {
             view: "button",
             value: this.LABELS.refresh,
-            id: this.NAMES.refreshLogBtn,
+            id: "refreshLogBtn",
             autowidth: "false",
             width: 400,
             click: async _ => {
-                var combo = $$(this.NAMES.logFiles);
+                var combo = $$("logFiles");
                 var chosenLogName = combo.getValue();
 
                 if (!chosenLogName)
@@ -98,11 +90,11 @@ class LogsView {
         return {
             view: "button",
             value: this.LABELS.save,
-            id: this.NAMES.uploadLogBtn,
+            id: "uploadLogBtn",
             autowidth: "false",
             width: 400,
             click: async _ => {
-                var logText = $$(this.NAMES.log);
+                var logText = $$("log");
                 var fileHandler = await this._getNewFileHandle();
                 await this._writeTextFile(fileHandler, logText.getValue());
             }
@@ -112,7 +104,7 @@ class LogsView {
     _logTextArea() {
         return {
             view: "textarea",
-            id: this.NAMES.log,
+            id: "log",
             readonly: true,
         }
     }
@@ -121,13 +113,12 @@ class LogsView {
         $$(elementId).disable();
 
         fileName = fileName.length == 0 ? "now" : fileName;
-        
 
-        webix.ajax().get(ApiServerAddress(`/configuration/logs/${fileName}`))
-            .then( (data) => {
+        webix.ajax().get(ApiServerAdres(`/configuration/logs/${fileName}`))
+            .then(function (data) {
                 var logInfo = data.json();
 
-                var combo = $$(this.NAMES.logFiles);
+                var combo = $$("logFiles");
 
                 combo.blockEvent();
 
@@ -139,7 +130,7 @@ class LogsView {
 
                 combo.unblockEvent();
 
-                var logText = $$(this.NAMES.log);
+                var logText = $$("log");
                 const lines = logInfo.log.split('\n').reverse().join('\n');
                 logText.setValue(lines);
 

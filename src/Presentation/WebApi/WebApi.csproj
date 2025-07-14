@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>fmu-api</AssemblyName>
     <SignAssembly>False</SignAssembly>
-	<Version>10.2.0</Version>
+	<Version>10.1.0</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -46,9 +46,5 @@
     <ProjectReference Include="..\..\Infrastructure\MemoryCache\MemoryCache.csproj" />
     <ProjectReference Include="..\..\Infrastructure\TrueApiCdn\TrueApiCdn.csproj" />
   </ItemGroup>
-
-  <Target Name="NpmBuild" BeforeTargets="Build" Condition="'$(Configuration)' == 'Release'">
-    <Exec Command="npm run build" WorkingDirectory="$(ProjectDir)wwwroot" />
-  </Target>
 
 </Project>

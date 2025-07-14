@@ -19,9 +19,6 @@ namespace FmuApiDomain.Fmu.Document
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string User { get; set; } = string.Empty;
         public List<Position> Positions { get; set; } = new();
-        public Organization Organization { get; set; } = new();
-        public string Inn => Organization.Inn;
-        public string Mark => ExtractMark();
 
         public Dictionary<string, string> MarkDictionary()
         {
@@ -79,7 +76,7 @@ namespace FmuApiDomain.Fmu.Document
             return alcoholCheck;
         }
 
-        private string ExtractMark()
+        public string Mark()
         {
             if (Positions.Count != 1)
                 return "";
@@ -88,7 +85,7 @@ namespace FmuApiDomain.Fmu.Document
                 return "";
 
             return System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(Positions[0].Marking_codes[0]));
-        }
 
+        }
     }
 }

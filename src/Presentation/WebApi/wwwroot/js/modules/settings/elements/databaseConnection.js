@@ -1,4 +1,4 @@
-import { Label, Text, Number, PasswordBox, padding, CheckBox } from "../../../utils/ui.js";
+import { Label, Text, PasswordBox, padding, CheckBox } from "../../../utils/ui.js";
 import { couchDbNameValidation, httpAddressValidation } from "../../../utils/validators.js";
 
 class DatabaseConnectionConfigurationElement {
@@ -13,10 +13,7 @@ class DatabaseConnectionConfigurationElement {
             password: "Пароль",
             dbMarks: "База данных марок",
             dbCashDocs: "База документов кассы",
-            dbAlcoStamps: "База марок алкоголя",
-            bulkBatchSize: "Размер пакета",
-            bulkParallelTasks: "Количество параллельных задач",
-            bulkLabel: "Параметры пакетной обработки"
+            dbAlcoStamps: "База марок алкоголя"
         };
     }
 
@@ -29,8 +26,6 @@ class DatabaseConnectionConfigurationElement {
             this.frontolDocumentsDbName = config.database.frontolDocumentsDbName;
             this.alcoStampsDbName = config.database.alcoStampsDbName;
             this.enable = config.database.enable;
-            this.bulkBatchSize = config.database.bulkBatchSize;
-            this.bulkParallelTasks = config.database.bulkParallelTasks;
         }
 
         return this;
@@ -74,14 +69,6 @@ class DatabaseConnectionConfigurationElement {
                             Text(this.LABELS.dbMarks, "database.marksStateDbName", this.marksStateDbName, couchDbNameValidation),
                             Text(this.LABELS.dbCashDocs, "database.frontolDocumentsDbName", this.frontolDocumentsDbName, couchDbNameValidation),
                             Text(this.LABELS.dbAlcoStamps, "database.alcoStampsDbName", this.alcoStampsDbName, couchDbNameValidation),
-                            Label("lBulkConfig", this.LABELS.bulkLabel),
-                            {
-                                padding: padding,
-                                cols: [
-                                    Number(this.LABELS.bulkBatchSize, "database.bulkBatchSize", this.bulkBatchSize),
-                                    Number(this.LABELS.bulkParallelTasks, "database.bulkParallelTasks", this.bulkParallelTasks),
-                                ]
-                            },
                         ]
                     }
                 ]

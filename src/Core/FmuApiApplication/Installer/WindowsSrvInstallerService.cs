@@ -1,10 +1,10 @@
 ﻿using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Constants;
+using Humanizer;
 using Shared.Strings;
 using System.Diagnostics;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.ServiceProcess;
 
 namespace FmuApiApplication.Installer
@@ -22,37 +22,17 @@ namespace FmuApiApplication.Installer
         {
             _parametersService = parametersService;
             
-            _installDirectory = Path.Combine(Path.GetPathRoot(Environment.SystemDirectory) ?? "",
-                                            "Program Files",
-                                            ApplicationInformation.Manufacture,
-                                            ApplicationInformation.AppName);
+            _installDirectory = Path.Combine(Path.GetPathRoot(Environment.SystemDirectory) ?? "", "Program Files", "Automation", "FMU-API");
             
             _configuration = _parametersService.Current();
         }
 
-        private static void CopyFilesRecursively(string sourcePath, string targetPath)
-        {
-            foreach (string dirPath in Directory.GetDirectories(sourcePath, "*", SearchOption.AllDirectories))
-            {
-                Directory.CreateDirectory(dirPath.Replace(sourcePath, targetPath));
-            }
-
-            foreach (string newPath in Directory.GetFiles(sourcePath, "*.*", SearchOption.AllDirectories))
-            {
-                File.Copy(newPath, newPath.Replace(sourcePath, targetPath), true);
-            }
-        }
-
         public async Task<bool> InstallAsync(string[] installerArgs)
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return false;
-
             if (!Directory.Exists(_installDirectory))
                 Directory.CreateDirectory(_installDirectory);
 
             var bin = Path.Combine(_installDirectory, "fmu-api.exe");
-            var wwwroot = Path.Combine(_installDirectory, "wwwroot");
 
             ServiceController? existingService = ServiceController.GetServices().FirstOrDefault(ser => ser.ServiceName == _serviceName);
 
@@ -68,11 +48,8 @@ namespace FmuApiApplication.Installer
             string serviceFileName = Environment.ProcessPath ?? Assembly.GetExecutingAssembly().Location;
             string setupFolder = Path.GetDirectoryName(serviceFileName) ?? serviceFileName.Replace("fmu-api.exe", "");
 
-            if (File.Exists(bin))
-                File.Delete(bin);
-
-            if (Directory.Exists(wwwroot))
-                Directory.Delete(wwwroot, true);
+            if (Directory.Exists(_installDirectory))
+                Directory.Delete(_installDirectory);
 
             CopyFilesRecursively(setupFolder, _installDirectory);
 
@@ -108,17 +85,6 @@ namespace FmuApiApplication.Installer
 
             await _parametersService.UpdateAsync(_configuration);
 
-            existingService = ServiceController.GetServices().FirstOrDefault(ser => ser.ServiceName == _serviceName);
-
-            if (existingService != null)
-            {
-                if (existingService.Status != ServiceControllerStatus.Running)
-                {
-                    existingService.Start();
-                    existingService.WaitForStatus(ServiceControllerStatus.Running);
-                }
-            }
-
             return true;
 
         }
@@ -127,23 +93,26 @@ namespace FmuApiApplication.Installer
         {
             Unregister();
 
-            var bin = Path.Combine(_installDirectory, "fmu-api.exe");
-            var wwwroot = Path.Combine(_installDirectory, "wwwroot");
-
-            if (File.Exists(bin))
-                File.Delete(bin);
-
-            if (Directory.Exists(wwwroot))
-                Directory.Delete(wwwroot, true);
+            Directory.Delete(_installDirectory);
 
             return true;
         }
 
+        private static void CopyFilesRecursively(string sourcePath, string targetPath)
+        {
+            foreach (string dirPath in Directory.GetDirectories(sourcePath, "*", SearchOption.AllDirectories))
+            {
+                Directory.CreateDirectory(dirPath.Replace(sourcePath, targetPath));
+            }
+
+            foreach (string newPath in Directory.GetFiles(sourcePath, "*.*", SearchOption.AllDirectories))
+            {
+                File.Copy(newPath, newPath.Replace(sourcePath, targetPath), true);
+            }
+        }
+
         public bool RegisterWindowsService(string[] args)
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return false;
-
             ServiceController? existingService = ServiceController.GetServices().FirstOrDefault(ser => ser.ServiceName == _serviceName);
 
             Process process = new();
@@ -190,9 +159,6 @@ namespace FmuApiApplication.Installer
 
         public bool Unregister()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return false;
-
             ServiceController? existingService = ServiceController.GetServices().FirstOrDefault(ser => ser.ServiceName == _serviceName);
 
             if (existingService is null)

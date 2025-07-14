@@ -1,14 +1,11 @@
 ﻿@page
 @using WebApi.Pages
-@using Microsoft.AspNetCore.Hosting
-@using Microsoft.Extensions.Hosting
-@inject IWebHostEnvironment Environment
 @model IndexModel
 @{
     ViewData["Title"] = "FMU-API";
 }
 
-<div id="parameters" hidden>
+<div id="parametres" hidden>
     <input asp-for="ApiServerIpPort"/>
 </div>
 
@@ -17,12 +14,5 @@
 <div id="window" style='width:80%; height:80%;' hidden />
 
 @section Scripts {
-    @if (Environment.IsDevelopment())
-    {
-        <script src="~/js/views/index.js" type="module"></script>
-    }
-    else
-    {
-        <script src="~/bundle/index.js" asp-append-version="true"></script>
-    }
+    <script src="~/js/views/index.js" type="module"></script>
 }

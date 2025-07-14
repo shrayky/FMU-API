@@ -2,11 +2,10 @@
 using FmuApiDomain.MarkInformation.Entities;
 using FmuApiDomain.MarkInformation.Enums;
 using FmuApiDomain.MarkInformation.Models;
-using FmuApiDomain.Repositories;
 
 namespace CouchDb.Handlers
 {
-    public class MarkInformationHandler: IMarkInformationRepository
+    public class MarkInformationHandler
     {
         private CouchDbContext? _context;
 
@@ -16,22 +15,6 @@ namespace CouchDb.Handlers
             _context = couchDbContext;
         }
 
-        public async Task<MarkEntity> GetAsync(string Id)
-        {
-            if (_context == null)
-                return new();
-
-            var dataRecord = await GetDocumentAsync(Id);
-
-            return new()
-            {
-                MarkId = dataRecord.Id,
-                State = dataRecord.State,
-                TrueApiCisData = dataRecord.TrueApiInformation,
-                TrueApiAnswerProperties = dataRecord.TrueApiAnswerProperties,
-                SaleData = dataRecord.SaleInforamtion
-            };
-        }
         public async Task<MarkEntity> SetStateAsync(string id, string state, SaleData saleData)
         {
             if (_context == null)
@@ -91,6 +74,23 @@ namespace CouchDb.Handlers
             };
 
             return answer;
+        }
+
+        public async Task<MarkEntity> GetAsync(string Id)
+        {
+            if (_context == null)
+                return new();
+
+            var dataRecord = await GetDocumentAsync(Id);
+
+            return new()
+            {
+                MarkId = dataRecord.Id,
+                State = dataRecord.State,
+                TrueApiCisData = dataRecord.TrueApiInformation,
+                TrueApiAnswerProperties = dataRecord.TrueApiAnswerProperties,
+                SaleData = dataRecord.SaleInforamtion
+            };
         }
 
         public async Task DeleteAsync(string Id)
@@ -190,11 +190,6 @@ namespace CouchDb.Handlers
             }
 
             return answer;
-        }
-
-        public Task<bool> AddRangeAsync(List<MarkEntity> markEntities)
-        {
-            throw new NotImplementedException();
         }
     }
 }

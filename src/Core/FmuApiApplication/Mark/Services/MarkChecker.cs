@@ -156,8 +156,6 @@ namespace FmuApiApplication.Mark.Services
 
         public async Task<MarkCheckResult> OfflineCheckAsync(string cis, int organizationId)
         {
-            _logger.LogWarning("Производится проверка марки {сis} в локальном модуле", cis);
-
             string xApiKey = _configuration.OrganisationConfig.XapiKey(organizationId);
 
             if (string.IsNullOrEmpty(xApiKey))

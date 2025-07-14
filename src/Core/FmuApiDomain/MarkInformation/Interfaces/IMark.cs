@@ -13,7 +13,7 @@ namespace FmuApiDomain.MarkInformation.Interfaces
         public string Code { get; }
         public string ErrorDescription { get; }
         public bool CodeIsSgtin { get; }
-        public Task<CheckMarksDataTrueApi> TrueApiData();
+        public CheckMarksDataTrueApi TrueApiData();
         public void SetPrintGroupCode(int code);
         public MarkEntity DatabaseState();
         public FmuAnswer MarkDataAfterCheck();

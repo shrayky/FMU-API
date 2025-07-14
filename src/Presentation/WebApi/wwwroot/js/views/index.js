@@ -9,7 +9,6 @@ import SettingsView from '../modules/settings/SettingsView.js';
 import InformationView from '../modules/settings/informationView.js';
 import CdnView from '../modules/settings/cdnView.js';
 import LogsView from '../modules/settings/logsView.js';
-import MonitorView from '../modules/settings/monitorView.js';
 
 class App {
     constructor() {
@@ -23,7 +22,6 @@ class App {
         this.router.register("information", () => InformationView);
         this.router.register("cdnListInfo", () => CdnView);
         this.router.register("logsView", () => LogsView);
-        this.router.register("monitorView", () => MonitorView);
     }
 
     createMainLayout() {
@@ -49,7 +47,7 @@ class App {
         webix.ready(() => {
             webix.ui(this.createMainLayout());
 
-            this.router.navigate("monitorView", "body");
+            this.router.navigate("config", "body");
 
             // Обработчик изменения размера окна
             webix.event(window, "resize", () => {

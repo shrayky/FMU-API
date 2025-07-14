@@ -106,13 +106,13 @@ namespace FmuApiDomain.TrueApi.MarkData
             return "";
         }
 
-        public void ResetErrorFileds(bool resetSoldStatusForReturn)
+        public void ResetErrorFileds()
         {
             Found = true;
             Verified = true;
-            Realizable = resetSoldStatusForReturn ? true : Realizable;
+            Realizable = true;
             Utilised = true;
-            Sold = resetSoldStatusForReturn ? false : Sold;
+            Sold = false;
             ErrorCode = 0;
         }
     }

@@ -9,9 +9,7 @@ class AutoUpdateElement {
             title: "Автоматическое обновление",
             enabled: "Использовать",
             catalog: "Каталог с файлами обновления",
-            hours: "Часы для автоматического обновления",
-            fileNameDescription: "служба ищет в указанном каталоге архив update.zip",
-            timeIntervalDescription: "если правая граница интервала 23:59, то ставьте значение 00"
+            hours: "Часы для автоматического обновления"
         };
         this.HOURS_COUNT = 24;
         this.TIME_COMBO_WIDTH = 60;
@@ -87,12 +85,6 @@ class AutoUpdateElement {
                                  this.updateFilesCatalog,
                                  windowsPathValidation),
 
-                            Label("fileNameDescription", this.LABELS.fileNameDescription,
-                                {
-                                    css: { "font-style": "italic", "font-size": "smaller" }
-                                }
-                            ),
-
                             Label("lAutoUpdateHours", this.LABELS.hours),
 
                             {
@@ -104,13 +96,6 @@ class AutoUpdateElement {
                                     {}
                                 ]
                             },
-
-                            Label("timeIntervalDescription", this.LABELS.timeIntervalDescription,
-                                {
-                                    css: { "font-style": "italic", "font-size": "smaller" }
-                                }
-                            ),
-                            
                         ],
                     }
                 ],

@@ -1,4 +1,5 @@
-import { ApiServerAddress } from '../../utils/net.js';
+import { Label } from "../../utils/ui.js";
+import { ApiServerAdres } from '../../utils/net.js';
 
 export default function cdnView(id) {
     $$("toolbarLabel").setValue("FMU-API: Список cdn-серверов");
@@ -37,7 +38,7 @@ export default function cdnView(id) {
         },
 
         url: function (params) {
-            return webix.ajax(ApiServerAddress("/configuration/cdn"));
+            return webix.ajax(ApiServerAdres("/configuration/cdn"));
         },
     }
     
