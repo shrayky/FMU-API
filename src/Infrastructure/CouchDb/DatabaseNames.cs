@@ -1,12 +1,11 @@
-﻿using FmuApiDomain.Configuration;
-using FmuApiDomain.Configuration.Options;
+﻿using FmuApiDomain.Configuration.Options;
 
 namespace CouchDb
 {
     public static class DatabaseNames
     {
-        public static string MarksStateDb { get; private set; } = "fmu-marks";
-        public static string FrontolDocumentsDb { get; private set; } = "fmu-cashdocs";
+        public static string MarksStateDb { get; private set; } = string.Empty;
+        public static string FrontolDocumentsDb { get; private set; } = string.Empty;
         public static string AlcoStampsDb { get; private set; } = string.Empty;
 
         public static void Initialize(CouchDbConnection settings)

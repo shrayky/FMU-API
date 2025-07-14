@@ -45,7 +45,7 @@ namespace CouchDb.Handlers
             return await GetDocumentAsync(documentData.Id);
         }
 
-        public async Task DelteAsync(string uid)
+        public async Task DeleteAsync(string uid)
         {
             if (_context == null)
                 return;
@@ -83,7 +83,13 @@ namespace CouchDb.Handlers
 
             FrontolDocumentData? answer = await _context.FrontolDocuments.FindAsync(uid);
 
-            return answer ?? new();
+            if (answer == null)
+            {
+                answer = new();
+                answer.Id = "";
+            }
+
+            return answer;
         }
 
     }

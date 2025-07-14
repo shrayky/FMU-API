@@ -1,4 +1,4 @@
-import { ApiServerAdres } from '../../utils/net.js';
+import { ApiServerAddress } from '../../utils/net.js';
 
 export default function informationView(id) {
     $$("toolbarLabel").setValue("FMU-API: Информация о системе");
@@ -42,7 +42,7 @@ export default function informationView(id) {
 }
 
 function init() {
-    webix.ajax().get(ApiServerAdres("/configuration/about"))
+    webix.ajax().get(ApiServerAddress("/configuration/about"))
         .then(function (data) {
             var _appVersion = data.text();
             $$("appVersion").setValue(_appVersion);

@@ -8,7 +8,7 @@ namespace FmuApiDomain.Configuration
 {
     public class Parameters
     {
-        public string AppName { get; } = "FMU-API";
+        public string AppName { get; } = ApplicationInformation.AppName;
         public int AppVersion { get; set; } = ApplicationInformation.AppVersion;
         public int Assembly { get; set; } = ApplicationInformation.Assembly;
         public string NodeName { get; set; } = string.Empty;
@@ -28,12 +28,12 @@ namespace FmuApiDomain.Configuration
         public AutoUpdateOptions AutoUpdate { get; private set; } = AutoUpdateOptions.Create();
 
         // устаревшие параметры
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? HostToPing { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? XAPIKEY { get; set; }
-        //public List<TrueSignCdn>? Cdn { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public TokenData? SignData { get; set; }
-
-        private string _dataFolder = string.Empty;
 
         [JsonConstructor]
         public Parameters()

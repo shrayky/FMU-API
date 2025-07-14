@@ -38,14 +38,14 @@ namespace AutoUpdateWorkerService
 
                 _configuration = _parametersService.Current();
 
-                Result updateResult = СheckUpdates();
+                Result updateResult = CheckUpdates();
 
                 if (updateResult.IsSuccess)
                     break;
             }
         }
 
-        private Result СheckUpdates()
+        private Result CheckUpdates()
         {
             AutoUpdateOptions options = _configuration.AutoUpdate;
 
@@ -62,7 +62,7 @@ namespace AutoUpdateWorkerService
 
             if (OperatingSystem.IsWindows())
             {
-                _logger.LogInformation("Найдено обновление, запускаю установку.");
+                _logger.LogWarning("Найдено обновление, запускаю установку.");
 
                 var installerPath = Path.Combine(Path.GetTempPath(), ApplicationInformation.AppName);
 

@@ -1,5 +1,4 @@
-﻿using CouchDb.Handlers;
-using CSharpFunctionalExtensions;
+﻿using CSharpFunctionalExtensions;
 using FmuApiApplication.Mark.Interfaces;
 using FmuApiDomain.Configuration;
 using Microsoft.Extensions.Logging;
@@ -8,18 +7,19 @@ using FmuApiDomain.TrueApi.MarkData;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.MarkInformation.Entities;
 using FmuApiDomain.MarkInformation.Enums;
+using FmuApiDomain.Repositories;
 
 namespace FmuApiApplication.Mark.Services
 {
     public class MarkStateManager : IMarkStateManager
     {
-        private readonly MarkInformationHandler _markStateCrud;
+        private readonly IMarkInformationRepository _markStateCrud;
         private readonly IParametersService _parametersService;
         private readonly ILogger<MarkStateManager> _logger;
         private readonly Parameters _configuration;
 
         public MarkStateManager(
-            MarkInformationHandler markStateCrud,
+            IMarkInformationRepository markStateCrud,
             IParametersService parametersService,
             ILogger<MarkStateManager> logger)
         {
@@ -40,14 +40,18 @@ namespace FmuApiApplication.Mark.Services
                 }
 
                 var markInfo = await _markStateCrud.GetAsync(sgtin);
+
                 _logger.LogInformation("Получена информация о марке {Sgtin}", sgtin);
+                
                 return markInfo;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка при получении информации о марке {Sgtin}", sgtin);
-                return new MarkEntity();
             }
+
+            return new MarkEntity();
+
         }
 
         public async Task<Result> SaveMarkInformation(string sgtin, CheckMarksDataTrueApi trueMarkData)
@@ -64,8 +68,8 @@ namespace FmuApiApplication.Mark.Services
 
                 foreach (var markCodeData in trueMarkData.Codes)
                 {
-                    var markState = CreateMarkState(sgtin, markCodeData, currentMarkState, trueMarkData);
-                    await _markStateCrud.AddAsync(markState);
+                    var mark = CreateMarkEntity(sgtin, markCodeData, currentMarkState, trueMarkData);
+                    await _markStateCrud.AddAsync(mark);
                 }
 
                 _logger.LogInformation("Информация о марке {Sgtin} сохранена", sgtin);
@@ -112,7 +116,7 @@ namespace FmuApiApplication.Mark.Services
             return markInfo.State == MarkState.Sold;
         }
 
-        private static MarkEntity CreateMarkState(
+        private static MarkEntity CreateMarkEntity(
             string sgtin,
             CodeDataTrueApi markCodeData,
             MarkEntity currentMarkState,

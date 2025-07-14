@@ -1,5 +1,5 @@
 export function InitProxy() {
-    let baseAdres = '';
+    let baseAddress = '';
     let apiIpPort = 2589;
 
     const elementApiServerIpPort = document.getElementById("ApiServerIpPort"); 
@@ -7,7 +7,7 @@ export function InitProxy() {
     if (elementApiServerIpPort != null)
         apiIpPort = elementApiServerIpPort.value;
 
-    baseAdres = `http://${window.location.hostname}:${apiIpPort}/api`;
+    baseAddress = `http://${window.location.hostname}:${apiIpPort}/api`;
 
     var ajax = webix.ajax();
 
@@ -17,7 +17,7 @@ export function InitProxy() {
         },
 
         load: (view, params) => {
-            if (baseAdres == '') {
+            if (baseAddress == '') {
                 webix.message("Служба не настроена - не указан порт сервера api. Настройте и перезапустите ее.");
                 return []
             }
@@ -26,7 +26,7 @@ export function InitProxy() {
 
             var url = view.config.url.source;
 
-            return ajax.get(`${baseAdres}${url}`)
+            return ajax.get(`${baseAddress}${url}`)
                 .then(answer => {
                     var packet = answer.json();
 
@@ -48,7 +48,7 @@ export function InitProxy() {
         },
 
         save: (view, params) => {
-            if (baseAdres == '') {
+            if (baseAddress == '') {
                 webix.message("Служба не настроена - не указан порт сервера api. Настройте и перезапустите ее.");
                 return []
             }

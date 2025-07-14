@@ -1,5 +1,6 @@
 ﻿using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
+using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.Webix;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Json;
@@ -13,11 +14,15 @@ namespace WebApi.Controllers.Api.Configuration
     public class ParametersController : Controller
     {
         private readonly IParametersService _parametersService;
+        private readonly IApplicationState _appState;
+
         private readonly Parameters _configuration;
 
-        public ParametersController(IParametersService parametersService)
+        public ParametersController(IParametersService parametersService, IApplicationState applicationState)
         {
             _parametersService = parametersService;
+            _appState = applicationState;
+
             _configuration = _parametersService.Current();
         }
 
@@ -56,7 +61,13 @@ namespace WebApi.Controllers.Api.Configuration
 
             await _parametersService.UpdateAsync(loadPrm);
 
-            return Ok();
+            var answer = new
+            {
+                isSuccess = true,
+                needToRestart = _appState.NeedRestartService(),
+            };
+
+            return Ok(answer);
         }
     }
 }

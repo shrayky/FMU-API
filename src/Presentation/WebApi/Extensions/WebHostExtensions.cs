@@ -45,8 +45,6 @@ namespace WebApi.Extensions
             TrueApiCdnRegistration.AddService(builder.Services);
             LocalModuleRegistration.AddService(builder.Services);
 
-            builder.Services.AddSingleton<IApplicationState, ApplicationState>();
-
             ConfigureLogging(builder, settings.Logging);
 
             return builder;
