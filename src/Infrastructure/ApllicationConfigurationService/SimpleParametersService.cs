@@ -191,7 +191,7 @@ namespace ApplicationConfigurationService
                 string jsonContent = JsonSerializer.Serialize(settings, JsonSerializeOptionsProvider.Default());
 
                 File.WriteAllText(_configPath, jsonContent);
-                File.WriteAllText(_configPath, jsonContent);
+                File.WriteAllText(_configBackUpPath, jsonContent);
 
                 CacheSettings(settings);
             }
