@@ -70,10 +70,12 @@ namespace FmuApiApplication.Documents
 
             // фронтол 20.5 не требовал проверки марок для документов возврата,
             // начиная с 22.4 такая проверка обязательна
-            if (!_configuration.SaleControlConfig.CheckReceiptReturn)
+            // но если в запросе есть ИНН - то это уже новая версия фронтола
+            if (!_configuration.SaleControlConfig.CheckReceiptReturn && _document.Inn == "")
                 return Result.Success(answer);
 
             var checkResult = await MarkInformation();
+            checkResult.Value.FillFieldsFor6255(_document.Inn);
 
             if (checkResult.IsFailure)
                 return checkResult;

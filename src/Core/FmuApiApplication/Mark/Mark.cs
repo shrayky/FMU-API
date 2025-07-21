@@ -137,8 +137,6 @@ namespace FmuApiApplication.Mark
 
                 checkErrors.Clear();
 
-                _lastCheckResult.FmuAnswer.FillFieldsFor6255();
-
                 break;
             }
 

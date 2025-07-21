@@ -87,9 +87,12 @@ namespace FmuApiApplication.Documents
 
             await SetOrganizationIdAsync(mark);
             var checkResult = await mark.PerformCheckAsync(OperationType.Sale);
+            checkResult.Value.FillFieldsFor6255(_document.Inn);
 
             if (checkResult.IsSuccess)
+            {
                 return checkResult;
+            }
 
             _logger.LogError(checkResult.Error);
 
