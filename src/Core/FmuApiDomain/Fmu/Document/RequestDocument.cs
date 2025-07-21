@@ -19,8 +19,9 @@ namespace FmuApiDomain.Fmu.Document
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string User { get; set; } = string.Empty;
         public List<Position> Positions { get; set; } = new();
-        public Organization Organization { get; set; } = new();
-        public string Inn => Organization.Inn;
+        [JsonIgnore]
+        public string Inn => Positions.Count != 1 ? "" : Positions[0].Organisation.Inn;
+        [JsonIgnore]
         public string Mark => ExtractMark();
 
         public Dictionary<string, string> MarkDictionary()
