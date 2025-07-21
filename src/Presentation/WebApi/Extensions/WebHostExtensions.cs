@@ -1,10 +1,8 @@
 ﻿using FmuApiApplication.Services.AcoUnit;
-using FmuApiApplication.Services.State;
 using FmuApiApplication.Workers;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.Constants;
-using FmuApiDomain.State.Interfaces;
 using LocalModuleIntegration;
 using Serilog;
 using Shared.FilesFolders;
@@ -59,7 +57,7 @@ namespace WebApi.Extensions
 
             if (OperatingSystem.IsWindows())
             {
-                logFolder = Path.Combine(Folders.LogFolder(), 
+                logFolder = Path.Combine(Folders.LogFolder(),
                                          ApplicationInformation.Manufacture, ApplicationInformation.AppName,
                                          "log");
             }

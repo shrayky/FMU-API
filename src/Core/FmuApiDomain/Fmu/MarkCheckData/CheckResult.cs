@@ -9,6 +9,5 @@ namespace FmuApiDomain.Fmu.MarkCheckData
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string Kpp { get; set; } = string.Empty;
         public CheckInformation Response { get; set; } = new();
-
     }
 }

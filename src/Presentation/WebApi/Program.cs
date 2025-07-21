@@ -18,7 +18,6 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 using Scalar.AspNetCore;
 using Serilog;
 using Shared.Strings;
-using WebApi;
 using WebApi.Extensions;
 
 var slConsole = new LoggerConfiguration()
@@ -112,7 +111,7 @@ bool RunHttpApiService()
     {
         OnPrepareResponse = prm =>
         {
-            prm.Context.Response.Headers.Append("Cache-Control", "publc, max-age=864000"); //10 дней
+            prm.Context.Response.Headers.Append("Cache-Control", "publc, max-age=864000"); //10 пїЅпїЅпїЅпїЅ
         }
     });
     app.UseRouting();
@@ -154,15 +153,14 @@ void ConfigureOpenApi(IServiceCollection services)
 
 bool ShowAppInfo()
 {
-    logger.LogInformation("Ключи запуска приложения:\r\n" +
-            "  --service запуск в режиме службы. рабочий режим\r\n" +
-            "    --dataFolder каталог хранения настроек и лога (необязательный)\r\n" +
-            "  --install запуск установки или обновления службы с копированием файлов\r\n" +
-            "    --xapikey параметр установки - записывает в настройки ключ для Честного знака (необязательный)\r\n" +
-            "  --uninstall удаление службы и файлов\r\n" +
-            "  --register регистрация как службы windows\r\n" +
-            "  --unregister удаление службы windows");
-
+    logger.LogInformation("РљР»СЋС‡Рё Р·Р°РїСѓСЃРєР° РїСЂРёР»РѕР¶РµРЅРёСЏ:\r\n" +
+            "  --service Р·Р°РїСѓСЃРє РІ СЂРµР¶РёРјРµ СЃР»СѓР¶Р±С‹. СЂР°Р±РѕС‡РёР№ СЂРµР¶РёРј\r\n" +
+            "    --dataFolder РєР°С‚Р°Р»РѕРі С…СЂР°РЅРµРЅРёСЏ РЅР°СЃС‚СЂРѕРµРє Рё Р»РѕРіР° (РЅРµРѕР±СЏР·Р°С‚РµР»СЊРЅС‹Р№)\r\n" +
+            "  --install Р·Р°РїСѓСЃРє СѓСЃС‚Р°РЅРѕРІРєРё РёР»Рё РѕР±РЅРѕРІР»РµРЅРёСЏ СЃР»СѓР¶Р±С‹ СЃ РєРѕРїРёСЂРѕРІР°РЅРёРµРј С„Р°Р№Р»РѕРІ\r\n" +
+            "    --xapikey РїР°СЂР°РјРµС‚СЂ СѓСЃС‚Р°РЅРѕРІРєРё - Р·Р°РїРёСЃС‹РІР°РµС‚ РІ РЅР°СЃС‚СЂРѕР№РєРё РєР»СЋС‡ РґР»СЏ Р§РµСЃС‚РЅРѕРіРѕ Р·РЅР°РєР° (РЅРµРѕР±СЏР·Р°С‚РµР»СЊРЅС‹Р№)\r\n" +
+            "  --uninstall СѓРґР°Р»РµРЅРёРµ СЃР»СѓР¶Р±С‹ Рё С„Р°Р№Р»РѕРІ\r\n" +
+            "  --register СЂРµРіРёСЃС‚СЂР°С†РёСЏ РєР°Рє СЃР»СѓР¶Р±С‹ windows\r\n" +
+            "  --unregister СѓРґР°Р»РµРЅРёРµ СЃР»СѓР¶Р±С‹ windows");
     return true;
 }
 
