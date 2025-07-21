@@ -36,9 +36,9 @@ namespace Shared.Logging
 
             // Фильтры для инфраструктурных логов
             loggerConfiguration = loggerConfiguration
-                .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
-                .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Warning)
-                .MinimumLevel.Override("System", LogEventLevel.Warning);
+                .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Error)
+                .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Error)
+                .MinimumLevel.Override("System", LogEventLevel.Error);
 
             return loggerConfiguration.CreateLogger();
         }
