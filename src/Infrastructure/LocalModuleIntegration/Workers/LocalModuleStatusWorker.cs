@@ -78,7 +78,7 @@ namespace LocalModuleIntegration.Workers
                     continue;
 
                 if (currentStatus != LocalModuleStatus.Ready)
-                    _logger.LogWarning("Изменение статуса ЛМ для организации {OrganizationId}: {OldStatus} -> {NewStatus}",
+                    _logger.LogError("Изменение статуса ЛМ для организации {OrganizationId}: {OldStatus} -> {NewStatus}",
                         organization.Id,
                         lastStatus.ToString() ?? LocalModuleStatus.Unknown.ToString(),
                         currentStatus.ToString() ?? LocalModuleStatus.Unknown.ToString()
@@ -92,8 +92,6 @@ namespace LocalModuleIntegration.Workers
                         );
 
                 _applicationState.UpdateOrganizationLocalModuleStatus(organization.Id, currentStatus);
-
-
             }
         }
     }

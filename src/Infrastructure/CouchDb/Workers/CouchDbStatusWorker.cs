@@ -70,7 +70,7 @@ namespace CouchDb.Workers
                             curState,
                             newSate);
             else
-                _logger.LogWarning("Изменение online CouchDb: {curState} -> {newSate}",
+                _logger.LogError("Изменение online CouchDb: {curState} -> {newSate}",
                             curState,
                             newSate);
 

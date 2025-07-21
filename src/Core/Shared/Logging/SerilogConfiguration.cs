@@ -1,4 +1,5 @@
 ﻿using Serilog;
+using Serilog.Events;
 
 namespace Shared.Logging
 {
@@ -32,6 +33,12 @@ namespace Shared.Logging
                 "fatal" => loggerConfiguration.MinimumLevel.Fatal(),
                 _ => loggerConfiguration.MinimumLevel.Information()
             };
+
+            // Фильтры для инфраструктурных логов
+            loggerConfiguration = loggerConfiguration
+                .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+                .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Warning)
+                .MinimumLevel.Override("System", LogEventLevel.Warning);
 
             return loggerConfiguration.CreateLogger();
         }
