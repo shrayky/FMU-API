@@ -29,7 +29,7 @@ namespace CouchDb
                 {
                     options.UseEndpoint(settings.Database.NetAddress);
                     options.UseBasicAuthentication(settings.Database.UserName, settings.Database.Password);
-                    options.EnsureDatabaseExists();
+                    //options.EnsureDatabaseExists();
                 }
             });
 
