@@ -111,7 +111,7 @@ bool RunHttpApiService()
     {
         OnPrepareResponse = prm =>
         {
-            prm.Context.Response.Headers.Append("Cache-Control", "publc, max-age=864000"); //10 ����
+            prm.Context.Response.Headers.Append("Cache-Control", "publc, max-age=864000");
         }
     });
     app.UseRouting();
