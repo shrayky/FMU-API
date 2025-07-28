@@ -1,4 +1,6 @@
-﻿using CSharpFunctionalExtensions;
+﻿// Ignore Spelling: Fmu
+
+using CSharpFunctionalExtensions;
 using FmuApiApplication.Mark.Interfaces;
 using FmuApiDomain.Configuration;
 using Microsoft.Extensions.Logging;
@@ -40,7 +42,7 @@ namespace FmuApiApplication.Mark.Services
 
             if (!_appState.CouchDbOnline())
             {
-                _logger.LogInformation("Database не в сети, проверка марки {sgtin} пропускается.", sgtin);
+                _logger.LogWarning("Database не в сети, проверка марки {sgtin} пропускается.", sgtin);
                 return new MarkEntity();
             }
 
@@ -71,7 +73,7 @@ namespace FmuApiApplication.Mark.Services
 
             if (!_appState.CouchDbOnline())
             {
-                _logger.LogInformation("Сохранение в базу данных {sgtin} пропущенно, базы данных не в сети.", sgtin);
+                _logger.LogWarning("Сохранение в базу данных {sgtin} пропущенно, базы данных не в сети.", sgtin);
                 return Result.Success();
             }
 
@@ -104,7 +106,7 @@ namespace FmuApiApplication.Mark.Services
 
             if (!_appState.CouchDbOnline())
             {
-                _logger.LogInformation("Сохранение в базу данных {sgtin} пропущенно, базы данных не в сети.", sgtin);
+                _logger.LogWarning("Сохранение в базу данных {sgtin} пропущенно, базы данных не в сети.", sgtin);
                 return Result.Success();
             }
 
