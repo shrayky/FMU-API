@@ -8,6 +8,8 @@ using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.MarkInformation.Entities;
 using FmuApiDomain.MarkInformation.Enums;
 using FmuApiDomain.Repositories;
+using Microsoft.Extensions.DependencyInjection;
+using FmuApiDomain.State.Interfaces;
 
 namespace FmuApiApplication.Mark.Services
 {
@@ -17,28 +19,33 @@ namespace FmuApiApplication.Mark.Services
         private readonly IParametersService _parametersService;
         private readonly ILogger<MarkStateManager> _logger;
         private readonly Parameters _configuration;
+        private readonly IApplicationState _appState;
 
-        public MarkStateManager(
-            IMarkInformationRepository markStateCrud,
-            IParametersService parametersService,
-            ILogger<MarkStateManager> logger)
+        public MarkStateManager(IServiceProvider services)
         {
-            _markStateCrud = markStateCrud;
-            _parametersService = parametersService;
-            _logger = logger;
+            _markStateCrud = services.GetRequiredService<IMarkInformationRepository>();
+            _parametersService = services.GetRequiredService<IParametersService>();
+            _logger = services.GetRequiredService<ILogger<MarkStateManager>>();
+            _appState = services.GetRequiredService<IApplicationState>();
             _configuration = _parametersService.Current();
         }
 
         public async Task<MarkEntity> GetMarkInformation(string sgtin)
         {
+            if (!_configuration.Database.DatabaseCheckIsEnabled)
+            {
+                _logger.LogInformation("Database проверка отключена, проверка марки {sgtin} пропускается.", sgtin);
+                return new MarkEntity();
+            }
+
+            if (!_appState.CouchDbOnline())
+            {
+                _logger.LogInformation("Database не в сети, проверка марки {sgtin} пропускается.", sgtin);
+                return new MarkEntity();
+            }
+
             try
             {
-                if (!_configuration.Database.DatabaseCheckIsEnabled)
-                {
-                    _logger.LogInformation("Database проверка отключена");
-                    return new MarkEntity();
-                }
-
                 var markInfo = await _markStateCrud.GetAsync(sgtin);
 
                 _logger.LogInformation("Получена информация о марке {Sgtin}", sgtin);
@@ -56,14 +63,20 @@ namespace FmuApiApplication.Mark.Services
 
         public async Task<Result> SaveMarkInformation(string sgtin, CheckMarksDataTrueApi trueMarkData)
         {
+            if (!_configuration.Database.DatabaseCheckIsEnabled)
+            {
+                _logger.LogInformation("Сохранение в базу данных {sgtin} пропущенно, использование базы данных отключено.", sgtin);
+                return Result.Success();
+            }
+
+            if (!_appState.CouchDbOnline())
+            {
+                _logger.LogInformation("Сохранение в базу данных {sgtin} пропущенно, базы данных не в сети.", sgtin);
+                return Result.Success();
+            }
+
             try
             {
-                if (!_configuration.Database.DatabaseCheckIsEnabled)
-                {
-                    _logger.LogInformation("Сохранение в базу данных отключено");
-                    return Result.Success();
-                }
-
                 var currentMarkState = await _markStateCrud.GetAsync(sgtin);
 
                 foreach (var markCodeData in trueMarkData.Codes)
@@ -84,13 +97,19 @@ namespace FmuApiApplication.Mark.Services
 
         public async Task<Result> UpdateMarkState(string sgtin, string newState)
         {
+            if (!_configuration.Database.DatabaseCheckIsEnabled)
+            {
+                return Result.Success();
+            }
+
+            if (!_appState.CouchDbOnline())
+            {
+                _logger.LogInformation("Сохранение в базу данных {sgtin} пропущенно, базы данных не в сети.", sgtin);
+                return Result.Success();
+            }
+
             try
             {
-                if (!_configuration.Database.DatabaseCheckIsEnabled)
-                {
-                    return Result.Success();
-                }
-
                 var markInfo = await _markStateCrud.GetAsync(sgtin);
                 markInfo.State = newState;
                 await _markStateCrud.AddAsync(markInfo);
@@ -108,6 +127,11 @@ namespace FmuApiApplication.Mark.Services
         public async Task<bool> MarkIsSold(string sgtin)
         {
             if (!_configuration.Database.DatabaseCheckIsEnabled)
+            {
+                return false;
+            }
+
+            if (!_appState.CouchDbOnline())
             {
                 return false;
             }
