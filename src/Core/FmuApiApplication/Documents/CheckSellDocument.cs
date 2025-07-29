@@ -20,6 +20,7 @@ namespace FmuApiApplication.Documents
         private ICacheService _memcachedClient;
         IParametersService _parametersService { get; set; }
         private ILogger _logger { get; set; }
+        private IApplicationState _appState { get;set; }
 
         private int _cacheExpirationMinutes = 30;
         private Parameters _configuration;
@@ -37,6 +38,7 @@ namespace FmuApiApplication.Documents
             _logger = logger;
             _memcachedClient = cacheService;
             _parametersService = parametersService;
+            _appState = applicationStateService;
             
             _configuration = _parametersService.Current();
         }

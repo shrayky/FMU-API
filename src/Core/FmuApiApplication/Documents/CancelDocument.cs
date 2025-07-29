@@ -17,6 +17,7 @@ namespace FmuApiApplication.Documents
         private ICacheService _cacheService { get; set; }
         IParametersService _parametersService { get; set; }
         private ILogger _logger { get; set; }
+        private IApplicationState  _appState { get; set; }
 
         private Parameters _configuration;
 
@@ -33,6 +34,7 @@ namespace FmuApiApplication.Documents
             _cacheService = cacheService;
             _logger = logger;
             _parametersService = parametersService;
+            _appState = applicationStateService;
 
             _configuration = _parametersService.Current();
         }
@@ -70,7 +72,7 @@ namespace FmuApiApplication.Documents
         {
             FmuAnswer checkResult = new();
 
-            if (!_configuration.Database.ConfigurationIsEnabled)
+            if (!_configuration.Database.ConfigurationIsEnabled && _appState.CouchDbOnline())
                 return Result.Success(checkResult);
 
             await _markInformationService.DeleteDocumentFromDbAsync(_document.Uid);

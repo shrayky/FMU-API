@@ -5,6 +5,7 @@ using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.Fmu.Document.Interface;
+using FmuApiDomain.Frontol;
 using FmuApiDomain.MarkInformation.Entities;
 using FmuApiDomain.MarkInformation.Enums;
 using FmuApiDomain.MarkInformation.Interfaces;
@@ -22,6 +23,7 @@ namespace FmuApiApplication.Documents
         private ICacheService _cacheService { get; set; }
         private ILogger _logger { get; set; }
         private IParametersService _parametersService { get; set; }
+        private IApplicationState _appState { get; set; }
 
         private Parameters _configuration;
         const string saleDocumentType = "receipt";
@@ -39,6 +41,7 @@ namespace FmuApiApplication.Documents
             _cacheService = cacheService;
             _parametersService = parametersService;
             _logger = logger;
+            _appState = applicationStateService;
 
             _configuration = parametersService.Current();
         }
@@ -75,26 +78,26 @@ namespace FmuApiApplication.Documents
         {
             FmuAnswer checkResult = new();
 
-            if (!_configuration.Database.ConfigurationIsEnabled)
+            if (!_configuration.Database.ConfigurationIsEnabled && _appState.CouchDbOnline())
                 return Result.Success(checkResult);
 
-            IFrontolDocumentData frontolDocument = await _markInformationService.DocumentFromDbAsync(_document.Uid);
+            DocumentEntity frontolDocument = await _markInformationService.DocumentFromDbAsync(_document.Uid);
 
             if (frontolDocument.Id == string.Empty)
                 return Result.Failure<FmuAnswer>($"Невозможно закрыть документ {_document.Uid}! Он не найден в базе документов!");
 
             SaleData saleData = new()
             {
-                CheckNumber = frontolDocument.Document.Number,
+                CheckNumber = frontolDocument.FrontolDocument.Number,
                 SaleDate = DateTime.Now,
-                Pos = frontolDocument.Document.Pos,
-                IsSale = frontolDocument.Document.Type == saleDocumentType
+                Pos = frontolDocument.FrontolDocument.Pos,
+                IsSale = frontolDocument.FrontolDocument.Type == saleDocumentType
             };
 
             string state = saleData.IsSale ? MarkState.Sold : MarkState.Returned;
 
             // Словарь: код марки (SGtin) -> количество, из фронтола марка прилетает в base64
-            Dictionary<string, decimal> quantityByMark = frontolDocument.Document.Positions
+            Dictionary<string, decimal> quantityByMark = frontolDocument.FrontolDocument.Positions
                 .SelectMany(p => p.Marking_codes.Select(code => new { 
                     code = Convert.FromBase64String(code),
                     Quantity = p.Volume > 0 ? (decimal)p.Volume : (decimal)p.Quantity 
@@ -135,7 +138,7 @@ namespace FmuApiApplication.Documents
                     state = MarkState.Stock;
                 }
             }
-            
+
             await MarkChangeStateBulk(marksToChangeState, state, saleData);
             await DraftBeerUpdateBulk(draftBeerUpdates);
 

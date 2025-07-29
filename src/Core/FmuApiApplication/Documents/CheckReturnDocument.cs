@@ -20,6 +20,7 @@ namespace FmuApiApplication.Documents
         private ICacheService CacheService { get; set; }
         IParametersService _parametersService { get; set; }
         private ILogger _logger { get; set; }
+        private IApplicationState _appState { get; set; }
 
         private Parameters _configuration;
 
@@ -36,6 +37,7 @@ namespace FmuApiApplication.Documents
             CacheService = cacheService;
             _logger = logger;
             _parametersService = parametersService;
+            _appState = applicationStateService;
 
             _configuration = _parametersService.Current();
 

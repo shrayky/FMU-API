@@ -19,6 +19,7 @@ namespace FmuApiApplication.Documents
         private IMarkService _markInformationService { get; set; }
         private ICacheService _cacheService { get; set; }
         private IParametersService _parametersService { get; set; }
+        private IApplicationState _appState;
         private ILogger _logger { get; set; }
 
         private Parameters _configuration;
@@ -36,6 +37,7 @@ namespace FmuApiApplication.Documents
             _cacheService = cacheService;
             _logger = logger;
             _parametersService = parametersService;
+            _appState = applicationStateService;
 
             _configuration = _parametersService.Current();
         }
@@ -72,12 +74,6 @@ namespace FmuApiApplication.Documents
         private async Task<Result<FmuAnswer>> BeginDocumentAsync()
         {
             FmuAnswer checkResult = new();
-
-            FrontolDocumentData frontolDocument = new()
-            {
-                Id = _document.Uid,
-                Document = _document
-            };
 
             foreach (var position in _document.Positions)
             {
@@ -117,8 +113,8 @@ namespace FmuApiApplication.Documents
                 }
             }
 
-            if (_configuration.Database.ConfigurationIsEnabled)
-                await _markInformationService.AddDocumentToDbAsync(frontolDocument);
+            if (_configuration.Database.ConfigurationIsEnabled && _appState.CouchDbOnline())
+                await _markInformationService.AddDocumentToDbAsync(_document);
             else
                 _cacheService.Set($"cashDoc_{_document.Uid}", _document, TimeSpan.FromMinutes(5));
 
