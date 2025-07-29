@@ -2,7 +2,9 @@
 using FmuApiApplication.Services.TrueSign;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
+using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.Fmu.Document.Interface;
+using FmuApiDomain.Frontol;
 using FmuApiDomain.MarkInformation.Entities;
 using FmuApiDomain.MarkInformation.Enums;
 using FmuApiDomain.MarkInformation.Interfaces;
@@ -19,7 +21,7 @@ namespace FmuApiApplication.Services.MarkServices
         private readonly ILogger<MarkInformationService> _logger;
         private readonly MarksCheckService _checkMarks;
         private readonly IMarkInformationRepository _markStateService;
-        private readonly FrontolDocumentHandler _frontolDocumentService;
+        private readonly IDocumentRepository _frontolDocumentService;
         private readonly FrontolSprtDataHandler? _frontolSprtDataService;
         private readonly IParametersService _parametersService;
 
@@ -30,7 +32,7 @@ namespace FmuApiApplication.Services.MarkServices
             ILogger<MarkInformationService> logger,
             MarksCheckService checkMarks,
             IMarkInformationRepository markStateService,
-            FrontolDocumentHandler frontolDocumentService,
+            IDocumentRepository frontolDocumentService,
             FrontolSprtDataHandler? frontolSprtDataService,
             IParametersService parametersService)
         {
@@ -50,19 +52,23 @@ namespace FmuApiApplication.Services.MarkServices
             return await _markFactory(markInBase64);
         }
 
-        public async Task<IFrontolDocumentData> AddDocumentToDbAsync(IFrontolDocumentData data)
+        public async Task<DocumentEntity> AddDocumentToDbAsync(RequestDocument data)
         {
-            return await _frontolDocumentService.AddAsync(data);
+            var operationResult = await _frontolDocumentService.Add(data);
+
+            return operationResult.Value;
         }
 
-        public async Task<IFrontolDocumentData> DocumentFromDbAsync(string uid)
+        public async Task<DocumentEntity> DocumentFromDbAsync(string uid)
         {
-            return await _frontolDocumentService.GetAsync(uid);
+            var operationResult = await _frontolDocumentService.Get(uid);
+
+            return operationResult.Value;
         }
 
         public async Task DeleteDocumentFromDbAsync(string uid)
         {
-            await _frontolDocumentService.DeleteAsync(uid);
+            var operationResult = await _frontolDocumentService.Delete(uid);
         }
 
         public async Task<MarkEntity> MarkChangeState(string id, string newState, SaleData saleData)

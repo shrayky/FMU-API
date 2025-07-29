@@ -24,6 +24,11 @@ namespace FmuApiDomain.Fmu.Document
         [JsonIgnore]
         public string Mark => ExtractMark();
 
+        public RequestDocument()
+        {
+
+        }
+
         public Dictionary<string, string> MarkDictionary()
         {
             Dictionary<string, string> mark = [];

@@ -1,7 +1,6 @@
 ﻿using CouchDb.Documents;
 using CouchDB.Driver;
 using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.MarkInformation.Entities;
 using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.Templates.Tables;
 using Microsoft.Extensions.Logging;
