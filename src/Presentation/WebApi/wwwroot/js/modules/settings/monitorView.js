@@ -11,8 +11,9 @@ class MonitorView {
         this.LABELS = {
             formTitle: "FMU-API: Мониторинг",
             dbStatus: "Статус базы данных: ",
-            dbStatusOnline: "Online",
-            dbStatusOffline: "Offline",
+            dbStatusOnline: "On-line",
+            dbStatusOffline: "Off-line",
+            dbStatusDisabled: "Disabled",
             dbStatusUnknown: "Неизвестно",
             localModules: "Локальные модули",
             lastSync: "Последняя синхронизация",
@@ -30,7 +31,7 @@ class MonitorView {
     }
 
     loadConfig() {
-        this.CouchDbOnLine = false;
+        this.CouchDbOnLine = "Off-line";
         return this;
     }
     
@@ -143,9 +144,13 @@ class MonitorView {
         if (!couchDbState)
             return;
 
-        couchDbState.setValue(this.LABELS.dbStatus + (couchDbOnLine ? 
-            `<span style="color: #00BFFF;">${this.LABELS.dbStatusOnline}</span>` : 
-            `<span style="color: #ff0000;">${this.LABELS.dbStatusOffline}</span>`));
+        if (couchDbOnLine == "Disabled") {
+            couchDbState.setValue(this.LABELS.dbStatus + `<span style="color: #FFFFFF;">${this.LABELS.dbStatusDisabled}</span>`);
+        }
+        else
+            couchDbState.setValue(this.LABELS.dbStatus + (couchDbOnLine == "On-line" ? 
+                `<span style="color: #00BFFF;">${this.LABELS.dbStatusOnline}</span>` : 
+                `<span style="color: #ff0000;">${this.LABELS.dbStatusOffline}</span>`));
     }
 
     _updateLocalModulesInformation(localModulesInfo) {

@@ -35,7 +35,7 @@ namespace WebApi.Controllers.Api.Monitoring
 
             var stateInfo = new
             {
-                CouchDbOnLine = _applicationState.CouchDbOnline(),
+                CouchDbOnLine = currentSettings.Database.Enable ? (_applicationState.CouchDbOnline() ? "On-line" : "Off-line") : "Disabled",
                 LocaleModulesInformation = localModulInformation
             };
 
