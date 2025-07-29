@@ -35,8 +35,11 @@ namespace CouchDb
 
             DatabaseNames.Initialize(settings.Database);
 
-            services.AddScoped<FrontolDocumentHandler>();
+            // устарело, удалить:
+            //services.AddScoped<FrontolDocumentHandler>();
+            
             services.AddScoped<IMarkInformationRepository, MarkInformationRepository>();
+            services.AddScoped<IDocumentRepository, DocumentRepository>();
 
             services.AddHttpClient("CouchDbState", client =>
             {

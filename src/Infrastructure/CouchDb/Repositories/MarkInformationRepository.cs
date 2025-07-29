@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 namespace CouchDb.Repositories
 {
     public class MarkInformationRepository(ILogger<MarkInformationRepository> logger, CouchDbContext context,
-        IParametersService appConfiguration, IApplicationState applicationState) : BaseCouchDbRepository<MarkEntity>(logger, context, context.Marks, appConfiguration, applicationState), IMarkInformationRepository
+                                           IParametersService appConfiguration, IApplicationState applicationState) : BaseCouchDbRepository<MarkEntity>(logger, context, context.Marks, appConfiguration, applicationState), IMarkInformationRepository
     {
         public async Task<MarkEntity> GetAsync(string id)
         {

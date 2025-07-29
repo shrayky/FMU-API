@@ -1,7 +1,10 @@
-﻿using CouchDb.DocumentModels;
+﻿// Ignore Spelling: Frontol
+
+using CouchDb.DocumentModels;
 using CouchDb.Documents;
 using CouchDB.Driver;
 using CouchDB.Driver.Options;
+using FmuApiDomain.Frontol;
 using FmuApiDomain.MarkInformation.Entities;
 
 namespace CouchDb
@@ -9,7 +12,7 @@ namespace CouchDb
     public class CouchDbContext : CouchContext
     {
         public CouchDatabase<CouchDoc<MarkEntity>> Marks { get; set; }
-        public CouchDatabase<CouchDoc<FrontolDocumentData>> Documents { get; set; }
+        public CouchDatabase<CouchDoc<DocumentEntity>> Documents { get; set; }
         
         // устаревшие:
         public CouchDatabase<MarkStateDocument> MarksState { get; set; }
@@ -25,8 +28,8 @@ namespace CouchDb
 
         protected override void OnDatabaseCreating(CouchDatabaseBuilder databaseBuilder)
         {
-            databaseBuilder.Document<CouchDoc<MarkEntity>>().ToDatabase("fmu-api-marks");
-            databaseBuilder.Document<CouchDoc<FrontolDocumentData>>().ToDatabase("fmu-api-documents");
+            databaseBuilder.Document<CouchDoc<MarkEntity>>().ToDatabase(DatabaseNames.MarksDbName);
+            databaseBuilder.Document<CouchDoc<DocumentEntity>>().ToDatabase(DatabaseNames.DocumentsDbName);
 
             // устаревшие базы, для совместимости:
             Сompatibility9_102(databaseBuilder);
