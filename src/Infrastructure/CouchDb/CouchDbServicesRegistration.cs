@@ -2,10 +2,12 @@
 using CouchDb.Workers;
 using CouchDb.Workers.DatabaseMigrationWorkers;
 using CouchDB.Driver.DependencyInjection;
+using FmuApiDomain.Attributes;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Headers;
+using System.Reflection;
 
 namespace CouchDb
 {
@@ -28,15 +30,14 @@ namespace CouchDb
                 {
                     options.UseEndpoint(settings.Database.NetAddress);
                     options.UseBasicAuthentication(settings.Database.UserName, settings.Database.Password);
-                    //options.EnsureDatabaseExists();
                 }
             });
 
+            services.AddAutoRegisteredServices([Assembly.GetExecutingAssembly()]);
+
+            // TODO удалить в 11 релизе
             DatabaseNames.Initialize(settings.Database);
 
-            // устарело, удалить:
-            //services.AddScoped<FrontolDocumentHandler>();
-            
             services.AddScoped<IMarkInformationRepository, MarkInformationRepository>();
             services.AddScoped<IDocumentRepository, DocumentRepository>();
 

@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Core\FmuApiDomain\FmuApiDomain.csproj" />
+    <ProjectReference Include="..\..\Core\Shared\Shared.csproj" />
   </ItemGroup>
 
 </Project>

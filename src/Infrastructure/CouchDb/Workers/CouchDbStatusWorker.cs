@@ -1,6 +1,7 @@
 ﻿using FmuApiDomain.Configuration.Interfaces;
+using FmuApiDomain.Configuration.Options;
+using FmuApiDomain.Database.Interface;
 using FmuApiDomain.State.Interfaces;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -11,110 +12,68 @@ namespace CouchDb.Workers
         private readonly ILogger<CouchDbStatusWorker> _logger;
         private readonly IParametersService _parametersService;
         private readonly IApplicationState _applicationState;
-        private readonly IHttpClientFactory _httpClientFactory;
-        private readonly CouchDbContext _couchDbContext;
+        private readonly IStatusDbService _statusDbService;
 
         private readonly TimeSpan _checkInterval = TimeSpan.FromSeconds(10);
 
-        public CouchDbStatusWorker(IServiceProvider services)
+        public CouchDbStatusWorker(ILogger<CouchDbStatusWorker> logger, IParametersService parametersService, IApplicationState applicationState, IStatusDbService statusDbService )
         {
-            _logger = services.GetRequiredService<ILogger<CouchDbStatusWorker>>();
-            _parametersService = services.GetRequiredService<IParametersService>();
-            _applicationState = services.GetRequiredService<IApplicationState>();
-            _httpClientFactory = services.GetRequiredService<IHttpClientFactory>();
-            _couchDbContext = services.GetRequiredService<CouchDbContext>();
+            _logger = logger;
+            _parametersService = parametersService;
+            _applicationState = applicationState;
+            _statusDbService = statusDbService;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            bool needToEnsureDatabaseExist = true;
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 await Task.Delay(_checkInterval, stoppingToken);
-                await CheckCouchState();
-                await EnsureDatabasesExists();
+
+                var appConfig = await _parametersService.CurrentAsync();
+                var databaseConfig = appConfig.Database;
+
+                await CheckCouchOnlineState(databaseConfig, stoppingToken);
+
+                if (needToEnsureDatabaseExist)
+                    needToEnsureDatabaseExist = !await EnsureDatabasesExists(databaseConfig, stoppingToken);
             }
+
         }
 
-        private async Task CheckCouchState()
+        private async Task CheckCouchOnlineState(CouchDbConnection databaseConfig, CancellationToken stoppingToken)
         {
-            var _config = await _parametersService.CurrentAsync();
-            var database = _config.Database;
+            var dbOnline = _applicationState.CouchDbOnline();
 
-            if (!database.ConfigurationIsEnabled)
+            if (!databaseConfig.Enable && dbOnline)
+            {
+                _logger.LogCritical("Изменение статуса доступности базы данных, новый статус - отключена");
+                _applicationState.UpdateCouchDbState(false);
                 return;
-
-            using var httpClient = _httpClientFactory.CreateClient("CouchDbState");
-
-            httpClient.BaseAddress = new Uri(database.NetAddress);
-
-            bool curState = _applicationState.CouchDbOnline();
-            bool newSate = false;
-
-            try
-            {
-                var response = await httpClient.GetAsync("");
-
-                newSate = response.IsSuccessStatusCode;
-
-            }
-            catch (Exception e)
-            {
-                newSate = false;
             }
 
-            if (curState == newSate)
+            if (!databaseConfig.Enable)
                 return;
 
-            if (!newSate)
-                _logger.LogError(
-                            "Изменение online CouchDb: {curState} -> {newSate}",
-                            curState,
-                            newSate);
-            else
-                _logger.LogError("Изменение online CouchDb: {curState} -> {newSate}",
-                            curState,
-                            newSate);
+            var nowState = await _statusDbService.CheckAvailability(databaseConfig.NetAddress, stoppingToken);
 
-            _applicationState.UpdateCouchDbState(newSate);
+            if (nowState == dbOnline)
+                return;
+
+            _logger.LogCritical("Изменение статуса доступности базы данных {beforeCheck} -> {aftetCheck}", dbOnline, nowState);
+            _applicationState.UpdateCouchDbState(nowState);
         }
 
-        private async Task EnsureDatabasesExists()
+        private async Task<bool> EnsureDatabasesExists(CouchDbConnection databaseConfig, CancellationToken stoppingToken)
         {
-            var config = await _parametersService.CurrentAsync();
-            var database = config.Database;
+            var dbOnline = _applicationState.CouchDbOnline();
 
-            if (!database.ConfigurationIsEnabled)
-                return;
+            if (!dbOnline)
+                return false;
 
-            if (!_applicationState.CouchDbOnline())
-                return;
-
-            using var httpClient = _httpClientFactory.CreateClient("CouchDbState");
-            httpClient.BaseAddress = new Uri(database.NetAddress);
-
-            var authToken = Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes($"{database.UserName}:{database.Password}"));
-            httpClient.DefaultRequestHeaders.Authorization = new ("Basic", authToken);
-
-            foreach (var dbName in DatabaseNames.Names())
-            {
-                var checkResponse = await httpClient.GetAsync($"/{dbName}");
-
-                if (checkResponse.StatusCode != System.Net.HttpStatusCode.NotFound)
-                {
-                    continue;
-                }
-
-                var createResponse = await httpClient.PutAsync($"/{dbName}", null);
-
-                if (createResponse.IsSuccessStatusCode)
-                {
-                    _logger.LogInformation("База данных {DatabaseName} успешно создана", dbName);
-                }
-                else
-                {
-                    _logger.LogError("Не удалось создать базу данных {DatabaseName}: {StatusCode}", dbName, createResponse.StatusCode);
-                }
-            }
+            return await _statusDbService.EnsureDatabasesExists(databaseConfig, DatabaseNames.Names(), stoppingToken);
         }
 
     }
