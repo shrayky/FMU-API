@@ -106,7 +106,7 @@ namespace FmuApiDomain.TrueApi.MarkData
             return "";
         }
 
-        public void ResetErrorFileds(bool resetSoldStatusForReturn)
+        public void ResetErrorFields(bool resetSoldStatusForReturn)
         {
             Found = true;
             Verified = true;
@@ -114,6 +114,11 @@ namespace FmuApiDomain.TrueApi.MarkData
             Utilised = true;
             Sold = resetSoldStatusForReturn ? false : Sold;
             ErrorCode = 0;
+
+#if DEBUG
+            Sold = false;
+            Realizable = true;
+#endif
         }
     }
 }
