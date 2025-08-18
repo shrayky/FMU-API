@@ -10,6 +10,7 @@ using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.TrueApi.MarkData.Check;
 using Microsoft.Extensions.Logging;
 using Shared.Strings;
+using System.Threading.Tasks.Dataflow;
 
 namespace FmuApiApplication.Mark
 {
@@ -153,6 +154,7 @@ namespace FmuApiApplication.Mark
             var markData = trueMarkData.MarkData();
             var markDbInfo = _lastCheckResult.MarkInformation;
             var markError = string.Empty;
+            List<string> validationErrors = [];
 
             if (operation == OperationType.ReturnSale)
             {
@@ -165,20 +167,16 @@ namespace FmuApiApplication.Mark
                 if (_configuration.SaleControlConfig.CheckIsOwnerField && !markData.IsOwner)
                 {
                     markData.Valid = false;
-                    return Result.Failure("Нельзя продавать чужую марку!");
+                    validationErrors.Add("Нельзя продавать чужую марку!");
                 }
 
                 // Проверка срока годности
                 if (trueMarkData.AllMarksIsExpire())
-                {
-                    return Result.Failure("Срок годности истек");
-                }
+                    validationErrors.Add($"Срок годности истек {markData.DaysExpired} дней назад");
 
                 // Проверка продажи
                 if (trueMarkData.AllMarksIsSold() || markDbInfo.State == MarkState.Sold)
-                {
-                    return Result.Failure("Марка продана");
-                }
+                    validationErrors.Add("Марка продана");
 
                 // Проверка продажи возвращенного товара
                 if (_lastCheckResult.MarkInformation.State == MarkState.Returned &&
@@ -186,13 +184,14 @@ namespace FmuApiApplication.Mark
                 {
                     _lastCheckResult.FmuAnswer.Truemark_response.MarkCodeAsSaled();
 
-                    return Result.Failure("Продажа возвращенного покупателем товара запрещена!");
+                    validationErrors.Add("Продажа возвращенного покупателем товара запрещена!");
                 }
 
                 // Сброс ошибок верификации, для указанных в настройках групп
-                ResetErrorFields();
+                if (!ResetErrorFields())
+                    markError = string.Join(Environment.NewLine, validationErrors);
 
-                markError = markData.MarkErrorDescription();
+                //markError = markData.MarkErrorDescription();
             }
 
             if (!string.IsNullOrEmpty(markError))
@@ -243,16 +242,21 @@ namespace FmuApiApplication.Mark
             return _lastCheckResult.FmuAnswer;
         }
 
-        private void ResetErrorFields()
+        private bool ResetErrorFields()
         {
             if (string.IsNullOrEmpty(_configuration.SaleControlConfig.IgnoreVerificationErrorForTrueApiGroups))
-                return;
+                return false;
 
             var markData = _lastCheckResult.TrueMarkData.MarkData();
+
             if (!markData.Empty && markData.InGroup(_configuration.SaleControlConfig.IgnoreVerificationErrorForTrueApiGroups))
             {
-                markData.ResetErrorFileds(false);
+                markData.ResetErrorFields(false);
+
+                return true;
             }
+
+            return false;
         }
 
     }
