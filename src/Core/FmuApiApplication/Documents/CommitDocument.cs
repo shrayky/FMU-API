@@ -130,9 +130,9 @@ namespace FmuApiApplication.Documents
                 if (trueApiData == null)
                     continue;
 
-                if (trueApiData.InGroup(TrueApiGroup.Beer.ToString()) && 
-                    trueApiData.InnerUnitCount != null &&
-                    trueApiData.InnerUnitCount - (trueApiData.SoldUnitCount ?? 0) + quantity> 0)
+                if (trueApiData.InGroup(TrueApiGroup.Beer.ToString()) 
+                    && trueApiData.InnerUnitCount != null 
+                    && trueApiData.InnerUnitCount - (trueApiData.SoldUnitCount ?? 0) + quantity> 0)
                 {
                     draftBeerUpdates.Add((mark.SGtin, quantity));
                     state = MarkState.Stock;

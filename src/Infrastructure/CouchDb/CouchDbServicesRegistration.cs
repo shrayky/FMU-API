@@ -1,5 +1,4 @@
-﻿using CouchDb.Handlers;
-using CouchDb.Repositories;
+﻿using CouchDb.Repositories;
 using CouchDb.Workers;
 using CouchDb.Workers.DatabaseMigrationWorkers;
 using CouchDB.Driver.DependencyInjection;
