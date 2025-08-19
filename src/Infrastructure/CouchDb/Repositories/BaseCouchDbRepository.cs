@@ -1,5 +1,6 @@
 ﻿using CouchDb.Documents;
 using CouchDB.Driver;
+using Flurl.Http;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.Templates.Tables;
@@ -30,17 +31,20 @@ namespace CouchDb.Repositories
 
         public virtual async Task<T?> GetByIdAsync(string id)
         {
-            var doc = await _database.FindAsync(id);
-
-            return doc?.ToDomain();
+            return await ExecuteSafetyDbOperation(
+                async () =>
+                {
+                    var doc = await _database.FindAsync(id);
+                    return doc?.ToDomain();
+                },
+                "GetById",
+                default);
         }
 
         public virtual async Task<bool> CreateAsync(T entity)
         {
             if (string.IsNullOrEmpty(entity.Id))
-            {
                 entity.Id = Guid.NewGuid().ToString();
-            }
 
             return await SaveDocumentAsync(entity);
         }
@@ -51,26 +55,9 @@ namespace CouchDb.Repositories
             return await SaveDocumentAsync(entity);
         }
 
-        private async Task<bool> SaveDocumentAsync(T entity)
-        {
-            var existingDoc = await _database.FindAsync(entity.Id);
-            var doc = CouchDoc<T>.FromDomain(entity, entity.Id);
-
-            if (existingDoc != null)
-            {
-                doc.Rev = existingDoc.Rev;
-            }
-
-            await _database.AddOrUpdateAsync(doc);
-            return true;
-        }
-
         public virtual async Task<bool> DeleteAsync(string id)
         {
-            if (_context == null)
-                return false;
-
-            var doc = await _database.FindAsync(id);
+            var doc = await CouchDocGet(id);
 
             if (doc == null)
                 return true;
@@ -78,9 +65,14 @@ namespace CouchDb.Repositories
             if (doc.Id == "")
                 return false;
 
-            await _database.RemoveAsync(doc);
-
-            return true;
+            return await ExecuteSafetyDbOperation(
+                async () =>
+                {
+                    await _database.RemoveAsync(doc);
+                    return true;
+                },
+                "Delete",
+                false);
         }
 
         public virtual async Task<bool> CreateBulkAsync(IEnumerable<T> entities)
@@ -89,64 +81,158 @@ namespace CouchDb.Repositories
             int BATCH_SIZE = configuration.Database.BulkBatchSize;
             int MAX_PARALLEL_TASKS = configuration.Database.BulkParallelTasks;
 
-            var ids = entities.Select(e => e.Id).ToList();
-            var existingDocs = await _database.FindManyAsync(ids);
-
-            var documentBatches = entities
-               .Join(
-                   existingDocs,
-                   entity => entity.Id,
-                   doc => doc.Id,
-                   (entity, existingDoc) =>
-                   {
-                       var doc = CouchDoc<T>.FromDomain(entity, entity.Id);
-                       doc.Rev = existingDoc.Rev;
-                       return doc;
-                   })
-               .Union(entities
-                   .Where(entity => !existingDocs.Any(doc => doc.Id == entity.Id))
-                   .Select(entity => CouchDoc<T>.FromDomain(entity, entity.Id)))
-               .GroupBy(e => e.Id)
-               .Select(g => g.Last())
-               .Chunk(BATCH_SIZE);
-
-            var dbName = typeof(T).Name.ToLower();
-            
-            _logger.LogInformation("Начинаю массовое добавление в {Database}: {Count} документов", dbName, entities.Count());
-            
-            using var semaphore = new SemaphoreSlim(MAX_PARALLEL_TASKS);
-
-            var tasks = documentBatches.Select(async batch =>
-            {
-                await semaphore.WaitAsync();
-                try
+            return await ExecuteSafetyDbOperation(
+                async () =>
                 {
-                    await _database.AddOrUpdateRangeAsync(batch);
-                    await Task.Delay(100);
-                }
-                finally
-                {
-                    semaphore.Release();
-                }
-            });
+                    var ids = entities.Select(e => e.Id).ToList();
+                    var existingDocs = await _database.FindManyAsync(ids);
 
-            await Task.WhenAll(tasks);
+                    var documentBatches = entities
+                       .Join(
+                           existingDocs,
+                           entity => entity.Id,
+                           doc => doc.Id,
+                           (entity, existingDoc) =>
+                           {
+                               var doc = CouchDoc<T>.FromDomain(entity, entity.Id);
+                               doc.Rev = existingDoc.Rev;
+                               return doc;
+                           })
+                       .Union(entities
+                           .Where(entity => !existingDocs.Any(doc => doc.Id == entity.Id))
+                           .Select(entity => CouchDoc<T>.FromDomain(entity, entity.Id)))
+                       .GroupBy(e => e.Id)
+                       .Select(g => g.Last())
+                       .Chunk(BATCH_SIZE);
 
-            return true;
+                    var dbName = typeof(T).Name.ToLower();
+
+                    _logger.LogInformation("Начинаю массовое добавление в {Database}: {Count} документов", dbName, entities.Count());
+
+                    using var semaphore = new SemaphoreSlim(MAX_PARALLEL_TASKS);
+
+                    var tasks = documentBatches.Select(async batch =>
+                    {
+                        await semaphore.WaitAsync();
+                        try
+                        {
+                            await _database.AddOrUpdateRangeAsync(batch);
+                            await Task.Delay(100);
+                        }
+                        finally
+                        {
+                            semaphore.Release();
+                        }
+                    });
+
+                    await Task.WhenAll(tasks);
+                    return true;
+                },
+                "CreateBulk",
+                false);
         }
 
         public async Task<List<T>> GetListByIdAsync(List<string> ids)
         {
-            var docs = await _database.FindManyAsync(ids);
+            return await ExecuteSafetyDbOperation(
+                async () =>
+                {
+                    var docs = await _database.FindManyAsync(ids);
 
-            List<T> entityData = [];
+                    List<T> entityData = [];
 
-            foreach (CouchDoc<T> couchDoc in docs)
+                    foreach (CouchDoc<T> couchDoc in docs)
+                    {
+                        entityData.Add(couchDoc.Data);
+                    }
+
+                    return entityData;
+                },
+                "GetListById",
+                new List<T>());
+        }
+
+        private async Task<CouchDoc<T>?> CouchDocGet(string id)
+        {
+            return await ExecuteSafetyDbOperation(
+                async () => await _database.FindAsync(id),
+                "CouchDocGet",
+                null);
+        }
+
+        private async Task<bool> SaveDocumentAsync(T entity)
+        {
+
+            return await ExecuteSafetyDbOperation(
+                async () =>
+                {
+                    var existingDoc = await _database.FindAsync(entity.Id);
+                    var doc = CouchDoc<T>.FromDomain(entity, entity.Id);
+
+                    if (existingDoc != null)
+                        doc.Rev = existingDoc.Rev;
+
+                    await _database.AddOrUpdateAsync(doc);
+                    return true;
+                },
+                "SaveDocument",
+                false);
+        }
+
+        private async Task<TResult> ExecuteSafetyDbOperation<TResult>(Func<Task<TResult>> operation, string operationName, TResult defaultValue)
+        {
+            try
             {
-                entityData.Add(couchDoc.Data);
+                return await operation();
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при выполнении операции {OperationName} в базе данных {DatabaseName}",
+                    operationName, typeof(T).Name);
 
-            return entityData;
+                HandleConnectionError(ex, operationName);
+
+                return defaultValue;
+            }
+        }
+
+        private async Task<bool> ExecuteSafetyDbOperation(Func<Task> operation, string operationName)
+        {
+            try
+            {
+                await operation();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при выполнении операции {OperationName} в базе данных {DatabaseName}",
+                    operationName, typeof(T).Name);
+
+                HandleConnectionError(ex, operationName);
+
+                return false;
+            }
+        }
+
+        private void HandleConnectionError(Exception ex, string operationName)
+        {
+            if (!IsConnectionError(ex))
+                return;
+
+            _appState.UpdateCouchDbState(false);
+        }
+
+        private bool IsConnectionError(Exception ex)
+        {
+            return ex is HttpRequestException ||
+                   ex is TaskCanceledException ||
+                   ex is OperationCanceledException ||
+                   ex is FlurlHttpException ||
+                   ex.Message.Contains("connection", StringComparison.OrdinalIgnoreCase) ||
+                   ex.Message.Contains("timeout", StringComparison.OrdinalIgnoreCase) ||
+                   ex.Message.Contains("network", StringComparison.OrdinalIgnoreCase) ||
+                   ex.Message.Contains("подключение не установлено", StringComparison.OrdinalIgnoreCase) ||
+                   ex.Message.Contains("отверг запрос на подключение", StringComparison.OrdinalIgnoreCase);
         }
     }
 }
