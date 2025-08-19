@@ -78,7 +78,10 @@ namespace FmuApiApplication.Documents
         {
             FmuAnswer checkResult = new();
 
-            if (!_configuration.Database.ConfigurationIsEnabled && _appState.CouchDbOnline())
+            if (!_configuration.Database.ConfigurationIsEnabled)
+                return Result.Success(checkResult);
+
+            if (!_appState.CouchDbOnline())
                 return Result.Success(checkResult);
 
             DocumentEntity frontolDocument = await _markInformationService.DocumentFromDbAsync(_document.Uid);
