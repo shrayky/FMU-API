@@ -68,7 +68,7 @@ namespace FmuApiApplication.Services.MarkServices
 
         public async Task DeleteDocumentFromDbAsync(string uid)
         {
-            var operationResult = await _frontolDocumentService.Delete(uid);
+            await _frontolDocumentService.Delete(uid);
         }
 
         public async Task<MarkEntity> MarkChangeState(string id, string newState, SaleData saleData)
