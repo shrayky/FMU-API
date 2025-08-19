@@ -39,6 +39,10 @@ namespace CouchDb.Workers
 
                 if (needToEnsureDatabaseExist)
                     needToEnsureDatabaseExist = !await EnsureDatabasesExists(databaseConfig, stoppingToken);
+
+#if DEBUG
+                await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+#endif
             }
 
         }
