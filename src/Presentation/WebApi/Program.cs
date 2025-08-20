@@ -76,7 +76,6 @@ bool RunHttpApiService()
     services.AddHttpClient();
 
     services.AddScoped<MarksCheckService>();
-    services.AddScoped<MarkStateSrv>();
     services.AddScoped<ProductInfo>();
     services.AddScoped<AlcoUnitGateway>();
     
