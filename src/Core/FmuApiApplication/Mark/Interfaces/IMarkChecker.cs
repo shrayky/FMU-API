@@ -1,4 +1,5 @@
 ﻿using FmuApiApplication.Mark.Models;
+using FmuApiDomain.MarkInformation.Interfaces;
 
 namespace FmuApiApplication.Mark.Interfaces
 {
