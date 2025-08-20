@@ -1,4 +1,4 @@
-﻿using FmuApiApplication.Services.MarkServices;
+﻿using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.MarkInformation.Models;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,36 +10,28 @@ namespace WebApi.Controllers.Api.MarkState
     public class MarkStateController : ControllerBase
     {
         private readonly ILogger<MarkStateController> _logger;
-        private MarkStateSrv _markStateSrv;
+        private IMarkStateManager _markStateService;
 
-        public MarkStateController(ILogger<MarkStateController> logger, MarkStateSrv markStateSrv)
+        public MarkStateController(ILogger<MarkStateController> logger, IMarkStateManager markStateService)
         {
             _logger = logger;
-            _markStateSrv = markStateSrv;
+            _markStateService = markStateService;
         }
 
         [HttpGet]
         public async Task<IActionResult> StateMark(string mark)
         {
-            var info = await _markStateSrv.State(mark);
+            var info = await _markStateService.Information(mark);
 
-            return Ok(info);
+            return Ok(info.State);
         }
 
         [HttpPost]
         public async Task<IActionResult> SaleMark(CheckWithMarks saleMark)
         {
-            try
+            foreach (var sgtin in saleMark.Marks)
             {
-                if (saleMark.CheckData.IsSale)
-                    await _markStateSrv.SetMarksSold(saleMark);
-                else
-                    await _markStateSrv.SetMarksInStok(saleMark);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning("[{Date}] - Ошибка изменения статусов марок в БД. \r\n {err}", DateTime.Now, ex.Message);
-                return BadRequest(ex.Message);
+                await _markStateService.ChangeState(sgtin, saleMark.CheckData.IsSale ? "sold" : "stock", saleMark.CheckData);
             }
 
             return Ok();
