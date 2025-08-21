@@ -7,6 +7,6 @@
         public const string Description = "Служба для проверки марок по протоколу Атол MarkUnit";
         public const string ServiceName = "DS:FMU-API";
         public const int AppVersion = 10;
-        public const int Assembly = 2;
+        public const int Assembly = 3;
     }
 }
