@@ -14,6 +14,7 @@ using FmuApiApplication.Mark.Models;
 using LocalModuleIntegration.Interfaces;
 using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.LocalModule.Enums;
+using FmuApiDomain.MarkInformation.Interfaces;
 
 namespace FmuApiApplication.Mark.Services
 {
@@ -50,7 +51,7 @@ namespace FmuApiApplication.Mark.Services
                 return MarkCheckResult.Success(new(), new(), new());
             }
 
-            var markInfo = await stateManager.GetMarkInformation(sgtin);
+            var markInfo = await stateManager.Information(sgtin);
 
             if (!markInfo.HaveTrueApiAnswer)
             {

@@ -1,5 +1,4 @@
-﻿using CouchDb.DocumentModels;
-using CSharpFunctionalExtensions;
+﻿using CSharpFunctionalExtensions;
 using FmuApiDomain.Cache.Interfaces;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
@@ -9,6 +8,7 @@ using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.TrueApi.MarkData;
 using FmuApiDomain.TrueApi.MarkData.Check;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace FmuApiApplication.Documents
@@ -16,58 +16,42 @@ namespace FmuApiApplication.Documents
     public class BeginDocument : IFrontolDocumentService
     {
         private RequestDocument _document { get; set; }
-        private IMarkService _markInformationService { get; set; }
-        private ICacheService _cacheService { get; set; }
-        private IParametersService _parametersService { get; set; }
-        private IApplicationState _appState;
-        private ILogger _logger { get; set; }
+        
+        private Lazy<ILogger<BeginDocument>> _logger { get; set; }
+        private Lazy<ITemporaryDocumentsService> _temporaryDocumentsService { get; set; }
+        private Lazy<ICacheService> _cacheService { get; set; }
 
+        private Func<string, Task<IMark>> _markFactory { get; set; }
+        private IParametersService _parametersService { get; set; }
+        private IApplicationState _appState { get; set; }
+        
         private Parameters _configuration;
 
-        private BeginDocument(
-            RequestDocument requestDocument,
-            IMarkService markInformationService,
-            ICacheService cacheService,
-            IParametersService parametersService,
-            IApplicationState applicationStateService,
-            ILogger logger)
+        private BeginDocument(RequestDocument requestDocument, IServiceProvider provider)
         {
             _document = requestDocument;
-            _markInformationService = markInformationService;
-            _cacheService = cacheService;
-            _logger = logger;
-            _parametersService = parametersService;
-            _appState = applicationStateService;
 
+            _temporaryDocumentsService = new Lazy<ITemporaryDocumentsService>(() => provider.GetRequiredService<ITemporaryDocumentsService>());
+            _cacheService = new Lazy<ICacheService>(() => provider.GetRequiredService<ICacheService>());
+            _logger = new Lazy<ILogger<BeginDocument>>(() => provider.GetRequiredService<ILogger<BeginDocument>>());
+            
+            _markFactory = provider.GetRequiredService<Func<string, Task<IMark>>>();
+
+            _parametersService = provider.GetRequiredService<IParametersService>();
+            _appState = provider.GetRequiredService<IApplicationState>();
             _configuration = _parametersService.Current();
         }
 
-        private static BeginDocument CreateObject(
-            RequestDocument requestDocument,
-            IMarkService markInformationService,
-            ICacheService cacheService,
-            IParametersService parametersService,
-            IApplicationState applicationStateService,
-            ILogger logger)
-        {
-            return new BeginDocument(requestDocument, markInformationService, cacheService, parametersService, applicationStateService, logger);
-        }
-
-        public static IFrontolDocumentService Create(
-            RequestDocument requestDocument,
-            IMarkService markInformationService,
-            ICacheService cacheService,
-            IParametersService parametersService,
-            IApplicationState applicationStateService,
-            ILogger logger)
-        {
-            return CreateObject(requestDocument, markInformationService, cacheService, parametersService, applicationStateService, logger);
-        }
+        private static BeginDocument CreateObject(RequestDocument requestDocument, IServiceProvider provider) 
+            => new(requestDocument, provider);
+        
+        public static IFrontolDocumentService Create(RequestDocument requestDocument, IServiceProvider provider) 
+            => CreateObject(requestDocument, provider);
+        
 
         public async Task<Result<FmuAnswer>> ActionAsync()
         {
             await SendDocumentToAlcoUnitAsync();
-
             return await BeginDocumentAsync();
         }
 
@@ -82,7 +66,7 @@ namespace FmuApiApplication.Documents
 
                 foreach (var markInBase64 in position.Marking_codes)
                 {
-                    var mark = await _markInformationService.MarkAsync(markInBase64);
+                    var mark = await _markFactory(markInBase64);
 
                     CheckMarksDataTrueApi trueApiCisData = await mark.TrueApiData();
 
@@ -114,9 +98,9 @@ namespace FmuApiApplication.Documents
             }
 
             if (_configuration.Database.ConfigurationIsEnabled && _appState.CouchDbOnline())
-                await _markInformationService.AddDocumentToDbAsync(_document);
+                await _temporaryDocumentsService.Value.AddDocumentToDbAsync(_document);
             else
-                _cacheService.Set($"cashDoc_{_document.Uid}", _document, TimeSpan.FromMinutes(5));
+                _cacheService.Value.Set($"cashDoc_{_document.Uid}", _document, TimeSpan.FromMinutes(5));
 
             return Result.Success(checkResult);
         }

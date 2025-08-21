@@ -36,7 +36,7 @@ namespace FmuApiApplication.Mark
             });
 
             // Сервис для работы с марками
-            services.AddScoped<IMarkService, MarkInformationService>();
+            services.AddScoped<ITemporaryDocumentsService, TemporaryDocumentsService>();
 
             return services;
         }

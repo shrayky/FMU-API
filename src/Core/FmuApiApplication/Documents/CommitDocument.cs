@@ -1,5 +1,4 @@
 ﻿using CSharpFunctionalExtensions;
-using FmuApiApplication.Services.MarkServices;
 using FmuApiDomain.Cache.Interfaces;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
@@ -11,7 +10,7 @@ using FmuApiDomain.MarkInformation.Enums;
 using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.MarkInformation.Models;
 using FmuApiDomain.State.Interfaces;
-using FmuApiDomain.TrueApi.MarkData;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace FmuApiApplication.Documents
@@ -19,54 +18,36 @@ namespace FmuApiApplication.Documents
     public class CommitDocument : IFrontolDocumentService
     {
         private RequestDocument _document { get; set; }
-        private IMarkService _markInformationService { get; set; }
-        private ICacheService _cacheService { get; set; }
-        private ILogger _logger { get; set; }
+        private Lazy<ITemporaryDocumentsService> _temporaryDocumentsService { get; set; }
+        private Lazy<IMarkStateManager> _markStateService { get; set; }
+        private Func<string, Task<IMark>> _markFactory { get; set; }
+        private ILogger<CommitDocument> _logger { get; set; }
         private IParametersService _parametersService { get; set; }
         private IApplicationState _appState { get; set; }
 
         private Parameters _configuration;
         const string saleDocumentType = "receipt";
 
-        private CommitDocument(
-            RequestDocument requestDocument,
-            IMarkService markInformationService,
-            ICacheService cacheService,
-            IParametersService parametersService,
-            IApplicationState applicationStateService,
-            ILogger logger)
+        private CommitDocument(RequestDocument requestDocument, IServiceProvider provider)
         {
             _document = requestDocument;
-            _markInformationService = markInformationService;
-            _cacheService = cacheService;
-            _parametersService = parametersService;
-            _logger = logger;
-            _appState = applicationStateService;
 
-            _configuration = parametersService.Current();
+            _temporaryDocumentsService = new Lazy<ITemporaryDocumentsService>(() => provider.GetRequiredService<ITemporaryDocumentsService>());
+            _markStateService = new Lazy<IMarkStateManager>(() => provider.GetRequiredService<IMarkStateManager>());
+            _markFactory = provider.GetRequiredService<Func<string, Task<IMark>>>();
+
+            
+            _logger = provider.GetRequiredService<ILogger<CommitDocument>>();
+            _appState = provider.GetRequiredService<IApplicationState>();
+            _parametersService = provider.GetRequiredService<IParametersService>();
+            _configuration = _parametersService.Current();
         }
 
-        private static CommitDocument CreateObject(
-            RequestDocument requestDocument,
-            IMarkService markInformationService,
-            ICacheService cacheService,
-            IParametersService parametersService,
-            IApplicationState applicationStateService,
-            ILogger logger)
-        {
-            return new CommitDocument(requestDocument, markInformationService, cacheService, parametersService, applicationStateService, logger);
-        }
+        private static CommitDocument CreateObject(RequestDocument requestDocument, IServiceProvider provider)
+            => new(requestDocument, provider);
         
-        public static IFrontolDocumentService Create(
-            RequestDocument requestDocument,
-            IMarkService markInformationService,
-            ICacheService cacheService,
-            IParametersService parametersService,
-            IApplicationState applicationStateService,
-            ILogger logger)
-        {
-            return CreateObject(requestDocument, markInformationService, cacheService, parametersService, applicationStateService, logger);
-        }
+        public static IFrontolDocumentService Create(RequestDocument requestDocument, IServiceProvider provider)
+            => CreateObject(requestDocument, provider);
         public async Task<Result<FmuAnswer>> ActionAsync()
         {
             await SendDocumentToAlcoUnitAsync();
@@ -84,7 +65,7 @@ namespace FmuApiApplication.Documents
             if (!_appState.CouchDbOnline())
                 return Result.Success(checkResult);
 
-            DocumentEntity frontolDocument = await _markInformationService.DocumentFromDbAsync(_document.Uid);
+            DocumentEntity frontolDocument = await _temporaryDocumentsService.Value.DocumentFromDbAsync(_document.Uid);
 
             if (frontolDocument.Id == string.Empty)
                 return Result.Failure<FmuAnswer>($"Невозможно закрыть документ {_document.Uid}! Он не найден в базе документов!");
@@ -112,59 +93,45 @@ namespace FmuApiApplication.Documents
 
             // Получаем все объекты марки
             var marks = await Task.WhenAll(
-                quantityByMark.Keys.Select(code => _markInformationService.MarkAsync(code))
+                quantityByMark.Keys.Select(code => _markFactory(code))
             );
 
             // Словарь: SGtin -> информация о марке
-            Dictionary<string, MarkEntity> entityBySGtin = (await _markInformationService.MarkInformationBulkAsync(
+            Dictionary<string, MarkEntity> entityBySGtin = (await _markStateService.Value.InformationBulk(
                 marks.Select(m => m.SGtin).ToList()
             )).ToDictionary(e => e.MarkId);
 
             var draftBeerUpdates = new List<(string SGtin, decimal Quantity)>();
-            var marksToChangeState = new List<string>();
+            var marksToChangeState = new Dictionary<string, SaleData>();
 
             foreach (var mark in marks)
             {
                 var trueApiData = entityBySGtin[mark.SGtin].TrueApiCisData;
                 var quantity = quantityByMark[mark.Code];
 
-                marksToChangeState.Add(mark.SGtin);
+                saleData.Quantity = quantity;
+
+                marksToChangeState.Add(mark.SGtin, saleData);
 
                 if (trueApiData == null)
                     continue;
-
-                if (trueApiData.InGroup(TrueApiGroup.Beer.ToString()) 
-                    && trueApiData.InnerUnitCount != null 
-                    && trueApiData.InnerUnitCount - (trueApiData.SoldUnitCount ?? 0) + quantity> 0)
-                {
-                    draftBeerUpdates.Add((mark.SGtin, quantity));
-                    state = MarkState.Stock;
-                }
             }
 
-            await MarkChangeStateBulk(marksToChangeState, state, saleData);
-            await DraftBeerUpdateBulk(draftBeerUpdates);
-
-            await _markInformationService.DeleteDocumentFromDbAsync(_document.Uid);
+            await MarkChangeStateBulk(marksToChangeState, state);
+           
+            await _temporaryDocumentsService.Value.DeleteDocumentFromDbAsync(_document.Uid);
 
             return Result.Success(checkResult);
         }
 
-        private async Task MarkChangeStateBulk(List<string> marksToChangeState, string state, SaleData saleData)
+        private async Task MarkChangeStateBulk(Dictionary<string, SaleData> marksToChangeState, string state)
         {
             foreach (var mark in marksToChangeState)
             {
-                await _markInformationService.MarkChangeState(mark, state, saleData);
+                await _markStateService.Value.ChangeState(mark.Key, state, mark.Value);
             }
         }
 
-        private async Task DraftBeerUpdateBulk(List<(string SGtin, decimal Quantity)> draftBeerUpdates)
-        {
-            foreach (var (SGtin, Quantity) in draftBeerUpdates)
-            {
-                await _markInformationService.DraftBeerUpdateAsync(SGtin, (int)Quantity);
-            }
-        }
         private async Task<Result> SendDocumentToAlcoUnitAsync()
         {
             RequestDocument auDoc = _document;

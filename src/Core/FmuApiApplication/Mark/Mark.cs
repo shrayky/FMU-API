@@ -97,7 +97,7 @@ namespace FmuApiApplication.Mark
             };
 
             List<string> checkErrors = [];
-            var currentState = await _markStateManager.GetMarkInformation(SGtin);
+            var currentState = await _markStateManager.Information(SGtin);
 
             foreach (var check in delegates)
             {
@@ -134,7 +134,7 @@ namespace FmuApiApplication.Mark
                 _lastCheckResult.FmuAnswer.PrintGroupCode = PrintGroupCode;
 
                 if (!_lastCheckResult.FmuAnswer.Offline)
-                    await _markStateManager.SaveMarkInformation(SGtin, _lastCheckResult.TrueMarkData);
+                    await _markStateManager.Save(SGtin, _lastCheckResult.TrueMarkData);
 
                 checkErrors.Clear();
 
@@ -214,7 +214,7 @@ namespace FmuApiApplication.Mark
             if (_lastCheckResult.TrueMarkData.Codes.Count > 0)
                 return _lastCheckResult.TrueMarkData;
 
-            var markInfo = await _markStateManager.GetMarkInformation(SGtin);
+            var markInfo = await _markStateManager.Information(SGtin);
 
             if (!markInfo.HaveTrueApiAnswer)
                 return _lastCheckResult.TrueMarkData;

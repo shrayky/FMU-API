@@ -1,5 +1,4 @@
 ﻿using CSharpFunctionalExtensions;
-using FmuApiApplication.Services.State;
 using FmuApiDomain.Cache.Interfaces;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
@@ -9,6 +8,7 @@ using FmuApiDomain.MarkInformation.Enums;
 using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.TrueApi.MarkData.Check;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 // Это устаревший метод оставленный тут только для совместимости - вдруг фронтол начнет посылать много марок для проверки
@@ -18,53 +18,30 @@ namespace FmuApiApplication.Documents
     public class CheckFrontolDocumentWithMarks : IFrontolDocumentService
     {
         private RequestDocument _document { get; set; }
-        private IMarkService _markInformationService { get; set; }
-        private ICacheService _casCacheService { get; set; }
+        private IMarkStateManager _markStateService { get; set; }
         private IParametersService _parametersService { get; set; }
         private IApplicationState _applicationState { get; set; }
-        private ILogger _logger { get; set; }
+        private ILogger<CheckFrontolDocumentWithMarks> _logger { get; set; }
 
         private Parameters _configuration;
 
-        private CheckFrontolDocumentWithMarks(
-            RequestDocument requestDocument,
-            IMarkService markInformationService,
-            ICacheService cacheService,
-            IParametersService parametersService,
-            IApplicationState applicationState,
-            ILogger logger)
+        private CheckFrontolDocumentWithMarks(RequestDocument requestDocument, IServiceProvider provider)
         {
             _document = requestDocument;
-            _markInformationService = markInformationService;
-            _casCacheService = cacheService;
-            _parametersService = parametersService;
-            _applicationState = applicationState;
-            _logger = logger;
+
+            _markStateService = provider.GetRequiredService<IMarkStateManager>();
+            _parametersService = provider.GetRequiredService<IParametersService>();
+            _applicationState = provider.GetRequiredService<IApplicationState>();
+            _logger = provider.GetRequiredService<ILogger<CheckFrontolDocumentWithMarks>>();
 
             _configuration = _parametersService.Current();
         }
 
-        private static CheckFrontolDocumentWithMarks CreateObject(
-            RequestDocument requestDocument,
-            IMarkService markInformationService,
-            ICacheService cacheService,
-            IParametersService parametersService,
-            IApplicationState applicationState,
-            ILogger logger)
-        {
-            return new CheckFrontolDocumentWithMarks(requestDocument, markInformationService, cacheService, parametersService, applicationState, logger);
-        }
-
-        public static IFrontolDocumentService Create(
-            RequestDocument requestDocument,
-            IMarkService markInformationService,
-            ICacheService cacheService,
-            IParametersService parametersService,
-            IApplicationState applicationState,
-            ILogger logger)
-        {
-            return CreateObject(requestDocument, markInformationService, cacheService, parametersService, applicationState, logger);
-        }
+        private static CheckFrontolDocumentWithMarks CreateObject(RequestDocument requestDocument, IServiceProvider provider)
+            => new(requestDocument, provider);
+            
+        public static IFrontolDocumentService Create(RequestDocument requestDocument, IServiceProvider provider)
+            => CreateObject(requestDocument, provider);
 
         public async Task<Result<FmuAnswer>> ActionAsync()
         {
@@ -109,8 +86,9 @@ namespace FmuApiApplication.Documents
             foreach (var mark in marks)
             {
                 string fmuMarkId = CreateMarkId(mark);
-
-                var tApiData = await _markInformationService.MarkInformationAsync(fmuMarkId);
+                
+                //var tApiData = await _markInformationService.MarkInformationAsync(fmuMarkId);
+                var tApiData = await _markStateService.Information(fmuMarkId);
 
                 if (tApiData.TrueApiAnswerProperties.ReqId == "")
                     continue;

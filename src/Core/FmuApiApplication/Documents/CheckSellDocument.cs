@@ -6,9 +6,9 @@ using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.Fmu.Document.Enums;
 using FmuApiDomain.Fmu.Document.Interface;
 using FmuApiDomain.MarkInformation.Interfaces;
-using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.TrueApi.MarkData;
 using FmuApiDomain.TrueApi.MarkData.Check;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace FmuApiApplication.Documents
@@ -16,54 +16,36 @@ namespace FmuApiApplication.Documents
     public class CheckSellDocument : IFrontolDocumentService
     {
         private RequestDocument _document { get; set; }
-        private IMarkService _markInformationService { get; set; }
+        private ILogger<CheckSellDocument> _logger { get; set; }
+        private Lazy<ITemporaryDocumentsService> _temporaryDocumentsService { get; set; }
+        private Func<string, Task<IMark>> _markFactory { get; set; }
         private ICacheService _memcachedClient;
         IParametersService _parametersService { get; set; }
-        private ILogger _logger { get; set; }
-        private IApplicationState _appState { get;set; }
 
         private int _cacheExpirationMinutes = 30;
         private Parameters _configuration;
 
-        private CheckSellDocument(
-            RequestDocument requestDocument,
-            IMarkService markInformationService,
-            ICacheService cacheService,
-            IParametersService parametersService,
-            IApplicationState applicationStateService,
-            ILogger logger)
+        private CheckSellDocument(RequestDocument requestDocument, IServiceProvider provider)
         {
             _document = requestDocument;
-            _markInformationService = markInformationService;
-            _logger = logger;
-            _memcachedClient = cacheService;
-            _parametersService = parametersService;
-            _appState = applicationStateService;
-            
+
+            _temporaryDocumentsService = new Lazy<ITemporaryDocumentsService>(() => provider.GetRequiredService<ITemporaryDocumentsService>());
+
+            _markFactory = provider.GetRequiredService<Func<string, Task<IMark>>>();
+
+            _logger = provider.GetRequiredService<ILogger<CheckSellDocument>>();
+            _memcachedClient = provider.GetRequiredService<ICacheService>(); ;
+            _parametersService = provider.GetRequiredService<IParametersService>();
             _configuration = _parametersService.Current();
         }
 
-        private static CheckSellDocument CreateObject(
-            RequestDocument requestDocument,
-            IMarkService markInformationService,
-            ICacheService cacheService,
-            IParametersService parametersService,
-            IApplicationState applicationStateService,
-            ILogger logger)
-        {
-            return new CheckSellDocument(requestDocument, markInformationService, cacheService, parametersService, applicationStateService, logger);
-        }
+        private static CheckSellDocument CreateObject(RequestDocument requestDocument, IServiceProvider provider)
+            => new(requestDocument, provider);
 
-        public static IFrontolDocumentService Create(
-            RequestDocument requestDocument,
-            IMarkService markInformationService,
-            ICacheService cacheService,
-            IParametersService parametersService,
-            IApplicationState applicationStateService,
-            ILogger logger)
-        {
-            return CreateObject(requestDocument, markInformationService, cacheService, parametersService, applicationStateService, logger);
-        }
+
+        public static IFrontolDocumentService Create(RequestDocument requestDocument, IServiceProvider provider)
+            => CreateObject(requestDocument, provider);
+
 
         public async Task<Result<FmuAnswer>> ActionAsync()
         {
@@ -85,7 +67,7 @@ namespace FmuApiApplication.Documents
         private async Task<Result<FmuAnswer>> MarkInformation()
         {
             _logger.LogInformation("Марка для проверки {markCodeData}", _document.Mark);
-            IMark mark = await _markInformationService.MarkAsync(_document.Mark);
+            IMark mark = await _markFactory(_document.Mark);
 
             await SetOrganizationIdAsync(mark);
             var checkResult = await mark.PerformCheckAsync(OperationType.Sale);
@@ -109,7 +91,7 @@ namespace FmuApiApplication.Documents
         {
             _logger.LogInformation("Марка для проверки {markCodeData}", markInBase64);
 
-            IMark mark = await _markInformationService.MarkAsync(markInBase64);
+            IMark mark = await _markFactory(markInBase64);
             await SetOrganizationIdAsync(mark);
 
             var checkResult = await mark.PerformCheckAsync(OperationType.Sale);
@@ -181,7 +163,7 @@ namespace FmuApiApplication.Documents
                     pgCode = organisation.Id;
             }
             else
-                pgCode = await _markInformationService.WareSaleOrganizationFromFrontolBaseAsync(mark.Barcode);
+                pgCode = await _temporaryDocumentsService.Value.WareSaleOrganizationFromFrontolBaseAsync(mark.Barcode);
 
             if (pgCode == 0)
                 return;

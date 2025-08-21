@@ -1,5 +1,4 @@
 ﻿using CSharpFunctionalExtensions;
-using FmuApiDomain.Cache.Interfaces;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Fmu.Document;
@@ -7,59 +6,39 @@ using FmuApiDomain.Fmu.Document.Interface;
 using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace FmuApiApplication.Documents
 {
     public class CancelDocument : IFrontolDocumentService
     {
         private RequestDocument _document { get; set; }
-        private IMarkService _markInformationService { get; set; }
-        private ICacheService _cacheService { get; set; }
-        IParametersService _parametersService { get; set; }
-        private ILogger _logger { get; set; }
+
+        private Lazy<ILogger<CancelDocument>> _logger { get; set; }
+        private Lazy<ITemporaryDocumentsService> _temporaryDocumentsService { get; set; }
+
+        private IParametersService _parametersService { get; set; }
         private IApplicationState  _appState { get; set; }
 
         private Parameters _configuration;
 
-        private CancelDocument(
-            RequestDocument requestDocument,
-            IMarkService markInformationService,
-            ICacheService cacheService,
-            IParametersService parametersService,
-            IApplicationState applicationStateService,
-            ILogger logger)
+        private CancelDocument(RequestDocument requestDocument, IServiceProvider provider)
         {
             _document = requestDocument;
-            _markInformationService = markInformationService;
-            _cacheService = cacheService;
-            _logger = logger;
-            _parametersService = parametersService;
-            _appState = applicationStateService;
 
+            _temporaryDocumentsService = new Lazy<ITemporaryDocumentsService>(() => provider.GetRequiredService<ITemporaryDocumentsService>());
+            _logger = new Lazy<ILogger<CancelDocument>>(() => provider.GetRequiredService<ILogger<CancelDocument>>());
+            
+            _parametersService = provider.GetRequiredService<IParametersService>();
+            _appState = provider.GetRequiredService<IApplicationState>();
             _configuration = _parametersService.Current();
         }
 
-        private static CancelDocument CreateObject
-            (RequestDocument requestDocument,
-            IMarkService markInformationService,
-            ICacheService cacheService,
-            IParametersService parametersService,
-            IApplicationState applicationStateService,
-            ILogger logger)
-        {
-            return new CancelDocument(requestDocument, markInformationService, cacheService, parametersService, applicationStateService, logger);
-        }
+        private static CancelDocument CreateObject(RequestDocument requestDocument, IServiceProvider provider)
+            => new(requestDocument, provider);
 
-        public static IFrontolDocumentService Create(
-            RequestDocument requestDocument,
-            IMarkService markInformationService,
-            ICacheService cacheService,
-            IParametersService parametersService,
-            IApplicationState applicationStateService,
-            ILogger logger)
-        {
-            return CreateObject(requestDocument, markInformationService, cacheService, parametersService, applicationStateService, logger);
-        }
+        public static IFrontolDocumentService Create(RequestDocument requestDocument, IServiceProvider provider)
+            => CreateObject(requestDocument, provider);
 
         public async Task<Result<FmuAnswer>> ActionAsync()
         {
@@ -78,7 +57,7 @@ namespace FmuApiApplication.Documents
             if (!_appState.CouchDbOnline())
                 return Result.Success(checkResult);
 
-            await _markInformationService.DeleteDocumentFromDbAsync(_document.Uid);
+            await _temporaryDocumentsService.Value.DeleteDocumentFromDbAsync(_document.Uid);
 
             return Result.Success(checkResult);
         }
