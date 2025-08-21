@@ -46,7 +46,8 @@ namespace CentralServerExchange
                 if (DateTime.Now < nextExchangeTime)
                     continue;
 
-                ActExchange();
+                if (configuration.FmuApiCentralServer.Enabled)
+                    ActExchange();
 
                 nextExchangeTime = DateTime.Now.AddMinutes(configuration.FmuApiCentralServer.ExchangeRequestInterval);
             }
