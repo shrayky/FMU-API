@@ -4,7 +4,7 @@ using CouchDb.DocumentModels;
 using CouchDb.Documents;
 using CouchDB.Driver;
 using CouchDB.Driver.Options;
-using FmuApiDomain.Frontol;
+using FmuApiDomain.Database.Dto;
 using FmuApiDomain.MarkInformation.Entities;
 
 namespace CouchDb

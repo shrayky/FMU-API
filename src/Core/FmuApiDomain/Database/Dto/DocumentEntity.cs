@@ -1,7 +1,7 @@
 ﻿using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.Templates.Tables;
 
-namespace FmuApiDomain.Frontol
+namespace FmuApiDomain.Database.Dto
 {
     public class DocumentEntity : IHaveStringId
     {

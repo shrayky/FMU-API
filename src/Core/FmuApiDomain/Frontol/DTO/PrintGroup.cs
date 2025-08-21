@@ -1,7 +1,7 @@
 ﻿using FmuApiDomain.Templates.Tables;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace FmuApiDomain.Frontol
+namespace FmuApiDomain.Frontol.DTO
 {
     [Table("PRINTGROUP")]
     public class PrintGroup : NameCodeFields

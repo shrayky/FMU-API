@@ -5,6 +5,7 @@ using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.Fmu.Document.Interface;
 using FmuApiDomain.MarkInformation.Interfaces;
+using FmuApiDomain.Repositories;
 using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.TrueApi.MarkData;
 using FmuApiDomain.TrueApi.MarkData.Check;
@@ -18,7 +19,7 @@ namespace FmuApiApplication.Documents
         private RequestDocument _document { get; set; }
         
         private Lazy<ILogger<BeginDocument>> _logger { get; set; }
-        private Lazy<ITemporaryDocumentsService> _temporaryDocumentsService { get; set; }
+        private Lazy<IDocumentRepository> _temporaryDocumentsService { get; set; }
         private Lazy<ICacheService> _cacheService { get; set; }
 
         private Func<string, Task<IMark>> _markFactory { get; set; }
@@ -31,7 +32,7 @@ namespace FmuApiApplication.Documents
         {
             _document = requestDocument;
 
-            _temporaryDocumentsService = new Lazy<ITemporaryDocumentsService>(() => provider.GetRequiredService<ITemporaryDocumentsService>());
+            _temporaryDocumentsService = new Lazy<IDocumentRepository>(() => provider.GetRequiredService<IDocumentRepository>());
             _cacheService = new Lazy<ICacheService>(() => provider.GetRequiredService<ICacheService>());
             _logger = new Lazy<ILogger<BeginDocument>>(() => provider.GetRequiredService<ILogger<BeginDocument>>());
             
@@ -98,7 +99,7 @@ namespace FmuApiApplication.Documents
             }
 
             if (_configuration.Database.ConfigurationIsEnabled && _appState.CouchDbOnline())
-                await _temporaryDocumentsService.Value.AddDocumentToDbAsync(_document);
+                await _temporaryDocumentsService.Value.Add(_document);
             else
                 _cacheService.Value.Set($"cashDoc_{_document.Uid}", _document, TimeSpan.FromMinutes(5));
 

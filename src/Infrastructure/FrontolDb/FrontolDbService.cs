@@ -1,4 +1,5 @@
-﻿using FrontolDb.Handlers;
+﻿using FmuApiDomain.Frontol.Interfaces;
+using FrontolDb.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace FrontolDb
@@ -9,7 +10,7 @@ namespace FrontolDb
         {
             services.AddDbContext<FrontolDbContext>(options => { });
 
-            services.AddScoped<FrontolSprtDataHandler>();
+            services.AddScoped<IFrontolSprTService, FrontolSprTService>();
 
         }
     }

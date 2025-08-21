@@ -1,31 +1,51 @@
 ﻿using CSharpFunctionalExtensions;
 using FmuApiDomain.Cache.Interfaces;
+using FmuApiDomain.Configuration.Interfaces;
+using FmuApiDomain.Frontol.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace FrontolDb.Handlers
 {
-    public class FrontolSprtDataHandler
+    public class FrontolSprTService : IFrontolSprTService
     {
         private readonly string _connectionString = string.Empty;
         private readonly FrontolDbContext _db;
         private readonly ICacheService _cacheService;
+        private readonly IParametersService _parametersService;
+
         private readonly int _cacheExpirationMinutes = 240;
 
-        public FrontolSprtDataHandler(string connectionString, ICacheService cacheService)
+        public FrontolSprTService(string connectionString, ICacheService cacheService, IParametersService parametersService)
         {
             _connectionString = connectionString;
+            
             _db = new FrontolDbContext(connectionString);
+
             _cacheService = cacheService;
+            _parametersService = parametersService;
         }
 
-        public FrontolSprtDataHandler(FrontolDbContext frontolDbContext, ICacheService cacheService)
+        public FrontolSprTService(FrontolDbContext frontolDbContext, ICacheService cacheService, IParametersService parametersService)
         {
             _db = frontolDbContext;
+
             _cacheService = cacheService;
+            _parametersService = parametersService;
         }
 
         public async Task<Result<int>> PrintGroupCodeByBarcodeAsync(string barCode)
         {
+            var appParams = await _parametersService.CurrentAsync();
+
+            if (!appParams.FrontolConnectionSettings.ConnectionEnable())
+                return Result.Success(0);
+
+            if (appParams.OrganisationConfig.PrintGroups.Count <= 1)
+                return Result.Success(0);
+
+            if (barCode.Length == 0)
+                return Result.Success(0);
+
             var code = 0;
 
             try

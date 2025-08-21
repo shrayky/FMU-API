@@ -4,6 +4,7 @@ using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.Fmu.Document.Enums;
 using FmuApiDomain.Fmu.Document.Interface;
+using FmuApiDomain.Frontol.Interfaces;
 using FmuApiDomain.MarkInformation.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -13,7 +14,7 @@ namespace FmuApiApplication.Documents
     public class CheckReturnDocument : IFrontolDocumentService
     {
         private RequestDocument _document { get; set; }
-        private Lazy<ITemporaryDocumentsService> _temporaryDocumentsService { get; set; }
+        private Lazy<IFrontolSprTService> _frontolSprTSerice { get; set; }
         private Func<string, Task<IMark>> _markFactory { get; set; }
         IParametersService _parametersService { get; set; }
         private ILogger<CheckReturnDocument> _logger { get; set; }
@@ -24,7 +25,7 @@ namespace FmuApiApplication.Documents
         {
             _document = requestDocument;
             
-            _temporaryDocumentsService = new Lazy<ITemporaryDocumentsService>(() => provider.GetRequiredService<ITemporaryDocumentsService>());
+            _frontolSprTSerice = new Lazy<IFrontolSprTService>(() => provider.GetRequiredService<IFrontolSprTService>());
             
             _logger = provider.GetRequiredService<ILogger<CheckReturnDocument>>();
                         
@@ -123,7 +124,12 @@ namespace FmuApiApplication.Documents
                     pgCode = organisation.Id;
             }
             else
-                pgCode = await _temporaryDocumentsService.Value.WareSaleOrganizationFromFrontolBaseAsync(mark.Barcode);
+            {
+                var result = await _frontolSprTSerice.Value.PrintGroupCodeByBarcodeAsync(mark.Barcode);
+
+                if (result.IsSuccess)
+                    pgCode = result.Value;
+            }
 
             if (pgCode == 0)
                 return;

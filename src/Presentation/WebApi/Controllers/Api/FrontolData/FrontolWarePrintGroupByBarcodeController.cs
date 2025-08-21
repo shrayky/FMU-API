@@ -1,5 +1,4 @@
-﻿using FmuApiDomain.Configuration.Interfaces;
-using FrontolDb.Handlers;
+﻿using FmuApiDomain.Frontol.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers.Api.FrontolData
@@ -10,28 +9,18 @@ namespace WebApi.Controllers.Api.FrontolData
     public class FrontolWarePrintGroupByBarcodeController : Controller
     {
         private readonly ILogger<FrontolWarePrintGroupByBarcodeController> _logger;
-        private readonly FrontolSprtDataHandler _frontolSprtDataHandler;
-        private readonly IParametersService _parametersService;
+        private readonly IFrontolSprTService _frontolSprTService;
 
-        public FrontolWarePrintGroupByBarcodeController(FrontolSprtDataHandler frontolSprtDataHandler, IParametersService parametersService, ILogger<FrontolWarePrintGroupByBarcodeController> logger)
+        public FrontolWarePrintGroupByBarcodeController(IFrontolSprTService frontolSprtService, ILogger<FrontolWarePrintGroupByBarcodeController> logger)
         {
-            _frontolSprtDataHandler = frontolSprtDataHandler;
-            _parametersService = parametersService;
+            _frontolSprTService = frontolSprtService;
             _logger = logger;
         }
 
         [HttpGet("{barcode}")]
         public async Task<IActionResult> GetAsync(string barcode)
         {
-            var appParams = _parametersService.Current();
-
-            if (appParams.OrganisationConfig.PrintGroups.Count <= 1)
-                return Ok(0);
-
-            if (!appParams.FrontolConnectionSettings.ConnectionEnable())
-                return Ok(0);
-
-            var printGroup = await _frontolSprtDataHandler.PrintGroupCodeByBarcodeAsync(barcode);
+            var printGroup = await _frontolSprTService.PrintGroupCodeByBarcodeAsync(barcode);
 
             if (printGroup.IsFailure)
             {

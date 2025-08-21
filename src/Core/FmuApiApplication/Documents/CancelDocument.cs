@@ -3,10 +3,10 @@ using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.Fmu.Document.Interface;
-using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
+using FmuApiDomain.Repositories;
 
 namespace FmuApiApplication.Documents
 {
@@ -15,7 +15,7 @@ namespace FmuApiApplication.Documents
         private RequestDocument _document { get; set; }
 
         private Lazy<ILogger<CancelDocument>> _logger { get; set; }
-        private Lazy<ITemporaryDocumentsService> _temporaryDocumentsService { get; set; }
+        private Lazy<IDocumentRepository> _temporaryDocumentsService { get; set; }
 
         private IParametersService _parametersService { get; set; }
         private IApplicationState  _appState { get; set; }
@@ -26,7 +26,7 @@ namespace FmuApiApplication.Documents
         {
             _document = requestDocument;
 
-            _temporaryDocumentsService = new Lazy<ITemporaryDocumentsService>(() => provider.GetRequiredService<ITemporaryDocumentsService>());
+            _temporaryDocumentsService = new Lazy<IDocumentRepository>(() => provider.GetRequiredService<IDocumentRepository>());
             _logger = new Lazy<ILogger<CancelDocument>>(() => provider.GetRequiredService<ILogger<CancelDocument>>());
             
             _parametersService = provider.GetRequiredService<IParametersService>();
@@ -57,7 +57,7 @@ namespace FmuApiApplication.Documents
             if (!_appState.CouchDbOnline())
                 return Result.Success(checkResult);
 
-            await _temporaryDocumentsService.Value.DeleteDocumentFromDbAsync(_document.Uid);
+            await _temporaryDocumentsService.Value.Delete(_document.Uid);
 
             return Result.Success(checkResult);
         }

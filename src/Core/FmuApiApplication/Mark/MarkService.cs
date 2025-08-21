@@ -1,6 +1,5 @@
 ﻿using FmuApiApplication.Mark.Interfaces;
 using FmuApiApplication.Mark.Services;
-using FmuApiApplication.Services.MarkServices;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.MarkInformation.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,9 +33,6 @@ namespace FmuApiApplication.Mark
                     parametersService,
                     logger);
             });
-
-            // Сервис для работы с марками
-            services.AddScoped<ITemporaryDocumentsService, TemporaryDocumentsService>();
 
             return services;
         }

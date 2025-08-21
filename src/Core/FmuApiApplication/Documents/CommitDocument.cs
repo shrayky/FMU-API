@@ -1,14 +1,14 @@
 ﻿using CSharpFunctionalExtensions;
-using FmuApiDomain.Cache.Interfaces;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
+using FmuApiDomain.Database.Dto;
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.Fmu.Document.Interface;
-using FmuApiDomain.Frontol;
 using FmuApiDomain.MarkInformation.Entities;
 using FmuApiDomain.MarkInformation.Enums;
 using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.MarkInformation.Models;
+using FmuApiDomain.Repositories;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -18,7 +18,7 @@ namespace FmuApiApplication.Documents
     public class CommitDocument : IFrontolDocumentService
     {
         private RequestDocument _document { get; set; }
-        private Lazy<ITemporaryDocumentsService> _temporaryDocumentsService { get; set; }
+        private Lazy<IDocumentRepository> _temporaryDocumentsService { get; set; }
         private Lazy<IMarkStateManager> _markStateService { get; set; }
         private Func<string, Task<IMark>> _markFactory { get; set; }
         private ILogger<CommitDocument> _logger { get; set; }
@@ -32,7 +32,7 @@ namespace FmuApiApplication.Documents
         {
             _document = requestDocument;
 
-            _temporaryDocumentsService = new Lazy<ITemporaryDocumentsService>(() => provider.GetRequiredService<ITemporaryDocumentsService>());
+            _temporaryDocumentsService = new Lazy<IDocumentRepository>(() => provider.GetRequiredService<IDocumentRepository>());
             _markStateService = new Lazy<IMarkStateManager>(() => provider.GetRequiredService<IMarkStateManager>());
             _markFactory = provider.GetRequiredService<Func<string, Task<IMark>>>();
 
@@ -65,10 +65,12 @@ namespace FmuApiApplication.Documents
             if (!_appState.CouchDbOnline())
                 return Result.Success(checkResult);
 
-            DocumentEntity frontolDocument = await _temporaryDocumentsService.Value.DocumentFromDbAsync(_document.Uid);
+            var loadDocumentResult = await _temporaryDocumentsService.Value.Get(_document.Uid);
 
-            if (frontolDocument.Id == string.Empty)
+            if (loadDocumentResult.IsFailure)
                 return Result.Failure<FmuAnswer>($"Невозможно закрыть документ {_document.Uid}! Он не найден в базе документов!");
+
+            var frontolDocument = loadDocumentResult.Value;
 
             SaleData saleData = new()
             {
@@ -119,7 +121,7 @@ namespace FmuApiApplication.Documents
 
             await MarkChangeStateBulk(marksToChangeState, state);
            
-            await _temporaryDocumentsService.Value.DeleteDocumentFromDbAsync(_document.Uid);
+            await _temporaryDocumentsService.Value.Delete(_document.Uid);
 
             return Result.Success(checkResult);
         }

@@ -1,6 +1,6 @@
 ﻿using CSharpFunctionalExtensions;
+using FmuApiDomain.Database.Dto;
 using FmuApiDomain.Fmu.Document;
-using FmuApiDomain.Frontol;
 
 namespace FmuApiDomain.Repositories
 {
