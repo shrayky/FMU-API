@@ -1,8 +1,8 @@
 ﻿using CSharpFunctionalExtensions;
-using FmuApiDomain.Cache.Interfaces;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Frontol.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace FrontolDb.Handlers
 {
@@ -10,12 +10,12 @@ namespace FrontolDb.Handlers
     {
         private readonly string _connectionString = string.Empty;
         private readonly FrontolDbContext _db;
-        private readonly ICacheService _cacheService;
+        private readonly IMemoryCache _cacheService;
         private readonly IParametersService _parametersService;
 
         private readonly int _cacheExpirationMinutes = 240;
 
-        public FrontolSprTService(string connectionString, ICacheService cacheService, IParametersService parametersService)
+        public FrontolSprTService(string connectionString, IMemoryCache cacheService, IParametersService parametersService)
         {
             _connectionString = connectionString;
             
@@ -25,7 +25,7 @@ namespace FrontolDb.Handlers
             _parametersService = parametersService;
         }
 
-        public FrontolSprTService(FrontolDbContext frontolDbContext, ICacheService cacheService, IParametersService parametersService)
+        public FrontolSprTService(FrontolDbContext frontolDbContext, IMemoryCache cacheService, IParametersService parametersService)
         {
             _db = frontolDbContext;
 

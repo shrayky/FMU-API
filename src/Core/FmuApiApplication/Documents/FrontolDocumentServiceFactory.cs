@@ -1,9 +1,5 @@
-﻿using FmuApiDomain.Cache.Interfaces;
-using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.Fmu.Document;
+﻿using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.Fmu.Document.Interface;
-using FmuApiDomain.MarkInformation.Interfaces;
-using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace FmuApiApplication.Documents
@@ -13,7 +9,7 @@ namespace FmuApiApplication.Documents
         private readonly ILogger<FrontolDocumentServiceFactory> _logger;
         private readonly IServiceProvider _serviceProvider;
 
-        public FrontolDocumentServiceFactory(ILogger<FrontolDocumentServiceFactory> logger, 
+        public FrontolDocumentServiceFactory(ILogger<FrontolDocumentServiceFactory> logger,
             IServiceProvider serviceProvider)
         {
             _logger = logger;

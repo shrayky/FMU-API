@@ -1,9 +1,9 @@
 ﻿using ApplicationConfigurationService.Migrations;
-using FmuApiDomain.Cache.Interfaces;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Constants;
 using FmuApiDomain.State.Interfaces;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shared.FilesFolders;
@@ -16,7 +16,7 @@ namespace ApplicationConfigurationService
     {
         private readonly IServiceProvider _services;
         private readonly ILogger<SimpleParametersService> _logger;
-        private readonly ICacheService _cacheService;
+        private readonly IMemoryCache _cacheService;
         private readonly IApplicationState _appState;
 
         private readonly string _configPath = string.Empty;
@@ -31,7 +31,7 @@ namespace ApplicationConfigurationService
         {
             _services = services;
             _logger = _services.GetRequiredService<ILogger<SimpleParametersService>>();
-            _cacheService = _services.GetRequiredService<ICacheService>();
+            _cacheService = _services.GetRequiredService<IMemoryCache>();
             _appState = _services.GetRequiredService<IApplicationState>();            
             
             string configFolder = Folders.CommonApplicationDataFolder(ApplicationInformation.Manufacture, ApplicationInformation.AppName);

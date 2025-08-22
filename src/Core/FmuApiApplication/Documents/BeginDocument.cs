@@ -1,5 +1,4 @@
 ﻿using CSharpFunctionalExtensions;
-using FmuApiDomain.Cache.Interfaces;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Fmu.Document;
@@ -9,6 +8,7 @@ using FmuApiDomain.Repositories;
 using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.TrueApi.MarkData;
 using FmuApiDomain.TrueApi.MarkData.Check;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -20,7 +20,7 @@ namespace FmuApiApplication.Documents
         
         private Lazy<ILogger<BeginDocument>> _logger { get; set; }
         private Lazy<IDocumentRepository> _temporaryDocumentsService { get; set; }
-        private Lazy<ICacheService> _cacheService { get; set; }
+        private Lazy<IMemoryCache> _cacheService { get; set; }
 
         private Func<string, Task<IMark>> _markFactory { get; set; }
         private IParametersService _parametersService { get; set; }
@@ -33,7 +33,7 @@ namespace FmuApiApplication.Documents
             _document = requestDocument;
 
             _temporaryDocumentsService = new Lazy<IDocumentRepository>(() => provider.GetRequiredService<IDocumentRepository>());
-            _cacheService = new Lazy<ICacheService>(() => provider.GetRequiredService<ICacheService>());
+            _cacheService = new Lazy<IMemoryCache>(() => provider.GetRequiredService<IMemoryCache>());
             _logger = new Lazy<ILogger<BeginDocument>>(() => provider.GetRequiredService<ILogger<BeginDocument>>());
             
             _markFactory = provider.GetRequiredService<Func<string, Task<IMark>>>();

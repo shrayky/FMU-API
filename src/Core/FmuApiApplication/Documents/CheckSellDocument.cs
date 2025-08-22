@@ -1,5 +1,4 @@
 ﻿using CSharpFunctionalExtensions;
-using FmuApiDomain.Cache.Interfaces;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Fmu.Document;
@@ -9,6 +8,7 @@ using FmuApiDomain.Frontol.Interfaces;
 using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.TrueApi.MarkData;
 using FmuApiDomain.TrueApi.MarkData.Check;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -20,7 +20,7 @@ namespace FmuApiApplication.Documents
         private ILogger<CheckSellDocument> _logger { get; set; }
         private Lazy<IFrontolSprTService> _frontolSprTSerice { get; set; }
         private Func<string, Task<IMark>> _markFactory { get; set; }
-        private ICacheService _memcachedClient;
+        private IMemoryCache _memcachedClient;
         IParametersService _parametersService { get; set; }
 
         private int _cacheExpirationMinutes = 30;
@@ -35,7 +35,7 @@ namespace FmuApiApplication.Documents
             _markFactory = provider.GetRequiredService<Func<string, Task<IMark>>>();
 
             _logger = provider.GetRequiredService<ILogger<CheckSellDocument>>();
-            _memcachedClient = provider.GetRequiredService<ICacheService>(); ;
+            _memcachedClient = provider.GetRequiredService<IMemoryCache>(); ;
             _parametersService = provider.GetRequiredService<IParametersService>();
             _configuration = _parametersService.Current();
         }

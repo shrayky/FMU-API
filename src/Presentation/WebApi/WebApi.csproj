@@ -43,7 +43,6 @@
     <ProjectReference Include="..\..\Infrastructure\FrontolDb\FrontolDb.csproj" />
     <ProjectReference Include="..\..\Infrastructure\LocalModuleIntegration\LocalModuleIntegration.csproj" />
     <ProjectReference Include="..\..\Infrastructure\LogService\LogService.csproj" />
-    <ProjectReference Include="..\..\Infrastructure\MemoryCache\MemoryCache.csproj" />
     <ProjectReference Include="..\..\Infrastructure\TrueApiCdn\TrueApiCdn.csproj" />
   </ItemGroup>
 

@@ -1,5 +1,4 @@
 ﻿using CSharpFunctionalExtensions;
-using FmuApiDomain.Cache.Interfaces;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Fmu.Document;

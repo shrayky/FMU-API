@@ -1,6 +1,6 @@
-﻿using FmuApiDomain.Cache.Interfaces;
-using FmuApiDomain.Cdn;
+﻿using FmuApiDomain.Cdn;
 using FmuApiDomain.Constants;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Shared.FilesFolders;
 using System.Text.Json;
@@ -10,7 +10,7 @@ namespace TrueApiCdn.Services
 {
     public class SimpleCdnService : ICdnService
     {
-        private readonly ICacheService _cacheService;
+        private readonly IMemoryCache _cacheService;
         private readonly ILogger<SimpleCdnService> _logger;
 
         private readonly string _cdnPath;
@@ -20,9 +20,7 @@ namespace TrueApiCdn.Services
 
         private readonly SemaphoreSlim _semaphore = new(1, 1);
 
-        public SimpleCdnService(
-            ICacheService cacheService,
-            ILogger<SimpleCdnService> logger)
+        public SimpleCdnService(IMemoryCache cacheService, ILogger<SimpleCdnService> logger)
         {
             _cacheService = cacheService;
             _logger = logger;

@@ -8,11 +8,9 @@ using FmuApiApplication.Mark;
 using FmuApiApplication.Services.AcoUnit;
 using FmuApiApplication.Services.State;
 using FmuApiApplication.Services.TrueSign;
-using FmuApiDomain.Cache.Interfaces;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using FrontolDb;
-using MemoryCache;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Scalar.AspNetCore;
 using Serilog;
@@ -169,7 +167,6 @@ async Task<bool> InstallAsWindowsServiceAsync()
         {
             services.AddMemoryCache();
             services.AddSingleton<IParametersService, SimpleParametersService>();
-            services.AddSingleton<ICacheService, MemoryCacheService>();
             services.AddSingleton<WindowsSrvInstallerService>();
             services.AddSingleton<IApplicationState, ApplicationState>();
         });
@@ -187,7 +184,6 @@ bool RegisterWindowsService()
         {
             services.AddMemoryCache();
             services.AddSingleton<IParametersService, SimpleParametersService>();
-            services.AddSingleton<ICacheService, MemoryCacheService>();
             services.AddSingleton<WindowsSrvInstallerService>();
             services.AddSingleton<IApplicationState, ApplicationState>();
         });
@@ -205,7 +201,6 @@ bool UninstallWindowsService()
         {
             services.AddMemoryCache();
             services.AddSingleton<IParametersService, SimpleParametersService>();
-            services.AddSingleton<ICacheService, MemoryCacheService>();
             services.AddSingleton<WindowsSrvInstallerService>();
             services.AddSingleton<IApplicationState, ApplicationState>();
         });
@@ -223,7 +218,6 @@ bool UnregisterWindowsService()
         {
             services.AddMemoryCache();
             services.AddSingleton<IParametersService, SimpleParametersService>();
-            services.AddSingleton<ICacheService, MemoryCacheService>();
             services.AddSingleton<WindowsSrvInstallerService>();
             services.AddSingleton<IApplicationState, ApplicationState>();
         });
