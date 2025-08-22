@@ -90,8 +90,8 @@ namespace FmuApiApplication.Mark.Services
 
             var currentMarkState = await _markCrud.GetAsync(sGtin);
 
-            if (currentMarkState.Id == string.Empty)
-                return Result.Failure("");
+            //if (currentMarkState.Id == string.Empty)
+            //    return Result.Failure("");
 
             TrueApiAnswerData trueApiAnswerData = new()
             {
