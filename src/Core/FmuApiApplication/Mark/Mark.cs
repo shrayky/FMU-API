@@ -187,6 +187,10 @@ namespace FmuApiApplication.Mark
                     validationErrors.Add("Продажа возвращенного покупателем товара запрещена!");
                 }
 
+                // Проверка в обороте ли марка в обороте
+                if (trueMarkData.AllMarkIsNotRealizable())
+                    validationErrors.Add("Марка не в обороте");
+
                 // Сброс ошибок верификации, для указанных в настройках групп
                 if (!ResetErrorFields())
                     markError = string.Join(Environment.NewLine, validationErrors);
