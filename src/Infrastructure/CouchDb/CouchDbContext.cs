@@ -13,6 +13,7 @@ namespace CouchDb
     {
         public CouchDatabase<CouchDoc<MarkEntity>> Marks { get; set; }
         public CouchDatabase<CouchDoc<DocumentEntity>> Documents { get; set; }
+        public CouchDatabase<CouchDoc<StatisticEntity>> MarkCheckingStatistic {  get; set; }
         
         // устаревшие:
         public CouchDatabase<MarkStateDocument> MarksState { get; set; }
@@ -30,6 +31,9 @@ namespace CouchDb
         {
             databaseBuilder.Document<CouchDoc<MarkEntity>>().ToDatabase(DatabaseNames.MarksDbName);
             databaseBuilder.Document<CouchDoc<DocumentEntity>>().ToDatabase(DatabaseNames.DocumentsDbName);
+            databaseBuilder.Document<CouchDoc<StatisticEntity>>().ToDatabase(DatabaseNames.MarkCheckingStatistic)
+                    .HasIndex("date-time-idx", p => p.IndexBy(c => c.Data.checkDate))
+                    .HasIndex("date-sgtin", p => p.IndexBy(c => c.Data.SGtin));
 
             // устаревшие базы, для совместимости:
             Сompatibility9_102(databaseBuilder);

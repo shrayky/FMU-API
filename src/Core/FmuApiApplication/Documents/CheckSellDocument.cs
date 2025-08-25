@@ -6,6 +6,7 @@ using FmuApiDomain.Fmu.Document.Enums;
 using FmuApiDomain.Fmu.Document.Interface;
 using FmuApiDomain.Frontol.Interfaces;
 using FmuApiDomain.MarkInformation.Interfaces;
+using FmuApiDomain.Repositories;
 using FmuApiDomain.TrueApi.MarkData;
 using FmuApiDomain.TrueApi.MarkData.Check;
 using Microsoft.Extensions.Caching.Memory;
@@ -22,6 +23,7 @@ namespace FmuApiApplication.Documents
         private Func<string, Task<IMark>> _markFactory { get; set; }
         private IMemoryCache _memcachedClient;
         IParametersService _parametersService { get; set; }
+        private ICheckStatisticRepository _checkStatisticRepository { get; set; }
 
         private int _cacheExpirationMinutes = 30;
         private Parameters _configuration;
@@ -33,6 +35,8 @@ namespace FmuApiApplication.Documents
             _frontolSprTSerice = new Lazy<IFrontolSprTService>(() => provider.GetRequiredService<IFrontolSprTService>());
 
             _markFactory = provider.GetRequiredService<Func<string, Task<IMark>>>();
+
+            _checkStatisticRepository = provider.GetRequiredService<ICheckStatisticRepository>();
 
             _logger = provider.GetRequiredService<ILogger<CheckSellDocument>>();
             _memcachedClient = provider.GetRequiredService<IMemoryCache>(); ;
@@ -61,8 +65,8 @@ namespace FmuApiApplication.Documents
                 _memcachedClient.Set(checkResult.Value.SGtin(),
                                      checkResult.Value,
                                      TimeSpan.FromMinutes(_cacheExpirationMinutes));
-
-            return checkResult;
+             
+                return checkResult;
         }
 
         private async Task<Result<FmuAnswer>> MarkInformation()
@@ -71,11 +75,22 @@ namespace FmuApiApplication.Documents
             IMark mark = await _markFactory(_document.Mark);
 
             await SetOrganizationIdAsync(mark);
-            var checkResult = await mark.PerformCheckAsync(OperationType.Sale);
-            checkResult.Value.FillFieldsFor6255(_document.Inn);
 
+            var checkResult = await mark.PerformCheckAsync(OperationType.Sale);
+            
             if (checkResult.IsSuccess)
             {
+                checkResult.Value.FillFieldsFor6255(_document.Inn);
+
+                if (checkResult.Value.Error == string.Empty && !checkResult.Value.OfflineRegime)
+                    await _checkStatisticRepository.SuccessOnLineCheck(checkResult.Value.SGtin(), DateTime.Now);
+                else if (checkResult.Value.Error == string.Empty && checkResult.Value.OfflineRegime)
+                    await _checkStatisticRepository.SuccessOffLineCheck(checkResult.Value.SGtin(), DateTime.Now);
+                else if (checkResult.Value.Error != string.Empty && !checkResult.Value.OfflineRegime)
+                    await _checkStatisticRepository.OnLineCheckWithWarnings(checkResult.Value.SGtin(), DateTime.Now, checkResult.Value.Error);
+                else if (checkResult.Value.Error != string.Empty && checkResult.Value.OfflineRegime)
+                    await _checkStatisticRepository.OffLineCheckWithWarnings(checkResult.Value.SGtin(), DateTime.Now, checkResult.Value.Error);
+
                 return checkResult;
             }
 

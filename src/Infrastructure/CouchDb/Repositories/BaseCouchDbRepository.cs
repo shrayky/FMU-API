@@ -2,6 +2,7 @@
 using CouchDB.Driver;
 using Flurl.Http;
 using FmuApiDomain.Configuration.Interfaces;
+using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.Templates.Tables;
 using Microsoft.Extensions.Logging;
@@ -16,6 +17,8 @@ namespace CouchDb.Repositories
         private readonly IParametersService _appConfiguration;
         protected readonly IApplicationState _appState;
 
+        protected readonly CouchDbConnection _configuration;
+
         protected BaseCouchDbRepository(ILogger logger,
             CouchDbContext context,
             ICouchDatabase<CouchDoc<T>> database,
@@ -27,6 +30,8 @@ namespace CouchDb.Repositories
             _database = database;
             _appConfiguration = appConfiguration;
             _appState = applicationState;
+
+            _configuration = _appConfiguration.Current().Database;
         }
 
         public virtual async Task<T?> GetByIdAsync(string id)
@@ -181,6 +186,9 @@ namespace CouchDb.Repositories
 
         private async Task<TResult> ExecuteSafetyDbOperation<TResult>(Func<Task<TResult>> operation, string operationName, TResult defaultValue)
         {
+            if (!_configuration.Enable)
+                return defaultValue;
+
             try
             {
                 return await operation();
@@ -198,6 +206,9 @@ namespace CouchDb.Repositories
 
         private async Task<bool> ExecuteSafetyDbOperation(Func<Task> operation, string operationName)
         {
+            if (!_configuration.Enable)
+                return false;
+
             try
             {
                 await operation();

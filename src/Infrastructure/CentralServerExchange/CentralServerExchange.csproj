@@ -14,7 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Core\FmuApiDomain\FmuApiDomain.csproj" />
-    <ProjectReference Include="..\TrueApiCdn\TrueApiCdn.csproj" />
+    <ProjectReference Include="..\TrueApiCdn\TrueApi.csproj" />
   </ItemGroup>
 
 </Project>

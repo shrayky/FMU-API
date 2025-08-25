@@ -43,7 +43,7 @@
     <ProjectReference Include="..\..\Infrastructure\FrontolDb\FrontolDb.csproj" />
     <ProjectReference Include="..\..\Infrastructure\LocalModuleIntegration\LocalModuleIntegration.csproj" />
     <ProjectReference Include="..\..\Infrastructure\LogService\LogService.csproj" />
-    <ProjectReference Include="..\..\Infrastructure\TrueApiCdn\TrueApiCdn.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\TrueApiCdn\TrueApi.csproj" />
   </ItemGroup>
 
   <Target Name="NpmBuild" BeforeTargets="Build" Condition="'$(Configuration)' == 'Release'">

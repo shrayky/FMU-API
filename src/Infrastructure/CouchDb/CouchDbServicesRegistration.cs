@@ -40,6 +40,7 @@ namespace CouchDb
 
             services.AddScoped<IMarkInformationRepository, MarkInformationRepository>();
             services.AddScoped<IDocumentRepository, DocumentRepository>();
+            services.AddScoped<ICheckStatisticRepository, MarkCheckingStatisticRepository>();
 
             services.AddHttpClient("CouchDbState", client =>
             {

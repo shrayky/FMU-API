@@ -6,7 +6,8 @@ namespace CouchDb
     {
         public const string MarksDbName = "fmu-api-marks";
         public const string DocumentsDbName = "fmu-api-documents";
-        public static string[] Names() => [MarksDbName, DocumentsDbName];
+        public const string MarkCheckingStatistic = "fmu-api-mark-checking-statistic";
+        public static string[] Names() => [MarksDbName, DocumentsDbName, MarkCheckingStatistic];
         // устаревшие:
         public static string MarksStateDb { get; private set; } = string.Empty;
         public static string FrontolDocumentsDb { get; private set; } = string.Empty;

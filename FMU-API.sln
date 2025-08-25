@@ -21,7 +21,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Infrastructure", "Infrastru
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CouchDb", "src\Infrastructure\CouchDb\CouchDb.csproj", "{75487FBB-502F-48F6-8B4F-9BC53F559114}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrueApiCdn", "src\Infrastructure\TrueApiCdn\TrueApiCdn.csproj", "{C40AB114-1184-407F-91F2-6286FB98E19C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrueApi", "src\Infrastructure\TrueApiCdn\TrueApi.csproj", "{C40AB114-1184-407F-91F2-6286FB98E19C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApplicationConfigurationService", "src\Infrastructure\ApllicationConfigurationService\ApplicationConfigurationService.csproj", "{7CCD4D7A-8FFC-467D-A6E2-BC32F4D83D79}"
 EndProject

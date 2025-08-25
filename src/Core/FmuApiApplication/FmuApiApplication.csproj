@@ -23,7 +23,7 @@
     <ProjectReference Include="..\..\Infrastructure\CouchDb\CouchDb.csproj" />
     <ProjectReference Include="..\..\Infrastructure\FrontolDb\FrontolDb.csproj" />
     <ProjectReference Include="..\..\Infrastructure\LocalModuleIntegration\LocalModuleIntegration.csproj" />
-    <ProjectReference Include="..\..\Infrastructure\TrueApiCdn\TrueApiCdn.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\TrueApiCdn\TrueApi.csproj" />
     <ProjectReference Include="..\FmuApiDomain\FmuApiDomain.csproj" />
   </ItemGroup>
 
