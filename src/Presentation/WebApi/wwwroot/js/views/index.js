@@ -1,15 +1,15 @@
 // js/views/index.js
-import "../utils/customComponents.js";
+import '../utils/customComponents.js';
 import { InitProxy } from '../utils/proxy.js';
 import { RouterService } from '../services/RouterService.js';
 import { createLayout, createToolbar, createSidebar } from '../components/Layout.js';
 import { MENU_ITEMS } from '../config/menu.js';
 
 import SettingsView from '../modules/settings/SettingsView.js';
-import InformationView from '../modules/settings/informationView.js';
-import CdnView from '../modules/settings/cdnView.js';
-import LogsView from '../modules/settings/logsView.js';
-import MonitorView from '../modules/settings/monitorView.js';
+import InformationView from '../modules/Information/informationView.js';
+import CdnView from '../modules/cdn/cdnView.js';
+import LogsView from '../modules/Logs/logsView.js';
+import MonitorView from '../modules/Monitoring/monitorView.js';
 
 class App {
     constructor() {
