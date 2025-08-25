@@ -52,7 +52,7 @@ namespace FmuApiApplication.Mark.Services
             if (markInfo.HaveTrueApiAnswer)
                 _logger.LogInformation("Получена информация о марке {Sgtin}", sGtin);
             else
-                _logger.LogError("Ошибка при получении информации о марке {Sgtin}", sGtin);
+                _logger.LogInformation("Нет информации в БД о марке {Sgtin}", sGtin);
             
             return new MarkEntity();
         }
