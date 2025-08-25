@@ -32,6 +32,9 @@ namespace FmuApiDomain.TrueApi.MarkData.Check
             return sold == Codes.Count;
         }
 
+        public bool AllMarkIsNotRealizable() => Codes.Count(p => p.Realizable == false) == Codes.Count;
+        
+
         public bool AllMarksIsExpire()
         {
             int expire = 0;
@@ -100,5 +103,6 @@ namespace FmuApiDomain.TrueApi.MarkData.Check
             foreach (CodeDataTrueApi data in Codes)
                 data.ResetErrorFields(resetSoldStatusForReturn);
         }
+
     }
 }
