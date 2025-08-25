@@ -9,6 +9,7 @@ namespace FmuApiDomain.Database.Dto
         public DateTime checkDate { get; set; } = DateTime.MinValue;
         public bool SuccessCheck { get; set; } = false;
         public bool OnLineCheck { get; set; } = false;
+        public bool OffLineCheck { get; set; } = false;
         public string WarningMessage { get; set; } = string.Empty;
     }
 }

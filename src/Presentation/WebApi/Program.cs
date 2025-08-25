@@ -7,8 +7,10 @@ using FmuApiApplication.Installer;
 using FmuApiApplication.Mark;
 using FmuApiApplication.Services.AcoUnit;
 using FmuApiApplication.Services.State;
+using FmuApiApplication.Services.Statistics;
 using FmuApiApplication.Services.TrueSign;
 using FmuApiDomain.Configuration.Interfaces;
+using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.TrueApi.Interfaces;
 using FrontolDb;
@@ -74,6 +76,7 @@ bool RunHttpApiService()
     services.AddHttpClient();
 
     services.AddScoped<IOnLineMarkCheckService, MarksCheckService>();
+    services.AddScoped<IMarkStatisticsService, MarkStatisticsService>();
     services.AddScoped<ProductInfo>();
     services.AddScoped<AlcoUnitGateway>();
     

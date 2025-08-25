@@ -1,5 +1,7 @@
-﻿using FmuApiDomain.Configuration.Interfaces;
+﻿using CouchDB.Driver.Extensions;
+using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Database.Dto;
+using FmuApiDomain.MarkInformation.Models;
 using FmuApiDomain.Repositories;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -21,6 +23,7 @@ namespace CouchDb.Repositories
                 checkDate = checkDate,
                 SGtin = mark,
                 OnLineCheck = false,
+                OffLineCheck = false,
                 SuccessCheck = false
             };
 
@@ -35,6 +38,7 @@ namespace CouchDb.Repositories
                 checkDate = checkDate,
                 SGtin = mark,
                 OnLineCheck = false,
+                OffLineCheck= true,
                 SuccessCheck = true,
                 WarningMessage = ""
             };
@@ -50,6 +54,7 @@ namespace CouchDb.Repositories
                 checkDate = checkDate,
                 SGtin = mark,
                 OnLineCheck = false,
+                OffLineCheck = true,
                 SuccessCheck = false,
                 WarningMessage = warningMessage
             };
@@ -65,6 +70,7 @@ namespace CouchDb.Repositories
                 checkDate = checkDate,
                 SGtin = mark,
                 OnLineCheck = true,
+                OffLineCheck = false,
                 SuccessCheck = true
             };
 
@@ -79,11 +85,31 @@ namespace CouchDb.Repositories
                 checkDate = checkDate,
                 SGtin = mark,
                 OnLineCheck = true,
+                OffLineCheck = false,
                 SuccessCheck = false,
                 WarningMessage = warningMessage
             };
 
             await CreateAsync(entity);
+        }
+
+        public async Task<MarkCheckStatistics> CheckStatisticsByDays(DateTime fromDate, DateTime toDate)
+        {
+            if (_context == null)
+                return new();
+
+            var filteredMarks = await _database
+                .Where(p => p.Data.checkDate >= fromDate && p.Data.checkDate <= toDate)
+                .ToListAsync();
+
+            var statistics = new MarkCheckStatistics
+            {
+                Total = filteredMarks.Count,
+                SuccessfulOnlineChecks = filteredMarks.Count(m => m.Data.SuccessCheck && m.Data.OnLineCheck),
+                SuccessfulOfflineChecks = filteredMarks.Count(m => m.Data.SuccessCheck && m.Data.OffLineCheck)
+            };
+
+            return statistics;
         }
 
     }

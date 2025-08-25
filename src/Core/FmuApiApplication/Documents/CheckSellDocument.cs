@@ -93,6 +93,10 @@ namespace FmuApiApplication.Documents
 
                 return checkResult;
             }
+            else
+            {
+                await _checkStatisticRepository.FailureCheck(mark.SGtin, DateTime.Now);
+            }
 
             _logger.LogError(checkResult.Error);
 
