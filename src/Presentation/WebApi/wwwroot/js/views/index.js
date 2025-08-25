@@ -8,7 +8,7 @@ import { MENU_ITEMS } from '../config/menu.js';
 import SettingsView from '../modules/settings/SettingsView.js';
 import InformationView from '../modules/Information/informationView.js';
 import CdnView from '../modules/cdn/cdnView.js';
-import LogsView from '../modules/Logs/logsView.js';
+import LogsView from '../modules/LogsPage/logsView.js';
 import MonitorView from '../modules/Monitoring/monitorView.js';
 
 class App {
