@@ -1,20 +1,20 @@
 ﻿using CSharpFunctionalExtensions;
 using FmuApiApplication.Mark.Interfaces;
-using FmuApiApplication.Services.TrueSign;
-using FmuApiDomain.Configuration;
-using FmuApiDomain.Fmu.Document;
-using FmuApiDomain.TrueApi.MarkData.Check;
-using Microsoft.Extensions.Logging;
-using FmuApiDomain.TrueApi.MarkData;
-using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.MarkInformation.Entities;
-using FmuApiDomain.State.Interfaces;
-using FmuApiDomain.MarkInformation.Enums;
 using FmuApiApplication.Mark.Models;
-using LocalModuleIntegration.Interfaces;
+using FmuApiDomain.Configuration;
+using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Configuration.Options;
+using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.LocalModule.Enums;
+using FmuApiDomain.MarkInformation.Entities;
+using FmuApiDomain.MarkInformation.Enums;
 using FmuApiDomain.MarkInformation.Interfaces;
+using FmuApiDomain.State.Interfaces;
+using FmuApiDomain.TrueApi.Interfaces;
+using FmuApiDomain.TrueApi.MarkData;
+using FmuApiDomain.TrueApi.MarkData.Check;
+using LocalModuleIntegration.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace FmuApiApplication.Mark.Services
 {
@@ -22,20 +22,21 @@ namespace FmuApiApplication.Mark.Services
     {
         private readonly ILogger<MarkChecker> _logger;
         private readonly IParametersService _parametersService;
-        private readonly MarksCheckService _trueApiCheck;
-        private readonly Parameters _configuration;
-        private readonly IApplicationState _applicationState;
+        private readonly IOnLineMarkCheckService _onlineMarkCHeck;
         private readonly ILocalModuleService _localModuleService;
+        private readonly IApplicationState _applicationState;
+
+        private readonly Parameters _configuration;
 
         public MarkChecker(ILogger<MarkChecker> logger,
             IParametersService parametersService,
-            MarksCheckService trueApiCheck,
+            IOnLineMarkCheckService onlineMarkCheck,
             IApplicationState applicationState,
             ILocalModuleService localModuleService)
         {
             _logger = logger;
             _parametersService = parametersService;
-            _trueApiCheck = trueApiCheck;
+            _onlineMarkCHeck = onlineMarkCheck;
             _configuration = _parametersService.Current();
             _applicationState = applicationState;
             _localModuleService = localModuleService;
@@ -85,7 +86,7 @@ namespace FmuApiApplication.Mark.Services
             try
             {
                 var checkMarksRequestData = new CheckMarksRequestData(code);
-                trueMarkCheckResult = await _trueApiCheck.RequestMarkState(checkMarksRequestData, printGroupCode);
+                trueMarkCheckResult = await _onlineMarkCHeck.RequestMarkState(checkMarksRequestData, printGroupCode);
             }
             catch (Exception ex)
             {
@@ -193,10 +194,9 @@ namespace FmuApiApplication.Mark.Services
             }
 
             var markData = trueMarkCheckResult.Value.MarkData();
+            
             if (markData.Empty)
-            {
-                return MarkCheckResult.Failure($"Пустой результат проверки по коду марки {cis}");
-            }
+                return MarkCheckResult.Failure($"Пустой результат оффлайн проверки по коду марки {cis}");
 
             markData.Found = true;
             markData.Valid = true;

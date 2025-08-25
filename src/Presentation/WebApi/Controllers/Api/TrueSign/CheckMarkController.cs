@@ -1,4 +1,4 @@
-﻿using FmuApiApplication.Services.TrueSign;
+﻿using FmuApiDomain.TrueApi.Interfaces;
 using FmuApiDomain.TrueApi.MarkData.Check;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,11 +9,11 @@ namespace WebApi.Controllers.Api.TrueSign
     [ApiExplorerSettings(GroupName = "True API")]
     public class CheckMarkController : ControllerBase
     {
-        private readonly MarksCheckService _checkMarks;
+        private readonly IOnLineMarkCheckService _onlineMarkCheck;
 
-        public CheckMarkController(MarksCheckService checkMarks)
+        public CheckMarkController(IOnLineMarkCheckService checkMarks)
         {
-            _checkMarks = checkMarks;
+            _onlineMarkCheck = checkMarks;
         }
 
         [HttpPost]
@@ -21,12 +21,10 @@ namespace WebApi.Controllers.Api.TrueSign
         {
             CheckMarksRequestData checkMarksRequestData = new(marks);
 
-            var trueMarkCheckResult = await _checkMarks.RequestMarkState(checkMarksRequestData);
+            var trueMarkCheckResult = await _onlineMarkCheck.RequestMarkState(checkMarksRequestData);
 
             if (trueMarkCheckResult.IsFailure)
-            {
                 return NotFound(trueMarkCheckResult.Error);
-            }
 
             return Ok(trueMarkCheckResult.Value);
         }

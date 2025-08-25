@@ -4,8 +4,6 @@
     {
         public List<string> Codes { get; set; } = [];
 
-        public CheckMarksRequestData() { }
-
         public CheckMarksRequestData(string mark)
         {
             Codes.Add(mark.Replace("\\u001d", "\u001d"));

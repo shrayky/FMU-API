@@ -1,6 +1,8 @@
-﻿using FmuApiDomain.Cdn;
+﻿using FmuApiDomain.Attributes;
+using FmuApiDomain.Cdn;
 using FmuApiDomain.Constants;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shared.FilesFolders;
 using System.Text.Json;
@@ -8,6 +10,7 @@ using TrueApiCdn.Interface;
 
 namespace TrueApiCdn.Services
 {
+    [AutoRegisterService(ServiceLifetime.Singleton)]
     public class SimpleCdnService : ICdnService
     {
         private readonly IMemoryCache _cacheService;

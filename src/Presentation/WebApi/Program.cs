@@ -10,6 +10,7 @@ using FmuApiApplication.Services.State;
 using FmuApiApplication.Services.TrueSign;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.State.Interfaces;
+using FmuApiDomain.TrueApi.Interfaces;
 using FrontolDb;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Scalar.AspNetCore;
@@ -72,7 +73,7 @@ bool RunHttpApiService()
 
     services.AddHttpClient();
 
-    services.AddScoped<MarksCheckService>();
+    services.AddScoped<IOnLineMarkCheckService, MarksCheckService>();
     services.AddScoped<ProductInfo>();
     services.AddScoped<AlcoUnitGateway>();
     

@@ -1,45 +1,37 @@
 ﻿using CSharpFunctionalExtensions;
-using FmuApiDomain.Cdn;
+using FmuApiDomain.Attributes;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.State.Interfaces;
+using FmuApiDomain.TrueApi.Interfaces;
 using FmuApiDomain.TrueApi.MarkData.Check;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Net.Http.Headers;
-using Shared.Http;
-using System.Net.Http.Json;
-using TrueApiCdn.Interface;
+using TrueApi.Interface;
 
 namespace FmuApiApplication.Services.TrueSign
 {
-    public class MarksCheckService
+    [AutoRegisterService(ServiceLifetime.Scoped)]
+    public class MarksCheckService : IOnLineMarkCheckService
     {
-        private readonly string _address = "/api/v4/true-api/codes/check";
         private readonly int requestTimeoutSeconds = 2;
         private readonly int requestAttempts = 1;
 
         private readonly ILogger<MarksCheckService> _logger;
-        private IHttpClientFactory _httpClientFactory;
-        private readonly IParametersService _parametersService;
-        private readonly ICdnService _cdnService;
         private readonly IApplicationState _applicationState;
+        private readonly ITrueApiClientService _api;
 
         private Parameters _configuration;
-        
-        public MarksCheckService(IParametersService parametersService,
-                                 ICdnService cdnService,
-                                 IHttpClientFactory httpClientFactory,
-                                 IApplicationState applicationState,
-                                 ILogger<MarksCheckService> logger)
+
+        public MarksCheckService(ILogger<MarksCheckService> logger, IParametersService parametersService, IApplicationState applicationState, ITrueApiClientService api)
         {
             _logger = logger;
-            _httpClientFactory = httpClientFactory;
-            _parametersService = parametersService;
-            _cdnService = cdnService;
             _applicationState = applicationState;
 
-            _configuration = _parametersService.Current();
+            _configuration = parametersService.Current();
             requestTimeoutSeconds = _configuration.HttpRequestTimeouts.CheckMarkRequestTimeout;
+
+            _api = api;
         }
 
         public async Task<Result<CheckMarksDataTrueApi>> RequestMarkState(CheckMarksRequestData marks, int organizationCode)
@@ -69,57 +61,25 @@ namespace FmuApiApplication.Services.TrueSign
             if (!_applicationState.IsOnline())
                 return Result.Failure<CheckMarksDataTrueApi>("Нет интернета");
 
-            IReadOnlyList<TrueSignCdn> cdns = await _cdnService.GetCdnsAsync();
+            var haveActiveCdns = await _api.HaveActiveCdns();
 
-            if (cdns.Count == 0)
-                return Result.Failure<CheckMarksDataTrueApi>("Нет загруженных cdn");
-
-            TrueSignCdn? cdn = await _cdnService.GetActiveCdnAsync(0);
-
-            if (cdn is null)
-                return Result.Failure<CheckMarksDataTrueApi>("Нет загруженных cdn");
-
-            Dictionary<string, string> headers = new();
-            headers.Add(HeaderNames.Accept, "application/json");
-
-            headers.Add("X-API-KEY", xApiKey);
-            
-            //headers.Add(HeaderNames.Authorization, $"Bearer {Constants.TrueApiToken.Token()}");
+            if (haveActiveCdns.IsFailure)
+                return Result.Failure<CheckMarksDataTrueApi>(haveActiveCdns.Error);
 
             int attemptLost = requestAttempts;
 
-            var content = JsonContent.Create(marks);
-
-            _logger.LogInformation("Проверяю марки в честном знаке {@request}", content);
-
-            while (true)
+            while (attemptLost > 0)
             {
-                try
-                {
-                    var answer = await HttpHelpers.PostAsync<CheckMarksDataTrueApi>($"{cdn.Host}{_address}",
-                                                                                    headers,
-                                                                                    content,
-                                                                                    _httpClientFactory,
-                                                                                    TimeSpan.FromSeconds(requestTimeoutSeconds));
-                    if (answer is null)
-                        continue;
+                var result = await _api.MarksOnLineCheck(marks, xApiKey, TimeSpan.FromSeconds(requestTimeoutSeconds));
 
-                    _logger.LogInformation("Получен ответ от честного знака {@answer}", answer);
+                if (result.IsSuccess)
+                    return result.Value;
 
-                    return Result.Success(answer);
-                }
-                catch
-                {
-                    _logger.LogWarning("{Host} не ответил за {requestTimeoutSeconds} секунды, помечаем его offline", cdn.Host, requestTimeoutSeconds);
-                    cdn.BringOffline();
+                if (result.Error == "")
                     attemptLost--;
-                }
-
-                if (attemptLost == 0)
-                    break;
             }
 
-            return Result.Failure<CheckMarksDataTrueApi>("Ни один cdn сервер не ответил.");
+            return Result.Failure<CheckMarksDataTrueApi>("Ни один CDN сервер не ответил.");
         }
     }
 }

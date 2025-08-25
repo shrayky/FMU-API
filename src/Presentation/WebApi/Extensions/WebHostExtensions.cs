@@ -40,7 +40,7 @@ namespace WebApi.Extensions
                 options.Timeout = TimeSpan.FromSeconds(20);
             });
 
-            TrueApiCdnRegistration.AddService(builder.Services);
+            TrueApiRegistration.AddService(builder.Services);
             LocalModuleRegistration.AddService(builder.Services);
 
             ConfigureLogging(builder, settings.Logging);
