@@ -10,6 +10,7 @@ import InformationView from '../modules/Information/informationView.js';
 import CdnView from '../modules/cdn/cdnView.js';
 import LogsView from '../modules/LogsPage/logsView.js';
 import MonitorView from '../modules/Monitoring/monitorView.js';
+import MarksView from '../modules/Marks/marksView.js';
 
 class App {
     constructor() {
@@ -24,6 +25,7 @@ class App {
         this.router.register("cdnListInfo", () => CdnView);
         this.router.register("logsView", () => LogsView);
         this.router.register("monitorView", () => MonitorView);
+        this.router.register("marksView", () => MarksView);
     }
 
     createMainLayout() {

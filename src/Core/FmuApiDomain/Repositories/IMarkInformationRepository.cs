@@ -10,5 +10,6 @@ namespace FmuApiDomain.Repositories
         Task<MarkEntity> AddAsync(MarkEntity mark);
         Task<List<MarkEntity>> GetDocumentsAsync(List<string> gtins);
         Task<bool> AddRangeAsync(List<MarkEntity> markEntities);
+        Task<MarkSearchResult> SearchMarkData(string searchTerm, int page, int pageSize);
     }
 }

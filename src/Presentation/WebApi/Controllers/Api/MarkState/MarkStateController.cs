@@ -6,7 +6,7 @@ namespace WebApi.Controllers.Api.MarkState
 {
     [Route("api/[controller]")]
     [ApiController]
-    [ApiExplorerSettings(GroupName = "Mark state API")]
+    [ApiExplorerSettings(GroupName = "Marks")]
     public class MarkStateController : ControllerBase
     {
         private readonly ILogger<MarkStateController> _logger;

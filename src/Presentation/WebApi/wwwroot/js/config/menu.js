@@ -12,6 +12,10 @@ export const MENU_ITEMS = {
         id: "cdnListInfo",
         value: "Список CDN"
     },
+    MARKS: {
+        id: "marksView",
+        value: "Марки"
+    },
     LOGS: {
         id: "logsView",
         value: "Логи"

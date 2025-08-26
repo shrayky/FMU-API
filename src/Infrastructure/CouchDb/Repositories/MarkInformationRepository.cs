@@ -1,4 +1,5 @@
-﻿using FmuApiDomain.Configuration.Interfaces;
+﻿using CouchDB.Driver.Extensions;
+using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.MarkInformation.Entities;
 using FmuApiDomain.MarkInformation.Enums;
 using FmuApiDomain.MarkInformation.Models;
@@ -47,7 +48,7 @@ namespace CouchDb.Repositories
 
             await CreateAsync(mark);
 
-            return mark;            
+            return mark;
         }
 
         public async Task<List<MarkEntity>> GetDocumentsAsync(List<string> gtins)
@@ -66,6 +67,54 @@ namespace CouchDb.Repositories
                 return false;
 
             return await CreateBulkAsync(markEntities);
+        }
+
+        public async Task<MarkSearchResult> SearchMarkData(string searchTerm, int page, int pageSize)
+        {
+            if (_context == null)
+                return new();
+
+            var dbInfo = await _database.GetInfoAsync();
+            var totalCount = dbInfo.DocCount;
+
+            var mangoQuery = new
+            {
+                selector = new Dictionary<string, object>
+                {
+                    ["data"] = new Dictionary<string, object> { ["$exists"] = true }
+                },
+                sort = new[] { new Dictionary<string, string> { ["data.trueApiAnswerProperties.reqTimestamp"] = "desc" } },
+                limit = pageSize,
+                skip = (page - 1) * pageSize
+            };
+
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                mangoQuery = new
+                {
+                    selector = new Dictionary<string, object>
+                    {
+                        ["data"] = new Dictionary<string, object> { ["$exists"] = true },
+                        ["data.markId"] = new Dictionary<string, object> { ["$regex"] = searchTerm }
+                    },
+                    sort = new[] { new Dictionary<string, string> { ["data.trueApiAnswerProperties.reqTimestamp"] = "desc" } },
+                    limit = pageSize,
+                    skip = (page - 1) * pageSize
+                };
+            }
+
+            var result = await _database.QueryAsync(mangoQuery);
+            var marks = result.ToList();
+
+            return new MarkSearchResult
+            {
+                Marks = marks.Select(m => m.Data).ToList(),
+                Count = totalCount,
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
+                SearchTerm = searchTerm
+            };
         }
     }
 }

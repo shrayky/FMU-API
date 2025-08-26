@@ -196,5 +196,10 @@ namespace CouchDb.Handlers
         {
             throw new NotImplementedException();
         }
+
+        public Task<MarkSearchResult> SearchMarkData(string searchTerm, int page, int pageSize)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
