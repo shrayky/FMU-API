@@ -5,6 +5,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shared.Http;
 using System.Net;
+using System.Text;
+using System.Text.Json;
 
 namespace CouchDb.Services
 {
@@ -46,7 +48,7 @@ namespace CouchDb.Services
             }
 
             return responseResult.Value.IsSuccessStatusCode;
-        }   
+        }
 
         public async Task<bool> EnsureDatabasesExists(CouchDbConnection connection, string[] databasesNames, CancellationToken cancellationToken)
         {
@@ -61,7 +63,7 @@ namespace CouchDb.Services
             using var httpClient = httpClientResult.Value;
             httpClient.BaseAddress = new Uri(connection.NetAddress);
 
-            var authToken = Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes($"{connection.UserName}:{connection.Password}"));
+            var authToken = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{connection.UserName}:{connection.Password}"));
             httpClient.DefaultRequestHeaders.Authorization = new("Basic", authToken);
 
             foreach (var dbName in databasesNames)
@@ -100,5 +102,79 @@ namespace CouchDb.Services
 
             return true;
         }
+
+        public async Task<bool> EnsureIndexesExist(CouchDbConnection connection, CancellationToken cancellationToken = default)
+        {
+            _logger.LogInformation("Проверка наличия индексов для баз данных CouchDB.");
+
+            var httpClientResult = _httpClientFactory.CreateClientSafely("CouchDbState", _logger);
+            if (httpClientResult.IsFailure)
+            {
+                _logger.LogError("Не удалось создать HttpClient: {Error}", httpClientResult.Error);
+                return false;
+            }
+
+            using var httpClient = httpClientResult.Value;
+            httpClient.BaseAddress = new Uri(connection.NetAddress);
+
+            var authToken = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{connection.UserName}:{connection.Password}"));
+            httpClient.DefaultRequestHeaders.Authorization = new("Basic", authToken);
+
+            var marksIndexesCreated = await CreateMarksIndexes(httpClient, cancellationToken);
+            var statisticIndexesCreated = await CreateStatisticIndexes(httpClient, cancellationToken);
+
+            if (marksIndexesCreated && statisticIndexesCreated)
+            {
+                _logger.LogInformation("Индексы для баз данных CouchDB созданы успешно");
+                return true;
+            }
+
+            return false;
+        }
+
+        private async Task<bool> CreateMarksIndexes(HttpClient httpClient, CancellationToken cancellationToken)
+        {
+            var indexes = new[]
+            {
+                    new { name = "mark-id-idx", index = new { fields = new[] { "data.markId" } } },
+                    new { name = "mark-data-idx", index = new { fields = new[] { "data" } } },
+                    new { name = "timeStamp-data-idx", index = new { fields = new[] { "data.trueApiAnswerProperties.reqTimestamp" } } }
+                };
+
+            return await CreateIndexesForDatabase(httpClient, DatabaseNames.MarksDbName, indexes, cancellationToken);
+        }
+
+        private async Task<bool> CreateStatisticIndexes(HttpClient httpClient, CancellationToken cancellationToken)
+        {
+            var indexes = new[]
+            {
+                    new { name = "date-time-idx", index = new { fields = new[] { "data.checkDate" } } },
+                    new { name = "date-sgtin", index = new { fields = new[] { "data.sGtin" } } }
+                };
+
+            return await CreateIndexesForDatabase(httpClient, DatabaseNames.MarkCheckingStatistic, indexes, cancellationToken);
+        }
+
+        private async Task<bool> CreateIndexesForDatabase(HttpClient httpClient, string databaseName, object[] indexes, CancellationToken cancellationToken)
+        {
+            foreach (var index in indexes)
+            {
+                var indexJson = JsonSerializer.Serialize(index);
+                var content = new StringContent(indexJson, Encoding.UTF8, "application/json");
+
+                var responseResult = await httpClient.SendRequestSafelyAsync(
+                    client => client.PostAsync($"/{databaseName}/_index", content, cancellationToken),
+                    _logger,
+                    $"создание индекса для базы {databaseName}");
+
+                if (responseResult.IsSuccess)
+                    _logger.LogDebug("Индекс для базы {DatabaseName} создан успешно", databaseName);
+                else
+                    _logger.LogWarning("Не удалось создать индекс для базы {DatabaseName}: {StatusCode}", databaseName, responseResult.Value.StatusCode);
+            }
+
+            return true;
+        }
     }
 }
+

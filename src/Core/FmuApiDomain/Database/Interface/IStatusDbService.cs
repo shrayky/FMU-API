@@ -6,5 +6,6 @@ namespace FmuApiDomain.Database.Interface
     {
         Task<bool> CheckAvailability(string databaseUrl, CancellationToken cancellationToken = default);
         Task<bool> EnsureDatabasesExists(CouchDbConnection connection, string[] databasesNames, CancellationToken cancellationToken);
+        Task<bool> EnsureIndexesExist(CouchDbConnection connection, CancellationToken cancellationToken = default);
     }
 }

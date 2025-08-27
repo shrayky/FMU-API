@@ -77,7 +77,14 @@ namespace CouchDb.Workers
             if (!dbOnline)
                 return false;
 
-            return await _statusDbService.EnsureDatabasesExists(databaseConfig, DatabaseNames.Names(), stoppingToken);
+            var dbExists = await _statusDbService.EnsureDatabasesExists(databaseConfig, DatabaseNames.Names(), stoppingToken);
+
+            if (!dbExists)
+                return false;
+
+            await _statusDbService.EnsureIndexesExist(databaseConfig, stoppingToken);
+            
+            return true;
         }
 
     }

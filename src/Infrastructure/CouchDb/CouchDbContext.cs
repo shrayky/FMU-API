@@ -30,13 +30,17 @@ namespace CouchDb
         protected override void OnDatabaseCreating(CouchDatabaseBuilder databaseBuilder)
         {
             databaseBuilder.Document<CouchDoc<MarkEntity>>().ToDatabase(DatabaseNames.MarksDbName)
-                .HasIndex("mark-id-idx", i => i.IndexBy(c => c.Data.MarkId))
-                .HasIndex("mark-data-idx", i => i.IndexBy(c => c.Data))
-                .HasIndex("timeStamp-data-idx", i => i.IndexBy(c => c.Data.TrueApiAnswerProperties.ReqTimestamp));
+                //.HasIndex("mark-id-idx", i => i.IndexBy(c => c.Data.MarkId))
+                //.HasIndex("mark-data-idx", i => i.IndexBy(c => c.Data))
+                //.HasIndex("timeStamp-data-idx", i => i.IndexBy(c => c.Data.TrueApiAnswerProperties.ReqTimestamp))
+                ;
+
             databaseBuilder.Document<CouchDoc<DocumentEntity>>().ToDatabase(DatabaseNames.DocumentsDbName);
+
             databaseBuilder.Document<CouchDoc<StatisticEntity>>().ToDatabase(DatabaseNames.MarkCheckingStatistic)
                     .HasIndex("date-time-idx", p => p.IndexBy(c => c.Data.checkDate))
-                    .HasIndex("date-sgtin", p => p.IndexBy(c => c.Data.SGtin));
+                    .HasIndex("date-sgtin", p => p.IndexBy(c => c.Data.SGtin))
+                    ;
 
             // устаревшие базы, для совместимости:
             Сompatibility9_102(databaseBuilder);

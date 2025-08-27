@@ -111,6 +111,7 @@ namespace CouchDb.Repositories
                 markSearchResult = result.Select(p => p.Data).ToList();
             }
             catch (Exception ex) {
+                _logger.LogError("Ошибка получения данных по маркам {ex}", ex);
                 return Result.Failure<MarkSearchResult>($"Ошибка запроса к БД {ex.Message}");
             }
             
