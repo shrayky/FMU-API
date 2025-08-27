@@ -11,9 +11,6 @@ class DatabaseConnectionConfigurationElement {
             serverDbAddress: "Адрес сервера CouchDb",
             user: "Пользователь",
             password: "Пароль",
-            dbMarks: "База данных марок",
-            dbCashDocs: "База документов кассы",
-            dbAlcoStamps: "База марок алкоголя",
             bulkBatchSize: "Размер пакета",
             bulkParallelTasks: "Количество параллельных задач",
             bulkLabel: "Параметры пакетной обработки"
@@ -25,9 +22,6 @@ class DatabaseConnectionConfigurationElement {
             this.serverDbAddress = config.database.netAddress;
             this.userName = config.database.userName;
             this.userPassword = config.database.password;
-            this.marksStateDbName = config.database.marksStateDbName;
-            this.frontolDocumentsDbName = config.database.frontolDocumentsDbName;
-            this.alcoStampsDbName = config.database.alcoStampsDbName;
             this.enable = config.database.enable;
             this.bulkBatchSize = config.database.bulkBatchSize;
             this.bulkParallelTasks = config.database.bulkParallelTasks;
@@ -71,9 +65,6 @@ class DatabaseConnectionConfigurationElement {
                                     PasswordBox(this.LABELS.password, "database.password", { value: this.userPassword })
                                 ]
                             },
-                            Text(this.LABELS.dbMarks, "database.marksStateDbName", this.marksStateDbName, couchDbNameValidation),
-                            Text(this.LABELS.dbCashDocs, "database.frontolDocumentsDbName", this.frontolDocumentsDbName, couchDbNameValidation),
-                            Text(this.LABELS.dbAlcoStamps, "database.alcoStampsDbName", this.alcoStampsDbName, couchDbNameValidation),
                             Label("lBulkConfig", this.LABELS.bulkLabel),
                             {
                                 padding: padding,
