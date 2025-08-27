@@ -1,5 +1,4 @@
-﻿using FmuApiApplication.Services.State;
-using FmuApiDomain.Configuration;
+﻿using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.Hosting;

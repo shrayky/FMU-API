@@ -1,9 +1,6 @@
-﻿using FmuApiApplication.Services.State;
-using FmuApiDomain.Authentication;
-using FmuApiDomain.Authentication.Models;
+﻿using FmuApiDomain.Authentication.Models;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
