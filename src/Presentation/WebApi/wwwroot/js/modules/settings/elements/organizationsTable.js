@@ -356,6 +356,13 @@ class OrganizationsConfigurationElement {
                 });
 
             } catch (error) {
+                if (error.name === 'TypeError' || 
+                    error.message.includes('fetch') || 
+                    error.message.includes('Failed to fetch') ||
+                    error.message.includes('NetworkError') ||
+                    error.message.includes('ERR_CONNECTION_REFUSED')) {
+                    return;
+                }
                 console.error("Ошибка при получении статусов ЛМ:", error);
             }
         };
