@@ -218,6 +218,9 @@ class MarksView {
         if (!table)
             return;
 
+        if (!data)
+            return;
+
         const tableData = data.marks.map(mark => ({
             id: mark.id,
             markId: mark.markId,
@@ -231,6 +234,9 @@ class MarksView {
     }
 
     _updatePagination(data) {
+        if (!data)
+            return;
+
         const prevButton = $$(this.NAMES.prevButton);
         const nextButton = $$(this.NAMES.nextButton);
         const paginationInfo = $$(this.NAMES.paginationInfo);
