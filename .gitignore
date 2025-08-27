@@ -362,7 +362,14 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
+
 # Webix library folder
 FmuApi.API/wwwroot/lib/webix/
 /FmuApi.API/images/fmu-api-container-image.tar.gz
 .vscode
+
+FmuApi.API/wwwroot/bundle/index.js
+*proposal.md
+/TemplateEngineHost/vs
+/src/Presentation/WebApi/wwwroot/bundle/index.js
+/src/Presentation/WebApi/wwwroot/bundle/index.js
