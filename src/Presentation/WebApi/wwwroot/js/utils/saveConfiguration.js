@@ -10,8 +10,6 @@ export function saveConfiguration(formId) {
         .then(answer => {
             let packet = answer.json();
 
-            console.log(packet);
-
             if (!packet.isSuccess) {
                 webix.message(packet);
                 return;
