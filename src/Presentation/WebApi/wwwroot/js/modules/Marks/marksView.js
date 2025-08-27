@@ -177,28 +177,39 @@ class MarksView {
     }
 
     async _loadMarks() {
-        try {
-            const url = new URL(this.marksApiAddress, window.location.origin);
-            url.searchParams.set('page', this.currentPage.toString());
-            url.searchParams.set('pageSize', this.pageSize.toString());
-            if (this.searchTerm) {
-                url.searchParams.set('search', this.searchTerm);
-            }
+        const url = new URL(this.marksApiAddress, window.location.origin);
+        url.searchParams.set('page', this.currentPage.toString());
+        url.searchParams.set('pageSize', this.pageSize.toString());
+        
+        if (this.searchTerm) {
+            url.searchParams.set('search', this.searchTerm);
+        }
 
+        let data;
+
+        try {
             const response = await fetch(url);
             
-            if (!response.ok)
-                throw new Error(`Ошибка получения данных ${response.status}`);
+            if (!response.ok) {
+                throw new Error(`Ошибка получения данных ${response.status} ${response.statusText}`);
+            }
 
-            const data = await response.json();
-            
-            this._updateMarksTable(data);
-            this._updatePagination(data);
-
+            data = await response.json();
         } catch (error) {
+            if (error.name === 'TypeError' || 
+                error.message.includes('fetch') || 
+                error.message.includes('Failed to fetch') ||
+                error.message.includes('NetworkError') ||
+                error.message.includes('ERR_CONNECTION_REFUSED')) {
+                return;
+            }
+
             console.error("Ошибка при загрузке марок:", error);
             webix.message({ text: "Ошибка при загрузке марок", type: "error" });
         }
+
+        this._updateMarksTable(data);
+        this._updatePagination(data);
     }
 
     _updateMarksTable(data) {

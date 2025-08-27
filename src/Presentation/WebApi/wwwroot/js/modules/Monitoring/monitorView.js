@@ -188,6 +188,14 @@ class MonitorView {
                 this._updateCheckStatistics(monitoringData.checkStatistics, monitoringData.couchDbOnLine);
 
             } catch (error) {
+                if (error.name === 'TypeError' || 
+                    error.message.includes('fetch') || 
+                    error.message.includes('Failed to fetch') ||
+                    error.message.includes('NetworkError') ||
+                    error.message.includes('ERR_CONNECTION_REFUSED')) {
+                    return;
+                }
+                
                 console.error("Ошибка при получении данных о состоянии сервиса:", error);
             }
         };
