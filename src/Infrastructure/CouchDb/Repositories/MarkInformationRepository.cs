@@ -1,4 +1,4 @@
-﻿using CouchDB.Driver.Extensions;
+﻿using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.MarkInformation.Entities;
 using FmuApiDomain.MarkInformation.Enums;
@@ -69,7 +69,7 @@ namespace CouchDb.Repositories
             return await CreateBulkAsync(markEntities);
         }
 
-        public async Task<MarkSearchResult> SearchMarkData(string searchTerm, int page, int pageSize)
+        public async Task<Result<MarkSearchResult>> SearchMarkData(string searchTerm, int page, int pageSize)
         {
             if (_context == null)
                 return new();
@@ -103,18 +103,29 @@ namespace CouchDb.Repositories
                 };
             }
 
-            var result = await _database.QueryAsync(mangoQuery);
-            var marks = result.ToList();
+            List<MarkEntity> markSearchResult;
 
-            return new MarkSearchResult
+            try
             {
-                Marks = marks.Select(m => m.Data).ToList(),
+                var result = await _database.QueryAsync(mangoQuery);
+                markSearchResult = result.Select(p => p.Data).ToList();
+            }
+            catch (Exception ex) {
+                return Result.Failure<MarkSearchResult>($"Ошибка запроса к БД {ex.Message}");
+            }
+            
+
+            var answer = new MarkSearchResult
+            {
+                Marks = markSearchResult,
                 Count = totalCount,
                 CurrentPage = page,
                 PageSize = pageSize,
                 TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
                 SearchTerm = searchTerm
             };
+
+            return Result.Success(answer);
         }
     }
 }

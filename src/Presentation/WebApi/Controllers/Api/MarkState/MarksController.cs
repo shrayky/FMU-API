@@ -38,19 +38,12 @@ namespace WebApi.Controllers.Api.MarkState
             if (pageSize < 1 || pageSize > 100) 
                 pageSize = 50;
 
-            try
-            {
-                var result = await _markRepository.SearchMarkData(
-                    search ?? string.Empty,
-                    page,
-                    pageSize);
+            var result = await _markRepository.SearchMarkData(search ?? string.Empty, page, pageSize);
 
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Ошибка при получении списка марок: {ex.Message}");
-            }
+            if (result.IsFailure)
+                return StatusCode(500, result.Error);
+
+            return Ok(result.Value);
         }
 
     }

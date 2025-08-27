@@ -1,4 +1,5 @@
-﻿using FmuApiDomain.MarkInformation.Entities;
+﻿using CSharpFunctionalExtensions;
+using FmuApiDomain.MarkInformation.Entities;
 using FmuApiDomain.MarkInformation.Models;
 
 namespace FmuApiDomain.Repositories
@@ -10,6 +11,6 @@ namespace FmuApiDomain.Repositories
         Task<MarkEntity> AddAsync(MarkEntity mark);
         Task<List<MarkEntity>> GetDocumentsAsync(List<string> gtins);
         Task<bool> AddRangeAsync(List<MarkEntity> markEntities);
-        Task<MarkSearchResult> SearchMarkData(string searchTerm, int page, int pageSize);
+        Task<Result<MarkSearchResult>> SearchMarkData(string searchTerm, int page, int pageSize);
     }
 }
