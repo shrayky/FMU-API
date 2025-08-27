@@ -34,6 +34,9 @@ namespace WebApi.Extensions
                 builder.Services.AddHostedService<InternetConnectionCheckWorker>();
             }
 
+            if (DateTime.Today <= new DateTime(2025, 9, 1))
+                builder.Services.AddHostedService<AutoConfigurationApply250901Worker>();
+
             builder.Services.AddHttpClient<AlcoUnitGateway>("alcoUnit", options =>
             {
                 options.BaseAddress = new Uri(settings.FrontolAlcoUnit.NetAdres);
