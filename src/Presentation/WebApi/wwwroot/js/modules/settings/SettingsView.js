@@ -60,7 +60,7 @@ export default function SettingsView(id) {
                 const form = $$(id);
                 const scrollview = $$("settingsScroll").getBody();
 
-                webix.extend($$(id), webix.ProgressBar);
+                webix.extend(form, webix.ProgressBar);
 
                 try {
                     form.showProgress({
