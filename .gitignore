@@ -373,3 +373,5 @@ FmuApi.API/wwwroot/bundle/index.js
 /TemplateEngineHost/vs
 /src/Presentation/WebApi/wwwroot/bundle/index.js
 /src/Presentation/WebApi/wwwroot/bundle/index.js
+/src/Presentation/WebApi/wwwroot/lib/_webix
+/src/Presentation/WebApi/wwwroot/lib/webix_gpl
