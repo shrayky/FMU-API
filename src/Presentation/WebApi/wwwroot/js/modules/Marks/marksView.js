@@ -14,7 +14,6 @@ class MarksView {
             formTitle: "FMU-API: Марки",
             search: "Поиск по номеру марки",
             totalMarks: "Всего марок: ",
-            page: "Страница: ",
             noData: "Нет данных",
             markId: "Номер марки",
             state: "Состояние",
@@ -31,8 +30,6 @@ class MarksView {
             prevButton: "prevButton",
             nextButton: "nextButton"
         }
-
-        this._loadMarks();
     }
 
     loadConfig() {
@@ -74,8 +71,9 @@ class MarksView {
                     {
                         view: "label",
                         id: this.NAMES.paginationInfo,
-                        label: this.LABELS.page + "1",
-                        width: 150
+                        label: "",
+                        width: 150,
+                        align: "center"
                     },
                     {
                         view: "button",
@@ -89,7 +87,6 @@ class MarksView {
                 ]
             },
             this._marksTable(),
-            //this._paginationControls(),
             {}
         ];
 
@@ -97,11 +94,19 @@ class MarksView {
             view: "form",
             id: this.id,
             name: this.formName,
-            disabled: false,
-            elements: formElements
+            disabled: true,
+            elements: formElements,
         }
 
         return form;
+    }
+
+    delayedDataLoading() {
+        setTimeout(() => {
+            this._loadMarks();
+        }, 500);
+
+        return this;
     }
 
     _marksTable() {
@@ -112,24 +117,16 @@ class MarksView {
                 { 
                     id: "markId", 
                     header: this.LABELS.markId, 
-                    width: 200, 
+                    width: 300, 
                     sort: "string",
-                    fillspace: true
+                    fillspace: true,
+                    format: webix.template.escape
                 },
                 { 
                     id: "state",
                     header: this.LABELS.state,
                     width: 120,
                     sort: "string",
-                    template: function(obj) {
-                        const colors = {
-                            'Stock': '#00BFFF',
-                            'Sold': '#FFA500',
-                            'Returned': '#FF0000'
-                        };
-                        const color = colors[obj.state] || '#FFFFFF';
-                        return `<span style="color: ${color};">${obj.state}</span>`;
-                    }
                 },
                 { 
                     id: "checkDate", 
@@ -141,7 +138,7 @@ class MarksView {
             autoheight: true,
             scroll: false,
             select: false,
-            data: []
+            data: [],
         }
     }
 
@@ -177,6 +174,16 @@ class MarksView {
     }
 
     async _loadMarks() {
+        
+        let form = $$(this.id);
+
+        //if (form)
+        //    form.disable();
+        webix.extend(form, webix.ProgressBar);
+        form.showProgress({
+            type: "icon",
+        });
+
         const url = new URL(this.marksApiAddress, window.location.origin);
         url.searchParams.set('page', this.currentPage.toString());
         url.searchParams.set('pageSize', this.pageSize.toString());
@@ -195,6 +202,8 @@ class MarksView {
             }
 
             data = await response.json();
+
+
         } catch (error) {
             if (error.name === 'TypeError' || 
                 error.message.includes('fetch') || 
@@ -203,22 +212,29 @@ class MarksView {
                 error.message.includes('ERR_CONNECTION_REFUSED')) {
                 return;
             }
-
+            //form.enable();
+            form.hideProgress();
             console.error("Ошибка при загрузке марок:", error);
             webix.message({ text: "Ошибка при загрузке марок", type: "error" });
+        }
+        
+        if (!data) {
+            //form.enable();
+            form.hideProgress();
+            return;
         }
 
         this._updateMarksTable(data);
         this._updatePagination(data);
+
+        form.enable();
+        form.hideProgress();
     }
 
     _updateMarksTable(data) {
         const table = $$(this.NAMES.marksTable);
         
         if (!table)
-            return;
-
-        if (!data)
             return;
 
         const tableData = data.marks.map(mark => ({
@@ -231,12 +247,10 @@ class MarksView {
 
         table.clearAll();
         table.parse(tableData);
+        table.resize();
     }
 
     _updatePagination(data) {
-        if (!data)
-            return;
-
         const prevButton = $$(this.NAMES.prevButton);
         const nextButton = $$(this.NAMES.nextButton);
         const paginationInfo = $$(this.NAMES.paginationInfo);
@@ -257,8 +271,7 @@ class MarksView {
 
         if (paginationInfo) {
             paginationInfo.setValue(
-                `${this.LABELS.page}${data.currentPage} из ${data.totalPages} ` +
-                `(${this.LABELS.totalMarks}${data.totalCount})`
+                `${data.currentPage} из ${data.totalPages}`
             );
         }
     }
@@ -267,6 +280,7 @@ class MarksView {
         const searchInput = $$(this.NAMES.searchInput);
         if (searchInput) {
             this.searchTerm = searchInput.getValue();
+            searchInput.focus();
         }
         this.currentPage = 1;
         this._loadMarks();
@@ -281,7 +295,10 @@ class MarksView {
 }
 
 export default function (id) {
-    return new MarksView(id)
+    const view = new MarksView(id)
         .loadConfig()
+        .delayedDataLoading()
         .render();
+
+    return view;
 }
