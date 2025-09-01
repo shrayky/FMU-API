@@ -177,8 +177,6 @@ class MarksView {
         
         let form = $$(this.id);
 
-        //if (form)
-        //    form.disable();
         webix.extend(form, webix.ProgressBar);
         form.showProgress({
             type: "icon",
@@ -212,14 +210,12 @@ class MarksView {
                 error.message.includes('ERR_CONNECTION_REFUSED')) {
                 return;
             }
-            //form.enable();
             form.hideProgress();
             console.error("Ошибка при загрузке марок:", error);
             webix.message({ text: "Ошибка при загрузке марок", type: "error" });
         }
         
         if (!data) {
-            //form.enable();
             form.hideProgress();
             return;
         }

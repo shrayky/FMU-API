@@ -47,10 +47,8 @@ namespace FmuApiApplication.Documents
         private static CheckSellDocument CreateObject(RequestDocument requestDocument, IServiceProvider provider)
             => new(requestDocument, provider);
 
-
         public static IFrontolDocumentService Create(RequestDocument requestDocument, IServiceProvider provider)
             => CreateObject(requestDocument, provider);
-
 
         public async Task<Result<FmuAnswer>> ActionAsync()
         {
