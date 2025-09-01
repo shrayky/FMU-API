@@ -1,5 +1,6 @@
 ﻿using CouchDb.Documents;
 using CouchDB.Driver;
+using CSharpFunctionalExtensions;
 using Flurl.Http;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Configuration.Options;
@@ -14,7 +15,7 @@ namespace CouchDb.Repositories
         protected readonly ILogger _logger;
         protected readonly CouchDbContext _context;
         protected readonly ICouchDatabase<CouchDoc<T>> _database;
-        private readonly IParametersService _appConfiguration;
+        protected readonly IParametersService _appConfiguration;
         protected readonly IApplicationState _appState;
 
         protected readonly CouchDbConnection _configuration;
@@ -155,6 +156,21 @@ namespace CouchDb.Repositories
                 },
                 "GetListById",
                 new List<T>());
+        }
+
+        public async Task<Result<List<T>>> ExecuteMangoQueryAsync(object mangoQuery)
+        {
+            try
+            {
+                var result = await _database.QueryAsync(mangoQuery);
+                var data = result.Select(p => p.Data).ToList();
+                return Result.Success(data);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Ошибка выполнения Mango запроса: {ex}", ex);
+                return Result.Failure<List<T>>($"Ошибка запроса к БД: {ex.Message}");
+            }
         }
 
         private async Task<CouchDoc<T>?> CouchDocGet(string id)

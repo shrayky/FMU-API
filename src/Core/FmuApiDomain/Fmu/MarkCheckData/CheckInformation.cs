@@ -14,8 +14,10 @@ namespace FmuApiDomain.Fmu.MarkCheckData
         [JsonPropertyName("reqTimestamp")]
         public long ReqTimestamp { get; set; } = 0;
         [JsonPropertyName("inst")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string Inst { get; set; } = "";
         [JsonPropertyName("version")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string Version { get; set; } = "";
     }
 }

@@ -66,14 +66,15 @@ namespace FmuApiDomain.Fmu.Document
                 Response = checkInformation
             };
 
+            var clearedReqId = Truemark_response.ReqId.Split("&")[0];
+
             checkInformation.Description = Truemark_response.Description;
-            checkInformation.ReqId = Truemark_response.ReqId;
+            checkInformation.ReqId = clearedReqId;
             checkInformation.ReqTimestamp = Truemark_response.ReqTimestamp;
-            checkInformation.Inst = Truemark_response.Inst;
             checkInformation.Version = Truemark_response.Version;
+            checkInformation.Inst = Truemark_response.Inst;
 
             TrueMarkResponses.Add(checkResult);
-            
         }
 
         public FmuAnswer()

@@ -163,17 +163,17 @@ namespace FmuApiApplication.Mark.Services
             string xApiKey = _configuration.OrganisationConfig.XapiKey(organizationId);
 
             if (string.IsNullOrEmpty(xApiKey))
-                return MarkCheckResult.Failure($"Не получен XAPIKEY для организации с кодом {organizationId}, offline проверка {cis} невозможна.");
+                return MarkCheckResult.Failure($"Не получен XAPIKEY для организации с кодом {organizationId}, off-line проверка {cis} невозможна.");
 
             LocalModuleConnection connection = _configuration.OrganisationConfig.LocalModuleConnection(organizationId);
 
             if (!connection.Enable)
-                return MarkCheckResult.Failure($"Локальный модуль отключен для организации с кодом {organizationId}, offline проверка {cis} невозможна.");
+                return MarkCheckResult.Failure($"Локальный модуль отключен для организации с кодом {organizationId}, off-line проверка {cis} невозможна.");
 
             var lmState = _applicationState.OrganizationLocalModuleStatus(organizationId);
 
             if (lmState != LocalModuleStatus.Ready)
-                return MarkCheckResult.Failure($"Локальный модуль для организации с кодом {organizationId} находится в состоянии {lmState}, offline проверка {cis} невозможна.");
+                return MarkCheckResult.Failure($"Локальный модуль для организации с кодом {organizationId} находится в состоянии {lmState}, off-line проверка {cis} невозможна.");
 
             Result<CheckMarksDataTrueApi> trueMarkCheckResult;
 
@@ -183,8 +183,8 @@ namespace FmuApiApplication.Mark.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Ошибка при offline проверке марки {Code}", cis);
-                return MarkCheckResult.Failure($"Ошибка offline проверки: {ex.Message}");
+                _logger.LogError(ex, "Ошибка при off-line проверке марки {Code}", cis);
+                return MarkCheckResult.Failure($"Ошибка off-line проверки: {ex.Message}");
             }
 
             if (trueMarkCheckResult.IsFailure)
@@ -218,23 +218,20 @@ namespace FmuApiApplication.Mark.Services
                 {
                     Code = trueMarkCheckResult.Value.Code,
                     Description = trueMarkCheckResult.Value.Description,
-                    ReqId = _configuration.SaleControlConfig.SendLocalModuleInformationalInRequestId ? 
-                                                             trueMarkCheckResult.Value.ReqId : 
-                                                             $"{trueMarkCheckResult.Value.ReqId}&{trueMarkCheckResult.Value.Inst}&{trueMarkCheckResult.Value.Version}",
+                    ReqId = trueMarkCheckResult.Value.ReqId,
                     ReqTimestamp = trueMarkCheckResult.Value.ReqTimestamp,
                     Inst = trueMarkCheckResult.Value.Inst,
                     Version = trueMarkCheckResult.Value.Version
                 },
             };
 
-            if (_configuration.SaleControlConfig.SendLocalModuleInformationalInRequestId)
-                result.TrueMarkData.ReqId = $"{trueMarkCheckResult.Value.ReqId}&Inst{trueMarkCheckResult.Value.Inst}&Ver{trueMarkCheckResult.Value.Version}";
-            else
-                result.TrueMarkData.ReqId = trueMarkCheckResult.Value.ReqId;
+            result.TrueMarkData.ReqId = _configuration.SaleControlConfig.SendLocalModuleInformationalInRequestId ?
+                $"{trueMarkCheckResult.Value.ReqId}&Inst={trueMarkCheckResult.Value.Inst}&Ver={trueMarkCheckResult.Value.Version}"
+                : trueMarkCheckResult.Value.ReqId;
 
-            result.SetMarkInformation(markInfo);
+           result.SetMarkInformation(markInfo);
 
-            return result;
+           return result;
         }
     }
 }
