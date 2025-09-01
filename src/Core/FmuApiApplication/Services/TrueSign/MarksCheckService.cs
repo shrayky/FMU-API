@@ -75,8 +75,7 @@ namespace FmuApiApplication.Services.TrueSign
                 if (result.IsSuccess)
                     return result.Value;
 
-                if (result.Error == "")
-                    attemptLost--;
+                attemptLost--;
             }
 
             return Result.Failure<CheckMarksDataTrueApi>("Ни один CDN сервер не ответил.");
