@@ -77,6 +77,56 @@ namespace CouchDb.Repositories
             var dbInfo = await _database.GetInfoAsync();
             var totalCount = dbInfo.DocCount;
 
+            Result<MarkSearchResult> searchResult;
+            
+            if (string.IsNullOrEmpty(searchTerm))
+                searchResult = await AllMarksWithPagination(page, pageSize, totalCount);
+            else
+                searchResult = await SearchMarksWithPagination(searchTerm, page, pageSize);
+
+            if (searchResult.IsFailure)
+                return Result.Failure<MarkSearchResult>(searchResult.Error);
+
+            return searchResult;
+        }
+
+        private async Task<Result<MarkSearchResult>> SearchMarksWithPagination(string searchTerm, int page, int pageSize)
+        {
+            var searchQuery = new
+            {
+                selector = new Dictionary<string, object>
+                {
+                    ["data"] = new Dictionary<string, object> { ["$exists"] = true },
+                    ["data.markId"] = new Dictionary<string, object> { ["$regex"] = searchTerm }
+                },
+                sort = new[] { new Dictionary<string, string> { ["data.trueApiAnswerProperties.reqTimestamp"] = "desc" } }
+            };
+
+            var allResults = await ExecuteMangoQueryAsync(searchQuery);
+
+            if (allResults.IsFailure)
+                return Result.Failure<MarkSearchResult>(allResults.Error);
+
+            var paginatedResults = allResults.Value
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            var answer = new MarkSearchResult
+            {
+                Marks = paginatedResults,
+                Count = allResults.Value.Count,
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling((double)allResults.Value.Count / pageSize),
+                SearchTerm = searchTerm
+            };
+
+            return Result.Success(answer);
+        }
+
+        private async Task<Result<MarkSearchResult>> AllMarksWithPagination(int page, int pageSize, int totalCount)
+        {
             var mangoQuery = new
             {
                 selector = new Dictionary<string, object>
@@ -88,42 +138,16 @@ namespace CouchDb.Repositories
                 skip = (page - 1) * pageSize
             };
 
-            if (!string.IsNullOrEmpty(searchTerm))
-            {
-                mangoQuery = new
-                {
-                    selector = new Dictionary<string, object>
-                    {
-                        ["data"] = new Dictionary<string, object> { ["$exists"] = true },
-                        ["data.markId"] = new Dictionary<string, object> { ["$regex"] = searchTerm }
-                    },
-                    sort = new[] { new Dictionary<string, string> { ["data.trueApiAnswerProperties.reqTimestamp"] = "desc" } },
-                    limit = pageSize,
-                    skip = (page - 1) * pageSize
-                };
-            }
-
-            List<MarkEntity> markSearchResult;
-
-            try
-            {
-                var result = await _database.QueryAsync(mangoQuery);
-                markSearchResult = result.Select(p => p.Data).ToList();
-            }
-            catch (Exception ex) {
-                _logger.LogError("Ошибка получения данных по маркам {ex}", ex);
-                return Result.Failure<MarkSearchResult>($"Ошибка запроса к БД {ex.Message}");
-            }
-            
+            var paginatedResults = await ExecuteMangoQueryAsync(mangoQuery);
 
             var answer = new MarkSearchResult
             {
-                Marks = markSearchResult,
+                Marks = paginatedResults.Value,
                 Count = totalCount,
                 CurrentPage = page,
                 PageSize = pageSize,
                 TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
-                SearchTerm = searchTerm
+                SearchTerm = string.Empty
             };
 
             return Result.Success(answer);

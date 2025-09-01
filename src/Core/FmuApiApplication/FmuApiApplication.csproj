@@ -29,7 +29,6 @@
 
   <ItemGroup>
     <Folder Include="Installer\Interfaces\" />
-    <Folder Include="Services\MarkServices\" />
   </ItemGroup>
 
 </Project>

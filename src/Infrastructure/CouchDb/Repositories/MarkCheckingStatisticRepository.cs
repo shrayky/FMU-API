@@ -98,8 +98,15 @@ namespace CouchDb.Repositories
             if (_context == null)
                 return new();
 
+            if (!_appState.CouchDbOnline())
+                return new();
+
+            var appConfig = await _appConfiguration.CurrentAsync();
+            var queryLimit = appConfig.Database.QueryLimit == 0 ? 1000000 : appConfig.Database.QueryLimit;
+
             var filteredMarks = await _database
                 .Where(p => p.Data.checkDate >= fromDate && p.Data.checkDate <= toDate)
+                .Take(queryLimit)
                 .ToListAsync();
 
             var statistics = new MarkCheckStatistics
@@ -111,6 +118,5 @@ namespace CouchDb.Repositories
 
             return statistics;
         }
-
     }
 }

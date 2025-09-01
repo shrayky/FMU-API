@@ -13,7 +13,8 @@ class DatabaseConnectionConfigurationElement {
             password: "Пароль",
             bulkBatchSize: "Размер пакета",
             bulkParallelTasks: "Количество параллельных задач",
-            bulkLabel: "Параметры пакетной обработки"
+            bulkLabel: "Параметры пакетной обработки",
+            queryLimit: "Максимальное количество записей для запроса выборки"
         };
     }
 
@@ -25,6 +26,7 @@ class DatabaseConnectionConfigurationElement {
             this.enable = config.database.enable;
             this.bulkBatchSize = config.database.bulkBatchSize;
             this.bulkParallelTasks = config.database.bulkParallelTasks;
+            this.queryLimit = config.database.queryLimit;
         }
 
         return this;
@@ -73,6 +75,7 @@ class DatabaseConnectionConfigurationElement {
                                     Number(this.LABELS.bulkParallelTasks, "database.bulkParallelTasks", this.bulkParallelTasks),
                                 ]
                             },
+                            Number(this.LABELS.queryLimit, "database.queryLimit", this.queryLimit),
                         ]
                     }
                 ]

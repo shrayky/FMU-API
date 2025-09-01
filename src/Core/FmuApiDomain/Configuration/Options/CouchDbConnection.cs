@@ -11,6 +11,7 @@ namespace FmuApiDomain.Configuration.Options
         public string Password { get; set; } = string.Empty;
         public int BulkBatchSize { get; set; } = 1000;
         public int BulkParallelTasks { get; set; } = 4;
+        public int QueryLimit { get; set; } = 1000000;
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? NetAdres { get; set; } = string.Empty;
