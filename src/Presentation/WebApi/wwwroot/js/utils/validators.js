@@ -49,7 +49,7 @@ export const windowsPathValidator = createValidator(
     ValidationType.WINDOWS_PATH,
     (value) => {
         if (!value || value.length > 260) return false; // MAX_PATH в Windows
-        return /^([a-zA-Z]:\\[^<>:"/\\|?*]+\\?)$|^(\\\\[^<>:"/\\|?*]+\\[^<>:"/\\|?*]+\\?)$/.test(value);
+        return /^([a-zA-Z]:\\(?:[^<>:"/\\|?*]+\\?)*)$|^(\\\\(?:[^<>:"/\\|?*]+\\?)*)$/.test(value);
     },
     "Введите корректный путь к каталогу Windows"
 );
