@@ -41,28 +41,31 @@ namespace ServicesAndDaemonsManager.Managers
 
         public bool Restart(string serviceName)
         {
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = "schtasks.exe",
-                Arguments = $"/create /tn \"Restart{serviceName}\" /tr \"sc restart {serviceName}\" /sc once /st {DateTime.Now.AddSeconds(10):HH:mm:ss} /f",
-                UseShellExecute = false,
-                RedirectStandardOutput = true
-            };
+            Environment.Exit(0);
+            return true;
+            
+            // var startInfo = new ProcessStartInfo
+            // {
+            //     FileName = "cmd.exe",
+            //     Arguments = $"sc stop {serviceName} && sc start {serviceName}",
+            //     UseShellExecute = false,
+            //     RedirectStandardOutput = true
+            // };
 
-            try
-            {
-                using var process = Process.Start(startInfo);
+            // try
+            // {
+            //     using var process = Process.Start(startInfo);
 
-                if (process is null)
-                    return false;
+            //     if (process is null)
+            //         return false;
                 
-                process.WaitForExit();
-                return process.ExitCode == 0;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            //     process.WaitForExit();
+            //     return process.ExitCode == 0;
+            // }
+            // catch (Exception)
+            // {
+            //     return false;
+            // }
         }
     }
 }
