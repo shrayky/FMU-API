@@ -3,7 +3,6 @@ using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Net.Http.Headers;
 using System.Net;
 
 namespace FmuApiApplication.Workers
@@ -15,8 +14,8 @@ namespace FmuApiApplication.Workers
         private readonly IApplicationState _applicationState;
         private readonly ILogger<InternetConnectionCheckWorker> _logger;
         
-        private readonly int CheckPeriodMinutes = 2;
-        private DateTime nextWorkDate = DateTime.Now;
+        private readonly int _checkPeriodMinutes = 2;
+        private DateTime _nextWorkDate = DateTime.Now;
         private readonly int _checkInterval = 60_000;
         private Parameters _configuration;
 
@@ -35,36 +34,31 @@ namespace FmuApiApplication.Workers
         
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            Dictionary<string, string> headers = new()
-            {
-                { HeaderNames.Accept, "text/html" },
-            };
-
             while (!stoppingToken.IsCancellationRequested)
             {
-                if (nextWorkDate >= DateTime.Now)
+                if (_nextWorkDate >= DateTime.Now)
                 {
                     await Task.Delay(_checkInterval, stoppingToken);
                     continue;
                 }
 
-                _configuration = _parametersService.Current();
+                _configuration = await _parametersService.CurrentAsync();
 
-                nextWorkDate = DateTime.Now.AddMinutes(CheckPeriodMinutes);
+                _nextWorkDate = DateTime.Now.AddMinutes(_checkPeriodMinutes);
 
-                bool online = false;
+                var online = false;
 
-                foreach (var siteAddress in _configuration.HostsToPing)
+                var hosts = _configuration.HostsToPing
+                    .Select(address => address.Value.Trim())
+                    .Where(address => address != string.Empty)
+                    .ToList();
+                
+                foreach (var address in hosts)
                 {
-                    var adr = siteAddress.Value.Trim();
-
-                    if (adr == string.Empty)
-                        continue;
-
-                    if (!adr.StartsWith("https://"))
-                        adr = $"https://{adr}";
-
-                    online = await CheckAsync(adr);
+                    if (address.StartsWith("http") || address.StartsWith("https"))
+                        online = await CheckAsync(address);
+                    else
+                        online = await CheckAsync($"https://{address}");
 
                     if (online)
                         break;
