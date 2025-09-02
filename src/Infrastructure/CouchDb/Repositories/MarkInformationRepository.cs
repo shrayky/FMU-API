@@ -74,6 +74,9 @@ namespace CouchDb.Repositories
             if (_context == null)
                 return new();
 
+            if (!_appState.CouchDbOnline() && _appState.NeedRestartService())
+                return new();
+
             var dbInfo = await _database.GetInfoAsync();
             var totalCount = dbInfo.DocCount;
 

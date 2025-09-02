@@ -98,7 +98,7 @@ namespace CouchDb.Repositories
             if (_context == null)
                 return new();
 
-            if (!_appState.CouchDbOnline())
+            if (!_appState.CouchDbOnline() && _appState.NeedRestartService())
                 return new();
 
             var appConfig = await _appConfiguration.CurrentAsync();
