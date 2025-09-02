@@ -11,7 +11,7 @@ using System.Reflection;
 
 namespace CouchDb
 {
-    public class CouchDbServicesRegistration
+    public static class CouchDbServicesRegistration
     {
         public static void AddService(IServiceCollection services)
         {
