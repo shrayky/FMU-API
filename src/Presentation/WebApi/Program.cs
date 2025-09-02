@@ -19,6 +19,7 @@ using Scalar.AspNetCore;
 using Serilog;
 using ServicesAndDaemonsManager;
 using Shared.Strings;
+using WebApi;
 using WebApi.Extensions;
 
 var slConsole = new LoggerConfiguration()
@@ -97,7 +98,7 @@ bool RunHttpApiService()
         builder.Host.UseWindowsService();
     }
 
-    //builder.Services.AddHostedService<StartWorker>();
+    builder.Services.AddHostedService<StartWorker>();
 
     var app = builder.Build();
 
