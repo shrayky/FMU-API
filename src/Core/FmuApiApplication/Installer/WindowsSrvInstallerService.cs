@@ -1,6 +1,7 @@
 ﻿using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Constants;
+using Shared.FilesFolders;
 using Shared.Strings;
 using System.Diagnostics;
 using System.Reflection;
@@ -54,7 +55,7 @@ namespace FmuApiApplication.Installer
             var bin = Path.Combine(_installDirectory, "fmu-api.exe");
             var wwwroot = Path.Combine(_installDirectory, "wwwroot");
 
-            ServiceController? existingService = ServiceController.GetServices().FirstOrDefault(ser => ser.ServiceName == _serviceName);
+            var existingService = ServiceController.GetServices().FirstOrDefault(ser => ser.ServiceName == _serviceName);
 
             if (existingService != null)
             {
@@ -119,6 +120,15 @@ namespace FmuApiApplication.Installer
                 }
             }
 
+            var checksum = StringHelpers.ArgumentValue(installerArgs, "--checksum", "");
+
+            if (checksum != string.Empty)
+            {
+                var dataFolder = Folders.CommonApplicationDataFolder(ApplicationInformation.Manufacture, ApplicationInformation.AppName);
+                var checkSumFileName = Path.Combine(dataFolder, "checksum.txt");
+                File.WriteAllText(checkSumFileName, checksum);
+            }
+
             return true;
 
         }
@@ -144,7 +154,7 @@ namespace FmuApiApplication.Installer
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 return false;
 
-            ServiceController? existingService = ServiceController.GetServices().FirstOrDefault(ser => ser.ServiceName == _serviceName);
+            var existingService = ServiceController.GetServices().FirstOrDefault(ser => ser.ServiceName == _serviceName);
 
             Process process = new();
             ProcessStartInfo startInfo = new()

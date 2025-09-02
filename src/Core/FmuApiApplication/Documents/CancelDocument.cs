@@ -64,7 +64,7 @@ namespace FmuApiApplication.Documents
 
         private async Task<Result> SendDocumentToAlcoUnitAsync()
         {
-            RequestDocument auDoc = _document;
+            var auDoc = _document;
 
             if (_configuration.FrontolAlcoUnit.NetAdres == string.Empty)
                 return Result.Success(auDoc);
