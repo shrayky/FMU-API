@@ -16,18 +16,11 @@ namespace FmuApiDomain.Configuration.Options
         [JsonConstructor]
         private AutoUpdateOptions()
         {
-
         }
 
-        public static AutoUpdateOptions Create()
-        {
-            return new();
-        }
+        public static AutoUpdateOptions Create() => new();
 
-        public int CanUpdateUntill()
-        {
-            return UntilHour == 0 ? 24 : UntilHour;
-        }
-
+        public int CanUpdateUntil() => UntilHour == 0 ? 24 : UntilHour;
+        
     }
 }
