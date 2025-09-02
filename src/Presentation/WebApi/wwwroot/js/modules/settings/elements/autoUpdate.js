@@ -1,6 +1,8 @@
 import { Label, Text, CheckBox, padding } from "../../../utils/ui.js";
 import { windowsPathValidation } from "../../../utils/validators.js";
 
+const ITALIC_SMALL_STYLE = { "font-style": "italic", "font-size": "smaller" };
+
 class AutoUpdateElement {
     constructor(id) {
         this.id = id;
@@ -10,8 +12,10 @@ class AutoUpdateElement {
             enabled: "Использовать",
             catalog: "Каталог с файлами обновления",
             hours: "Часы для автоматического обновления",
-            fileNameDescription: "служба ищет в указанном каталоге архив update.zip",
-            timeIntervalDescription: "если правая граница интервала 23:59, то ставьте значение 00"
+            fileNameDescription: "служба ищет в указанном каталоге архив update_{архитектура}_{операционная система}.zip",
+            fileNameExample: "какие должны быть имена файлов обновления: update_x64_win.zip, update_x64_linux.zip, update_x86_win.zip",
+            timeIntervalDescription: "если правая граница интервала 23:59, то ставьте значение 00",
+            checkUpdateIntervalDescription: "наличие файла обновления проверяется каждые 5 минут"
         };
         this.HOURS_COUNT = 24;
         this.TIME_COMBO_WIDTH = 60;
@@ -89,7 +93,13 @@ class AutoUpdateElement {
 
                             Label("fileNameDescription", this.LABELS.fileNameDescription,
                                 {
-                                    css: { "font-style": "italic", "font-size": "smaller" }
+                                    css: ITALIC_SMALL_STYLE
+                                }
+                            ),
+
+                            Label("fileNameExample", this.LABELS.fileNameExample,
+                                {
+                                    css: ITALIC_SMALL_STYLE
                                 }
                             ),
 
@@ -104,13 +114,18 @@ class AutoUpdateElement {
                                     {}
                                 ]
                             },
-
+                            
                             Label("timeIntervalDescription", this.LABELS.timeIntervalDescription,
                                 {
-                                    css: { "font-style": "italic", "font-size": "smaller" }
+                                    css: ITALIC_SMALL_STYLE
                                 }
                             ),
-                            
+
+                            Label("checkUpdateIntervalDescription", this.LABELS.checkUpdateIntervalDescription,
+                                {
+                                    css: ITALIC_SMALL_STYLE
+                                }
+                            ),
                         ],
                     }
                 ],
