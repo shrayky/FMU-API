@@ -18,7 +18,7 @@ namespace AutoUpdateWorkerService.Workers
 
         private Parameters _configuration;
 
-        private const int CheckIntervalMinutes = 5;
+        private const int CheckIntervalMinutes = 1;
 
         public AutoUpdateWorker(IParametersService parametersService, ILogger<AutoUpdateWorker> logger)
         {
