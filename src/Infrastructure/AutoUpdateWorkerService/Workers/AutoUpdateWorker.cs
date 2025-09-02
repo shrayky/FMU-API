@@ -1,6 +1,7 @@
 ﻿using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
+using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.Constants;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -16,40 +17,35 @@ namespace AutoUpdateWorkerService.Workers
         private readonly IParametersService _parametersService;
         private readonly ILogger<AutoUpdateWorker> _logger;
 
-        private Parameters _configuration;
-
-        private const int CheckIntervalMinutes = 1;
-
         public AutoUpdateWorker(IParametersService parametersService, ILogger<AutoUpdateWorker> logger)
         {
             _parametersService = parametersService;
             _logger = logger;
-
-            _configuration = _parametersService.Current();
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                await Task.Delay(TimeSpan.FromMinutes(CheckIntervalMinutes), stoppingToken);
+                var configuration = await _parametersService.CurrentAsync();
+                var checkIntervalMinutes = configuration.AutoUpdate.CheckUpdateIntervalMinutes;
+
+                await Task.Delay(TimeSpan.FromMinutes(checkIntervalMinutes), stoppingToken);
 
                 if (stoppingToken.IsCancellationRequested)
                     break;
 
-                _configuration = await _parametersService.CurrentAsync();
+                _logger.LogInformation("Проверяю наличие обновления в каталоге {UpdateFilesCatalog}", configuration.AutoUpdate.UpdateFilesCatalog);
 
-                var updateResult = CheckUpdates();
+                var updateResult = CheckUpdates(configuration.AutoUpdate);
 
                 if (updateResult.IsSuccess)
                     break;
             }
         }
 
-        private Result CheckUpdates()
+        private Result CheckUpdates(AutoUpdateOptions options)
         {
-            var options = _configuration.AutoUpdate;
-
             if (!options.Enabled || !(options.FromHour <= DateTime.Now.Hour && options.CanUpdateUntil() > DateTime.Now.Hour))
                 return Result.Success();
 

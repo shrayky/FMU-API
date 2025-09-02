@@ -12,6 +12,8 @@ namespace FmuApiDomain.Configuration.Options
         public int FromHour { get; private set; } = 0;
         [JsonInclude]
         private int UntilHour { get; set; } = 0;
+        [JsonInclude]
+        public int CheckUpdateIntervalMinutes { get; private set; } = 10;
 
         [JsonConstructor]
         private AutoUpdateOptions()

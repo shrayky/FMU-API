@@ -75,7 +75,7 @@ class DatabaseConnectionConfigurationElement {
                                     Number(this.LABELS.bulkParallelTasks, "database.bulkParallelTasks", this.bulkParallelTasks),
                                 ]
                             },
-                            Number(this.LABELS.queryLimit, "database.queryLimit", this.queryLimit),
+                            
                         ]
                     }
                 ]

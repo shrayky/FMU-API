@@ -1,4 +1,4 @@
-import { Label, Text, CheckBox, padding } from "../../../utils/ui.js";
+import { Label, Text, CheckBox, Number, padding } from "../../../utils/ui.js";
 import { windowsPathValidation } from "../../../utils/validators.js";
 
 const ITALIC_SMALL_STYLE = { "font-style": "italic", "font-size": "smaller" };
@@ -15,7 +15,7 @@ class AutoUpdateElement {
             fileNameDescription: "служба ищет в указанном каталоге архив update_{архитектура}_{операционная система}.zip",
             fileNameExample: "какие должны быть имена файлов обновления: update_x64_win.zip, update_x64_linux.zip, update_x86_win.zip",
             timeIntervalDescription: "если правая граница интервала 23:59, то ставьте значение 00",
-            checkUpdateIntervalDescription: "наличие файла обновления проверяется каждые 5 минут"
+            checkUpdateInterval: "Интервал проверки наличия файла обновления (минуты)",
         };
         this.HOURS_COUNT = 24;
         this.TIME_COMBO_WIDTH = 60;
@@ -54,6 +54,8 @@ class AutoUpdateElement {
 
             this.fromHour = fromHour - 1 || 0;
             this.untilHour = untilHour - 1 || 0;
+
+            this.checkUpdateIntervalMinutes = config?.autoUpdate?.checkUpdateIntervalMinutes ?? 10;
         }
         return this;
     }
@@ -121,11 +123,7 @@ class AutoUpdateElement {
                                 }
                             ),
 
-                            Label("checkUpdateIntervalDescription", this.LABELS.checkUpdateIntervalDescription,
-                                {
-                                    css: ITALIC_SMALL_STYLE
-                                }
-                            ),
+                            Number(this.LABELS.checkUpdateInterval, "autoUpdate.checkUpdateIntervalMinutes", this.checkUpdateIntervalMinutes),
                         ],
                     }
                 ],
