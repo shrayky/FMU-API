@@ -17,6 +17,7 @@ using FrontolDb;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Scalar.AspNetCore;
 using Serilog;
+using ServicesAndDaemonsManager;
 using Shared.Strings;
 using WebApi.Extensions;
 
@@ -50,9 +51,9 @@ if (OperatingSystem.IsWindows())
 
 bool RunHttpApiService()
 {
-    string dataFolder = StringHelpers.ArgumentValue(args, "--dataFolder", "");
+    var dataFolder = StringHelpers.ArgumentValue(args, "--dataFolder", "");
     
-    WebApplicationBuilder? builder = WebApplication.CreateBuilder();
+    var builder = WebApplication.CreateBuilder();
     var services = builder.Services;
 
     services.AddControllers();
@@ -83,7 +84,8 @@ bool RunHttpApiService()
     CouchDbServicesRegistration.AddService(services);
     FrontolDbService.AddService(services);
     CentralServerExchangeWorker.AddService(services);
-    AutoUpdateWorker.AddService(services);
+    AutoUpdateRegistrationExtension.AddService(services);
+    ServicesAndDaemonsRegistrationExtension.AddService(services);
 
     services.AddMarkServices();
     services.AddTransient<FrontolDocumentServiceFactory>();
