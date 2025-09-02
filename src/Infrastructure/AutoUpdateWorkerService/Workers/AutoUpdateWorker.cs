@@ -40,7 +40,7 @@ namespace AutoUpdateWorkerService.Workers
                 var updateResult = CheckUpdates(configuration.AutoUpdate);
 
                 if (updateResult.IsSuccess)
-                    break;
+                    continue;
             }
         }
 
