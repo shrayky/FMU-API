@@ -4,15 +4,13 @@ using Shared.FilesFolders;
 
 namespace LogService
 {
-    public class LogInformationPacket
+    public abstract class LogInformationPacket
     {
         public static async Task<LogDataPacket> CollectLogs(string selectedLogFileName)
         {
             LogDataPacket defaultAnswer = new();
 
-            var logFolderPath = string.Empty;
-
-            logFolderPath = Path.Combine(Folders.LogFolder(),
+            var logFolderPath = Path.Combine(Folders.LogFolder(),
                 ApplicationInformation.Manufacture,
                 ApplicationInformation.AppName,
                 "log");
@@ -22,14 +20,16 @@ namespace LogService
 
             var files = Directory.EnumerateFiles(logFolderPath, "fmu-api*.log");
 
-            if (!files.Any())
+            var enumerable = files.ToList();
+            
+            if (enumerable.Count == 0)
                 return defaultAnswer;
 
-            string uploadLogFileName = string.Empty;
-            string nowFileName = string.Empty;
-            string fileNameWithoutPrefix = string.Empty;
+            var uploadLogFileName = string.Empty;
+            var nowFileName = string.Empty;
+            var fileNameWithoutPrefix = string.Empty;
 
-            foreach (var file in files)
+            foreach (var file in enumerable)
             {
                 fileNameWithoutPrefix = Path.GetFileNameWithoutExtension(file).Replace(ApplicationInformation.AppName.ToLower(), "");
 
@@ -61,7 +61,12 @@ namespace LogService
             if (string.IsNullOrEmpty(uploadLogFileName))
                 return string.Empty;
 
-            string tempLog = Path.Combine(Path.GetDirectoryName(uploadLogFileName), "temp_slog.txt");
+            var directoryName = Path.GetDirectoryName(uploadLogFileName);
+            
+            if (directoryName == null)
+                return string.Empty;
+            
+            var tempLog = Path.Combine(directoryName, "temp_slog.txt");
 
             try
             {
@@ -72,7 +77,7 @@ namespace LogService
                 return string.Empty;
             }
 
-            string log = await File.ReadAllTextAsync(tempLog);
+            var log = await File.ReadAllTextAsync(tempLog);
 
             File.Delete(tempLog);
 
