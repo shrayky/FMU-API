@@ -62,5 +62,4 @@
 #*.rtf   diff=astextplain
 #*.RTF   diff=astextplain
 
-src/Presentation/wwwroot/js/webix/**/*.css linguist-vendored
-src/Presentation/wwwroot/js/webix/**/*.js linguist-vendored
+src/Presentation/wwwroot/ js/lib/** linguist-vendored
