@@ -9,7 +9,7 @@ class AutoUpdateElement {
         this.SETTINGS_ID = "autoUpdateSettings";
         this.LABELS = {
             title: "Автоматическое обновление",
-            enabled: "Использовать",
+            enabled: "Автообновление включено",
             catalog: "Каталог с файлами обновления",
             hours: "Часы для автоматического обновления",
             fileNameDescription: "служба ищет в указанном каталоге архив update_{архитектура}_{операционная система}.zip",
