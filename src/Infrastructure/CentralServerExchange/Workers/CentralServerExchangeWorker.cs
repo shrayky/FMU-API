@@ -18,6 +18,10 @@ namespace CentralServerExchange.Workers
         private readonly CentralServerExchangeService _exchangeService;
         private DateTime _nextExchangeTime;
 
+        private const int TryAfterErrorLimit = 10;
+        private const int StartDelayMinutes = 5;
+        private const int DelayAfterErrorMinutes = 1;
+        
         public CentralServerExchangeWorker(ILogger<CentralServerExchangeWorker> logger, HttpClient httpClient, IParametersService parametersService, ICdnService cdnService)
         {
             _logger = logger;
@@ -32,32 +36,37 @@ namespace CentralServerExchange.Workers
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            var tryCounts = 0;
+            
+            await Task.Delay(TimeSpan.FromMinutes(StartDelayMinutes), stoppingToken);
+            
             while (!stoppingToken.IsCancellationRequested)
             {
-                await Task.Delay(60_000, stoppingToken);
-
                 if (stoppingToken.IsCancellationRequested)
                     break;
 
-                var configuration = _parametersService.Current();
-
-                if (configuration.FmuApiCentralServer.Enabled)
-                    continue;
-
                 if (DateTime.Now < _nextExchangeTime)
                     continue;
+                    
+                var configuration = await _parametersService.CurrentAsync();
 
                 if (configuration.FmuApiCentralServer.Enabled)
-                    ActExchange();
+                {
+                    var result = await ActExchange();
+
+                    if (!result && tryCounts <= TryAfterErrorLimit) { 
+                        _nextExchangeTime = DateTime.Now.AddMinutes(DelayAfterErrorMinutes);
+                        tryCounts++;
+                        continue;
+                    }
+                }
 
                 _nextExchangeTime = DateTime.Now.AddMinutes(configuration.FmuApiCentralServer.ExchangeRequestInterval);
             }
         }
 
-        private async void ActExchange()
+        private async Task<bool> ActExchange()
         {
-            _logger.LogInformation("Starting exchange with central server");
-
             var parameters = await _parametersService.CurrentAsync();
             var cdnData = await _cdnService.GetCdnsAsync();
 
@@ -66,7 +75,7 @@ namespace CentralServerExchange.Workers
             if (requestData.IsFailure)
             {
                 _logger.LogError(requestData.Error);
-                return;
+                return false;
             }
 
             var exchangeResult = await _exchangeService.ActExchange(requestData.Value);
@@ -74,7 +83,7 @@ namespace CentralServerExchange.Workers
             if (exchangeResult.IsFailure)
             {
                 _logger.LogError("Exchange failed: {Error}", exchangeResult.Error);
-                return;
+                return false;
             }
 
             if (exchangeResult.Value.SoftwareUpdateAvailable)
@@ -88,6 +97,8 @@ namespace CentralServerExchange.Workers
                 _logger.LogInformation("New configuration ready to download from central server");
                 await DownloadConfiguration();
             }
+            
+            return true;
         }
 
         private async Task DownloadConfiguration()
