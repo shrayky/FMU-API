@@ -30,10 +30,8 @@ namespace WebApi.Controllers.Api.Monitoring
 
             var currentSettings = await _parametersService.CurrentAsync();
 
-            foreach (var printGroup in currentSettings.OrganisationConfig.PrintGroups)
+            foreach (var printGroup in currentSettings.OrganisationConfig.PrintGroups.Where(printGroup => printGroup.LocalModuleConnection.Enable))
             {
-                if (!printGroup.LocalModuleConnection.Enable)
-                    continue;
                 localModelInformation.Add(printGroup.LocalModuleConnection.ConnectionAddress, _applicationState.LocalModuleInformation(printGroup.Id));
             }
 

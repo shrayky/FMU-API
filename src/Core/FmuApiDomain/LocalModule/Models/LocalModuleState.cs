@@ -49,10 +49,13 @@ namespace FmuApiDomain.LocalModule.Models
             "service" => OperationMode.Service,
             _ => OperationMode.Unknown
         };
-
+        [JsonIgnore]
         public bool IsConfigured => Status != LocalModuleStatus.NotConfigured;
+        [JsonIgnore]
         public bool IsReady => Status == LocalModuleStatus.Ready;
+        [JsonIgnore]
         public bool HasSyncError => Status == LocalModuleStatus.SyncError;
+        [JsonIgnore]
         public bool IsInServiceMode => OperationMode == OperationMode.Service;
     }
 }

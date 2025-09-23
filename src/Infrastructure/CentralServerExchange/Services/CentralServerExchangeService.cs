@@ -1,40 +1,36 @@
 ﻿using System.Net.Http.Json;
+using CentralServerExchange.Dto.Answer;
+using CentralServerExchange.Dto.Request;
+using CentralServerExchange.Interfaces;
 using CSharpFunctionalExtensions;
-using FmuApiDomain.Node.Models;
+using FmuApiDomain.Attributes;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace CentralServerExchange.Services
 {
-    public class CentralServerExchangeService
+    [AutoRegisterService(ServiceLifetime.Singleton)]
+    public class CentralServerExchangeService : IExchangeService
     {
         private HttpClient HttpClient { get; init; }
-        private ILogger Logger { get; init; }
-        private string Url { get; init; }
+        private ILogger<CentralServerExchangeService> Logger { get; init; }
 
-        private CentralServerExchangeService(HttpClient httpClient, ILogger logger, string url)
+        public CentralServerExchangeService(ILogger<CentralServerExchangeService> logger, HttpClient httpClient)
         {
             HttpClient = httpClient;
             Logger = logger;
-            Url = url;
         }
 
-        public static CentralServerExchangeService Create(HttpClient httpClient, ILogger logger, string url)
+        public async Task<Result<FmuApiCentralResponse>> ActExchange(DataPacket request, string url) 
+            => await SafeActExchange(request, url);
+      
+        private async Task<Result<FmuApiCentralResponse>> SafeActExchange(DataPacket request,  string url)
         {
-            return new(httpClient, logger, url);
-        }
-
-        public async Task<Result<NodeDataResponse>> ActExchange(NodeDataRequest request)
-        {
-            return await SafeActExchange(request);
-        }
-
-        private async Task<Result<NodeDataResponse>> SafeActExchange(NodeDataRequest request)
-        {
+            Logger.LogInformation("Готовлю к отправке пакет информации на сервер: {Url}", url);
+            
             try
             {
-                Logger.LogInformation("Sending request to central server: {Url}", Url);
-
-                var response = await HttpClient.PostAsJsonAsync(Url, request);
+                var response = await HttpClient.PostAsJsonAsync(url, request);
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -42,14 +38,15 @@ namespace CentralServerExchange.Services
                     Logger.LogError("Server returned error: {StatusCode}, {Error}",
                         response.StatusCode, error);
 
-                    return Result.Failure<NodeDataResponse>(
+                    return Result.Failure<FmuApiCentralResponse>(
                         $"Server returned {response.StatusCode}: {error}");
                 }
 
-                var result = await response.Content.ReadFromJsonAsync<NodeDataResponse>();
+                var result = await response.Content.ReadFromJsonAsync<FmuApiCentralResponse>();
+                
                 if (result is null)
                 {
-                    return Result.Failure<NodeDataResponse>("Empty response from server");
+                    return Result.Failure<FmuApiCentralResponse>("Empty response from server");
                 }
 
                 return Result.Success(result);
@@ -57,10 +54,10 @@ namespace CentralServerExchange.Services
             catch (Exception ex)
             {
                 Logger.LogError(ex, "Exchange failed");
-                return Result.Failure<NodeDataResponse>($"Exchange error: {ex.Message}");
+                return Result.Failure<FmuApiCentralResponse>($"Exchange error: {ex.Message}");
             }
         }
 
-        
+
     }
 }
