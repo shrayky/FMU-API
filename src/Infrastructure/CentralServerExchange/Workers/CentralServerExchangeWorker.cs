@@ -1,33 +1,34 @@
-﻿using FmuApiDomain.Configuration.Interfaces;
+﻿using System.Net.Http.Headers;
+using CentralServerExchange.Services;
+using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Node.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System.Net.Http.Headers;
 using TrueApiCdn.Interface;
 
-namespace CentralServerExchange
+namespace CentralServerExchange.Workers
 {
     public class CentralServerExchangeWorker : BackgroundService
     {
         private readonly ILogger<CentralServerExchangeWorker> _logger;
-        private HttpClient _httpClient { get; init; }
+        private HttpClient HttpClient { get; init; }
         private readonly IParametersService _parametersService;
         private readonly ICdnService _cdnService;
         private readonly CentralServerExchangeService _exchangeService;
-        private DateTime nextExchangeTime = DateTime.MaxValue;
+        private DateTime _nextExchangeTime;
 
         public CentralServerExchangeWorker(ILogger<CentralServerExchangeWorker> logger, HttpClient httpClient, IParametersService parametersService, ICdnService cdnService)
         {
             _logger = logger;
-            _httpClient = httpClient;
+            HttpClient = httpClient;
             _parametersService = parametersService;
             _cdnService = cdnService;
 
             var configuration = _parametersService.Current();
 
-            _exchangeService = CentralServerExchangeService.Create(_httpClient, _logger, configuration.FmuApiCentralServer.Address);
-            nextExchangeTime = DateTime.Now.AddMinutes(configuration.FmuApiCentralServer.ExchangeRequestInterval);
+            _exchangeService = CentralServerExchangeService.Create(HttpClient, _logger, configuration.FmuApiCentralServer.Address);
+            _nextExchangeTime = DateTime.Now.AddMinutes(configuration.FmuApiCentralServer.ExchangeRequestInterval);
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -43,13 +44,13 @@ namespace CentralServerExchange
                 if (configuration.FmuApiCentralServer.Enabled)
                     continue;
 
-                if (DateTime.Now < nextExchangeTime)
+                if (DateTime.Now < _nextExchangeTime)
                     continue;
 
                 if (configuration.FmuApiCentralServer.Enabled)
                     ActExchange();
 
-                nextExchangeTime = DateTime.Now.AddMinutes(configuration.FmuApiCentralServer.ExchangeRequestInterval);
+                _nextExchangeTime = DateTime.Now.AddMinutes(configuration.FmuApiCentralServer.ExchangeRequestInterval);
             }
         }
 
@@ -98,18 +99,5 @@ namespace CentralServerExchange
         {
             throw new NotImplementedException();
         }
-
-        public static void AddService(IServiceCollection services)
-        {
-            services.AddHostedService<CentralServerExchangeWorker>();
-
-            services.AddHttpClient<CentralServerExchangeService>(client =>
-            {
-                client.Timeout = TimeSpan.FromSeconds(30);
-                client.DefaultRequestHeaders.Accept.Add(
-                    new MediaTypeWithQualityHeaderValue("application/json"));
-            });
-        }
-
     }
 }

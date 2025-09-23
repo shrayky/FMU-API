@@ -1,21 +1,21 @@
-﻿using CSharpFunctionalExtensions;
+﻿using System.Net.Http.Json;
+using CSharpFunctionalExtensions;
 using FmuApiDomain.Node.Models;
 using Microsoft.Extensions.Logging;
-using System.Net.Http.Json;
 
-namespace CentralServerExchange
+namespace CentralServerExchange.Services
 {
     public class CentralServerExchangeService
     {
-        private HttpClient _httpClient { get; init; }
-        private ILogger _logger { get; init; }
-        private string _url { get; init; }
+        private HttpClient HttpClient { get; init; }
+        private ILogger Logger { get; init; }
+        private string Url { get; init; }
 
         private CentralServerExchangeService(HttpClient httpClient, ILogger logger, string url)
         {
-            _httpClient = httpClient;
-            _logger = logger;
-            _url = url;
+            HttpClient = httpClient;
+            Logger = logger;
+            Url = url;
         }
 
         public static CentralServerExchangeService Create(HttpClient httpClient, ILogger logger, string url)
@@ -32,14 +32,14 @@ namespace CentralServerExchange
         {
             try
             {
-                _logger.LogInformation("Sending request to central server: {Url}", _url);
+                Logger.LogInformation("Sending request to central server: {Url}", Url);
 
-                var response = await _httpClient.PostAsJsonAsync(_url, request);
+                var response = await HttpClient.PostAsJsonAsync(Url, request);
 
                 if (!response.IsSuccessStatusCode)
                 {
                     var error = await response.Content.ReadAsStringAsync();
-                    _logger.LogError("Server returned error: {StatusCode}, {Error}",
+                    Logger.LogError("Server returned error: {StatusCode}, {Error}",
                         response.StatusCode, error);
 
                     return Result.Failure<NodeDataResponse>(
@@ -56,7 +56,7 @@ namespace CentralServerExchange
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Exchange failed");
+                Logger.LogError(ex, "Exchange failed");
                 return Result.Failure<NodeDataResponse>($"Exchange error: {ex.Message}");
             }
         }

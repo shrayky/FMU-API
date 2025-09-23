@@ -1,4 +1,4 @@
-﻿namespace FmuApiDomain.Configuration
+﻿namespace FmuApiDomNewDirectory1ain.Configuration
 {
     public class CentralServerConnectionProperties
     {
@@ -6,5 +6,6 @@
         public string Address {  get; set; } = string.Empty;
         public string Token {  get; set; } = string.Empty;
         public int ExchangeRequestInterval { get; set; } = 600;
+        public string Secret { get; set; } = string.Empty;
     }
 }
