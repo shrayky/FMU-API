@@ -3,6 +3,7 @@ using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.Configuration.Options.Organization;
 using FmuApiDomain.Constants;
 using System.Text.Json.Serialization;
+using FmuApiDomNewDirectory1ain.Configuration;
 
 namespace FmuApiDomain.Configuration
 {
