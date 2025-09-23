@@ -1,53 +1,76 @@
 import { TextBox, Label, padding, CheckBox } from "../../../utils/ui.js";
 import { httpAddressValidation } from "../../../utils/validators.js";
 
-const FORM_NAME = "centralServerConnectionSettings";
-const SETTINGS_ID = "serverSettings";
-const LABELS = {
-    title: "Настройка подключения к центральному серверу",
-    enabled: "Использовать",
-    address: "Веб-адрес сервиса",
-    token: "Токен",
-    interval: "Интервал обмена (секунд)"
-};
+class CentralServerConnectionElement {
+    constructor(id) {
+        this.id = id;
+        this.SETTINGS_ID = "serverSettings";
+        this.FORM_NAME = "centralServerConnectionSettings";
+        this.LABELS = {
+            title: "Настройка подключения к сервису мониторинга",
+            enabled: "Использовать",
+            address: "Веб-адрес сервиса",
+            token: "Токен",
+            secret: "Секретный ключ",
+            interval: "Интервал обмена (секунд)"
+        };
+    }
 
-export function centralServerConnectionElement(id) {
-    var elements = [];
+    loadConfig(config) {
+        if (config?.fmuApiCentralServer) {
+            this.enabled = config.fmuApiCentralServer.enabled;
+            this.address = config.fmuApiCentralServer.address;
+            this.token = config.fmuApiCentralServer.token;
+            this.interval = config.fmuApiCentralServer.exchangeRequestInterval;
+        }
+        return this;
+    }
 
-    elements.push(
-        Label("lCentralServerConnection", "Настройка подключения к центральному серверу")
-    );  
+    render() {
+        const SETTINGS_ID = this.SETTINGS_ID;
 
-    elements.push(
-        {
-            view: "subform",
-            name: FORM_NAME,
-            padding: padding,
-            elements: [
-                CheckBox("Иcпользовать", "enabled", {
-                    on: {
-                        onChange: function(enabled) {
-                            if (enabled) {
-                                $$(SETTINGS_ID).enable();
-                            }
-                            else {
-                                $$(SETTINGS_ID).disable();
+        var elements = [];
+
+        elements.push(
+            Label("lCentralServerConnection", this.LABELS.title)
+        );
+
+        elements.push(
+            {
+                padding: padding,
+                rows: [
+                    CheckBox("Иcпользовать", "fmuApiCentralServer.enabled", {
+                        on: {
+                            onChange: function(enabled) {
+                                if (enabled) {
+                                    $$(SETTINGS_ID).enable();
+                                }
+                                else {
+                                    $$(SETTINGS_ID).disable();
+                                }
                             }
                         }
+                    }),
+                    {
+                        id: this.SETTINGS_ID,
+                        disabled: true,
+                        rows: [
+                            TextBox("text", this.LABELS.address, "fmuApiCentralServer.address", httpAddressValidation),
+                            TextBox("text", this.LABELS.token, "fmuApiCentralServer.token"),
+                            TextBox("text", this.LABELS.secret, "fmuApiCentralServer.secret"),
+                            TextBox("number", this.LABELS.interval, "fmuApiCentralServer.exchangeRequestInterval")
+                        ],
                     }
-                }),
-                {
-                    id: SETTINGS_ID,
-                    disabled: true,
-                    rows: [
-                        TextBox("text", LABELS.address, "adres", httpAddressValidation),
-                        TextBox("text", LABELS.token, "token"),
-                        TextBox("number", LABELS.interval, "exchangeRequestInterval")
-                    ],
-                }
-            ]
-        }
-    );
+                ]
+            }
+        );
 
-    return { id: id, rows: elements }
-}   
+        return { id: this.id, rows: elements };
+    }
+}
+
+export default function (id, config) {
+    return new CentralServerConnectionElement(id)
+        .loadConfig(config)
+        .render();
+}
