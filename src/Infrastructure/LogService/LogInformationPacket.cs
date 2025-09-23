@@ -10,21 +10,12 @@ namespace LogService
         {
             LogDataPacket defaultAnswer = new();
 
-            string logFolderPath = string.Empty;
+            var logFolderPath = string.Empty;
 
-            if (OperatingSystem.IsWindows())
-            {
-                logFolderPath = Path.Combine(Folders.LogFolder(),
-                                             ApplicationInformation.Manufacture, ApplicationInformation.AppName,
-                                             "log");
-            }
-            else if (OperatingSystem.IsLinux())
-            {
-                logFolderPath = Path.Combine(Folders.LogFolder(),
-                                             ApplicationInformation.Manufacture.ToLower(),
-                                             ApplicationInformation.AppName.ToLower());
-            }
-
+            logFolderPath = Path.Combine(Folders.LogFolder(),
+                ApplicationInformation.Manufacture,
+                ApplicationInformation.AppName,
+                "log");
 
             if (!Directory.Exists(logFolderPath))
                 return defaultAnswer;

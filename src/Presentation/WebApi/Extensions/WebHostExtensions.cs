@@ -56,21 +56,11 @@ namespace WebApi.Extensions
             if (!settings.IsEnabled)
                 return;
 
-            string logFolder = string.Empty;
-
-            if (OperatingSystem.IsWindows())
-            {
-                logFolder = Path.Combine(Folders.LogFolder(),
-                                         ApplicationInformation.Manufacture, ApplicationInformation.AppName,
-                                         "log");
-            }
-            else if (OperatingSystem.IsLinux())
-            {
-                logFolder = Path.Combine(Folders.LogFolder(),
-                                         ApplicationInformation.Manufacture.ToLower(),
-                                         ApplicationInformation.AppName.ToLower());
-            }
-
+            var logFolder = Path.Combine(Folders.LogFolder(),
+                                                ApplicationInformation.Manufacture,
+                                                ApplicationInformation.AppName,
+                                                "log");
+            
             if (!Directory.Exists(logFolder))
                 Directory.CreateDirectory(logFolder);
 

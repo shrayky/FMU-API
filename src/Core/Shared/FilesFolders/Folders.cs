@@ -4,8 +4,7 @@
     {
         public static string LogFolder()
         {
-            var user = Environment.UserName;
-            string logFolder = string.Empty;
+            var logFolder = string.Empty;
 
             if (OperatingSystem.IsWindows())
             {
@@ -13,27 +12,27 @@
             }
             else if (OperatingSystem.IsLinux())
             {
-                logFolder = Path.Combine("/var", "log");
+                logFolder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             }
 
             return logFolder;
         }
 
-        public static string CommonApplicationDataFolder(string Manufacture, string AppName)
+        public static string CommonApplicationDataFolder(string manufacture, string appName)
         {
             string configFolder = string.Empty;
 
             if (OperatingSystem.IsWindows())
             {
                 configFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-                                           Manufacture,
-                                           AppName);
+                                           manufacture,
+                                           appName);
             }
             else if (OperatingSystem.IsLinux())
             {
                 configFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                                           Manufacture,
-                                           AppName);
+                                           manufacture,
+                                           appName);
             }
 
             return configFolder;
