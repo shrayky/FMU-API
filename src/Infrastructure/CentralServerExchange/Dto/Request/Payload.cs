@@ -8,7 +8,7 @@ public record Payload
     public NodeInformation NodeInformation { get; init; } = new();
     
     [JsonPropertyName("configuration")]
-    public FmuApiSetting  FmuApiSetting { get; init; } = new();
+    public FmuApiSetting FmuApiSetting { get; init; } = new();
     
     [JsonPropertyName("cdns")]
     public List<CdnInformation> CdnInformation { get; init; } = [];
