@@ -35,26 +35,26 @@ namespace CentralServerExchange.Services
                 if (!response.IsSuccessStatusCode)
                 {
                     var error = await response.Content.ReadAsStringAsync();
-                    Logger.LogError("Server returned error: {StatusCode}, {Error}",
+                    Logger.LogError("Сервер вернул ошибку: {StatusCode}, {Error}",
                         response.StatusCode, error);
 
                     return Result.Failure<FmuApiCentralResponse>(
-                        $"Server returned {response.StatusCode}: {error}");
+                        $"Сервер вернул ошибку {response.StatusCode}: {error}");
                 }
 
                 var result = await response.Content.ReadFromJsonAsync<FmuApiCentralResponse>();
                 
                 if (result is null)
                 {
-                    return Result.Failure<FmuApiCentralResponse>("Empty response from server");
+                    return Result.Failure<FmuApiCentralResponse>("Пустой ответ от сервера");
                 }
 
                 return Result.Success(result);
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "Exchange failed");
-                return Result.Failure<FmuApiCentralResponse>($"Exchange error: {ex.Message}");
+                Logger.LogError(ex, "Обмен с центральным сервером закончился неудачно");
+                return Result.Failure<FmuApiCentralResponse>($"Обмен с центральным сервером закончился с ошибкой: {ex.Message}");
             }
         }
 
