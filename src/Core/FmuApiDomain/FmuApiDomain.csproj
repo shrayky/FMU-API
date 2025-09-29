@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="DTO\FmuApiExchangeData\" />
     <Folder Include="Node\Interfaces\" />
     <Folder Include="Node\Services\" />
   </ItemGroup>

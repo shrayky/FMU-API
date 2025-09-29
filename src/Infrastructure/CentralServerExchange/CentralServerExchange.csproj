@@ -17,4 +17,8 @@
     <ProjectReference Include="..\TrueApiCdn\TrueApi.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Dto\" />
+  </ItemGroup>
+
 </Project>
