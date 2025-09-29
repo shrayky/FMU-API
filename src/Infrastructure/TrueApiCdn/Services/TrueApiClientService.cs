@@ -47,7 +47,7 @@ namespace TrueApi.Services
         {
             var content = JsonContent.Create(marksRequestData);
 
-            TrueSignCdn? cdn = await _cdnService.GetActiveCdnAsync(0);
+            var cdn = await _cdnService.GetActiveCdnAsync(0);
             
             if (cdn is null)
                 return Result.Failure<CheckMarksDataTrueApi>("Нет активных CDN");
