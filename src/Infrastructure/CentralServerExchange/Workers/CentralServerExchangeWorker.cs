@@ -1,12 +1,13 @@
-﻿using System.Net.Http.Headers;
+﻿using System.Text.Json;
 using CentralServerExchange.Interfaces;
 using CentralServerExchange.Services;
+using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.Node.Models;
-using Microsoft.Extensions.DependencyInjection;
+using FmuApiDomain.DTO.FmuApiExchangeData.Answer;
+using FmuApiDomain.DTO.FmuApiExchangeData.Request;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using TrueApiCdn.Interface;
+using Shared.Strings;
 
 namespace CentralServerExchange.Workers
 {
@@ -17,28 +18,36 @@ namespace CentralServerExchange.Workers
         private readonly IParametersService _parametersService;
         private readonly IExchangeService _exchangeService;
         private readonly INodeInformationService _nodeInformationService;
+        private readonly ConfigurationDownloadService _configurationDownloadService;
         
         private DateTime _nextExchangeTime;
 
         private const int TryAfterErrorLimit = 10;
-        private const int StartDelayMinutes = 5;
+#if DEBUG
+        private const int StartDelayMinutes = 1;            
+#else
+        private const int StartDelayMinutes = 5;        
+#endif
         private const int DelayAfterErrorMinutes = 1;
         
-        public CentralServerExchangeWorker(ILogger<CentralServerExchangeWorker> logger, IParametersService parametersService, INodeInformationService nodeInformationService, IExchangeService exchangeService)
+        public CentralServerExchangeWorker(ILogger<CentralServerExchangeWorker> logger,
+            IParametersService parametersService,
+            INodeInformationService nodeInformationService,
+            IExchangeService exchangeService,
+            ConfigurationDownloadService configurationDownloadService)
         {
             _logger = logger;
             _parametersService = parametersService;
             _nodeInformationService = nodeInformationService;
             _exchangeService = exchangeService;
+            _configurationDownloadService = configurationDownloadService;
 
             var configuration = _parametersService.Current();
-            _nextExchangeTime = DateTime.Now.AddMinutes(configuration.FmuApiCentralServer.ExchangeRequestInterval);
+            _nextExchangeTime = DateTime.Now.AddMinutes(StartDelayMinutes);
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             var tryCounts = 0;
-            
-            await Task.Delay(TimeSpan.FromMinutes(StartDelayMinutes), stoppingToken);
             
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -47,13 +56,15 @@ namespace CentralServerExchange.Workers
 
                 if (DateTime.Now < _nextExchangeTime)
                 {
+                    await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken).ConfigureAwait(false);
                     continue;
                 }
-                var configuration = await _parametersService.CurrentAsync();
+                
+                var configuration = await _parametersService.CurrentAsync().ConfigureAwait(false);
 
                 if (configuration.FmuApiCentralServer.Enabled)
                 {
-                    var result = await ActExchange();
+                    var result = await ActExchange().ConfigureAwait(false);
 
                     if (!result && tryCounts <= TryAfterErrorLimit) { 
                         _nextExchangeTime = DateTime.Now.AddMinutes(DelayAfterErrorMinutes);
@@ -68,37 +79,28 @@ namespace CentralServerExchange.Workers
 
         private async Task<bool> ActExchange()
         {
-            var configuration = await _parametersService.CurrentAsync();
-            var data = await _nodeInformationService.Create();
+            var configuration = await _parametersService.CurrentAsync().ConfigureAwait(false);
+            var data = await _nodeInformationService.Create().ConfigureAwait(false);
+            var baseAddress = $"{configuration.FmuApiCentralServer.Address}/api/FmuApiInstanceMonitoring";
             
-            var exchangeResult = await _exchangeService.ActExchange(data, configuration.FmuApiCentralServer.Address);
+            var exchangeResult = await _exchangeService.ActExchange(data, baseAddress).ConfigureAwait(false);
 
             if (exchangeResult.IsFailure)
             {
-                _logger.LogError("Exchange failed: {Error}", exchangeResult.Error);
+                _logger.LogError("Обмен с центральным сервером завершен с ошибкой: {Error}", exchangeResult.Error);
                 return false;
             }
 
             if (exchangeResult.Value.SoftwareUpdateAvailable)
             {
-                _logger.LogInformation("New version available to download");
+                _logger.LogInformation("Обнаружена новая верся fmu-api для загрузки");
                 await DownloadSoftwareUpdate();
             }
-
-            if (exchangeResult.Value.SettingsUpdateAvailable)
-            {
-                _logger.LogInformation("New configuration ready to download from central server");
-                await DownloadConfiguration();
-            }
+            
+            await _configurationDownloadService.DownloadAndApply(exchangeResult.Value, baseAddress, configuration.FmuApiCentralServer.Token).ConfigureAwait(false);
             
             return true;
         }
-
-        private async Task DownloadConfiguration()
-        {
-            throw new NotImplementedException();
-        }
-
         private async Task DownloadSoftwareUpdate()
         {
             throw new NotImplementedException();

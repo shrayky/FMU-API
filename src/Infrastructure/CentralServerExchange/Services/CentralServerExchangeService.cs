@@ -1,11 +1,13 @@
 ﻿using System.Net.Http.Json;
-using CentralServerExchange.Dto.Answer;
-using CentralServerExchange.Dto.Request;
 using CentralServerExchange.Interfaces;
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Attributes;
+using FmuApiDomain.DTO.FmuApiExchangeData.Answer;
+using FmuApiDomain.DTO.FmuApiExchangeData.Request;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Net.Http.Headers;
+using Shared.Http;
 
 namespace CentralServerExchange.Services
 {
@@ -15,6 +17,8 @@ namespace CentralServerExchange.Services
         private HttpClient HttpClient { get; init; }
         private ILogger<CentralServerExchangeService> Logger { get; init; }
 
+        private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(5);
+
         public CentralServerExchangeService(ILogger<CentralServerExchangeService> logger, HttpClient httpClient)
         {
             HttpClient = httpClient;
@@ -22,27 +26,25 @@ namespace CentralServerExchange.Services
         }
 
         public async Task<Result<FmuApiCentralResponse>> ActExchange(DataPacket request, string url) 
-            => await SafeActExchange(request, url);
-      
+            => await SafeActExchange(request, url).ConfigureAwait(false);
+
         private async Task<Result<FmuApiCentralResponse>> SafeActExchange(DataPacket request,  string url)
         {
             Logger.LogInformation("Готовлю к отправке пакет информации на сервер: {Url}", url);
             
             try
             {
-                var response = await HttpClient.PostAsJsonAsync(url, request);
+                var response = await HttpClient.PostAsJsonAsync(url, request).ConfigureAwait(false);
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    var error = await response.Content.ReadAsStringAsync();
-                    Logger.LogError("Сервер вернул ошибку: {StatusCode}, {Error}",
-                        response.StatusCode, error);
+                    var error = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                     return Result.Failure<FmuApiCentralResponse>(
                         $"Сервер вернул ошибку {response.StatusCode}: {error}");
                 }
 
-                var result = await response.Content.ReadFromJsonAsync<FmuApiCentralResponse>();
+                var result = await response.Content.ReadFromJsonAsync<FmuApiCentralResponse>().ConfigureAwait(false);
                 
                 if (result is null)
                 {
@@ -57,7 +59,30 @@ namespace CentralServerExchange.Services
                 return Result.Failure<FmuApiCentralResponse>($"Обмен с центральным сервером закончился с ошибкой: {ex.Message}");
             }
         }
-
+    
+        public async Task<Result<string>> DownloadNewConfiguration(string url)
+        {
+            var operationResult = await HttpClient.SendRequestSafelyAsync(
+                client => client.GetAsync(url),
+                Logger,
+                "загрузка настроек из центрального сервера").ConfigureAwait(false);
+            
+            if (operationResult.IsFailure)
+                return Result.Failure<string>(operationResult.Error);
+        
+            var content = await operationResult.Value.Content.ReadAsStringAsync().ConfigureAwait(false);
+            
+            return Result.Success(content);
+        }
+        public async Task<Result> ConfirmDownloadConfiguration(string url)
+        {
+            var operationResult = await HttpClient.SendRequestSafelyAsync(
+                client => client.PutAsJsonAsync(url, new {}),
+                Logger,
+                "уведомление о загрузке настроек").ConfigureAwait(false);
+            
+            return operationResult.IsSuccess ? Result.Success() : Result.Failure(operationResult.Error); 
+        }
 
     }
 }
