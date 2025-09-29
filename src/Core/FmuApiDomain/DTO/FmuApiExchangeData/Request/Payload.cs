@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace CentralServerExchange.Dto.Request;
+namespace FmuApiDomain.DTO.FmuApiExchangeData.Request;
 
 public record Payload
 {
