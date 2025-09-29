@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace CentralServerExchange.Dto.Answer;
+namespace FmuApiDomain.DTO.FmuApiExchangeData.Answer;
 
 public record FmuApiCentralResponse
 {
