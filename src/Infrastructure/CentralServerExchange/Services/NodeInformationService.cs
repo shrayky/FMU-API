@@ -8,6 +8,7 @@ using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
+using Shared.Strings;
 using TrueApiCdn.Interface;
 
 namespace CentralServerExchange.Services;
@@ -42,7 +43,7 @@ public class NodeInformationService : INodeInformationService
 
         if (settings.FmuApiCentralServer.Secret != "")
         {
-            data = EncryptData(data, settings.FmuApiCentralServer.Secret);
+            data = SecretString.EncryptData(data, settings.FmuApiCentralServer.Secret);
         }
 
         DataPacket packet = new()
@@ -171,15 +172,4 @@ public class NodeInformationService : INodeInformationService
 
         return localModulesStateToUpload;
     }
-    
-    private static string EncryptData(string data, string secret)
-    {
-        using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(secret));
-        var signature = hmac.ComputeHash(Encoding.UTF8.GetBytes(data));
-        
-        var combinedData = data + "|" + Convert.ToBase64String(signature);
-        
-        return Convert.ToBase64String(Encoding.UTF8.GetBytes(combinedData));
-    }
-
 }
