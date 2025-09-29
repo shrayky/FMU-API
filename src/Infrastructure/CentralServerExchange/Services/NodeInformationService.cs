@@ -1,11 +1,9 @@
-using System.Security.Cryptography;
-using System.Text;
-using CentralServerExchange.Dto;
-using CentralServerExchange.Dto.Request;
+using System.Text.Json;
 using CentralServerExchange.Interfaces;
 using FmuApiDomain.Attributes;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
+using FmuApiDomain.DTO.FmuApiExchangeData.Request;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Shared.Strings;
@@ -39,7 +37,7 @@ public class NodeInformationService : INodeInformationService
             LocalModuleInformation = MapLocalModules(settings)
         };
 
-        var data = packetPayload.ToString();
+        var data = JsonSerializer.Serialize(packetPayload, JsonSerializerOptions.Default);
 
         if (settings.FmuApiCentralServer.Secret != "")
         {
