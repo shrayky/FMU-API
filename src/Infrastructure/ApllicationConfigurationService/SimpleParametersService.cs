@@ -9,6 +9,10 @@ using Microsoft.Extensions.Logging;
 using Shared.FilesFolders;
 using Shared.Json;
 using System.Text.Json;
+using CSharpFunctionalExtensions;
+using FmuApiDomain.Configuration.Options.Organization;
+using FmuApiDomain.DTO.FmuApiExchangeData.Request;
+using FmuApiDomain.Frontol.DTO;
 
 namespace ApplicationConfigurationService
 {
@@ -19,11 +23,11 @@ namespace ApplicationConfigurationService
         private readonly IMemoryCache _cacheService;
         private readonly IApplicationState _appState;
 
-        private readonly string _configPath = string.Empty;
-        private readonly string _configBackUpPath = string.Empty;
-        private readonly string _cacheKey = "app_settings";
-        private readonly int _cacheExpirationMinutes = 600;
-        private static readonly object _lock = new();
+        private readonly string _configPath;
+        private readonly string _configBackUpPath;
+        private const string CacheKey = "app_settings";
+        private const int CacheExpirationMinutes = 600;
+        private static readonly object Lock = new();
         
         private static readonly SemaphoreSlim _semaphore = new(1, 1);
 
@@ -65,7 +69,7 @@ namespace ApplicationConfigurationService
         {
             try
             {
-                string jsonContent = string.Empty;
+                var jsonContent = string.Empty;
                 Parameters? loadedConfiguration = null;
 
                 try
@@ -149,24 +153,24 @@ namespace ApplicationConfigurationService
         private Parameters CheckMigration(Parameters settings)
         {
             var isUpToDate = (settings.AppVersion == ApplicationInformation.AppVersion && settings.Assembly == ApplicationInformation.Assembly);
+
+            if (isUpToDate)
+                return settings;
             
-            if (!isUpToDate)
-            {
-                if (settings.AppVersion < 9)
-                    settings = MigrationTo9.DoMigration(settings);
+            if (settings.AppVersion < 9)
+                settings = MigrationTo9.DoMigration(settings);
 
-                if (settings.AppVersion == 10 & settings.Assembly < 2)
-                    settings = MigrationTo10_2.DoMigration(settings);
+            if (settings.AppVersion == 10 & settings.Assembly < 2)
+                settings = MigrationTo10_2.DoMigration(settings);
 
-                settings.AppVersion = ApplicationInformation.AppVersion;
+            settings.AppVersion = ApplicationInformation.AppVersion;
 
-                SaveConfiguration(settings, true);
-            }
+            SaveConfiguration(settings, true);
 
             return settings;
         }
 
-        public void SaveConfiguration(Parameters settings, bool onStart = false)
+        private void SaveConfiguration(Parameters settings, bool onStart = false)
         {
             _logger.LogWarning("Записываю данные в файл конфигурации");
 
@@ -176,9 +180,9 @@ namespace ApplicationConfigurationService
             if (!onStart)
                 NeedToRestartAfterSaveConfiguration(settings);
 
-            lock (_lock)
+            lock (Lock)
             {
-                string? directoryPath = Path.GetDirectoryName(_configPath);
+                var directoryPath = Path.GetDirectoryName(_configPath);
 
                 if (directoryPath == null)
                     return;
@@ -188,7 +192,7 @@ namespace ApplicationConfigurationService
                     Directory.CreateDirectory(directoryPath);
                 }
 
-                string jsonContent = JsonSerializer.Serialize(settings, JsonSerializeOptionsProvider.Default());
+                var jsonContent = JsonSerializer.Serialize(settings, JsonSerializeOptionsProvider.Default());
 
                 File.WriteAllText(_configPath, jsonContent);
                 File.WriteAllText(_configBackUpPath, jsonContent);
@@ -217,7 +221,7 @@ namespace ApplicationConfigurationService
                     Directory.CreateDirectory(directoryPath);
                 }
 
-                string jsonContent = JsonSerializer.Serialize(settings, JsonSerializeOptionsProvider.Default());
+                var jsonContent = JsonSerializer.Serialize(settings, JsonSerializeOptionsProvider.Default());
 
                 await File.WriteAllTextAsync(_configBackUpPath, jsonContent);
                 await File.WriteAllTextAsync(_configPath, jsonContent);
@@ -253,19 +257,16 @@ namespace ApplicationConfigurationService
 
         private void CacheSettings(Parameters settings)
         {
-            _cacheService.Set(_cacheKey, 
+            _cacheService.Set(CacheKey, 
                               settings,
-                              TimeSpan.FromMinutes(_cacheExpirationMinutes));
+                              TimeSpan.FromMinutes(CacheExpirationMinutes));
         }
 
-        public Parameters GetSettings()
+        private Parameters GetSettings()
         {
-            var settings = _cacheService.Get<Parameters>(_cacheKey);
+            var settings = _cacheService.Get<Parameters>(CacheKey);
 
-            if (settings != null)
-                return settings;
-
-            return LoadConfiguration();
+            return settings ?? LoadConfiguration();
         }
 
         public void InvalidateCache()
@@ -273,7 +274,7 @@ namespace ApplicationConfigurationService
             try
             {
                 _logger.LogInformation("Invalidating configuration cache");
-                _cacheService.Remove(_cacheKey);
+                _cacheService.Remove(CacheKey);
             }
             catch (Exception ex)
             {
@@ -307,19 +308,80 @@ namespace ApplicationConfigurationService
         }
 
         public Parameters Current()
-        {
-            return GetSettings();
-        }
+            => GetSettings();
 
         public async Task<Parameters> CurrentAsync()
-        {
-            return await Task.Run(() => { return Current(); });
-        }
+            => await Task.Run(() => { return Current(); });
 
-        public async Task UpdateAsync(Parameters parameters)
-        {
-            await SaveConfigurationAsync(parameters);
+        public async Task UpdateAsync(Parameters parameters) 
+            => await SaveConfigurationAsync(parameters);
 
+        public async Task<Result> ApplyFromCentral(FmuApiSetting newSettings)
+        {
+            var settings = await CurrentAsync();
+
+            settings.HostsToPing = newSettings.HostsToPing;
+            
+            settings.MinimalPrices.Tabaco = newSettings.MinimalPrices.Tabaco;
+            
+            settings.SaleControlConfig.BanSalesReturnedWares = newSettings.SaleControl.BanSalesReturnedWares;
+            settings.SaleControlConfig.CheckIsOwnerField = newSettings.SaleControl.CheckIsOwnerField;
+            settings.SaleControlConfig.CheckReceiptReturn = newSettings.SaleControl.CheckReceiptReturn;
+            settings.SaleControlConfig.CorrectExpireDateInSaleReturn = newSettings.SaleControl.CorrectExpireDateInSaleReturn;
+            settings.SaleControlConfig.IgnoreVerificationErrorForTrueApiGroups = newSettings.SaleControl.IgnoreVerificationErrorForTrueApiGroups;
+            settings.SaleControlConfig.ResetSoldStatusForReturn = newSettings.SaleControl.ResetSoldStatusForReturn;
+            settings.SaleControlConfig.SendEmptyTrueApiAnswerWhenTimeoutError = newSettings.SaleControl.SendEmptyTrueApiAnswerWhenTimeoutError;
+            settings.SaleControlConfig.SendLocalModuleInformationalInRequestId  = newSettings.SaleControl.SendLocalModuleInformationalInRequestId;
+
+            settings.TrueSignTokenService.ConnectionAddress = newSettings.TokenService.Address;
+            settings.TrueSignTokenService.Enable = newSettings.TokenService.Enabled;
+
+            settings.HttpRequestTimeouts.CdnRequestTimeout = newSettings.TimeOut.CdnRequest;
+            settings.HttpRequestTimeouts.CheckInternetConnectionTimeout = newSettings.TimeOut.InternetConnectionCheck;
+            settings.HttpRequestTimeouts.CheckMarkRequestTimeout = newSettings.TimeOut.TrueSignCheckRequest;
+
+            settings.Logging.IsEnabled = newSettings.Logging.IsEnabled;
+            settings.Logging.LogLevel = newSettings.Logging.LogLevel;
+            settings.Logging.LogDepth = newSettings.Logging.LogDepth;
+
+            List<int> loadedPrintGroupsIds = [];
+            
+            foreach (var loadedOrganization in newSettings.Organizations)
+            {
+                var current = settings.OrganisationConfig.PrintGroups.FirstOrDefault(x => x.Id == loadedOrganization.Id);
+
+                if (current == null)
+                {
+                    var newPg = new PrintGroupData()
+                    {
+                        Id = loadedOrganization.Id,
+                        Name = loadedOrganization.Name,
+                        INN = loadedOrganization.Inn,
+                        XAPIKEY = loadedOrganization.XApiKey
+                    };
+
+                    settings.OrganisationConfig.PrintGroups.Add(newPg);
+                }
+                else
+                {
+                    current.Name = loadedOrganization.Name;
+                    current.INN = loadedOrganization.Inn;
+                    current.XAPIKEY = loadedOrganization.XApiKey;
+                }
+                
+                loadedPrintGroupsIds.Add(loadedOrganization.Id);
+            }
+
+            var groupsToDelete = settings.OrganisationConfig.PrintGroups.Where(x => !loadedPrintGroupsIds.Contains(x.Id));
+            
+            foreach (var groupToDelete in groupsToDelete)
+            {
+                settings.OrganisationConfig.PrintGroups.Remove(groupToDelete);  
+            }
+            
+            await SaveConfigurationAsync(settings);
+            
+            return Result.Success();
         }
     }
 }
