@@ -1,4 +1,4 @@
-import { TextBox, Label, padding, CheckBox } from "../../../utils/ui.js";
+import { Number, Label, padding, CheckBox, Text } from "../../../utils/ui.js";
 import { httpAddressValidation } from "../../../utils/validators.js";
 
 class CentralServerConnectionElement {
@@ -12,11 +12,12 @@ class CentralServerConnectionElement {
             address: "Веб-адрес сервиса",
             token: "Токен",
             secret: "Секретный ключ",
-            interval: "Интервал обмена (секунд)"
+            interval: "Интервал обмена (минут)"
         };
     }
 
     loadConfig(config) {
+
         if (config?.fmuApiCentralServer) {
             this.enabled = config.fmuApiCentralServer.enabled;
             this.address = config.fmuApiCentralServer.address;
@@ -40,6 +41,7 @@ class CentralServerConnectionElement {
                 padding: padding,
                 rows: [
                     CheckBox("Иcпользовать", "fmuApiCentralServer.enabled", {
+                        value: this.enabled,
                         on: {
                             onChange: function(enabled) {
                                 if (enabled) {
@@ -53,12 +55,24 @@ class CentralServerConnectionElement {
                     }),
                     {
                         id: this.SETTINGS_ID,
-                        disabled: true,
+                        disabled: !this.enabled,
                         rows: [
-                            TextBox("text", this.LABELS.address, "fmuApiCentralServer.address", httpAddressValidation),
-                            TextBox("text", this.LABELS.token, "fmuApiCentralServer.token"),
-                            TextBox("text", this.LABELS.secret, "fmuApiCentralServer.secret"),
-                            TextBox("number", this.LABELS.interval, "fmuApiCentralServer.exchangeRequestInterval")
+                            Text(this.LABELS.address,
+                                 "fmuApiCentralServer.address",
+                                 this.address,
+                                 httpAddressValidation),
+
+                            Text(this.LABELS.token,
+                                 "fmuApiCentralServer.token",
+                                 this.token),
+
+                            Text(this.LABELS.secret,
+                                 "fmuApiCentralServer.secret",
+                                 this.secret),
+
+                            Number(this.LABELS.interval,
+                                 "fmuApiCentralServer.exchangeRequestInterval",
+                                this.interval)
                         ],
                     }
                 ]
