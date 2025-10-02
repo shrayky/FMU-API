@@ -13,6 +13,9 @@ public record FmuApiCentralResponse
     [JsonPropertyName("softwareUpdateAvailable")]
     public bool SoftwareUpdateAvailable { get; init; }
     
+    [JsonPropertyName("updateHash")]
+    public string UpdateHash { get; init; } = string.Empty;
+    
     [JsonPropertyName("errorMessage")]
     public string? ErrorMessage { get; init; }
 }
