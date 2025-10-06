@@ -41,8 +41,8 @@ namespace CouchDb
 
         private void Сompatibility9_102(CouchDatabaseBuilder databaseBuilder)
         {
-            string _markStateDbName = DatabaseNames.MarksStateDb;
-            string _frontolDocumentsDbName = DatabaseNames.FrontolDocumentsDb;
+            var _markStateDbName = DatabaseNames.MarksStateDb;
+            var _frontolDocumentsDbName = DatabaseNames.FrontolDocumentsDb;
 
             if (!string.IsNullOrEmpty(_markStateDbName))
                 databaseBuilder.Document<MarkStateDocument>().ToDatabase(_markStateDbName);

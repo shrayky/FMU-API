@@ -87,15 +87,14 @@ namespace FmuApiApplication.Services.State
                 };
 
                 _localModules.Add(lmStatusInfo);
-                }
+            }
             else
                 lmStatusInfo.Status = status;
         }
 
         public void UpdateOrganizationLocalModuleInformation(int organizationId, LocalModuleState localModuleInfo)
         {
-            if (_localModuleInformation.ContainsKey(organizationId))
-                _localModuleInformation.Remove(organizationId);
+            _localModuleInformation.Remove(organizationId);
 
             _localModuleInformation.Add(organizationId, localModuleInfo);
         }

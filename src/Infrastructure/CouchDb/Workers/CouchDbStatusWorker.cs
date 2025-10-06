@@ -26,7 +26,7 @@ namespace CouchDb.Workers
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            bool needToEnsureDatabaseExist = true;
+            var needToEnsureDatabaseExist = true;
 
             while (!stoppingToken.IsCancellationRequested)
             {
