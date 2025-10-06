@@ -63,8 +63,16 @@ class OrganizationsConfigurationElement {
         this._startLocalModuleStatusPolling();
     }
 
-    _getStatusDisplay(lmStatus) {
-        return this.LOCAL_MODULE_STATUS_DISPLAY[lmStatus] || {
+    _getStatusDisplay(organisationConfig) {
+
+        if (!organisationConfig.localModuleConnection.enable) {
+            return {
+                text: "Не подключен",
+                color: "#FFA500" // Orange
+            };
+        }
+
+        return this.LOCAL_MODULE_STATUS_DISPLAY[organisationConfig.localModuleStatus] || {
             text: "Неизвестный статус",
             color: "#95A5A6"
         };
@@ -133,7 +141,7 @@ class OrganizationsConfigurationElement {
 
                     fillspace: true,
                     template: (obj) => {
-                        const status = this._getStatusDisplay(obj.localModuleStatus);
+                        const status = this._getStatusDisplay(obj);
                         return `<div style="
                             color: ${status.color}; 
                             font-weight: bold; 
