@@ -1,5 +1,6 @@
 import { Label, TableToolbar, Text, Number, padding, PasswordBox, CheckBox } from "../../../utils/ui.js";
 import { saveConfiguration } from '../../../utils/saveConfiguration.js';
+import { pollingManager } from '../../../services/PollingManager.js';
 
 
 class OrganizationsConfigurationElement {
@@ -367,14 +368,16 @@ class OrganizationsConfigurationElement {
             }
         };
 
-        // Первый опрос сразу
-        pollStatus();
+        pollingManager.register(
+            'localmodules-state-polling', 
+            pollStatus, 
+            this.POLL_INTERVAL,
+            { 
+                initialDelay: 1000,
+                autoStart: true 
+            }
+        );
         
-        const intervalId = setInterval(pollStatus, POLL_INTERVAL);
-
-        this.on_destroy = () => {
-            clearInterval(intervalId);
-        };
     }
 
     _updateInitButtonState() {
