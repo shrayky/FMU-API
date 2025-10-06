@@ -1,3 +1,5 @@
+import { pollingManager } from './PollingManager.js';
+
 export class RouterService {
     constructor() {
         this.currentPage = "";
@@ -10,6 +12,8 @@ export class RouterService {
 
     async navigate(id, bodyId) {
         if (id === this.currentPage) return;
+
+        pollingManager.stopAll();
 
         const viewFactory = this.routes.get(id);
         if (!viewFactory) return;

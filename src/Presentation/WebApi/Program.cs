@@ -3,6 +3,7 @@ using AutoUpdateWorkerService;
 using CentralServerExchange;
 using CentralServerExchange.Workers;
 using CouchDb;
+using FmuApiApplication;
 using FmuApiApplication.Documents;
 using FmuApiApplication.Installer;
 using FmuApiApplication.Mark;
@@ -87,6 +88,7 @@ bool RunHttpApiService()
     FrontolDbService.AddService(services);
     services.AddExchangeWithFmuApiCentral();
     AutoUpdateRegistrationExtension.AddService(services);
+    AppRegistrationExtension.AddAppServices(services);
     ServicesAndDaemonsRegistrationExtension.AddService(services);
 
     services.AddMarkServices();

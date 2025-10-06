@@ -26,14 +26,11 @@ namespace FmuApiApplication.Services.Statistics
             _parameters = parametersService.Current();
         }
 
-        public async Task<MarkCheckStatistics> LastMonth()
+        public async Task<MarkCheckStatistics> ByDays(DateTime fromDate, DateTime toDate)
         {
             if (!_parameters.Database.Enable)
-                return new();
-
-            DateTime fromDate = DateTime.Now.AddDays(-30).Date;
-            DateTime toDate = DateTime.Now.Date.AddDays(1);
-
+                return new MarkCheckStatistics();
+            
             var statistics = await _repository.CheckStatisticsByDays(fromDate, toDate);
 
             return statistics;
@@ -41,28 +38,26 @@ namespace FmuApiApplication.Services.Statistics
 
         public async Task<MarkCheckStatistics> LastWeek()
         {
-            if (!_parameters.Database.Enable)
-                return new();
+            var toDate = DateTime.Now.Date.AddDays(-1);
+            var fromDate = DateTime.Now.AddDays(-8).Date;
 
-            DateTime fromDate = DateTime.Now.AddDays(-7).Date;
-            DateTime toDate = DateTime.Now.Date.AddDays(1);
+            return await ByDays(fromDate, toDate);
+        }
+        
+        public async Task<MarkCheckStatistics> LastMonth()
+        {
+            var toDate = DateTime.Now.Date.AddDays(-1);
+            var fromDate = DateTime.Now.AddDays(-31).Date;
 
-            var statistics = await _repository.CheckStatisticsByDays(fromDate, toDate);
-
-            return statistics;
+            return await ByDays(fromDate, toDate);
         }
 
         public async Task<MarkCheckStatistics> Today()
         {
-            if (!_parameters.Database.Enable)
-                return new();
+            var toDate = DateTime.Now.Date.AddDays(1);
+            var fromDate = DateTime.Today;
 
-            DateTime fromDate = DateTime.Today;
-            DateTime toDate = fromDate.AddDays(1);
-
-            var statistics = await _repository.CheckStatisticsByDays(fromDate, toDate);
-
-            return statistics;
+            return await ByDays(fromDate, toDate);
         }
     }
 }

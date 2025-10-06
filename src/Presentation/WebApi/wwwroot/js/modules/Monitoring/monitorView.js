@@ -1,4 +1,4 @@
-import { ApiServerAddress } from '../../utils/net.js';
+import { pollingManager } from '../../services/PollingManager.js';
 
 class MonitorView {
     constructor(id) {
@@ -6,7 +6,8 @@ class MonitorView {
         this.id = id;
 
         this.monitoringApiAddress = "/api/monitoring/systemstate"
-        this.POLL_INTERVAL = 10000;
+        this.POLL_INTERVAL = 30_000; // каждые 30 секунд
+        this.isPolling = false;
 
         this.LABELS = {
             formTitle: "FMU-API: Мониторинг",
@@ -29,17 +30,19 @@ class MonitorView {
             last7Days: "Последние 7 дней",
             last30Days: "Последние 30 дней",
             period: "Период",
-            checkStatisticsLabel: "Статистика проверок"
+            checkStatisticsLabel: "Статистика проверок",
+            pollingLabel: "⏳ Обновление...",
         }
         this.NAMES = {
             toolbarLabel: "toolbarLabel",
             dbStatus: "dbStatus",
             localModulesTable: "localModulesTable",
             checkStatisticsTable: "checkStatisticsTable",
-            checkStatisticsTableLabel: "checkStatisticsTableLabel"
+            checkStatisticsTableLabel: "checkStatisticsTableLabel",
+            pollingLabel: "pollingLabel",
         }
 
-        this._startLocalMonitoringPolling();
+        //this._startLocalMonitoringPolling();
     }
 
     loadConfig() {
@@ -53,13 +56,23 @@ class MonitorView {
         var formElements = [
             {
                 view: "label",
+                id: this.NAMES.pollingLabel,
+                name: this.NAMES.pollingLabel,
+                label: this.LABELS.pollingLabel,
+                hidden: true,
+            },
+
+            {
+                view: "label",
                 id: "dbStatus",
                 label: this.LABELS.dbStatus + this.LABELS.dbStatusUnknown
             },
+
             {
                 view: "label",
                 label: this.LABELS.localModules
             },
+
             this._localModules(),
 
             {
@@ -69,6 +82,7 @@ class MonitorView {
             },
 
             this._checkStatistics(),
+
             {}
         ];
 
@@ -171,11 +185,24 @@ class MonitorView {
         }
     }
 
-    _startLocalMonitoringPolling() {
+    startLocalMonitoringPolling() {
         const POLL_INTERVAL = this.POLL_INTERVAL;
-
+        
         const pollStatus = async () => {
-            try {
+
+            if (this.isPolling) {
+                console.log("pol already running");
+                return;
+            }
+
+
+            const indicator = $$(this.NAMES.pollingLabel);
+            
+            if (indicator)
+                indicator.show();
+
+            try {              
+
                 const response = await fetch(this.monitoringApiAddress);
 
                 if (!response.ok)
@@ -184,8 +211,8 @@ class MonitorView {
                 const monitoringData = await response.json();
 
                 this._updateDbState(monitoringData.couchDbOnLine);
-                this._updateLocalModulesInformation(monitoringData.localeModulesInformation);
-                this._updateCheckStatistics(monitoringData.checkStatistics, monitoringData.couchDbOnLine);
+                this._updateLocalModulesInformation(monitoringData.stateOfLocalModules);
+                this._updateCheckStatistics(monitoringData.markCheksStatistics, monitoringData.couchDbOnLine);
 
             } catch (error) {
                 if (error.name === 'TypeError' || 
@@ -198,15 +225,22 @@ class MonitorView {
                 
                 console.error("Ошибка при получении данных о состоянии сервиса:", error);
             }
+
+            if (indicator)
+                indicator.hide();
         };
 
-        pollStatus();
+        pollingManager.register(
+            'system-monitoring-polling', 
+            pollStatus, 
+            this.POLL_INTERVAL,
+            { 
+                initialDelay: 1000,
+                autoStart: true 
+            }
+        );
 
-        const intervalId = setInterval(pollStatus, POLL_INTERVAL);
 
-        this.on_destroy = () => {
-            clearInterval(intervalId);
-        };
     }
 
     _updateDbState(couchDbOnLine) {
@@ -228,20 +262,22 @@ class MonitorView {
         if (!localModulesInfo)
             return;
 
+        console.log(localModulesInfo);
+
         const table = $$(this.NAMES.localModulesTable);
 
         if (!table)
             return;
 
-        const tableData = Object.entries(localModulesInfo).map(([url, info]) => {
+        const tableData = localModulesInfo.map((module, index) => {
             return {
-                id: url,
-                url: url,
-                version: info.version || "Нет данных",
-                status: info.status || "Нет данных",
-                lastSyncDateTime: info.lastSyncDateTime,
-                isReady: info.isReady,
-                hasSyncError: info.hasSyncError
+                id: module.address || `module_${index}`,
+                url: module.address || "Неизвестно",
+                version: module.version || "Нет данных",
+                status: module.state || "Нет данных",
+                lastSyncDateTime: module.lastSyncTime,
+                isReady: module.isReady || false,
+                hasSyncError: !module.isReady // Предполагаем ошибку если модуль не готов
             };
         });
 
@@ -296,7 +332,11 @@ class MonitorView {
 }
 
 export default function (id) {
-    return new MonitorView(id)
-        .loadConfig()
-        .render();
+    const monitoring = new MonitorView(id).loadConfig();
+    const view = monitoring.render();
+
+    // отложенный старт для того что бы страница загрузилась полностью
+    setTimeout(() => {monitoring.startLocalMonitoringPolling()}, 1_000);
+
+    return view;
 }
