@@ -10,10 +10,7 @@ namespace LogService
         {
             LogDataPacket defaultAnswer = new();
 
-            var logFolderPath = Path.Combine(Folders.LogFolder(),
-                ApplicationInformation.Manufacture,
-                ApplicationInformation.AppName,
-                "log");
+            var logFolderPath = Folders.LogFolder(ApplicationInformation.Manufacture, ApplicationInformation.AppName);
 
             if (!Directory.Exists(logFolderPath))
                 return defaultAnswer;

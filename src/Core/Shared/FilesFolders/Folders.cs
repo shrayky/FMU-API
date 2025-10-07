@@ -2,17 +2,19 @@
 {
     public static class Folders
     {
-        public static string LogFolder()
+        public static string LogFolder(string manufacture, string appName)
         {
             var logFolder = string.Empty;
 
             if (OperatingSystem.IsWindows())
             {
                 logFolder = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+                logFolder = Path.Combine(logFolder, manufacture, appName, "log");
             }
             else if (OperatingSystem.IsLinux())
             {
-                logFolder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                logFolder = "/var/log";
+                logFolder = Path.Combine(logFolder, appName);
             }
 
             return logFolder;
@@ -30,9 +32,7 @@
             }
             else if (OperatingSystem.IsLinux())
             {
-                configFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                                           manufacture,
-                                           appName);
+                configFolder = Path.Combine("/var/lib", appName);
             }
 
             return configFolder;

@@ -56,10 +56,7 @@ namespace WebApi.Extensions
             if (!settings.IsEnabled)
                 return;
 
-            var logFolder = Path.Combine(Folders.LogFolder(),
-                                                ApplicationInformation.Manufacture,
-                                                ApplicationInformation.AppName,
-                                                "log");
+            var logFolder = Folders.LogFolder(ApplicationInformation.Manufacture, ApplicationInformation.AppName);
             
             if (!Directory.Exists(logFolder))
                 Directory.CreateDirectory(logFolder);

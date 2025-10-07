@@ -38,7 +38,7 @@ namespace ApplicationConfigurationService
             _cacheService = _services.GetRequiredService<IMemoryCache>();
             _appState = _services.GetRequiredService<IApplicationState>();            
             
-            string configFolder = Folders.CommonApplicationDataFolder(ApplicationInformation.Manufacture, ApplicationInformation.AppName);
+            var configFolder = Folders.CommonApplicationDataFolder(ApplicationInformation.Manufacture, ApplicationInformation.AppName);
 
             _configPath = Path.Combine(configFolder, "config.json");
             _configBackUpPath = Path.Combine(configFolder, "config.bkp");
