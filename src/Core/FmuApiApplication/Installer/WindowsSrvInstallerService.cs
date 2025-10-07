@@ -122,12 +122,11 @@ namespace FmuApiApplication.Installer
 
             var checksum = StringHelpers.ArgumentValue(installerArgs, "--checksum", "");
 
-            if (checksum != string.Empty)
-            {
-                var dataFolder = Folders.CommonApplicationDataFolder(ApplicationInformation.Manufacture, ApplicationInformation.AppName);
-                var checkSumFileName = Path.Combine(dataFolder, "checksum.txt");
-                File.WriteAllText(checkSumFileName, checksum);
-            }
+            if (checksum == string.Empty) return true;
+            
+            var dataFolder = Folders.CommonApplicationDataFolder(ApplicationInformation.Manufacture, ApplicationInformation.AppName);
+            var checkSumFileName = Path.Combine(dataFolder, "checksum.txt");
+            File.WriteAllText(checkSumFileName, checksum);
 
             return true;
 
