@@ -34,10 +34,7 @@ using var loggerFactory = LoggerFactory.Create(builder =>
     builder.AddSerilog(slConsole);
 });
 
-ILogger<Program> logger = loggerFactory.CreateLogger<Program>();
-
-if (OperatingSystem.IsLinux())
-    RunHttpApiService();
+var logger = loggerFactory.CreateLogger<Program>();
 
 if (OperatingSystem.IsWindows())
 {
@@ -51,6 +48,16 @@ if (OperatingSystem.IsWindows())
         _ => ShowAppInfo()
     };
 }
+
+if (OperatingSystem.IsLinux())
+{
+    if (args.Contains("--install"))
+        InstallAsSystemdDaemon();
+    else
+        RunHttpApiService();
+}
+
+return;
 
 bool RunHttpApiService()
 {
@@ -145,7 +152,7 @@ void ConfigureOpenApi(IServiceCollection services)
                 return [api.GroupName];
             }
 
-            ControllerActionDescriptor? controllerActionDescriptor = api.ActionDescriptor as ControllerActionDescriptor;
+            var controllerActionDescriptor = api.ActionDescriptor as ControllerActionDescriptor;
             if (controllerActionDescriptor != null)
             {
                 return [controllerActionDescriptor.ControllerName];
@@ -236,4 +243,21 @@ bool UnregisterWindowsService()
     var installerService = host.Services.GetRequiredService<WindowsSrvInstallerService>();
 
     return installerService.Unregister();
+}
+
+void InstallAsSystemdDaemon()
+{
+    var builder = Host.CreateDefaultBuilder()
+        .ConfigureServices(services =>
+        {
+            services.AddMemoryCache();
+            services.AddSingleton<IParametersService, SimpleParametersService>();
+            services.AddSingleton<LinuxDaemonInstaller>();
+            services.AddSingleton<IApplicationState, ApplicationState>();
+        });
+
+    using var host = builder.Build();
+    var installerService = host.Services.GetRequiredService<LinuxDaemonInstaller>();
+
+    installerService.Register();
 }
