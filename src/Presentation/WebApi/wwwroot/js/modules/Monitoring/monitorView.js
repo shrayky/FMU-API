@@ -292,7 +292,7 @@ class MonitorView {
         if (!table)
             return;
 
-        if (couchDbOnLine == "Disabled") {
+        if (couchDbOnLine === "Disabled") {
             table.hide();
             tableLabel.hide();
             return;
@@ -336,7 +336,7 @@ export default function (id) {
     const view = monitoring.render();
 
     // отложенный старт для того что бы страница загрузилась полностью
-    setTimeout(() => {monitoring.startLocalMonitoringPolling()}, 1_000);
+    setTimeout(() => {monitoring.startLocalMonitoringPolling()}, 500);
 
     return view;
 }
