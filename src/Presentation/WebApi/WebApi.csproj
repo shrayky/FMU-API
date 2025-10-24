@@ -7,6 +7,17 @@
     <AssemblyName>fmu-api</AssemblyName>
     <SignAssembly>False</SignAssembly>
 	<Version>10.6.0</Version>
+
+      <!--<PublishTrimmed>true</PublishTrimmed>
+      <TrimMode>partial</TrimMode>
+      <EnableTrimAnalyzer>true</EnableTrimAnalyzer>-->
+
+      <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+
+      <DebugType>none</DebugType>
+      <DebugSymbols>false</DebugSymbols>
+
+      <OptimizationPreference>Size</OptimizationPreference>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -50,5 +61,14 @@
   <Target Name="NpmBuild" BeforeTargets="Build" Condition="'$(Configuration)' == 'Release'">
     <Exec Command="npm run build" WorkingDirectory="$(ProjectDir)wwwroot" />
   </Target>
+
+    <Target Name="CleanupPublishFolder" AfterTargets="Publish">
+        <ItemGroup>
+            <FilesToDelete Include="$(PublishDir)**\*.pdb" />
+            <FilesToDelete Include="$(PublishDir)**\*.json" />
+        </ItemGroup>
+        <Delete Files="@(FilesToDelete)" />
+        <Message Text="Удалены .pdb и .json файлы из папки публикации" Importance="high" />
+    </Target>
 
 </Project>
