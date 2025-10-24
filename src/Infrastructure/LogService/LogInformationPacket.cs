@@ -63,7 +63,7 @@ namespace LogService
             if (directoryName == null)
                 return string.Empty;
             
-            var tempLog = Path.Combine(directoryName, "temp_slog.txt");
+            var tempLog = Path.GetTempFileName();
 
             try
             {
