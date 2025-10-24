@@ -1,4 +1,3 @@
-using System.Text.Json;
 using CentralServerExchange.Interfaces;
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Attributes;
@@ -34,34 +33,25 @@ public class ConfigurationDownloadService
             _logger.LogInformation("В центральном сервере есть новые настройки для загрузки");
 
             var requestAddress = $"{baseAddress}/settings/{token}";
+            var confirmAddress = $"{baseAddress}/settings/updated/{token}";
             
             return await DownloadSettingsData(requestAddress)
                 .Bind(async rawData => await DecryptSettingsData(rawData).ConfigureAwait(false))
                 .Bind(async settingsRaw => await DeserializeSettings(settingsRaw).ConfigureAwait(false))
                 .Map(async loadedSettings => await ApplySettings(loadedSettings).ConfigureAwait(false))
-                .Bind(async _ => await ConfirmDownload(baseAddress, token).ConfigureAwait(false))
+                .Bind(async _ => await ConfirmDownload(baseAddress, confirmAddress).ConfigureAwait(false))
                 .ConfigureAwait(false);
         }
 
         private async Task<Result<string>> DownloadSettingsData(string requestAddress)
-        {
-            var result = await _exchangeService.DownloadNewConfiguration(requestAddress).ConfigureAwait(false);
-            return result;
-        }
+            => await _exchangeService.DownloadNewConfiguration(requestAddress).ConfigureAwait(false);
 
         private async Task<Result<string>> DecryptSettingsData(string rawData)
         {
             var appSettings = await _parametersService.CurrentAsync().ConfigureAwait(false);
-            string newSettingsRaw;
             
-            if (!string.IsNullOrEmpty(appSettings.FmuApiCentralServer.Secret))
-            {
-                newSettingsRaw = SecretString.DecryptData(rawData, appSettings.FmuApiCentralServer.Secret);
-            }
-            else
-            {
-                newSettingsRaw = rawData;
-            }
+            var newSettingsRaw = !string.IsNullOrEmpty(appSettings.FmuApiCentralServer.Secret) ? 
+                SecretString.DecryptData(rawData, appSettings.FmuApiCentralServer.Secret) : rawData;
 
             return Result.Success(newSettingsRaw);
         }
@@ -83,13 +73,8 @@ public class ConfigurationDownloadService
         }
 
         private async Task<Result> ApplySettings(FmuApiSetting newSettings)
-        {
-            return await _parametersService.ApplyFromCentral(newSettings).ConfigureAwait(false);
-        }
-
-        private async Task<Result> ConfirmDownload(string baseAddress, string token)
-        {
-            var confirmAddress = $"{baseAddress}/settings/updated/{token}";
-            return await _exchangeService.ConfirmDownloadConfiguration(confirmAddress).ConfigureAwait(false);
-        }
+            => await _parametersService.ApplyFromCentral(newSettings).ConfigureAwait(false);
+        
+        private async Task<Result> ConfirmDownload(string baseAddress, string confirmAddress)
+            => await _exchangeService.ConfirmDownloadConfiguration(confirmAddress).ConfigureAwait(false);
 }

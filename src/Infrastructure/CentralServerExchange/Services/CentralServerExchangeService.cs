@@ -6,7 +6,6 @@ using FmuApiDomain.DTO.FmuApiExchangeData.Answer;
 using FmuApiDomain.DTO.FmuApiExchangeData.Request;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Net.Http.Headers;
 using Shared.Http;
 
 namespace CentralServerExchange.Services
@@ -84,5 +83,30 @@ namespace CentralServerExchange.Services
             return operationResult.IsSuccess ? Result.Success() : Result.Failure(operationResult.Error); 
         }
 
+        public async Task<Result<Stream>> DownloadSoftwareUpdate(string requestAddress)
+        {
+            var operationResult = await HttpClient.SendRequestSafelyAsync(
+                client => client.GetAsync(requestAddress),
+                Logger,
+                "загрузка обновления программного обеспечения").ConfigureAwait(false);
+    
+            if (operationResult.IsFailure)
+                return Result.Failure<Stream>(operationResult.Error);
+    
+            var response = operationResult.Value;
+    
+            var contentLength = response.Content.Headers.ContentLength;
+            if (contentLength.HasValue && contentLength.Value > 100 * 1024 * 1024) // 100MB
+            {
+                Logger.LogWarning("Файл обновления очень большой: {Size} байт", contentLength.Value);
+            }
+    
+            var contentType = response.Content.Headers.ContentType?.MediaType;
+            Logger.LogInformation("Загружаем файл обновления. Content-Type: {ContentType}, Size: {Size}", 
+                contentType, contentLength);
+    
+            var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+            return Result.Success(stream);
+        }
     }
 }

@@ -1,13 +1,7 @@
-﻿using System.Text.Json;
-using CentralServerExchange.Interfaces;
-using CentralServerExchange.Services;
-using CSharpFunctionalExtensions;
+﻿using FmuApiDomain.CentralServiceExchange.Interfaces;
 using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.DTO.FmuApiExchangeData.Answer;
-using FmuApiDomain.DTO.FmuApiExchangeData.Request;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Shared.Strings;
 
 namespace CentralServerExchange.Workers
 {
@@ -16,9 +10,7 @@ namespace CentralServerExchange.Workers
         private readonly ILogger<CentralServerExchangeWorker> _logger;
         
         private readonly IParametersService _parametersService;
-        private readonly IExchangeService _exchangeService;
-        private readonly INodeInformationService _nodeInformationService;
-        private readonly ConfigurationDownloadService _configurationDownloadService;
+        private readonly ICentralServerExchangeActions _exchangeActions;
         
         private DateTime _nextExchangeTime;
 
@@ -32,15 +24,11 @@ namespace CentralServerExchange.Workers
         
         public CentralServerExchangeWorker(ILogger<CentralServerExchangeWorker> logger,
             IParametersService parametersService,
-            INodeInformationService nodeInformationService,
-            IExchangeService exchangeService,
-            ConfigurationDownloadService configurationDownloadService)
+            ICentralServerExchangeActions exchangeActions)
         {
             _logger = logger;
             _parametersService = parametersService;
-            _nodeInformationService = nodeInformationService;
-            _exchangeService = exchangeService;
-            _configurationDownloadService = configurationDownloadService;
+            _exchangeActions = exchangeActions;
 
             var configuration = _parametersService.Current();
             _nextExchangeTime = DateTime.Now.AddMinutes(StartDelayMinutes);
@@ -64,7 +52,7 @@ namespace CentralServerExchange.Workers
 
                 if (configuration.FmuApiCentralServer.Enabled)
                 {
-                    var result = await ActExchange().ConfigureAwait(false);
+                    var result = await _exchangeActions.StartExchange().ConfigureAwait(false);
 
                     if (!result && tryCounts <= TryAfterErrorLimit) { 
                         _nextExchangeTime = DateTime.Now.AddMinutes(DelayAfterErrorMinutes);
@@ -75,35 +63,6 @@ namespace CentralServerExchange.Workers
 
                 _nextExchangeTime = DateTime.Now.AddMinutes(configuration.FmuApiCentralServer.ExchangeRequestInterval);
             }
-        }
-
-        private async Task<bool> ActExchange()
-        {
-            var configuration = await _parametersService.CurrentAsync().ConfigureAwait(false);
-            var data = await _nodeInformationService.Create().ConfigureAwait(false);
-            var baseAddress = $"{configuration.FmuApiCentralServer.Address}/api/FmuApiInstanceMonitoring";
-            
-            var exchangeResult = await _exchangeService.ActExchange(data, baseAddress).ConfigureAwait(false);
-
-            if (exchangeResult.IsFailure)
-            {
-                _logger.LogError("Обмен с центральным сервером завершен с ошибкой: {Error}", exchangeResult.Error);
-                return false;
-            }
-
-            if (exchangeResult.Value.SoftwareUpdateAvailable)
-            {
-                _logger.LogInformation("Обнаружена новая верся fmu-api для загрузки");
-                await DownloadSoftwareUpdate();
-            }
-            
-            await _configurationDownloadService.DownloadAndApply(exchangeResult.Value, baseAddress, configuration.FmuApiCentralServer.Token).ConfigureAwait(false);
-            
-            return true;
-        }
-        private async Task DownloadSoftwareUpdate()
-        {
-            throw new NotImplementedException();
         }
     }
 }
