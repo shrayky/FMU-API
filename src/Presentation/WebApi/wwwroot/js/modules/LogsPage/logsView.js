@@ -1,4 +1,4 @@
-import { ApiServerAddress } from '../../utils/net.js';
+import {ApiServerAddress} from '../../utils/net.js';
 
 class LogsView {
     constructor(id) {
@@ -30,20 +30,23 @@ class LogsView {
     render() {
         $$(this.NAMES.toolbarLabel).setValue(this.LABELS.formTitle);
 
-        var formElements = [this._logToolbar(), this._logTextArea()];
+        let formElements = [this._logToolbar(), this._logTextArea()];
 
-        var form = {
+        return {
             view: "form",
             id: this.id,
             name: this.formName,
             disabled: true,
-            on: {
-                onViewShow: this._loadLogs("", this.id),
-            },
             elements: formElements
-        }
+        };
+    }
 
-        return form;
+    delayedDataLoading() {
+        setTimeout(() => {
+            this._loadLogs();
+        }, 100);
+
+        return this;
     }
 
     _logToolbar() {
@@ -80,13 +83,13 @@ class LogsView {
             autowidth: "false",
             width: 400,
             click: async _ => {
-                var combo = $$(this.NAMES.logFiles);
-                var chosenLogName = combo.getValue();
+                const combo = $$(this.NAMES.logFiles);
+                const chosenLogName = combo.getValue();
 
                 if (!chosenLogName)
                     return;
 
-                if (chosenLogName == "")
+                if (chosenLogName === "")
                     return;
 
                 this._loadLogs(chosenLogName, this.id);
@@ -114,24 +117,27 @@ class LogsView {
             view: "textarea",
             id: this.NAMES.log,
             readonly: true,
+            on: {
+                //"onKeyPress": (code, event) => this._handleKeyPress(code, event), 
+            }
         }
     }
 
-    _loadLogs(fileName, elementId) {
-        $$(elementId).disable();
+    _loadLogs(fileName = "") {
+        $$(this.id).disable();
 
-        fileName = fileName.length == 0 ? "now" : fileName;
+        fileName = fileName.length === 0 ? "now" : fileName;
         
 
         webix.ajax().get(ApiServerAddress(`/configuration/logs/${fileName}`))
             .then( (data) => {
-                var logInfo = data.json();
+                let logInfo = data.json();
 
-                var combo = $$(this.NAMES.logFiles);
+                const combo = $$(this.NAMES.logFiles);
 
                 combo.blockEvent();
 
-                var comboOptions = combo.getPopup().getList();
+                let comboOptions = combo.getPopup().getList();
                 comboOptions.clearAll();
                 comboOptions.parse(logInfo.fileNames);
 
@@ -139,11 +145,11 @@ class LogsView {
 
                 combo.unblockEvent();
 
-                var logText = $$(this.NAMES.log);
+                let logText = $$(this.NAMES.log);
                 const lines = logInfo.log.split('\n').reverse().join('\n');
                 logText.setValue(lines);
 
-                $$(elementId).enable();
+                $$(this.id).enable();
             });
     }
 
@@ -169,9 +175,32 @@ class LogsView {
         await writableStream.write(lines);
         await writableStream.close();
     }
+
+    _handleKeyPress(code, e) {
+        //console.log(code);
+        // Page Up (33), Page Down (34)
+        if (!(code === 33 || code === 34))
+            return;
+            
+        var textarea = $$(this.NAMES.log);
+        
+        if (!textarea)
+            return;
+        
+        var dom = textarea.getInputNode();
+        if (code === 33) {
+            dom.scrollTop = Math.max(0, dom.scrollTop - dom.clientHeight);
+        } else {
+            dom.scrollTop = Math.min(dom.scrollHeight - dom.clientHeight, dom.scrollTop + dom.clientHeight);
+        }
+        e.preventDefault();
+    }
 }
 
 export default function (id) {
-    return new LogsView(id)
+    const view = new LogsView(id)
+        .delayedDataLoading()
         .render();
+
+    return view;
 }
