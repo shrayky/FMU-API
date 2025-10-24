@@ -127,6 +127,7 @@ bool RunHttpApiService()
             prm.Context.Response.Headers.Append("Cache-Control", "publc, max-age=864000");
         }
     });
+    
     app.UseRouting();
 
     app.MapRazorPages();

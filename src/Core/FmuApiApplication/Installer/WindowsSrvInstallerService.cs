@@ -16,7 +16,7 @@ namespace FmuApiApplication.Installer
 
         private readonly string _serviceName = ApplicationInformation.AppName.ToLower();
         private readonly string _serviceDisplayName = ApplicationInformation.ServiceName;
-        private readonly string _installDirectory = string.Empty;
+        private readonly string _installDirectory;
         private readonly Parameters _configuration;
 
         public WindowsSrvInstallerService(IParametersService parametersService)
@@ -33,12 +33,12 @@ namespace FmuApiApplication.Installer
 
         private static void CopyFilesRecursively(string sourcePath, string targetPath)
         {
-            foreach (string dirPath in Directory.GetDirectories(sourcePath, "*", SearchOption.AllDirectories))
+            foreach (var dirPath in Directory.GetDirectories(sourcePath, "*", SearchOption.AllDirectories))
             {
                 Directory.CreateDirectory(dirPath.Replace(sourcePath, targetPath));
             }
 
-            foreach (string newPath in Directory.GetFiles(sourcePath, "*.*", SearchOption.AllDirectories))
+            foreach (var newPath in Directory.GetFiles(sourcePath, "*.*", SearchOption.AllDirectories))
             {
                 File.Copy(newPath, newPath.Replace(sourcePath, targetPath), true);
             }
@@ -66,8 +66,8 @@ namespace FmuApiApplication.Installer
                 }
             }
 
-            string serviceFileName = Environment.ProcessPath ?? Assembly.GetExecutingAssembly().Location;
-            string setupFolder = Path.GetDirectoryName(serviceFileName) ?? serviceFileName.Replace("fmu-api.exe", "");
+            var serviceFileName = Environment.ProcessPath ?? Assembly.GetExecutingAssembly().Location;
+            var setupFolder = Path.GetDirectoryName(serviceFileName) ?? serviceFileName.Replace("fmu-api.exe", "");
 
             if (File.Exists(bin))
                 File.Delete(bin);
@@ -202,7 +202,7 @@ namespace FmuApiApplication.Installer
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 return false;
 
-            ServiceController? existingService = ServiceController.GetServices().FirstOrDefault(ser => ser.ServiceName == _serviceName);
+            var existingService = ServiceController.GetServices().FirstOrDefault(ser => ser.ServiceName == _serviceName);
 
             if (existingService is null)
                 return true;

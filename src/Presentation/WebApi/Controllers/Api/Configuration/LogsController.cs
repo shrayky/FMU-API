@@ -10,8 +10,7 @@ namespace WebApi.Controllers.Api.Configuration
     {
         [HttpGet("{selectedFileName}")]
         public async Task<IActionResult> LogsAsync(string selectedFileName)
-        {
-            return Ok(await LogInformationPacket.CollectLogs(selectedFileName));
-        }
+            => Ok(await LogInformationPacket.CollectLogs(selectedFileName));
+        
     }
 }
