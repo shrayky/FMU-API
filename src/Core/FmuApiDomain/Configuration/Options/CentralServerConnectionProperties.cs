@@ -7,5 +7,6 @@
         public string Token {  get; set; } = string.Empty;
         public int ExchangeRequestInterval { get; set; } = 600;
         public string Secret { get; set; } = string.Empty;
+        public bool DownloadNewVersion { get; set; } = false;
     }
 }

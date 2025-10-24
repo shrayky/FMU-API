@@ -12,7 +12,9 @@ class CentralServerConnectionElement {
             address: "Веб-адрес сервиса",
             token: "Токен",
             secret: "Секретный ключ",
-            interval: "Интервал обмена (минут)"
+            interval: "Интервал обмена (минут)",
+            downloadNewVersion: "Загружать и устанавливать новую версию",
+            doExchangeWithServer: "Выполнить обмен"
         };
     }
 
@@ -23,6 +25,7 @@ class CentralServerConnectionElement {
             this.address = config.fmuApiCentralServer.address;
             this.token = config.fmuApiCentralServer.token;
             this.interval = config.fmuApiCentralServer.exchangeRequestInterval;
+            this.downloadNewVersion = config.fmuApiCentralServer.downloadNewVersion;
         }
         return this;
     }
@@ -40,7 +43,7 @@ class CentralServerConnectionElement {
             {
                 padding: padding,
                 rows: [
-                    CheckBox("Иcпользовать", "fmuApiCentralServer.enabled", {
+                    CheckBox(this.LABELS.enabled, "fmuApiCentralServer.enabled", {
                         value: this.enabled,
                         on: {
                             onChange: function(enabled) {
@@ -72,7 +75,33 @@ class CentralServerConnectionElement {
 
                             Number(this.LABELS.interval,
                                  "fmuApiCentralServer.exchangeRequestInterval",
-                                this.interval)
+                                this.interval),
+
+                            CheckBox(this.LABELS.downloadNewVersion, "fmuApiCentralServer.downloadNewVersion", {
+                                value: this.downloadNewVersion,
+                            }),
+                            
+                            {
+                                view: "button",
+                                value: this.LABELS.doExchangeWithServer,
+                                css: "webix_primary",
+                                click: function() {
+                                    webix.ajax()
+                                        .get("/api/centralServer/centralServerExchange")
+                                        .then(function(response) {
+                                            webix.message({ 
+                                                text: "Обмен с центральным сервером выполнен успешно", 
+                                                type: "success" 
+                                            });
+                                        })
+                                        .fail(function(xhr) {
+                                            webix.message({ 
+                                                text: "Ошибка обмена с центральным сервером: " + xhr.responseText, 
+                                                type: "error" 
+                                            });
+                                        });
+                                }
+                            }
                         ],
                     }
                 ]
