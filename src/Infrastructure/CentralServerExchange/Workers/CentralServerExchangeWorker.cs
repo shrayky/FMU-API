@@ -61,7 +61,9 @@ namespace CentralServerExchange.Workers
                     }
                 }
 
+                tryCounts = 0;
                 _nextExchangeTime = DateTime.Now.AddMinutes(configuration.FmuApiCentralServer.ExchangeRequestInterval);
+                await Task.Delay(configuration.FmuApiCentralServer.ExchangeRequestInterval, stoppingToken).ConfigureAwait(false);
             }
         }
     }
