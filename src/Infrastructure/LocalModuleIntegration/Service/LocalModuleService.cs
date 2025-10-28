@@ -14,9 +14,9 @@ namespace LocalModuleIntegration.Service
         private readonly ILogger<LocalModuleService> _logger;
         private readonly IHttpClientFactory _httpClientFactory;
 
-        private string initAddress = @"/api/v1/init";
-        private string statusAddress = @"/api/v1/status";
-        private string outCheckAddress = @"/api/v1/cis/outCheck";
+        private readonly string _initAddress = @"/api/v1/init";
+        private readonly string _statusAddress = @"/api/v1/status";
+        private readonly string _outCheckAddress = @"/api/v1/cis/outCheck";
 
         public LocalModuleService(IHttpClientFactory httpClientFactory, ILogger<LocalModuleService> logger)
         {
@@ -42,7 +42,7 @@ namespace LocalModuleIntegration.Service
                 token = xApiKey
             };
 
-            var response = await httpClient.PostAsJsonAsync(initAddress, content);
+            var response = await httpClient.PostAsJsonAsync(_initAddress, content);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -67,7 +67,7 @@ namespace LocalModuleIntegration.Service
 
             var encodedCis = Uri.EscapeDataString(cis);
 
-            string address = $"{outCheckAddress}?cis={encodedCis}";
+            var address = $"{_outCheckAddress}?cis={encodedCis}";
 
             var response = await httpClient.GetAsync(address);
 
@@ -78,7 +78,7 @@ namespace LocalModuleIntegration.Service
             if (response.StatusCode != System.Net.HttpStatusCode.OK)
             {
                 var err = status == null ? responseContent : status.Description;
-                _logger.LogWarning("Ошибка в ответе от локального модуля: {err}", responseContent);
+                _logger.LogWarning("Ошибка в ответе от локального модуля: {err}", err);
             }
 
             if (status == null)
@@ -98,14 +98,34 @@ namespace LocalModuleIntegration.Service
             if (!connection.Enable)
                 return new();
 
-            using var httpClient = _httpClientFactory.CreateClient("LocalModule");
+            if (connection.EniseyConnectionAddress != string.Empty)
+            {
+                using var httpClientEnisey = _httpClientFactory.CreateClient("Enisey");
+                httpClientEnisey.BaseAddress = new Uri(connection.EniseyConnectionAddress);
 
+                try
+                {
+                    var eniseyResponse = await httpClientEnisey.GetAsync("");
+
+                    if (!eniseyResponse.IsSuccessStatusCode)
+                        return new LocalModuleState()
+                        {
+                            StatusRaw = "enisey_off-line"
+                        };
+                }
+                catch (Exception ex)
+                {
+                    return new LocalModuleState() {
+                        StatusRaw = "enisey_off-line"
+                    };
+                }
+            }
+            
+            using var httpClient = _httpClientFactory.CreateClient("LocalModule");
             httpClient.BaseAddress = new Uri(connection.ConnectionAddress);
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", connection.GetBasicAuthorizationHeader());
 
-            var response = await httpClient.GetAsync(statusAddress);
-
-            var responseContent = await response.Content.ReadAsStringAsync();
+            var response = await httpClient.GetAsync(_statusAddress);
 
             var state = await JsonHelpers.DeserializeAsync<LocalModuleState>(await response.Content.ReadAsStreamAsync());
 
@@ -118,8 +138,8 @@ namespace LocalModuleIntegration.Service
                     response.ReasonPhrase,
                     errorContent
                 );
+                
                 return new();
-
             }
 
             return state ?? new();

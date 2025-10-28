@@ -25,6 +25,7 @@ class OrganizationsConfigurationElement {
             LocalModuleTitle: "Локальный модуль Честного знака",
             localModuleStatusTitle: "Статус локального модуля",
             localModuleInit: "Инициализация ЛМ",
+            eniseyConnectionAddress: "Адрес подключения БД Енисей"
         };
 
         this.LOCAL_MODULE_STATUS = {
@@ -32,7 +33,8 @@ class OrganizationsConfigurationElement {
             INITIALIZATION: 1,
             READY: 2,
             SYNC_ERROR: 3,
-            UNKNOWN: 4
+            ENISEY_OFF_LINE: 4,
+            UNKNOWN: 5
         };
 
         this.LOCAL_MODULE_STATUS_DISPLAY = {
@@ -50,6 +52,10 @@ class OrganizationsConfigurationElement {
             },
             [this.LOCAL_MODULE_STATUS.SYNC_ERROR]: {
                 text: "Ошибка синхронизации",
+                color: "#E74C3C" // Red
+            },
+            [this.LOCAL_MODULE_STATUS.ENISEY_OFF_LINE]: {
+                text: "Енисей off-line",
                 color: "#E74C3C" // Red
             },
             [this.LOCAL_MODULE_STATUS.UNKNOWN]: {
@@ -225,11 +231,16 @@ class OrganizationsConfigurationElement {
               
                 Label("LocalModuleTitle", this.LABELS.LocalModuleTitle),
                 CheckBox(this.LABELS.enable, "LocalModuleEnable"),
-                Text(this.LABELS.connectionAddress, "LocalModuleConnectionAddress", "", {
+                Text(this.LABELS.connectionAddress,
+                     "LocalModuleConnectionAddress", "", {
                     placeholder: "http://hostname:5995"
                 }),
                 Text(this.LABELS.userName, "LocalModuleUserName"),
                 PasswordBox(this.LABELS.password, "LocalModulePassword"),
+                Text(this.LABELS.eniseyConnectionAddress,
+                    "EniseyConnectionAddress", "", {
+                   placeholder: "http://hostname:5994"
+               }),
 
                 {
                     padding: {
@@ -284,7 +295,8 @@ class OrganizationsConfigurationElement {
                 enable: $$("LocalModuleEnable").getValue(),
                 connectionAddress: $$("LocalModuleConnectionAddress").getValue(),
                 userName: $$("LocalModuleUserName").getValue(),
-                password: $$("LocalModulePassword").getValue()
+                password: $$("LocalModulePassword").getValue(),
+                eniseyConnectionAddress: $$("EniseyConnectionAddress").getValue()
             }
         };
 
@@ -319,6 +331,8 @@ class OrganizationsConfigurationElement {
 
         let item = table.getItem(id);
 
+        console.log(item.localModuleConnection);
+
         $$("OrganizationId").setValue(item.id);
         $$("OrganizationId").disable();
         $$("OrganizationInn").setValue(item.inn);
@@ -327,6 +341,7 @@ class OrganizationsConfigurationElement {
         $$("LocalModuleConnectionAddress").setValue(item.localModuleConnection.connectionAddress);
         $$("LocalModuleUserName").setValue(item.localModuleConnection.userName);
         $$("LocalModulePassword").setValue(item.localModuleConnection.password);
+        $$("EniseyConnectionAddress").setValue(item.localModuleConnection.eniseyConnectionAddress);
         $$("XAPIKEY").setValue(item.xapikey);
     }
 

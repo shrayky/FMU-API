@@ -39,6 +39,7 @@ namespace FmuApiDomain.LocalModule.Models
             "initialization" => LocalModuleStatus.Initialization,
             "sync_error" => LocalModuleStatus.SyncError,
             "not_configured" => LocalModuleStatus.NotConfigured,
+            "enisey_off-line" => LocalModuleStatus.EniseyOfflie,
             _ => LocalModuleStatus.Unknown
         };
 

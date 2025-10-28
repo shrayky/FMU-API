@@ -23,6 +23,13 @@ namespace LocalModuleIntegration
             })
             .SetHandlerLifetime(TimeSpan.FromMinutes(5));
 
+            services.AddHttpClient("Eniseey", client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(10);
+                client.DefaultRequestHeaders.Accept.Add(
+                    new MediaTypeWithQualityHeaderValue("application/json"));
+            });
+
             services.AddSingleton<ILocalModuleService, LocalModuleService>();
 
             services.AddHostedService<LocalModuleStatusWorker>();

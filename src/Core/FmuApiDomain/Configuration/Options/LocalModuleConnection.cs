@@ -6,6 +6,7 @@ namespace FmuApiDomain.Configuration.Options
     {
         public bool Enable { get; set; } = false;
         public string ConnectionAddress { get; set; } = @"http://localhost:5995";
+        public string EniseyConnectionAddress { get; set; } = string.Empty;
         public string UserName { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
 

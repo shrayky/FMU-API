@@ -41,8 +41,6 @@ namespace LocalModuleIntegration.Workers
         {
             var config = await _parametersService.CurrentAsync();
 
-            if (config?.OrganisationConfig == null) return;
-
             foreach (var organization in config.OrganisationConfig.PrintGroups)
             {
                 if (stoppingToken.IsCancellationRequested)
@@ -52,7 +50,7 @@ namespace LocalModuleIntegration.Workers
                     continue;
 
                 LocalModuleState state = new();
-                LocalModuleStatus currentStatus = _applicationState.OrganizationLocalModuleStatus(organization.Id);
+                LocalModuleStatus currentStatus;
 
                 try
                 {
@@ -60,12 +58,9 @@ namespace LocalModuleIntegration.Workers
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogInformation(
-                                        "Ошибка проверки статуса локального модуля для организации {OrganizationId}, причина: {ErrorReason} ",
+                    _logger.LogInformation("Ошибка проверки статуса локального модуля для организации {OrganizationId}, причина: {ErrorReason} ",
                                         organization.Id,
                                         ex.Message);
-
-                    currentStatus = LocalModuleStatus.Unknown;
                 }
 
                 var lastStatus = _applicationState.OrganizationLocalModuleStatus(organization.Id);
@@ -80,15 +75,15 @@ namespace LocalModuleIntegration.Workers
                 if (currentStatus != LocalModuleStatus.Ready)
                     _logger.LogError("Изменение статуса ЛМ для организации {OrganizationId}: {OldStatus} -> {NewStatus}",
                         organization.Id,
-                        lastStatus.ToString() ?? LocalModuleStatus.Unknown.ToString(),
-                        currentStatus.ToString() ?? LocalModuleStatus.Unknown.ToString()
+                        lastStatus.ToString(),
+                        currentStatus.ToString()
                     );
                 else
                     _logger.LogInformation(
                             "Изменение статуса ЛМ для организации {OrganizationId}: {OldStatus} -> {NewStatus}",
                             organization.Id,
-                            lastStatus.ToString() ?? LocalModuleStatus.Unknown.ToString(),
-                            currentStatus.ToString() ?? LocalModuleStatus.Unknown.ToString()
+                            lastStatus.ToString(),
+                            currentStatus.ToString()
                         );
 
                 _applicationState.UpdateOrganizationLocalModuleStatus(organization.Id, currentStatus);

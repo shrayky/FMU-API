@@ -15,6 +15,9 @@ namespace FmuApiDomain.LocalModule.Enums
 
         [JsonPropertyName("sync_error")]
         SyncError,
+        
+        [JsonPropertyName("enisey_off-line")]
+        EniseyOfflie,
 
         Unknown
     }
