@@ -13,7 +13,6 @@ namespace WebApi.Controllers.Api.Fmu.Document
         private readonly ILogger<DocumentController> _logger;
         private readonly FrontolDocumentServiceFactory _factory;
         
-        
         public DocumentController(
             ILogger<DocumentController> logger, 
             FrontolDocumentServiceFactory factory)
