@@ -8,6 +8,7 @@ using FmuApiDomain.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Headers;
 using System.Reflection;
+using CouchDb.Services;
 
 namespace CouchDb
 {
@@ -41,6 +42,7 @@ namespace CouchDb
             services.AddScoped<IMarkInformationRepository, MarkInformationRepository>();
             services.AddScoped<IDocumentRepository, DocumentRepository>();
             services.AddScoped<ICheckStatisticRepository, MarkCheckingStatisticRepository>();
+            services.AddSingleton<DataBaseMaintenanceService>();
 
             services.AddHttpClient("CouchDbState", client =>
             {
@@ -56,6 +58,7 @@ namespace CouchDb
             .SetHandlerLifetime(TimeSpan.FromMinutes(5));
 
             services.AddHostedService<CouchDbStatusWorker>();
+            services.AddHostedService<DatabaseCompactWorker>();
             services.AddHostedService<CouchDbMigrationTo102Worker>();
         }
     }
