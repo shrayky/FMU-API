@@ -5,7 +5,7 @@
 @inject IWebHostEnvironment Environment
 @model IndexModel
 @{
-    ViewData["Title"] = "FMU-API";
+    ViewData["Title"] = $"fmu-api-{Model.NodeName}";
 }
 
 <div id="parameters" hidden>

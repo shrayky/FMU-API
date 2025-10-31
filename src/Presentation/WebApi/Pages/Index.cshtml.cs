@@ -1,5 +1,4 @@
 using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.Constants;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -7,17 +6,22 @@ namespace WebApi.Pages
 {
     public class IndexModel : PageModel
     {
-        private readonly ILogger<IndexModel> _logger;
         private readonly IParametersService _parametersService;
 
         [BindProperty]
-        public int ApiServerIpPort { get; set; } = 2578;
-        public IndexModel(ILogger<IndexModel> logger, IParametersService parametersService)
+        public int ApiServerIpPort { get; set; }
+        
+        [BindProperty]
+        public string NodeName { get; set; }
+        
+        public IndexModel(IParametersService parametersService)
         {
-            _logger = logger;
             _parametersService = parametersService;
 
-            ApiServerIpPort = _parametersService.Current().ServerConfig.ApiIpPort;
+            var parameters = _parametersService.Current();
+            
+            ApiServerIpPort = parameters.ServerConfig.ApiIpPort;
+            NodeName = parameters.NodeName;
         }
 
         public void OnGet()
