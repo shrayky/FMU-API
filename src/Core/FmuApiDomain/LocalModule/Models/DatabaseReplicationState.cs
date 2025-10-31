@@ -1,5 +1,4 @@
-﻿using System.Text.Json;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using static Shared.Json.JsonSerializeOptionsProvider;
 
 namespace FmuApiDomain.LocalModule.Models
@@ -16,7 +15,7 @@ namespace FmuApiDomain.LocalModule.Models
 
         [JsonPropertyName("timeLag")]
         [JsonConverter(typeof(JsonStringOrIntConverter))]
-        public string TimeLagRaw { get; set; }
+        public string TimeLagRaw { get; set; } =  string.Empty;
 
         public int? DocCountLocal => ParseIntOrNull(LocalDocCountRaw);
         public int? DocCountServer => ParseIntOrNull(ServerDocCountRaw);
