@@ -77,14 +77,14 @@ namespace FmuApiApplication.Installer
 
             CopyFilesRecursively(setupFolder, _installDirectory);
 
+            Process process = new();
+            ProcessStartInfo startInfo = new()
+            {
+                WindowStyle = ProcessWindowStyle.Hidden,
+            };
+            
             if (existingService is null)
             {
-                Process process = new();
-                ProcessStartInfo startInfo = new()
-                {
-                    WindowStyle = ProcessWindowStyle.Hidden
-                };
-
                 process.StartInfo = startInfo;
                 startInfo.FileName = "cmd.exe";
 
@@ -101,6 +101,8 @@ namespace FmuApiApplication.Installer
 
                 startInfo.Arguments = $"/c netsh advfirewall firewall add rule name = \"{_serviceName}\" dir =in action = allow protocol = TCP localport = 2578";
                 process.Start();
+
+                await Task.Delay(TimeSpan.FromSeconds(10));
             }
 
             var xapikey = StringHelpers.ArgumentValue(installerArgs, "--xapikey", _configuration.OrganisationConfig.XapiKey());
@@ -128,6 +130,9 @@ namespace FmuApiApplication.Installer
             var checkSumFileName = Path.Combine(dataFolder, "checksum.txt");
             File.WriteAllText(checkSumFileName, checksum);
 
+            startInfo.Arguments = $"/c net start {_serviceName}";
+            process.Start();
+            
             return true;
 
         }
