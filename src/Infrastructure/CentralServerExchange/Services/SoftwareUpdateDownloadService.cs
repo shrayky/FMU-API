@@ -122,7 +122,9 @@ public class SoftwareUpdateDownloadService
         }
         catch (Exception e)
         {
-            return Result.Failure<string>($"Ошибка копирования скачанного файла обновления в {filePath}: {e.Message}");
+            var errMsg = $"Ошибка копирования скачанного файла обновления в {filePath}: {e.Message}";
+            _logger.LogError(errMsg);
+            return Result.Failure<string>(errMsg);
         }
     }
 
@@ -140,12 +142,10 @@ public class SoftwareUpdateDownloadService
     {
         var installerPath = Path.Combine(Path.GetTempPath(), ApplicationInformation.AppName);
 
-        if (Directory.Exists(installerPath))
-            Directory.Delete(installerPath, true);
+        if (!Directory.Exists(installerPath))
+            Directory.CreateDirectory(installerPath);
 
-        Directory.CreateDirectory(installerPath);
-
-        ZipFile.ExtractToDirectory(updateFileName, installerPath);
+        ZipFile.ExtractToDirectory(updateFileName, installerPath, true);
         File.Delete(updateFileName);
         
         Process process = new();
@@ -162,6 +162,10 @@ public class SoftwareUpdateDownloadService
         
         process.StartInfo = startInfo;
         process.Start();
+        
+        Task.Delay(TimeSpan.FromMinutes(5));
+        
+        //Directory.Delete(installerPath, true);
 
         return Result.Success();
     }
