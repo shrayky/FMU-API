@@ -38,9 +38,6 @@ namespace AutoUpdateWorkerService.Workers
                 _logger.LogInformation("Проверяю наличие обновления в каталоге {UpdateFilesCatalog}", configuration.AutoUpdate.UpdateFilesCatalog);
 
                 var updateResult = CheckUpdates(configuration.AutoUpdate);
-
-                if (updateResult.IsSuccess)
-                    continue;
             }
         }
 
@@ -54,10 +51,15 @@ namespace AutoUpdateWorkerService.Workers
             var updateFileName = Path.Combine(options.UpdateFilesCatalog, $"update_{architecture}_{os}.zip");
 
             if (!File.Exists(updateFileName))
+            {
+                _logger.LogInformation("Не найден файл обновления {updateFileName}",  updateFileName);
                 return Result.Failure("No updates");
+            }
 
             var updateFileChecksum = GetFileMd5Checksum(updateFileName);
             var currentInstanceChecksum = GetCurrentInstanceChecksum();
+
+            _logger.LogInformation("Обновление с {currentInstanceChecksum} на {updateFileChecksum}", currentInstanceChecksum, updateFileChecksum);
 
             if (currentInstanceChecksum == updateFileChecksum)
                 return Result.Success();
