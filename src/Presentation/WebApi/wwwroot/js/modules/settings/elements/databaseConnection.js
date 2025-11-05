@@ -14,26 +14,32 @@ class DatabaseConnectionConfigurationElement {
             bulkBatchSize: "Размер пакета",
             bulkParallelTasks: "Количество параллельных задач",
             bulkLabel: "Параметры пакетной обработки",
-            queryLimit: "Максимальное количество записей для запроса выборки"
+            queryLimit: "Максимальное количество записей для запроса выборки",
+            queryTimeout: "Таймаут запроса (секунд)",
         };
     }
 
     loadConfig(config) {
-        if (config?.logging) {
-            this.serverDbAddress = config.database.netAddress;
-            this.userName = config.database.userName;
-            this.userPassword = config.database.password;
-            this.enable = config.database.enable;
-            this.bulkBatchSize = config.database.bulkBatchSize;
-            this.bulkParallelTasks = config.database.bulkParallelTasks;
-            this.queryLimit = config.database.queryLimit;
+        if (config?.database) {
+            const settings = config.database;
+
+            this.enable = settings.enable;
+            
+            this.serverDbAddress = settings.netAddress;
+            this.userName = settings.userName;
+            this.userPassword = settings.password;
+
+            this.bulkBatchSize = settings.bulkBatchSize;
+            this.bulkParallelTasks = settings.bulkParallelTasks;
+            this.queryLimit = settings.queryLimit;
+            this.queryTimeout = settings.queryTimeoutSeconds;
         }
 
         return this;
     }
 
     render() {
-        var elements = [];
+        let elements = [];
 
         elements.push(
             Label("lDatabaseConfig", this.LABELS.title),
@@ -73,6 +79,7 @@ class DatabaseConnectionConfigurationElement {
                                 cols: [
                                     Number(this.LABELS.bulkBatchSize, "database.bulkBatchSize", this.bulkBatchSize),
                                     Number(this.LABELS.bulkParallelTasks, "database.bulkParallelTasks", this.bulkParallelTasks),
+                                    Number(this.LABELS.queryTimeout, "database.queryTimeoutSeconds", this.queryTimeout),
                                 ]
                             },
                             
