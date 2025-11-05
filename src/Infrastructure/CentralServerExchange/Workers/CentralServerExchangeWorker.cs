@@ -30,7 +30,6 @@ namespace CentralServerExchange.Workers
             _parametersService = parametersService;
             _exchangeActions = exchangeActions;
 
-            var configuration = _parametersService.Current();
             _nextExchangeTime = DateTime.Now.AddMinutes(StartDelayMinutes);
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -64,6 +63,7 @@ namespace CentralServerExchange.Workers
                 tryCounts = 0;
                 _nextExchangeTime = DateTime.Now.AddMinutes(configuration.FmuApiCentralServer.ExchangeRequestInterval);
                 await Task.Delay(configuration.FmuApiCentralServer.ExchangeRequestInterval, stoppingToken).ConfigureAwait(false);
+                _logger.LogInformation("Обмен с центральными сервером: следующий обмен с центральным сервером запланирован на {_nextExchangeTime}", _nextExchangeTime);
             }
         }
     }
