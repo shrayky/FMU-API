@@ -17,7 +17,7 @@ public static class CentralServerExchangeRegistrationExtension
 
         services.AddHttpClient<CentralServerExchangeService>(client =>
         {
-            client.Timeout = TimeSpan.FromSeconds(30);
+            client.Timeout = TimeSpan.FromMinutes(10);
             client.DefaultRequestHeaders.Accept.Add(
                 new MediaTypeWithQualityHeaderValue("application/json"));
         });
