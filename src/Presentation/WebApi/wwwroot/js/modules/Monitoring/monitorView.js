@@ -262,8 +262,6 @@ class MonitorView {
         if (!localModulesInfo)
             return;
 
-        console.log(localModulesInfo);
-
         const table = $$(this.NAMES.localModulesTable);
 
         if (!table)

@@ -331,8 +331,6 @@ class OrganizationsConfigurationElement {
 
         let item = table.getItem(id);
 
-        console.log(item.localModuleConnection);
-
         $$("OrganizationId").setValue(item.id);
         $$("OrganizationId").disable();
         $$("OrganizationInn").setValue(item.inn);
