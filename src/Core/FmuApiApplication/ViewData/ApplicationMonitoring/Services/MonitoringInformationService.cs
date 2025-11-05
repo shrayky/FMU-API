@@ -1,15 +1,16 @@
+using FmuApiApplication.ViewData.ApplicationMonitoring.Interfaces;
 using FmuApiDomain.Attributes;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.MarkInformation.Models;
 using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.ViewData.ApplicationMonitoring.Dto;
-using FmuApiDomain.ViewData.ApplicationMonitoring.Interfaces;
 using FmuApiDomain.ViewData.Dto;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
-namespace FmuApiDomain.ViewData.ApplicationMonitoring.Services;
+namespace FmuApiApplication.ViewData.ApplicationMonitoring.Services;
 
 [AutoRegisterService(ServiceLifetime.Transient)]
 public class MonitoringInformationService : IMonitoringInformation
@@ -18,17 +19,19 @@ public class MonitoringInformationService : IMonitoringInformation
     private readonly IParametersService _parametersService;
     private readonly IMarkStatisticsService _markStatisticsService;
     private readonly IMemoryCache _cache;
+    private readonly ILogger<MonitoringInformationService> _logger;
 
     private const string Key7days = "check-marks-last-7";
     private const string Key30days = "check-marks-last-30";
 
     public MonitoringInformationService(IApplicationState applicationState, IParametersService parametersService,
-        IMarkStatisticsService markStatisticsService, IMemoryCache cache)
+        IMarkStatisticsService markStatisticsService, IMemoryCache cache, ILogger<MonitoringInformationService> logger)
     {
         _applicationState = applicationState;
         _parametersService = parametersService;
         _markStatisticsService = markStatisticsService;
         _cache = cache;
+        _logger = logger;
     }
 
     public async Task<MonitoringData> Collect()
@@ -41,7 +44,7 @@ public class MonitoringInformationService : IMonitoringInformation
                 ? (_applicationState.CouchDbOnline() ? "On-line" : "Off-line")
                 : "Disabled",
             StateOfLocalModules = await LoadStateOfLocalModules(),
-            MarkCheksStatistics = await CollccetStatisctics()
+            MarkCheksStatistics = await ColleсtStatistics()
         };
     }
 
@@ -70,7 +73,7 @@ public class MonitoringInformationService : IMonitoringInformation
         return stateOfLocalModules;
     }
 
-    private async Task<MarkCheksStatistics> CollccetStatisctics()
+    private async Task<MarkCheksStatistics> ColleсtStatistics()
     {
         var todayRaw = await _markStatisticsService.Today();
 
@@ -110,6 +113,7 @@ public class MonitoringInformationService : IMonitoringInformation
             }
             catch (Exception e)
             {
+                _logger.LogError(e, "Получение статистики за {Days}", days);
                 return new MarkChecksInformation();
             }
 

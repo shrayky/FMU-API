@@ -1,8 +1,4 @@
-﻿using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.LocalModule.Models;
-using FmuApiDomain.MarkInformation.Interfaces;
-using FmuApiDomain.State.Interfaces;
-using FmuApiDomain.ViewData.ApplicationMonitoring.Interfaces;
+﻿using FmuApiApplication.ViewData.ApplicationMonitoring.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers.Api.Monitoring

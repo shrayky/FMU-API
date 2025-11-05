@@ -1,7 +1,6 @@
 using FmuApiDomain.ViewData.ApplicationMonitoring.Dto;
-using FmuApiDomain.ViewData.Dto;
 
-namespace FmuApiDomain.ViewData.ApplicationMonitoring.Interfaces;
+namespace FmuApiApplication.ViewData.ApplicationMonitoring.Interfaces;
 
 public interface IMonitoringInformation
 {
