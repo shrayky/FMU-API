@@ -10,7 +10,6 @@ using FmuApiDomain.DTO.FmuApiExchangeData.Answer;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Shared.FilesFolders;
 
 namespace CentralServerExchange.Services;
 
@@ -22,7 +21,7 @@ public class SoftwareUpdateDownloadService
     private readonly IExchangeService _exchangeService;
     private readonly IApplicationState _appState;
     
-    private static readonly SemaphoreSlim _updateLock = new(1, 1);
+    private static readonly SemaphoreSlim UpdateLock = new(1, 1);
 
     public SoftwareUpdateDownloadService(ILogger<SoftwareUpdateDownloadService> logger, IParametersService parametersService, IExchangeService exchangeService, IApplicationState appState)
     {
@@ -36,13 +35,12 @@ public class SoftwareUpdateDownloadService
     {
         var parameters = await _parametersService.CurrentAsync();
 
-        if (!parameters.FmuApiCentralServer.DownloadNewVersion)
+        if (!parameters.FmuApiCentralServer.DownloadNewVersion 
+            || !_appState.IsOnline() 
+            || !response.SoftwareUpdateAvailable)
             return Result.Success();
-        
-        if (!response.SoftwareUpdateAvailable)
-            return Result.Success();
-        
-        if (!await _updateLock.WaitAsync(0))
+
+        if (!await UpdateLock.WaitAsync(0))
             return Result.Failure("Обновление уже запущено");
 
         try
@@ -74,7 +72,7 @@ public class SoftwareUpdateDownloadService
         }
         finally
         {
-            _updateLock.Release();
+            UpdateLock.Release();
         }
     }
 
@@ -174,10 +172,10 @@ public class SoftwareUpdateDownloadService
     {
         _logger.LogWarning("Начинаю установку обновления");
 
-        const string appDirectory = $"/opt/{ApplicationInformation.Manufacture}/{ApplicationInformation.AppName}";
-        const string appFileName = $"{appDirectory}/fmu-api";
-        const string oldAppFileName = $"{appFileName}.old";
-        const string backUpFileName = $"{appFileName}.bkp";
+        //const string appDirectory = $"/opt/{ApplicationInformation.Manufacture}/{ApplicationInformation.AppName}";
+        //const string appFileName = $"{appDirectory}/fmu-api";
+        //const string oldAppFileName = $"{appFileName}.old";
+        //const string backUpFileName = $"{appFileName}.bkp";
         
         var installerPath = Path.Combine(Path.GetTempPath(), ApplicationInformation.AppName);
 
@@ -202,8 +200,11 @@ public class SoftwareUpdateDownloadService
         };
        
         process.StartInfo = startInfo;
-        var info = process.Start();
-        var outI = process.StandardOutput.ReadToEnd();
+        //var info = process.Start();
+        //var outI = process.StandardOutput.ReadToEnd();
+        process.Start();
+        
+        Task.Delay(TimeSpan.FromMinutes(15));
 
         return Result.Success();
     }
