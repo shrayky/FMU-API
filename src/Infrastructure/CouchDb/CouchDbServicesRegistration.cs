@@ -33,8 +33,8 @@ namespace CouchDb
                     options.UseBasicAuthentication(settings.Database.UserName, settings.Database.Password);
                 }
                 
-                options.ConfigureFlurlClient(options =>
-                    options.Timeout = TimeSpan.FromSeconds(settings.Database.QueryTimeoutSeconds));
+                options.ConfigureFlurlClient(clientFlurlHttpSettings =>
+                    clientFlurlHttpSettings.Timeout = TimeSpan.FromSeconds(settings.Database.QueryTimeoutSeconds));
             });
 
             services.AddAutoRegisteredServices([Assembly.GetExecutingAssembly()]);

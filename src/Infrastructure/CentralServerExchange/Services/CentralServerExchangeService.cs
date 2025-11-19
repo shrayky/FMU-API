@@ -16,8 +16,6 @@ namespace CentralServerExchange.Services
         private HttpClient HttpClient { get; init; }
         private ILogger<CentralServerExchangeService> Logger { get; init; }
 
-        private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(600);
-
         public CentralServerExchangeService(ILogger<CentralServerExchangeService> logger, HttpClient httpClient)
         {
             HttpClient = httpClient;
