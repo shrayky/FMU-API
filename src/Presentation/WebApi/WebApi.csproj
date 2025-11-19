@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>fmu-api</AssemblyName>
     <SignAssembly>False</SignAssembly>
-	<Version>10.8.0</Version>
+	<Version>10.9.0</Version>
 
       <!--<PublishTrimmed>true</PublishTrimmed>
       <TrimMode>partial</TrimMode>
