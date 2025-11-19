@@ -125,5 +125,6 @@ Global
 	GlobalSection(RiderSharedRunConfigurations) = postSolution
 		File = x64-win.run\x64-win.run.xml
 		File = x64-linux.run\x64-linux.run.xml
+		File = x86-windows.run\x86-windows.run.xml
 	EndGlobalSection
 EndGlobal
