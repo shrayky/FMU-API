@@ -25,7 +25,8 @@ class OrganizationsConfigurationElement {
             LocalModuleTitle: "Локальный модуль Честного знака",
             localModuleStatusTitle: "Статус локального модуля",
             localModuleInit: "Инициализация ЛМ",
-            eniseyConnectionAddress: "Адрес подключения БД Енисей"
+            eniseyConnectionAddress: "Адрес подключения БД Енисей",
+            tsPiotAddress: "Адрес ТС ПИоТ (для Frontol ниже 28)",
         };
 
         this.LOCAL_MODULE_STATUS = {
@@ -227,6 +228,7 @@ class OrganizationsConfigurationElement {
                 Number(this.LABELS.code, "OrganizationId", "1111"),
                 Text(this.LABELS.name, "OrganizationName"),
                 Text(this.LABELS.inn, "OrganizationInn"),
+                Text(this.LABELS.tsPiotAddress, "TsPiotAddress"),
                 Text(this.LABELS.xapikey, "XAPIKEY"),
               
                 Label("LocalModuleTitle", this.LABELS.LocalModuleTitle),
@@ -289,6 +291,7 @@ class OrganizationsConfigurationElement {
         const newData = {
             id: organizationId,
             xapikey: $$("XAPIKEY").getValue(),
+            tsPiotAddress: $$("TsPiotAddress").getValue(),
             inn: $$("OrganizationInn").getValue(),
             name: $$("OrganizationName").getValue(),
             localModuleConnection: {
@@ -335,6 +338,7 @@ class OrganizationsConfigurationElement {
         $$("OrganizationId").disable();
         $$("OrganizationInn").setValue(item.inn);
         $$("OrganizationName").setValue(item.name);
+        $$("TsPiotAddress").setValue(item.tsPiotAddress);
         $$("LocalModuleEnable").setValue(item.localModuleConnection.enable);
         $$("LocalModuleConnectionAddress").setValue(item.localModuleConnection.connectionAddress);
         $$("LocalModuleUserName").setValue(item.localModuleConnection.userName);

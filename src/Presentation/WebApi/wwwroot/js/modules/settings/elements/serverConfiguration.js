@@ -1,4 +1,4 @@
-import { Label, Text, Number, padding } from "../../../utils/ui.js";
+import {Label, Text, Number, padding, CheckBox} from "../../../utils/ui.js";
 
 class ServerConfigurationElement {
     constructor(id) {
@@ -7,12 +7,14 @@ class ServerConfigurationElement {
             title: "Сервер",
             name: "Название узла",
             ipPortApi: "IP-порт API сервиса",
+            tsPiotUse: "Для проверки маркировки использовать ТС ПиОТ",
         };
     }
 
     loadConfig(config) {
         if (config?.serverConfig) {
             this.apiIpPort = config.serverConfig.apiIpPort ?? 2578;
+            this.tsPiotEnabled = config.serverConfig.tsPiotEnabled ?? false;
         }
 
         if (config?.nodeName) {
@@ -35,6 +37,10 @@ class ServerConfigurationElement {
                 rows: [
                     Text("Название узла", "nodeName", this.nodeName),
                     Number("IP-порт API сервиса", "serverConfig.apiIpPort", this.apiIpPort, "111"),
+                    CheckBox(this.LABELS.tsPiotUse, "serverConfig.tsPiotEnabled", {
+                        value: this.tsPiotEnabled,
+                        Label: this.LABELS.tsPiotUse
+                    })
                 ]
             }
         );

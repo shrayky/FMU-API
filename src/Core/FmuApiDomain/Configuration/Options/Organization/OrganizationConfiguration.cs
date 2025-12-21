@@ -84,10 +84,10 @@ namespace FmuApiDomain.Configuration.Options.Organization
         {
             organizationId = organizationId == 0 ? 1 : organizationId;
 
-            PrintGroupData? pgData = PrintGroups.FirstOrDefault(x => x.Id == organizationId);
+            var pgData = PrintGroups.FirstOrDefault(x => x.Id == organizationId);
 
             if (pgData == null)
-                return new();
+                return new LocalModuleConnection();
 
             return pgData.LocalModuleConnection;
         }
