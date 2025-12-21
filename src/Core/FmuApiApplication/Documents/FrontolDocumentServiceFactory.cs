@@ -1,5 +1,7 @@
-﻿using FmuApiDomain.Fmu.Document;
+﻿using FmuApiDomain.Configuration.Interfaces;
+using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.Fmu.Document.Interface;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace FmuApiApplication.Documents
@@ -8,7 +10,7 @@ namespace FmuApiApplication.Documents
     {
         private readonly ILogger<FrontolDocumentServiceFactory> _logger;
         private readonly IServiceProvider _serviceProvider;
-
+        
         public FrontolDocumentServiceFactory(ILogger<FrontolDocumentServiceFactory> logger,
             IServiceProvider serviceProvider)
         {
@@ -30,6 +32,9 @@ namespace FmuApiApplication.Documents
 
         private IFrontolDocumentService FrontolCheckDocumentService(RequestDocument document)
         {
+            var parametersService = _serviceProvider.GetRequiredService<IParametersService>();
+            var settings = parametersService.Current();
+            
             if (document.Mark == string.Empty)
                 return CheckFrontolDocumentWithMarks.Create(document, _serviceProvider);
 

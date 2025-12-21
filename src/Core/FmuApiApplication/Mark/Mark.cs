@@ -22,6 +22,7 @@ namespace FmuApiApplication.Mark
         private readonly IParametersService _parametersService;
         private readonly ILogger<Mark> _logger;
         private readonly Parameters _configuration;
+        private readonly ICheckOperation  _tspiotCLient;
 
         public string Code { get; }
         public string SGtin { get; }
@@ -40,6 +41,7 @@ namespace FmuApiApplication.Mark
             IMarkChecker markChecker,
             IMarkStateManager markStateManager,
             IParametersService parametersService,
+            ICheckOperation tsPiotClient,
             ILogger<Mark> logger)
         {
             _markParser = markParser;
@@ -47,6 +49,8 @@ namespace FmuApiApplication.Mark
             _markStateManager = markStateManager;
             _parametersService = parametersService;
             _logger = logger;
+            _tspiotCLient = tsPiotClient;
+                
             _configuration = _parametersService.Current();
 
             Code = _markParser.ParseCode(markCode);
@@ -66,6 +70,7 @@ namespace FmuApiApplication.Mark
             IMarkChecker markChecker,
             IMarkStateManager markStateManager,
             IParametersService parametersService,
+            ICheckOperation tsPiotClient,
             ILogger<Mark> logger)
         {
             bool isMarkDecoded = StringHelpers.IsDigitString(codeData.Substring(0, 14));
@@ -80,6 +85,7 @@ namespace FmuApiApplication.Mark
                 markChecker,
                 markStateManager,
                 parametersService,
+                tsPiotClient,
                 logger);
 
             return markCode;
@@ -95,6 +101,14 @@ namespace FmuApiApplication.Mark
                 async () => await _markChecker.OfflineCheckAsync(Cis, PrintGroupCode),
                 async() => await _markChecker.FmuApiDatabaseCheck(SGtin, _markStateManager)
             };
+
+            if (_configuration.ServerConfig.TsPiotEnabled)
+            {
+                delegates = new CheckDelegate[]
+                {
+                    async () => await _tspiotCLient.Check(Code, SGtin, CodeIsSgtin, PrintGroupCode)
+                };
+            }
 
             List<string> checkErrors = [];
             var currentState = await _markStateManager.Information(SGtin);

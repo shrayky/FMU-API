@@ -15,6 +15,7 @@ namespace FmuApiApplication.Mark
             services.AddScoped<IMarkParser, MarkParser>();
             services.AddScoped<IMarkChecker, MarkChecker>();
             services.AddScoped<IMarkStateManager, MarkStateManager>();
+            services.AddScoped<ICheckOperation, TsPiotClient>();
 
             // Фабрика для создания IMark
             services.AddScoped<Func<string, Task<IMark>>>(sp => async mark =>
@@ -23,6 +24,7 @@ namespace FmuApiApplication.Mark
                 var markChecker = sp.GetRequiredService<IMarkChecker>();
                 var markStateManager = sp.GetRequiredService<IMarkStateManager>();
                 var parametersService = sp.GetRequiredService<IParametersService>();
+                var tsPiotClient = sp.GetRequiredService<ICheckOperation>();
                 var logger = sp.GetRequiredService<ILogger<Mark>>();
 
                 return Mark.Create(
@@ -31,6 +33,7 @@ namespace FmuApiApplication.Mark
                     markChecker,
                     markStateManager,
                     parametersService,
+                    tsPiotClient,
                     logger);
             });
 

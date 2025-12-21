@@ -160,12 +160,12 @@ namespace FmuApiApplication.Mark.Services
         {
             _logger.LogWarning("Производится проверка марки {сis} в локальном модуле", cis);
 
-            string xApiKey = _configuration.OrganisationConfig.XapiKey(organizationId);
+            var xApiKey = _configuration.OrganisationConfig.XapiKey(organizationId);
 
             if (string.IsNullOrEmpty(xApiKey))
                 return MarkCheckResult.Failure($"Не получен XAPIKEY для организации с кодом {organizationId}, off-line проверка {cis} невозможна.");
 
-            LocalModuleConnection connection = _configuration.OrganisationConfig.LocalModuleConnection(organizationId);
+            var connection = _configuration.OrganisationConfig.LocalModuleConnection(organizationId);
 
             if (!connection.Enable)
                 return MarkCheckResult.Failure($"Локальный модуль отключен для организации с кодом {organizationId}, off-line проверка {cis} невозможна.");

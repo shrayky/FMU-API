@@ -17,31 +17,31 @@ namespace FmuApiApplication.Documents
 {
     public class CheckSellDocument : IFrontolDocumentService
     {
-        private RequestDocument _document { get; set; }
-        private ILogger<CheckSellDocument> _logger { get; set; }
-        private Lazy<IFrontolSprTService> _frontolSprTSerice { get; set; }
-        private Func<string, Task<IMark>> _markFactory { get; set; }
-        private IMemoryCache _memcachedClient;
-        IParametersService _parametersService { get; set; }
-        private ICheckStatisticRepository _checkStatisticRepository { get; set; }
+        private RequestDocument Document { get; set; }
+        private ILogger<CheckSellDocument> Logger { get; set; }
+        private Lazy<IFrontolSprTService> FrontolSprTSerice { get; set; }
+        private Func<string, Task<IMark>> MarkFactory { get; set; }
+        private readonly IMemoryCache _memcachedClient;
+        IParametersService ParametersService { get; set; }
+        private ICheckStatisticRepository CheckStatisticRepository { get; set; }
 
-        private int _cacheExpirationMinutes = 30;
-        private Parameters _configuration;
+        private const int CacheExpirationMinutes = 30;
+        private readonly Parameters _configuration;
 
         private CheckSellDocument(RequestDocument requestDocument, IServiceProvider provider)
         {
-            _document = requestDocument;
+            Document = requestDocument;
 
-            _frontolSprTSerice = new Lazy<IFrontolSprTService>(() => provider.GetRequiredService<IFrontolSprTService>());
+            FrontolSprTSerice = new Lazy<IFrontolSprTService>(() => provider.GetRequiredService<IFrontolSprTService>());
 
-            _markFactory = provider.GetRequiredService<Func<string, Task<IMark>>>();
+            MarkFactory = provider.GetRequiredService<Func<string, Task<IMark>>>();
 
-            _checkStatisticRepository = provider.GetRequiredService<ICheckStatisticRepository>();
+            CheckStatisticRepository = provider.GetRequiredService<ICheckStatisticRepository>();
 
-            _logger = provider.GetRequiredService<ILogger<CheckSellDocument>>();
+            Logger = provider.GetRequiredService<ILogger<CheckSellDocument>>();
             _memcachedClient = provider.GetRequiredService<IMemoryCache>(); ;
-            _parametersService = provider.GetRequiredService<IParametersService>();
-            _configuration = _parametersService.Current();
+            ParametersService = provider.GetRequiredService<IParametersService>();
+            _configuration = ParametersService.Current();
         }
 
         private static CheckSellDocument CreateObject(RequestDocument requestDocument, IServiceProvider provider)
@@ -52,9 +52,9 @@ namespace FmuApiApplication.Documents
 
         public async Task<Result<FmuAnswer>> ActionAsync()
         {
-            var cachedAnswer = _memcachedClient.Get<FmuAnswer>(_document.Mark);
+            var cachedAnswer = _memcachedClient.Get<FmuAnswer>(Document.Mark);
 
-            if (cachedAnswer?.SGtin() == _document.Mark)
+            if (cachedAnswer?.SGtin() == Document.Mark)
                 return Result.Success(cachedAnswer);
 
             var checkResult = await MarkInformation();
@@ -62,15 +62,15 @@ namespace FmuApiApplication.Documents
             if (checkResult.IsSuccess)
                 _memcachedClient.Set(checkResult.Value.SGtin(),
                                      checkResult.Value,
-                                     TimeSpan.FromMinutes(_cacheExpirationMinutes));
+                                     TimeSpan.FromMinutes(CacheExpirationMinutes));
              
-                return checkResult;
+            return checkResult;
         }
 
         private async Task<Result<FmuAnswer>> MarkInformation()
         {
-            _logger.LogInformation("Марка для проверки {markCodeData}", _document.Mark);
-            IMark mark = await _markFactory(_document.Mark);
+            Logger.LogInformation("Марка для проверки {markCodeData}", Document.Mark);
+            var mark = await MarkFactory(Document.Mark);
 
             await SetOrganizationIdAsync(mark);
 
@@ -78,25 +78,25 @@ namespace FmuApiApplication.Documents
             
             if (checkResult.IsSuccess)
             {
-                checkResult.Value.FillFieldsFor6255(_document.Inn);
+                checkResult.Value.FillFieldsFor6255(Document.Inn);
 
                 if (checkResult.Value.Error == string.Empty && !checkResult.Value.OfflineRegime)
-                    await _checkStatisticRepository.SuccessOnLineCheck(checkResult.Value.SGtin(), DateTime.Now);
+                    await CheckStatisticRepository.SuccessOnLineCheck(checkResult.Value.SGtin(), DateTime.Now);
                 else if (checkResult.Value.Error == string.Empty && checkResult.Value.OfflineRegime)
-                    await _checkStatisticRepository.SuccessOffLineCheck(checkResult.Value.SGtin(), DateTime.Now);
+                    await CheckStatisticRepository.SuccessOffLineCheck(checkResult.Value.SGtin(), DateTime.Now);
                 else if (checkResult.Value.Error != string.Empty && !checkResult.Value.OfflineRegime)
-                    await _checkStatisticRepository.OnLineCheckWithWarnings(checkResult.Value.SGtin(), DateTime.Now, checkResult.Value.Error);
+                    await CheckStatisticRepository.OnLineCheckWithWarnings(checkResult.Value.SGtin(), DateTime.Now, checkResult.Value.Error);
                 else if (checkResult.Value.Error != string.Empty && checkResult.Value.OfflineRegime)
-                    await _checkStatisticRepository.OffLineCheckWithWarnings(checkResult.Value.SGtin(), DateTime.Now, checkResult.Value.Error);
+                    await CheckStatisticRepository.OffLineCheckWithWarnings(checkResult.Value.SGtin(), DateTime.Now, checkResult.Value.Error);
 
                 return checkResult;
             }
             else
             {
-                await _checkStatisticRepository.FailureCheck(mark.SGtin, DateTime.Now);
+                await CheckStatisticRepository.FailureCheck(mark.SGtin, DateTime.Now);
             }
 
-            _logger.LogError(checkResult.Error);
+            Logger.LogError(checkResult.Error);
 
             if (_configuration.SaleControlConfig.SendEmptyTrueApiAnswerWhenTimeoutError
                 && _configuration.SaleControlConfig.RejectSalesWithoutCheckInformationFrom < DateTime.Now)
@@ -107,9 +107,9 @@ namespace FmuApiApplication.Documents
 
         private async Task<Result<FmuAnswer>> MarkInformation(string markInBase64)
         {
-            _logger.LogInformation("Марка для проверки {markCodeData}", markInBase64);
+            Logger.LogInformation("Марка для проверки {markCodeData}", markInBase64);
 
-            IMark mark = await _markFactory(markInBase64);
+            IMark mark = await MarkFactory(markInBase64);
             await SetOrganizationIdAsync(mark);
 
             var checkResult = await mark.PerformCheckAsync(OperationType.Sale);
@@ -117,7 +117,7 @@ namespace FmuApiApplication.Documents
             if (checkResult.IsSuccess)
                 return checkResult;
 
-            _logger.LogError(checkResult.Error);
+            Logger.LogError(checkResult.Error);
 
             if (_configuration.SaleControlConfig.SendEmptyTrueApiAnswerWhenTimeoutError 
                 && _configuration.SaleControlConfig.RejectSalesWithoutCheckInformationFrom <  DateTime.Now)
@@ -154,7 +154,7 @@ namespace FmuApiApplication.Documents
                 Codes = [fakeCodeData]
             };
 
-            _logger.LogWarning("[{Date}] - Ошибка проверки кода марки {Code}: {Error}",
+            Logger.LogWarning("[{Date}] - Ошибка проверки кода марки {Code}: {Error}",
                 DateTime.Now, mark.Code, error);
 
             return new FmuAnswer
@@ -171,7 +171,7 @@ namespace FmuApiApplication.Documents
                 return;
 
             int pgCode = 0;
-            string inn = _document.Inn;
+            string inn = Document.Inn;
 
             if (inn != string.Empty)
             {
@@ -182,7 +182,7 @@ namespace FmuApiApplication.Documents
             }
             else
             {
-                var result = await _frontolSprTSerice.Value.PrintGroupCodeByBarcodeAsync(mark.Barcode);
+                var result = await FrontolSprTSerice.Value.PrintGroupCodeByBarcodeAsync(mark.Barcode);
 
                 if (result.IsSuccess)
                     pgCode = result.Value;
@@ -191,7 +191,7 @@ namespace FmuApiApplication.Documents
             if (pgCode == 0)
                 return;
 
-            _logger.LogInformation("Код группы печати организации {pgCode}", pgCode);
+            Logger.LogInformation("Код группы печати организации {pgCode}", pgCode);
 
             mark.SetPrintGroupCode(pgCode);
         }

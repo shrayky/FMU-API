@@ -6,21 +6,30 @@ namespace FmuApiDomain.Fmu.Document
     {
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string Action { get; set; } = string.Empty;
+        
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string Uid { get; set; } = string.Empty;
+        
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string Type { get; set; } = string.Empty;
+        
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string Pos { get; set; } = string.Empty;
+        
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string Shift { get; set; } = string.Empty;
+        
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string Number { get; set; } = string.Empty;
+        
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string User { get; set; } = string.Empty;
+        
         public List<Position> Positions { get; set; } = new();
+        
         [JsonIgnore]
         public string Inn => Positions.Count != 1 ? "" : Positions[0].Organisation.Inn;
+        
         [JsonIgnore]
         public string Mark => ExtractMark();
 
