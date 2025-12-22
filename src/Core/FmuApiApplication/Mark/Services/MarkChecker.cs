@@ -3,7 +3,6 @@ using FmuApiApplication.Mark.Interfaces;
 using FmuApiApplication.Mark.Models;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.LocalModule.Enums;
 using FmuApiDomain.MarkInformation.Entities;
@@ -13,6 +12,7 @@ using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.TrueApi.Interfaces;
 using FmuApiDomain.TrueApi.MarkData;
 using FmuApiDomain.TrueApi.MarkData.Check;
+using FmuApiDomain.TsPiot.Interfaces;
 using LocalModuleIntegration.Interfaces;
 using Microsoft.Extensions.Logging;
 
@@ -21,10 +21,10 @@ namespace FmuApiApplication.Mark.Services
     public class MarkChecker : IMarkChecker
     {
         private readonly ILogger<MarkChecker> _logger;
-        private readonly IParametersService _parametersService;
         private readonly IOnLineMarkCheckService _onlineMarkCHeck;
         private readonly ILocalModuleService _localModuleService;
         private readonly IApplicationState _applicationState;
+        private readonly ITsPiotService _tsPiotService;
 
         private readonly Parameters _configuration;
 
@@ -32,14 +32,14 @@ namespace FmuApiApplication.Mark.Services
             IParametersService parametersService,
             IOnLineMarkCheckService onlineMarkCheck,
             IApplicationState applicationState,
-            ILocalModuleService localModuleService)
+            ILocalModuleService localModuleService, ITsPiotService tsPiotService)
         {
             _logger = logger;
-            _parametersService = parametersService;
             _onlineMarkCHeck = onlineMarkCheck;
-            _configuration = _parametersService.Current();
+            _configuration = parametersService.Current();
             _applicationState = applicationState;
             _localModuleService = localModuleService;
+            _tsPiotService = tsPiotService;
         }
 
         public async Task<MarkCheckResult> FmuApiDatabaseCheck(string sgtin, IMarkStateManager stateManager)
@@ -234,9 +234,21 @@ namespace FmuApiApplication.Mark.Services
            return result;
         }
 
-        public async Task<MarkCheckResult> TsPiotCheck(string code, TsPiotConnectionSettings tsPiotConnectionSettings)
+        public async Task<MarkCheckResult> TsPiotCheck(string mark, TsPiotConnectionSettings connectionSettings)
         {
-            throw new NotImplementedException();
+            Result<CheckMarksDataTrueApi> trueMarkCheckResult;
+            
+            try
+            {
+                trueMarkCheckResult = await _tsPiotService.Check(mark, connectionSettings);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при проверке марки {Code} в ТС ПИоТ", mark);
+                return MarkCheckResult.Failure($"Ошибка проверки марки в ТС ПИоТ: {ex.Message}");
+            }
+
+            return MarkCheckResult.FromCheck(trueMarkCheckResult);
         }
     }
 }

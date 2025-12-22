@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using FmuApiDomain.TsPiot.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace TsPiotClinet;
@@ -13,5 +14,10 @@ public static class TsPiotClientRegistration
             client.DefaultRequestHeaders.Accept.Add(
                 new MediaTypeWithQualityHeaderValue("application/json"));
         });
+
+        services.AddScoped<ITsPiotService, ITsPiotService>();
     }   
 }
+
+// тестовый пиот (эмулятор)
+// https://tspiot.sandbox.crptech.ru/?mode=online&tab=marks

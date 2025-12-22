@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace FmuApiApplication.Mark.Models;
+namespace TsPiotClinet.Models;
 
 public record TsPiotCheckMarkRequest
 {
