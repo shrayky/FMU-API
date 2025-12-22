@@ -14,7 +14,7 @@ class OrganizationsConfigurationElement {
             code: "Код организации (группы печати), если группы печати не используются, то все равно код должен быть 1",
             inn: "ИНН организации",
             name: "Наименование",
-            xapikey: "X-API key",
+            xapikey: "X-API key (действует до 1 марта 2026)",
             add: "Сохранить",
             close: "Закрыть",
             enable: "Используется",
@@ -26,7 +26,8 @@ class OrganizationsConfigurationElement {
             localModuleStatusTitle: "Статус локального модуля",
             localModuleInit: "Инициализация ЛМ",
             eniseyConnectionAddress: "Адрес подключения БД Енисей",
-            tsPiotAddress: "Адрес ТС ПИоТ (для Frontol ниже 28)",
+            tsPiotHost: "Адрес ТС ПИоТ (для Frontol ниже 28)",
+            tsPiotPort: "Порт"
         };
 
         this.LOCAL_MODULE_STATUS = {
@@ -228,9 +229,23 @@ class OrganizationsConfigurationElement {
                 Number(this.LABELS.code, "OrganizationId", "1111"),
                 Text(this.LABELS.name, "OrganizationName"),
                 Text(this.LABELS.inn, "OrganizationInn"),
-                Text(this.LABELS.tsPiotAddress, "TsPiotAddress"),
+                
+                Label("TsPiotTitle", "ТС ПИоТ (для фронтола ниже 28.0"),
+                {
+                    cols:[
+                        Text(this.LABELS.tsPiotHost, "TsPiotHost", "", { placeholder: "localhost" }),
+                        Text(this.LABELS.tsPiotPort, "TsPiotPort", "", { placeholder: "51401" }),      
+                    ]
+                },
+
+                Label("TsPiotUbder", "Для актуальных версий фронтола адрес подключения настраивается в ККМ и передается в запросе проверки марки."),
+
+                {
+                    height: 20
+                },
+                
                 Text(this.LABELS.xapikey, "XAPIKEY"),
-              
+
                 Label("LocalModuleTitle", this.LABELS.LocalModuleTitle),
                 CheckBox(this.LABELS.enable, "LocalModuleEnable"),
                 Text(this.LABELS.connectionAddress,
@@ -291,7 +306,10 @@ class OrganizationsConfigurationElement {
         const newData = {
             id: organizationId,
             xapikey: $$("XAPIKEY").getValue(),
-            tsPiotAddress: $$("TsPiotAddress").getValue(),
+            TsPiot: {  
+                host: $$("TsPiotHost").getValue(),
+                port: $$("TsPiotPort").getValue(),
+            },
             inn: $$("OrganizationInn").getValue(),
             name: $$("OrganizationName").getValue(),
             localModuleConnection: {
@@ -338,7 +356,8 @@ class OrganizationsConfigurationElement {
         $$("OrganizationId").disable();
         $$("OrganizationInn").setValue(item.inn);
         $$("OrganizationName").setValue(item.name);
-        $$("TsPiotAddress").setValue(item.tsPiotAddress);
+        $$("TsPiotHost").setValue(item.tsPiot.host);
+        $$("TsPiotPort").setValue(item.tsPiot.port);
         $$("LocalModuleEnable").setValue(item.localModuleConnection.enable);
         $$("LocalModuleConnectionAddress").setValue(item.localModuleConnection.connectionAddress);
         $$("LocalModuleUserName").setValue(item.localModuleConnection.userName);
