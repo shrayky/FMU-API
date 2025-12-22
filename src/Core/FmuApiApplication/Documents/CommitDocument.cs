@@ -1,56 +1,55 @@
 ﻿using CSharpFunctionalExtensions;
+using FmuApiApplication.Mark.Interfaces;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.Database.Dto;
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.Fmu.Document.Interface;
-using FmuApiDomain.MarkInformation.Entities;
 using FmuApiDomain.MarkInformation.Enums;
 using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.MarkInformation.Models;
 using FmuApiDomain.Repositories;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace FmuApiApplication.Documents
 {
     public class CommitDocument : IFrontolDocumentService
     {
-        private RequestDocument _document { get; set; }
-        private Lazy<IDocumentRepository> _temporaryDocumentsService { get; set; }
-        private Lazy<IMarkStateManager> _markStateService { get; set; }
-        private Func<string, Task<IMark>> _markFactory { get; set; }
-        private ILogger<CommitDocument> _logger { get; set; }
-        private IParametersService _parametersService { get; set; }
-        private IApplicationState _appState { get; set; }
+        private RequestDocument Document { get; set; }
+        private Lazy<IDocumentRepository> TemporaryDocumentsService { get; set; }
+        private Lazy<IMarkStateManager> MarkStateService { get; set; }
+        private IMarkFabric MarkFabric { get; set; }
+        private IParametersService ParametersService { get; set; }
+        private IApplicationState AppState { get; set; }
 
-        private Parameters _configuration;
-        const string saleDocumentType = "receipt";
+        private readonly Parameters _configuration;
+        private const string SaleDocumentType = "receipt";
 
         private CommitDocument(RequestDocument requestDocument, IServiceProvider provider)
         {
-            _document = requestDocument;
+            Document = requestDocument;
 
-            _temporaryDocumentsService = new Lazy<IDocumentRepository>(() => provider.GetRequiredService<IDocumentRepository>());
-            _markStateService = new Lazy<IMarkStateManager>(() => provider.GetRequiredService<IMarkStateManager>());
-            _markFactory = provider.GetRequiredService<Func<string, Task<IMark>>>();
+            TemporaryDocumentsService = new Lazy<IDocumentRepository>(provider.GetRequiredService<IDocumentRepository>);
+            MarkStateService = new Lazy<IMarkStateManager>(provider.GetRequiredService<IMarkStateManager>);
+            MarkFabric = provider.GetRequiredService<IMarkFabric>();
 
-            
-            _logger = provider.GetRequiredService<ILogger<CommitDocument>>();
-            _appState = provider.GetRequiredService<IApplicationState>();
-            _parametersService = provider.GetRequiredService<IParametersService>();
-            _configuration = _parametersService.Current();
+            AppState = provider.GetRequiredService<IApplicationState>();
+            ParametersService = provider.GetRequiredService<IParametersService>();
+            _configuration = ParametersService.Current();
         }
 
         private static CommitDocument CreateObject(RequestDocument requestDocument, IServiceProvider provider)
             => new(requestDocument, provider);
-        
+
         public static IFrontolDocumentService Create(RequestDocument requestDocument, IServiceProvider provider)
             => CreateObject(requestDocument, provider);
+
         public async Task<Result<FmuAnswer>> ActionAsync()
         {
-            await SendDocumentToAlcoUnitAsync();
+            var sendResult = await SendDocumentToAlcoUnit();
+
+            if (sendResult.IsFailure)
+                return Result.Failure<FmuAnswer>(sendResult.Error);
 
             return await CommitDocumentAsync();
         }
@@ -62,13 +61,14 @@ namespace FmuApiApplication.Documents
             if (!_configuration.Database.ConfigurationIsEnabled)
                 return Result.Success(checkResult);
 
-            if (!_appState.CouchDbOnline())
+            if (!AppState.CouchDbOnline())
                 return Result.Success(checkResult);
 
-            var loadDocumentResult = await _temporaryDocumentsService.Value.Get(_document.Uid);
+            var loadDocumentResult = await TemporaryDocumentsService.Value.Get(Document.Uid);
 
             if (loadDocumentResult.IsFailure)
-                return Result.Failure<FmuAnswer>($"Невозможно закрыть документ {_document.Uid}! Он не найден в базе документов!");
+                return Result.Failure<FmuAnswer>(
+                    $"Невозможно закрыть документ {Document.Uid}! Он не найден в базе документов!");
 
             var frontolDocument = loadDocumentResult.Value;
 
@@ -77,16 +77,17 @@ namespace FmuApiApplication.Documents
                 CheckNumber = frontolDocument.FrontolDocument.Number,
                 SaleDate = DateTime.Now,
                 Pos = frontolDocument.FrontolDocument.Pos,
-                IsSale = frontolDocument.FrontolDocument.Type == saleDocumentType
+                IsSale = frontolDocument.FrontolDocument.Type == SaleDocumentType
             };
 
-            string state = saleData.IsSale ? MarkState.Sold : MarkState.Returned;
+            var state = saleData.IsSale ? MarkState.Sold : MarkState.Returned;
 
             // Словарь: код марки (SGtin) -> количество, из фронтола марка прилетает в base64
             Dictionary<string, decimal> quantityByMark = frontolDocument.FrontolDocument.Positions
-                .SelectMany(p => p.Marking_codes.Select(code => new { 
+                .SelectMany(p => p.Marking_codes.Select(code => new
+                {
                     code = Convert.FromBase64String(code),
-                    Quantity = p.Volume > 0 ? (decimal)p.Volume : (decimal)p.Quantity 
+                    Quantity = p.Volume > 0 ? (decimal)p.Volume : (decimal)p.Quantity
                 }))
                 .ToDictionary(
                     x => System.Text.Encoding.UTF8.GetString(x.code),
@@ -95,33 +96,21 @@ namespace FmuApiApplication.Documents
 
             // Получаем все объекты марки
             var marks = await Task.WhenAll(
-                quantityByMark.Keys.Select(code => _markFactory(code))
+                quantityByMark.Keys.Select(code => MarkFabric.Create(new(), code))
             );
 
-            // Словарь: SGtin -> информация о марке
-            Dictionary<string, MarkEntity> entityBySGtin = (await _markStateService.Value.InformationBulk(
-                marks.Select(m => m.SGtin).ToList()
-            )).ToDictionary(e => e.MarkId);
-
-            var draftBeerUpdates = new List<(string SGtin, decimal Quantity)>();
             var marksToChangeState = new Dictionary<string, SaleData>();
 
             foreach (var mark in marks)
             {
-                var trueApiData = entityBySGtin[mark.SGtin].TrueApiCisData;
                 var quantity = quantityByMark[mark.Code];
-
                 saleData.Quantity = quantity;
-
                 marksToChangeState.Add(mark.SGtin, saleData);
-
-                if (trueApiData == null)
-                    continue;
             }
 
             await MarkChangeStateBulk(marksToChangeState, state);
-           
-            await _temporaryDocumentsService.Value.Delete(_document.Uid);
+
+            await TemporaryDocumentsService.Value.Delete(Document.Uid);
 
             return Result.Success(checkResult);
         }
@@ -130,17 +119,19 @@ namespace FmuApiApplication.Documents
         {
             foreach (var mark in marksToChangeState)
             {
-                await _markStateService.Value.ChangeState(mark.Key, state, mark.Value);
+                await MarkStateService.Value.ChangeState(mark.Key, state, mark.Value);
             }
         }
 
-        private async Task<Result> SendDocumentToAlcoUnitAsync()
+        private async Task<Result> SendDocumentToAlcoUnit()
         {
-            RequestDocument auDoc = _document;
+            if (string.IsNullOrEmpty(_configuration.FrontolAlcoUnit.NetAdres))
+                return Result.Success();
 
-            if (_configuration.FrontolAlcoUnit.NetAdres == string.Empty)
-                return Result.Success(auDoc);
+            await Task.Delay(1);
 
+            var auDoc = Document;
+            
             return Result.Success(auDoc);
         }
     }

@@ -33,11 +33,6 @@ namespace FmuApiDomain.Fmu.Document
         [JsonIgnore]
         public string Mark => ExtractMark();
 
-        public RequestDocument()
-        {
-
-        }
-
         public Dictionary<string, string> MarkDictionary()
         {
             Dictionary<string, string> mark = [];
@@ -70,7 +65,7 @@ namespace FmuApiDomain.Fmu.Document
 
         public int MarksCount()
         {
-            int count = 0;
+            var count = 0;
 
             foreach (var positon in Positions)
                 count += positon.Marking_codes.Count;
@@ -80,7 +75,7 @@ namespace FmuApiDomain.Fmu.Document
 
         public bool IsAlcoholCheck()
         {
-            bool alcoholCheck = false;
+            var alcoholCheck = false;
 
             foreach (var position in Positions)
             {

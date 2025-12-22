@@ -10,19 +10,15 @@ using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.TrueApi.MarkData.Check;
 using Microsoft.Extensions.Logging;
 using Shared.Strings;
-using System.Threading.Tasks.Dataflow;
 
 namespace FmuApiApplication.Mark
 {
     public class Mark : IMark
     {
-        private readonly IMarkParser _markParser;
         private readonly IMarkChecker _markChecker;
         private readonly IMarkStateManager _markStateManager;
-        private readonly IParametersService _parametersService;
         private readonly ILogger<Mark> _logger;
         private readonly Parameters _configuration;
-        private readonly ICheckOperation  _tspiotCLient;
 
         public string Code { get; }
         public string SGtin { get; }
@@ -31,64 +27,40 @@ namespace FmuApiApplication.Mark
         public string Barcode { get; }
         public int PrintGroupCode { get; private set; }
         public string ErrorDescription { get; private set; } = string.Empty;
+        private TsPiotConnectionSettings _tsPiotConnectionSettings = new();
+        private bool _useTsPiot = false; 
 
         private MarkCheckResult _lastCheckResult = MarkCheckResult.Empty();
         private delegate Task<MarkCheckResult> CheckDelegate();
 
-        private Mark(
+        public Mark(
             string markCode,
             IMarkParser markParser,
             IMarkChecker markChecker,
             IMarkStateManager markStateManager,
             IParametersService parametersService,
-            ICheckOperation tsPiotClient,
             ILogger<Mark> logger)
         {
-            _markParser = markParser;
             _markChecker = markChecker;
             _markStateManager = markStateManager;
-            _parametersService = parametersService;
             _logger = logger;
-            _tspiotCLient = tsPiotClient;
                 
-            _configuration = _parametersService.Current();
+            _configuration = parametersService.Current();
+            
+            var isMarkDecoded = StringHelpers.IsDigitString(markCode.Substring(0, 14));
+         
+            if (!isMarkDecoded)
+                markCode = markParser.EncodeMark(markCode);
 
-            Code = _markParser.ParseCode(markCode);
-            SGtin = _markParser.CalculateSGtin(Code);
-            Cis = _markParser.CalculateCis(Code);
+            Code = markParser.ParseCode(markCode);
+            SGtin = markParser.CalculateSGtin(Code);
+            Cis = markParser.CalculateCis(Code);
             CodeIsSgtin = (SGtin == Code);
-            Barcode = _markParser.CalculateBarcode(SGtin);
+            Barcode = markParser.CalculateBarcode(SGtin);
 
             _logger.LogInformation(
-                "Создан объект марки: Code={Code}, SGtin={SGtin}, CodeIsSgtin={CodeIsSgtin}, Barcode={Barcode}",
+                "Создан объект марки: Code={Code}, SGtin={SGtin}, CodeIsSGtin={CodeIsSgtin}, Barcode={Barcode}",
                 Code, SGtin, CodeIsSgtin, Barcode);
-        }
-
-        public static Mark Create(
-            string codeData,
-            IMarkParser markParser,
-            IMarkChecker markChecker,
-            IMarkStateManager markStateManager,
-            IParametersService parametersService,
-            ICheckOperation tsPiotClient,
-            ILogger<Mark> logger)
-        {
-            bool isMarkDecoded = StringHelpers.IsDigitString(codeData.Substring(0, 14));
-            if (!isMarkDecoded)
-            {
-                codeData = markParser.EncodeMark(codeData);
-            }
-
-            var markCode = new Mark(
-                codeData,
-                markParser,
-                markChecker,
-                markStateManager,
-                parametersService,
-                tsPiotClient,
-                logger);
-
-            return markCode;
         }
 
         public async Task<Result<FmuAnswer>> PerformCheckAsync(OperationType operation)
@@ -97,16 +69,17 @@ namespace FmuApiApplication.Mark
 
             var delegates = new CheckDelegate[]
             {
-                async () => await _markChecker.OnlineCheck(Code, SGtin, CodeIsSgtin, PrintGroupCode),
-                async () => await _markChecker.OfflineCheckAsync(Cis, PrintGroupCode),
+                async () => await _markChecker.TsPiotCheck(Code, _tsPiotConnectionSettings),
                 async() => await _markChecker.FmuApiDatabaseCheck(SGtin, _markStateManager)
             };
 
-            if (_configuration.ServerConfig.TsPiotEnabled)
+            if (!_useTsPiot)
             {
                 delegates = new CheckDelegate[]
                 {
-                    async () => await _tspiotCLient.Check(Code, SGtin, CodeIsSgtin, PrintGroupCode)
+                    async () => await _markChecker.OnlineCheck(Code, SGtin, CodeIsSgtin, PrintGroupCode),
+                    async () => await _markChecker.OfflineCheckAsync(Cis, PrintGroupCode),
+                    async() => await _markChecker.FmuApiDatabaseCheck(SGtin, _markStateManager)
                 };
             }
 
@@ -162,6 +135,12 @@ namespace FmuApiApplication.Mark
 
         }
 
+        public void SetTsPiotSettings(TsPiotConnectionSettings tsPiotConnectionSettings)
+        {
+            _useTsPiot = true;
+            _tsPiotConnectionSettings = tsPiotConnectionSettings;
+        }
+
         public Result ValidateMarkData(OperationType operation)
         {
             var trueMarkData = _lastCheckResult.TrueMarkData;
@@ -212,12 +191,7 @@ namespace FmuApiApplication.Mark
                 //markError = markData.MarkErrorDescription();
             }
 
-            if (!string.IsNullOrEmpty(markError))
-            {
-                return Result.Failure(markError);
-            }
-
-            return Result.Success();
+            return !string.IsNullOrEmpty(markError) ? Result.Failure(markError) : Result.Success();
         }
 
         public void SetPrintGroupCode(int printGroupCode)
@@ -227,7 +201,7 @@ namespace FmuApiApplication.Mark
                 PrintGroupCode, Code);
         }
 
-        async public Task<CheckMarksDataTrueApi> TrueApiData()
+        public async Task<CheckMarksDataTrueApi> TrueApiData()
         {
             if (_lastCheckResult.TrueMarkData.Codes.Count > 0)
                 return _lastCheckResult.TrueMarkData;
@@ -270,7 +244,6 @@ namespace FmuApiApplication.Mark
             if (!markData.Empty && markData.InGroup(_configuration.SaleControlConfig.IgnoreVerificationErrorForTrueApiGroups))
             {
                 markData.ResetErrorFields(false);
-
                 return true;
             }
 

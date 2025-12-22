@@ -39,6 +39,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LocalModuleIntegration", "s
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServicesAndDaemonsManager", "src\Infrastructure\DaemonsManager\ServicesAndDaemonsManager.csproj", "{8821429F-06FA-41EE-A426-A1DEDC35B930}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TsPiotClinet", "src\Infrastructure\TsPiotClinet\TsPiotClinet.csproj", "{56A95E80-1431-4A7F-9AA5-81E16779BF21}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -97,6 +99,10 @@ Global
 		{8821429F-06FA-41EE-A426-A1DEDC35B930}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8821429F-06FA-41EE-A426-A1DEDC35B930}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8821429F-06FA-41EE-A426-A1DEDC35B930}.Release|Any CPU.Build.0 = Release|Any CPU
+		{56A95E80-1431-4A7F-9AA5-81E16779BF21}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{56A95E80-1431-4A7F-9AA5-81E16779BF21}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{56A95E80-1431-4A7F-9AA5-81E16779BF21}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{56A95E80-1431-4A7F-9AA5-81E16779BF21}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -118,6 +124,7 @@ Global
 		{00E61A8B-2194-42F5-AC22-A4FE8520E826} = {8045AD33-2DDA-4328-8F98-5306A7047D50}
 		{98BF076F-1B7F-4AD7-8D99-8E6C7BA41950} = {A2FC2158-423C-4F0A-909F-C65382DC2599}
 		{8821429F-06FA-41EE-A426-A1DEDC35B930} = {A2FC2158-423C-4F0A-909F-C65382DC2599}
+		{56A95E80-1431-4A7F-9AA5-81E16779BF21} = {A2FC2158-423C-4F0A-909F-C65382DC2599}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {853898A9-1472-4293-B761-F8E8DFA48C1F}

@@ -233,5 +233,10 @@ namespace FmuApiApplication.Mark.Services
 
            return result;
         }
+
+        public async Task<MarkCheckResult> TsPiotCheck(string code, TsPiotConnectionSettings tsPiotConnectionSettings)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

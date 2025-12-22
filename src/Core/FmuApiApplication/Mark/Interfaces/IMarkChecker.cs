@@ -1,4 +1,5 @@
 ﻿using FmuApiApplication.Mark.Models;
+using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.MarkInformation.Interfaces;
 
 namespace FmuApiApplication.Mark.Interfaces
@@ -8,5 +9,6 @@ namespace FmuApiApplication.Mark.Interfaces
         Task<MarkCheckResult> FmuApiDatabaseCheck(string sgtin, IMarkStateManager stateManager);
         Task<MarkCheckResult> OnlineCheck(string code, string sgtin, bool codeIsSgtin, int printGroupCode);
         Task<MarkCheckResult> OfflineCheckAsync(string code, int printGroupCode);
+        Task<MarkCheckResult> TsPiotCheck(string code, TsPiotConnectionSettings tsPiotConnectionSettings);
     }
 }

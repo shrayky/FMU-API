@@ -18,5 +18,6 @@ namespace FmuApiDomain.MarkInformation.Interfaces
         public MarkEntity DatabaseState();
         public FmuAnswer MarkDataAfterCheck();
         public Task<Result<FmuAnswer>> PerformCheckAsync(OperationType operation);
+        public void SetTsPiotSettings(TsPiotConnectionSettings tsPiotConnectionSettings);
     }
 }

@@ -23,7 +23,7 @@ namespace LocalModuleIntegration
             })
             .SetHandlerLifetime(TimeSpan.FromMinutes(5));
 
-            services.AddHttpClient("Eniseey", client =>
+            services.AddHttpClient("Enisey", client =>
             {
                 client.Timeout = TimeSpan.FromSeconds(10);
                 client.DefaultRequestHeaders.Accept.Add(

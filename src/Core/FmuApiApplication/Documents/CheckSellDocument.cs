@@ -1,10 +1,10 @@
 ﻿using CSharpFunctionalExtensions;
+using FmuApiApplication.Mark.Interfaces;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.Fmu.Document.Enums;
 using FmuApiDomain.Fmu.Document.Interface;
-using FmuApiDomain.Frontol.Interfaces;
 using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.Repositories;
 using FmuApiDomain.TrueApi.MarkData;
@@ -19,8 +19,7 @@ namespace FmuApiApplication.Documents
     {
         private RequestDocument Document { get; set; }
         private ILogger<CheckSellDocument> Logger { get; set; }
-        private Lazy<IFrontolSprTService> FrontolSprTSerice { get; set; }
-        private Func<string, Task<IMark>> MarkFactory { get; set; }
+        private IMarkFabric MarkFabric { get; set; }
         private readonly IMemoryCache _memcachedClient;
         IParametersService ParametersService { get; set; }
         private ICheckStatisticRepository CheckStatisticRepository { get; set; }
@@ -32,14 +31,12 @@ namespace FmuApiApplication.Documents
         {
             Document = requestDocument;
 
-            FrontolSprTSerice = new Lazy<IFrontolSprTService>(() => provider.GetRequiredService<IFrontolSprTService>());
-
-            MarkFactory = provider.GetRequiredService<Func<string, Task<IMark>>>();
+            MarkFabric = provider.GetRequiredService<IMarkFabric>();
 
             CheckStatisticRepository = provider.GetRequiredService<ICheckStatisticRepository>();
 
             Logger = provider.GetRequiredService<ILogger<CheckSellDocument>>();
-            _memcachedClient = provider.GetRequiredService<IMemoryCache>(); ;
+            _memcachedClient = provider.GetRequiredService<IMemoryCache>();
             ParametersService = provider.GetRequiredService<IParametersService>();
             _configuration = ParametersService.Current();
         }
@@ -70,9 +67,8 @@ namespace FmuApiApplication.Documents
         private async Task<Result<FmuAnswer>> MarkInformation()
         {
             Logger.LogInformation("Марка для проверки {markCodeData}", Document.Mark);
-            var mark = await MarkFactory(Document.Mark);
-
-            await SetOrganizationIdAsync(mark);
+            
+            var mark = await MarkFabric.Create(Document.Positions[0], Document.Mark);
 
             var checkResult = await mark.PerformCheckAsync(OperationType.Sale);
             
@@ -105,27 +101,6 @@ namespace FmuApiApplication.Documents
                 return checkResult;
         }
 
-        private async Task<Result<FmuAnswer>> MarkInformation(string markInBase64)
-        {
-            Logger.LogInformation("Марка для проверки {markCodeData}", markInBase64);
-
-            IMark mark = await MarkFactory(markInBase64);
-            await SetOrganizationIdAsync(mark);
-
-            var checkResult = await mark.PerformCheckAsync(OperationType.Sale);
-
-            if (checkResult.IsSuccess)
-                return checkResult;
-
-            Logger.LogError(checkResult.Error);
-
-            if (_configuration.SaleControlConfig.SendEmptyTrueApiAnswerWhenTimeoutError 
-                && _configuration.SaleControlConfig.RejectSalesWithoutCheckInformationFrom <  DateTime.Now)
-                return Result.Success(CreateFakeAnswer(mark, checkResult.Error));
-            else
-                return checkResult;
-        }
-
         private FmuAnswer CreateFakeAnswer(IMark mark, string error)
         {
             var fakeCodeData = new CodeDataTrueApi
@@ -145,7 +120,7 @@ namespace FmuApiApplication.Documents
                 GrayZone = false,
             };
 
-            var truemark_response = new CheckMarksDataTrueApi
+            var truemarkResponse = new CheckMarksDataTrueApi
             {
                 Code = 0,
                 Description = $"Ошибка проверки маркировки. {error}",
@@ -161,39 +136,8 @@ namespace FmuApiApplication.Documents
             {
                 Code = 1,
                 Error = error,
-                Truemark_response = truemark_response
+                Truemark_response = truemarkResponse
             };
-        }
-
-        private async Task SetOrganizationIdAsync(IMark mark)
-        {
-            if (_configuration.OrganisationConfig.PrintGroups.Count == 1)
-                return;
-
-            int pgCode = 0;
-            string inn = Document.Inn;
-
-            if (inn != string.Empty)
-            {
-                var organisation = _configuration.OrganisationConfig.PrintGroups.FirstOrDefault(p => p.INN == inn);
-
-                if (organisation != null)
-                    pgCode = organisation.Id;
-            }
-            else
-            {
-                var result = await FrontolSprTSerice.Value.PrintGroupCodeByBarcodeAsync(mark.Barcode);
-
-                if (result.IsSuccess)
-                    pgCode = result.Value;
-            }
-
-            if (pgCode == 0)
-                return;
-
-            Logger.LogInformation("Код группы печати организации {pgCode}", pgCode);
-
-            mark.SetPrintGroupCode(pgCode);
         }
     }
 }

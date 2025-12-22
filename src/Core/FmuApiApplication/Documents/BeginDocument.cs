@@ -1,46 +1,42 @@
 ﻿using CSharpFunctionalExtensions;
+using FmuApiApplication.Mark.Interfaces;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.Fmu.Document.Interface;
-using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.Repositories;
 using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.TrueApi.MarkData;
-using FmuApiDomain.TrueApi.MarkData.Check;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace FmuApiApplication.Documents
 {
     public class BeginDocument : IFrontolDocumentService
     {
-        private RequestDocument _document { get; set; }
-        
-        private Lazy<ILogger<BeginDocument>> _logger { get; set; }
-        private Lazy<IDocumentRepository> _temporaryDocumentsService { get; set; }
-        private Lazy<IMemoryCache> _cacheService { get; set; }
+        private RequestDocument Document { get; set; }
 
-        private Func<string, Task<IMark>> _markFactory { get; set; }
-        private IParametersService _parametersService { get; set; }
-        private IApplicationState _appState { get; set; }
+        private Lazy<IDocumentRepository> TemporaryDocumentsService { get; set; }
+        private Lazy<IMemoryCache> CacheService { get; set; }
+
+        private IMarkFabric MarkFabric { get; set; }
+        private IParametersService ParametersService { get; set; }
+        private IApplicationState AppState { get; set; }
         
-        private Parameters _configuration;
+        private readonly Parameters _configuration;
 
         private BeginDocument(RequestDocument requestDocument, IServiceProvider provider)
         {
-            _document = requestDocument;
+            Document = requestDocument;
 
-            _temporaryDocumentsService = new Lazy<IDocumentRepository>(() => provider.GetRequiredService<IDocumentRepository>());
-            _cacheService = new Lazy<IMemoryCache>(() => provider.GetRequiredService<IMemoryCache>());
-            _logger = new Lazy<ILogger<BeginDocument>>(() => provider.GetRequiredService<ILogger<BeginDocument>>());
+            TemporaryDocumentsService = new Lazy<IDocumentRepository>(provider.GetRequiredService<IDocumentRepository>);
+            CacheService = new Lazy<IMemoryCache>(provider.GetRequiredService<IMemoryCache>);
             
-            _markFactory = provider.GetRequiredService<Func<string, Task<IMark>>>();
+            MarkFabric = provider.GetRequiredService<IMarkFabric>();
 
-            _parametersService = provider.GetRequiredService<IParametersService>();
-            _appState = provider.GetRequiredService<IApplicationState>();
-            _configuration = _parametersService.Current();
+            ParametersService = provider.GetRequiredService<IParametersService>();
+            AppState = provider.GetRequiredService<IApplicationState>();
+            _configuration = ParametersService.Current();
         }
 
         private static BeginDocument CreateObject(RequestDocument requestDocument, IServiceProvider provider) 
@@ -52,7 +48,8 @@ namespace FmuApiApplication.Documents
 
         public async Task<Result<FmuAnswer>> ActionAsync()
         {
-            await SendDocumentToAlcoUnitAsync();
+            SendDocumentToAlcoUnitAsync();
+            
             return await BeginDocumentAsync();
         }
 
@@ -60,21 +57,21 @@ namespace FmuApiApplication.Documents
         {
             FmuAnswer checkResult = new();
 
-            foreach (var position in _document.Positions)
+            foreach (var position in Document.Positions)
             {
                 if (position.Marking_codes.Count == 0)
                     continue;
 
                 foreach (var markInBase64 in position.Marking_codes)
                 {
-                    var mark = await _markFactory(markInBase64);
+                    var mark = await MarkFabric.Create(position, markInBase64);
 
-                    CheckMarksDataTrueApi trueApiCisData = await mark.TrueApiData();
+                    var trueApiCisData = await mark.TrueApiData();
 
                     if (trueApiCisData.Codes.Count == 0)
                         continue;
 
-                    CodeDataTrueApi markData = trueApiCisData.Codes[0];
+                    var markData = trueApiCisData.Codes[0];
 
                     if (markData.GroupIds.Contains(TrueApiGroup.Tobaco))
                     {
@@ -98,20 +95,20 @@ namespace FmuApiApplication.Documents
                 }
             }
 
-            if (_configuration.Database.ConfigurationIsEnabled && _appState.CouchDbOnline())
-                await _temporaryDocumentsService.Value.Add(_document);
+            if (_configuration.Database.ConfigurationIsEnabled && AppState.CouchDbOnline())
+                await TemporaryDocumentsService.Value.Add(Document);
             else
-                _cacheService.Value.Set($"cashDoc_{_document.Uid}", _document, TimeSpan.FromMinutes(5));
+                CacheService.Value.Set($"cashDoc_{Document.Uid}", Document, TimeSpan.FromMinutes(5));
 
             return Result.Success(checkResult);
         }
 
-        private async Task<Result> SendDocumentToAlcoUnitAsync()
+        private void SendDocumentToAlcoUnitAsync()
         {
-            RequestDocument auDoc = _document;
+            var auDoc = Document;
 
             if (_configuration.FrontolAlcoUnit.NetAdres == string.Empty)
-                return Result.Success(auDoc);
+                return;
 
             var positionsForDelete = new List<Position>();
 
@@ -128,11 +125,6 @@ namespace FmuApiApplication.Documents
 
             foreach (var pos in positionsForDelete)
                 auDoc.Positions.Remove(pos);
-
-            if (auDoc.Positions.Count == 0)
-                return Result.Success();
-
-            return Result.Success();
         }
 
     }
