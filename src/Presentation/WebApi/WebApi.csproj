@@ -56,6 +56,7 @@
     <ProjectReference Include="..\..\Infrastructure\LocalModuleIntegration\LocalModuleIntegration.csproj" />
     <ProjectReference Include="..\..\Infrastructure\LogService\LogService.csproj" />
     <ProjectReference Include="..\..\Infrastructure\TrueApiCdn\TrueApi.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\TsPiotClinet\TsPiotClinet.csproj" />
   </ItemGroup>
 
   <Target Name="NpmBuild" BeforeTargets="Build" Condition="'$(Configuration)' == 'Release'">

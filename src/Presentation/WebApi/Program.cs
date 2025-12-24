@@ -21,6 +21,7 @@ using Scalar.AspNetCore;
 using Serilog;
 using ServicesAndDaemonsManager;
 using Shared.Strings;
+using TsPiotClinet;
 using WebApi;
 using WebApi.Extensions;
 
@@ -97,6 +98,7 @@ bool RunHttpApiService()
     AutoUpdateRegistrationExtension.AddService(services);
     AppRegistrationExtension.AddAppServices(services);
     ServicesAndDaemonsRegistrationExtension.AddService(services);
+    TsPiotClientRegistration.AddService(services);
 
     services.AddMarkServices();
     services.AddTransient<FrontolDocumentServiceFactory>();

@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using FmuApiDomain.TsPiot.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
+using TsPiotClinet.Services;
 
 namespace TsPiotClinet;
 
@@ -15,7 +16,7 @@ public static class TsPiotClientRegistration
                 new MediaTypeWithQualityHeaderValue("application/json"));
         });
 
-        services.AddScoped<ITsPiotService, ITsPiotService>();
+        services.AddScoped<ITsPiotService, T sPiotService>();
     }   
 }
 
