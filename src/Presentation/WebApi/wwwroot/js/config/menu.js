@@ -16,6 +16,10 @@ export const MENU_ITEMS = {
         id: "marksView",
         value: "Марки"
     },
+    MARK_CHECK: {
+        id: "markCheckView",
+        value: "Проверка маркировки"
+    },
     LOGS: {
         id: "logsView",
         value: "Логи"
