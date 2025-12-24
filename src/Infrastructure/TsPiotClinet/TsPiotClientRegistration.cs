@@ -16,7 +16,7 @@ public static class TsPiotClientRegistration
                 new MediaTypeWithQualityHeaderValue("application/json"));
         });
 
-        services.AddScoped<ITsPiotService, T sPiotService>();
+        services.AddScoped<ITsPiotService, TsPiotService>();
     }   
 }
 
