@@ -1,5 +1,5 @@
 
-import { ApiServerAddress } from '../../utils/net.js';
+import { ServerAdres } from '../../utils/net.js';
 
 class MarkCheckView {
     constructor(id) {
@@ -28,10 +28,37 @@ class MarkCheckView {
         };
 
         this.lastResponse = null;
+        this.defaultInn = "";
     }
 
-    loadConfig() {
-        return this;
+    async _loadInnFromConfig() {
+        try {
+            const apiUrl = ServerAdres('/api/configuration/OrganisationConfig');
+            if (!apiUrl) {
+                return;
+            }
+
+            const response = await fetch(apiUrl);
+            if (!response.ok) {
+                console.warn("Не удалось загрузить настройки организаций");
+                return;
+            }
+
+            const orgConfig = await response.json();
+            
+            if (orgConfig.printGroups && orgConfig.printGroups.length > 0) {
+                const firstOrg = orgConfig.printGroups[0];
+                if (firstOrg.inn) {
+                    this.defaultInn = firstOrg.inn;
+                    const innInput = $$(this.NAMES.innInput);
+                    if (innInput) {
+                        innInput.setValue(this.defaultInn);
+                    }
+                }
+            }
+        } catch (error) {
+            console.warn("Ошибка при загрузке настроек организаций:", error);
+        }
     }
 
     render() {
@@ -39,41 +66,42 @@ class MarkCheckView {
 
         const formElements = [
             {
-                view: "form",
-                borderless: true,
-                elements: [
+                rows: [
                     {
                         view: "text",
                         id: this.NAMES.innInput,
                         label: this.LABELS.innLabel,
-                        labelWidth: 150,
-                        value: "246605656953",
-                        placeholder: this.LABELS.innPlaceholder
+                        labelWidth: 180,
+                        placeholder: this.LABELS.innPlaceholder,
+                        value: this.defaultInn || ""
                     },
+
                     {
-                        view: "textarea",
-                        id: this.NAMES.markInput,
-                        label: this.LABELS.markLabel,
-                        labelWidth: 150,
-                        placeholder: this.LABELS.markPlaceholder,
-                        height: 100,
-                        value: ""
-                    },
-                    {
-                        view: "button",
-                        id: this.NAMES.checkButton,
-                        value: this.LABELS.checkButton,
-                        width: 150,
-                        click: () => this._onCheck()
+                        cols: [
+                            {
+                                view: "text",
+                                id: this.NAMES.markInput,
+                                label: this.LABELS.markLabel,
+                                labelWidth: 180,
+                                placeholder: this.LABELS.markPlaceholder,
+                                value: ""
+                            },
+                
+                            {
+                                view: "button",
+                                id: this.NAMES.checkButton,
+                                value: this.LABELS.checkButton,
+                                width: 150,
+                                click: () => this._onCheck()
+                            }, 
+                        ]
                     }
                 ]
             },
             {
                 cols: [
                     {
-                        view: "form",
-                        borderless: true,
-                        elements: [
+                        rows: [
                             {
                                 view: "label",
                                 label: this.LABELS.jsonResponseLabel,
@@ -85,14 +113,12 @@ class MarkCheckView {
                                 readonly: true,
                                 fillspace: true,
                                 value: this.LABELS.noResponse
-                            }
+                            },
                         ]
                     },
                     { view: "resizer" },
                     {
-                        view: "form",
-                        borderless: true,
-                        elements: [
+                        rows: [
                             {
                                 view: "label",
                                 label: this.LABELS.decodedResponseLabel,
@@ -104,30 +130,35 @@ class MarkCheckView {
                                 readonly: true,
                                 fillspace: true,
                                 value: this.LABELS.noResponse
-                            }
+                            },
                         ]
-                    }
+                    },
                 ]
             },
-            {}
         ];
 
-        const form = {
+        var form = {
             view: "form",
             id: this.id,
             name: this.formName,
-            elements: formElements
-        };
+            elements: formElements,
+        }
 
-        return form;
+        this._formConfig = form;
+        return this;
     }
 
-    // Преобразование строки в base64 (UTF-8)
+    delayedInnLoading() {
+        setTimeout(() => {
+            this._loadInnFromConfig();
+        }, 10);
+
+        return this;
+    }
+
     _encodeToBase64(str) {
         try {
-            // Используем TextEncoder для правильной обработки UTF-8, включая символы GS
             const utf8Bytes = new TextEncoder().encode(str);
-            // Преобразуем Uint8Array в строку для btoa
             let binary = '';
             utf8Bytes.forEach(byte => {
                 binary += String.fromCharCode(byte);
@@ -139,7 +170,6 @@ class MarkCheckView {
         }
     }
 
-    // Формирование запроса
     _buildRequest(inn, markingCode) {
         const base64Mark = this._encodeToBase64(markingCode);
         
@@ -153,11 +183,10 @@ class MarkCheckView {
                 }
             ],
             action: "check",
-            type: "refund_receipt"
+            type: "receipt"
         };
     }
 
-    // Отправка запроса на сервер
     async _onCheck() {
         const innInput = $$(this.NAMES.innInput);
         const markInput = $$(this.NAMES.markInput);
@@ -182,14 +211,13 @@ class MarkCheckView {
             return;
         }
 
-        // Отключаем форму и показываем прогресс
         checkButton.disable();
         webix.extend(form, webix.ProgressBar);
         form.showProgress({ type: "icon" });
 
         try {
             const requestData = this._buildRequest(inn, markingCode);
-            const apiUrl = ApiServerAddress(this.apiAddress);
+            const apiUrl = ServerAdres(this.apiAddress);
 
             if (!apiUrl) {
                 throw new Error("Не настроен адрес сервера API");
@@ -225,33 +253,27 @@ class MarkCheckView {
         }
     }
 
-    // Отображение ответа
     _displayResponse(responseData) {
-        // Отображение JSON
         const jsonResponse = $$(this.NAMES.jsonResponse);
         if (jsonResponse) {
             jsonResponse.setValue(JSON.stringify(responseData, null, 2));
         }
 
-        // Отображение расшифровки
         const decodedResponse = $$(this.NAMES.decodedResponse);
         if (decodedResponse) {
             decodedResponse.setValue(this._decodeResponse(responseData));
         }
     }
 
-    // Расшифровка ответа в удобочитаемый вид
     _decodeResponse(response) {
         let result = "";
 
-        // Основные поля
         result += `Код ответа: ${response.code || 0}\n`;
         if (response.error) {
             result += `Ошибка: ${response.error}\n`;
         }
         result += "\n";
 
-        // Stamps и Marking_codes
         if (response.stamps && response.stamps.length > 0) {
             result += `Stamps (${response.stamps.length}):\n`;
             response.stamps.forEach((stamp, index) => {
@@ -268,7 +290,6 @@ class MarkCheckView {
             result += "\n";
         }
 
-        // Truemark response
         if (response.truemark_response) {
             result += "=== Truemark Response ===\n";
             const tr = response.truemark_response;
@@ -303,7 +324,6 @@ class MarkCheckView {
             result += "\n";
         }
 
-        // Truemark responses
         if (response.truemark_responses && response.truemark_responses.length > 0) {
             result += `=== Truemark Responses (${response.truemark_responses.length}) ===\n`;
             response.truemark_responses.forEach((trResp, index) => {
@@ -322,7 +342,6 @@ class MarkCheckView {
             });
         }
 
-        // Offline truemark responses
         if (response.offline_truemark_response && response.offline_truemark_response.length > 0) {
             result += `=== Offline Truemark Responses (${response.offline_truemark_response.length}) ===\n`;
             response.offline_truemark_response.forEach((resp, index) => {
@@ -331,7 +350,6 @@ class MarkCheckView {
             result += "\n";
         }
 
-        // ESM response
         if (response.esm_response) {
             result += "=== ESM Response ===\n";
             const esm = response.esm_response;
@@ -340,7 +358,6 @@ class MarkCheckView {
             result += "\n";
         }
 
-        // DMDK responses
         if (response.dmdk_responses && response.dmdk_responses.length > 0) {
             result += `=== DMDK Responses (${response.dmdk_responses.length}) ===\n`;
             response.dmdk_responses.forEach((resp, index) => {
@@ -349,7 +366,6 @@ class MarkCheckView {
             result += "\n";
         }
 
-        // Флаги и метаданные
         result += "=== Метаданные ===\n";
         if (response["fmu-api-offline"] !== undefined) {
             result += `Offline режим: ${response["fmu-api-offline"]}\n`;
@@ -367,7 +383,6 @@ class MarkCheckView {
         return result || this.LABELS.noResponse;
     }
 
-    // Очистка ответа
     _clearResponse() {
         const jsonResponse = $$(this.NAMES.jsonResponse);
         const decodedResponse = $$(this.NAMES.decodedResponse);
@@ -382,10 +397,10 @@ class MarkCheckView {
 }
 
 export default function (id) {
-    const view = new MarkCheckView(id)
-        .loadConfig()
-        .render();
+    const view = new MarkCheckView(id);
+    view.render();
+    view.delayedInnLoading();
 
-    return view;
+    return view._formConfig;
 }
 

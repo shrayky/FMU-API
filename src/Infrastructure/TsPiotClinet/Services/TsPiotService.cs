@@ -24,7 +24,7 @@ public class TsPiotService : ITsPiotService
     }
 
     public async Task<Result<CheckMarksDataTrueApi>> Check(string mark, TsPiotConnectionSettings connectionSettings)
-    {
+    {        
         using var httpClient = _httpClientFactory.CreateClient("TsPiot");
 
         httpClient.BaseAddress = new Uri($"{connectionSettings.Host}:{connectionSettings.Port}");
@@ -37,31 +37,50 @@ public class TsPiotService : ITsPiotService
             Codes = [markBase64]
         };
 
-        var response = await httpClient.PostAsJsonAsync(CheckAddress, requestData);
-        
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            var errorContent = await response.Content.ReadAsStringAsync();
-            _logger.LogWarning("Ошибка в ответе от TsPiot: {StatusCode}, {Error}", response.StatusCode, errorContent);
-            return Result.Failure<CheckMarksDataTrueApi>($"Ошибка HTTP: {response.StatusCode}");
+            var response = await httpClient.PostAsJsonAsync(CheckAddress, requestData);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning("Ошибка в ответе от TsPiot: {StatusCode}, {Error}", response.StatusCode,
+                    errorContent);
+                return Result.Failure<CheckMarksDataTrueApi>($"Ошибка HTTP: {response.StatusCode} {errorContent}");
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+
+            _logger.LogDebug("Ответ ТСПИоТ: {content}", content);
+
+            var status = await JsonHelpers.DeserializeAsync<TsPiotMarkCheckResponse>(content);
+
+            if (status == null)
+                return Result.Failure<CheckMarksDataTrueApi>("Пустой ответ от сервера");
+
+            if (status.Code != 0)
+            {
+                return Result.Failure<CheckMarksDataTrueApi>(
+                    $"Ошибка работы с ТСПИоТ код {status.Code}: {status.Message}");
+            }
+
+            var result = new CheckMarksDataTrueApi
+            {
+                Code = 0,
+                Description = string.Empty,
+                ReqId = status.Response.RequestId,
+                ReqTimestamp = status.Response.RequestTimestamp,
+                Inst = status.Response.LocalModuleInstance,
+                Version = status.Response.LocalModuleVersion,
+                Codes = status.Response.Codes
+            };
+
+            return Result.Success(result);
         }
-
-        var status = await JsonHelpers.DeserializeAsync<TsPiotMarkCheckResponse>(await response.Content.ReadAsStreamAsync());
-
-        if (status == null)
-            return Result.Failure<CheckMarksDataTrueApi>("Пустой ответ от сервера");
-
-        var result = new CheckMarksDataTrueApi
+        catch (Exception ex)
         {
-            Code = 0,
-            Description = string.Empty,
-            ReqId = status.Response.RequestId,
-            ReqTimestamp = status.Response.RequestTimestamp,
-            Inst = status.Response.LocalModuleInstance,
-            Version = status.Response.LocalModuleVersion,
-            Codes = status.Response.Codes
-        };
-
-        return Result.Success(result);
+            _logger.LogError("Ошибка запроса в ТСПиОТ: {Exception}", ex);
+            return Result.Failure<CheckMarksDataTrueApi>(ex.Message);
+        }
     }
 }

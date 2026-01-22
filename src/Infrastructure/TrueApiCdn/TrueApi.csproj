@@ -17,10 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Models\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\..\Core\FmuApiDomain\FmuApiDomain.csproj" />
     <ProjectReference Include="..\..\Core\Shared\Shared.csproj" />
   </ItemGroup>

@@ -14,7 +14,10 @@ public static class TsPiotClientRegistration
             client.Timeout = TimeSpan.FromSeconds(5);
             client.DefaultRequestHeaders.Accept.Add(
                 new MediaTypeWithQualityHeaderValue("application/json"));
-        });
+        }).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+        });;
 
         services.AddScoped<ITsPiotService, TsPiotService>();
     }   

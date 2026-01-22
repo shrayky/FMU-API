@@ -22,10 +22,10 @@ namespace TrueApiCdn.Workers
         private readonly string _cdnUrl = @"https://cdn.crpt.ru/api/v4/true-api/cdn/info";
         private readonly string _healthCheckAddress = @"api/v4/true-api/cdn/health/check";
 
-        private DateTime nextWorkDate = DateTime.Now;
-        private readonly int _checkInterval = 60_000;
-        private readonly int checkPeriodMinutes = 540;
-        
+        private DateTime _nextWorkDate = DateTime.Now;
+        private const int CheckInterval = 60_000;
+        private const int CheckPeriodMinutes = 540;
+
         private Parameters _configuration;
 
         public CdnLoaderWorker(IParametersService parametersService, 
@@ -47,20 +47,24 @@ namespace TrueApiCdn.Workers
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                if (nextWorkDate >= DateTime.Now)
+                var loadedCdnList = await _cdnService.GetCdnsAsync();
+                
+                if (_nextWorkDate >= DateTime.Now 
+                    && loadedCdnList.Any()) 
                 {
-                    await Task.Delay(_checkInterval, stoppingToken);
+                    await Task.Delay(CheckInterval, stoppingToken);
                     continue;
                 }
 
-                nextWorkDate = DateTime.Now.AddMinutes(checkPeriodMinutes);
-
-                var loadedCdnList = await _cdnService.GetCdnsAsync();
-
+                _nextWorkDate = DateTime.Now.AddMinutes(CheckPeriodMinutes);
+        
+                _configuration = await _parametersService.CurrentAsync();
+                
+                if (_configuration.ServerConfig.TsPiotEnabled)
+                    continue;
+                
                 if (!_cdnService.ShouldUpdateCdnList() & loadedCdnList.Count > 0)
                     continue;                    
-
-                _configuration = _parametersService.Current();
 
                 _logger.LogInformation("Загружаю список CDN");
 
@@ -70,7 +74,7 @@ namespace TrueApiCdn.Workers
                     continue;
                 }
 
-                string xApiKey = _configuration.OrganisationConfig.XapiKey();
+                var xApiKey = _configuration.OrganisationConfig.XapiKey();
 
                 if (xApiKey == string.Empty)
                 {
@@ -91,8 +95,8 @@ namespace TrueApiCdn.Workers
 
         private async Task<bool> UpdateCdnList(string xapikey)
         {
-            List<CdnHost> cdns = await LoadCDNsAsync(xapikey);
-            List<TrueSignCdn> trueSignCdns = await CheckAllCdnsAsync(cdns, xapikey);
+            var cdns = await LoadCdNsAsync(xapikey);
+            var trueSignCdns = await CheckAllCdnsAsync(cdns, xapikey);
 
             if (trueSignCdns.Count > 0)
                 await _cdnService.SaveCdnsAsync(trueSignCdns);
@@ -111,7 +115,7 @@ namespace TrueApiCdn.Workers
             return headers;
         }
 
-        private async Task<List<CdnHost>> LoadCDNsAsync(string xapikey)
+        private async Task<List<CdnHost>> LoadCdNsAsync(string xapikey)
         {
             CdnListAnswerTrueApi? cdns;
 
@@ -120,7 +124,7 @@ namespace TrueApiCdn.Workers
                                                                                 _httpClientFactory,
                                                                                 TimeSpan.FromSeconds(_configuration.HttpRequestTimeouts.CdnRequestTimeout));
 
-            cdns ??= new();
+            cdns ??= new CdnListAnswerTrueApi();
 
             return cdns.Hosts;
         }
@@ -129,17 +133,17 @@ namespace TrueApiCdn.Workers
         {
             List<TrueSignCdn> trueSignCdns = [];
 
-            foreach (CdnHost cdnHost in cdns)
+            foreach (var cdnHost in cdns)
             {
-                int Latency = await CheckHostHealthAsync(cdnHost, xapikey);
+                var latency = await CheckHostHealthAsync(cdnHost, xapikey);
 
-                if (Latency < 0)
+                if (latency < 0)
                     continue;
 
                 TrueSignCdn cdn = new()
                 {
                     Host = cdnHost.Host,
-                    Latency = Latency
+                    Latency = latency
                 };
 
                 trueSignCdns.Add(cdn);
@@ -152,7 +156,7 @@ namespace TrueApiCdn.Workers
         {
             CdnHealth? cdnHealth = new();
 
-            DateTime beginCheckHealth = DateTime.Now;
+            var beginCheckHealth = DateTime.Now;
 
             try
             {
