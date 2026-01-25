@@ -70,6 +70,7 @@ namespace FmuApiApplication.Mark
             var delegates = new CheckDelegate[]
             {
                 async () => await _markChecker.TsPiotCheck(Code, _tsPiotConnectionSettings),
+                async () => await _markChecker.OfflineCheckAsync(Cis, PrintGroupCode),
                 async() => await _markChecker.FmuApiDatabaseCheck(SGtin, _markStateManager)
             };
 

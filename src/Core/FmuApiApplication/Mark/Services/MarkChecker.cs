@@ -123,7 +123,7 @@ namespace FmuApiApplication.Mark.Services
             };
 
             result.SetMarkInformation(markInfo);
-            
+
             return result;
         }
 
@@ -194,7 +194,7 @@ namespace FmuApiApplication.Mark.Services
             }
 
             var markData = trueMarkCheckResult.Value.MarkData();
-            
+
             if (markData.Empty)
                 return MarkCheckResult.Failure($"Пустой результат оффлайн проверки по коду марки {cis}");
 
@@ -229,15 +229,15 @@ namespace FmuApiApplication.Mark.Services
                 $"{trueMarkCheckResult.Value.ReqId}&Inst={trueMarkCheckResult.Value.Inst}&Ver={trueMarkCheckResult.Value.Version}"
                 : trueMarkCheckResult.Value.ReqId;
 
-           result.SetMarkInformation(markInfo);
+            result.SetMarkInformation(markInfo);
 
-           return result;
+            return result;
         }
 
         public async Task<MarkCheckResult> TsPiotCheck(string mark, TsPiotConnectionSettings connectionSettings)
         {
             Result<CheckMarksDataTrueApi> trueMarkCheckResult;
-            
+
             try
             {
                 trueMarkCheckResult = await _tsPiotService.Check(mark, connectionSettings);
@@ -248,7 +248,34 @@ namespace FmuApiApplication.Mark.Services
                 return MarkCheckResult.Failure($"Ошибка проверки марки в ТС ПИоТ: {ex.Message}");
             }
 
-            return MarkCheckResult.FromCheck(trueMarkCheckResult);
+            var tsPiotCheck = MarkCheckResult.FromCheck(trueMarkCheckResult);
+
+            if (!trueMarkCheckResult.IsSuccess || trueMarkCheckResult.Value.Codes.Count == 0)
+            {
+                return tsPiotCheck;
+            }
+
+            var markData = trueMarkCheckResult.Value.Codes[0];
+
+            var markInfo = new MarkEntity()
+            {
+                MarkId = mark,
+                State = markData.Sold ? MarkState.Sold : MarkState.Stock,
+                TrueApiCisData = markData,
+                TrueApiAnswerProperties = new()
+                {
+                    Code = trueMarkCheckResult.Value.Code,
+                    Description = trueMarkCheckResult.Value.Description,
+                    ReqId = trueMarkCheckResult.Value.ReqId,
+                    ReqTimestamp = trueMarkCheckResult.Value.ReqTimestamp,
+                    Inst = trueMarkCheckResult.Value.Inst,
+                    Version = trueMarkCheckResult.Value.Version
+                }
+            };
+
+            tsPiotCheck.SetMarkInformation(markInfo);
+
+            return tsPiotCheck;
         }
     }
 }

@@ -58,21 +58,28 @@ public class TsPiotService : ITsPiotService
             if (status == null)
                 return Result.Failure<CheckMarksDataTrueApi>("Пустой ответ от сервера");
 
-            if (status.Code != 0)
+            if (status.Response.CodesResponseItems.Count == 0)
+            {
+                return Result.Failure<CheckMarksDataTrueApi>("Пустой ответ от сервера: отсутствуют элементы codesResponse");
+            }
+
+            var firstItem = status.Response.CodesResponseItems[0];
+
+            if (firstItem.Code != 0)
             {
                 return Result.Failure<CheckMarksDataTrueApi>(
-                    $"Ошибка работы с ТСПИоТ код {status.Code}: {status.Message}");
+                    $"Ошибка проверки марки через ТСПИоТ код {firstItem.Code}: {firstItem.Description}");
             }
 
             var result = new CheckMarksDataTrueApi
             {
-                Code = 0,
-                Description = string.Empty,
-                ReqId = status.Response.RequestId,
-                ReqTimestamp = status.Response.RequestTimestamp,
-                Inst = status.Response.LocalModuleInstance,
-                Version = status.Response.LocalModuleVersion,
-                Codes = status.Response.Codes
+                Code = firstItem.Code,
+                Description = firstItem.Description,
+                ReqId = firstItem.RequestId,
+                ReqTimestamp = firstItem.RequestTimestamp,
+                Inst = firstItem.LocalModuleInstance,
+                Version = firstItem.LocalModuleVersion,
+                Codes = firstItem.Codes
             };
 
             return Result.Success(result);
