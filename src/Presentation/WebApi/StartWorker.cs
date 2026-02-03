@@ -1,22 +1,21 @@
-﻿namespace WebApi
+﻿namespace WebApi;
+
+public class StartWorker : BackgroundService
 {
-    public class StartWorker : BackgroundService
+    private readonly ILogger<StartWorker> _logger;
+
+    public StartWorker(ILogger<StartWorker> logger)
     {
-        private readonly ILogger<StartWorker> _logger;
+        _logger = logger;
+    }
 
-        public StartWorker(ILogger<StartWorker> logger)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        _logger.LogWarning("Служба запущена");
+
+        while (!stoppingToken.IsCancellationRequested)
         {
-            _logger = logger;
-        }
-
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            _logger.LogWarning("Служба запущена");
-
-            while (!stoppingToken.IsCancellationRequested)
-            {
-                await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
-            }
+            await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
         }
     }
 }
