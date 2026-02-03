@@ -142,7 +142,7 @@ class OrganizationsConfigurationElement {
             columns: [
                 { id: "id", header: this.LABELS.code },
                 { id: "name", header: this.LABELS.name, fillspace: true },
-                { id: "xapikey", header: this.LABELS.xapikey, fillspace: true },
+                { id: "inn", header: this.LABELS.inn, fillspace: true },
                 { 
                     id: "localModuleStatus",
                     header: this.LABELS.localModuleStatusTitle,
@@ -230,35 +230,66 @@ class OrganizationsConfigurationElement {
                 Text(this.LABELS.name, "OrganizationName"),
                 Text(this.LABELS.inn, "OrganizationInn"),
                 
-                Label("TsPiotTitle", "ТС ПИоТ (для фронтола ниже 28.0"),
                 {
-                    cols:[
-                        Text(this.LABELS.tsPiotHost, "TsPiotHost", "", { placeholder: "localhost" }),
-                        Text(this.LABELS.tsPiotPort, "TsPiotPort", "", { placeholder: "51401" }),      
+                    view: "tabview",
+                    cells: [
+                        {
+                            header: "ТС ПИОТ",
+                            body: {
+                                padding: 10,
+                                rows: [
+                                    {
+                                        view: "template",
+                                        id: "TsPiotUbder",
+                                        template: "Для актуальных версий фронтола (больше 6.28.0) адрес подключения настраивается в ККМ и передается в запросе проверки марки.",
+                                        css: {
+                                            "white-space": "normal",
+                                            "word-wrap": "break-word",
+                                            "line-height": "1.4",
+                                            "padding": "5px 0"
+                                        },
+                                        autoheight: true
+                                    },
+                                    {
+                                        cols: [
+                                            Text(this.LABELS.tsPiotHost, "TsPiotHost", "", { placeholder: "localhost" }),
+                                            Text(this.LABELS.tsPiotPort, "TsPiotPort", "", { placeholder: "51401" }),      
+                                        ]
+                                    },
+                                ]
+                            }
+                        },
+                        {
+                            header: "Локальный модуль",
+                            body: {
+                                padding: 10,
+                                rows: [
+                                    CheckBox(this.LABELS.enable, "LocalModuleEnable"),
+                                    Text(this.LABELS.connectionAddress,
+                                         "LocalModuleConnectionAddress", "", {
+                                        placeholder: "http://hostname:5995"
+                                    }),
+                                    Text(this.LABELS.userName, "LocalModuleUserName"),
+                                    PasswordBox(this.LABELS.password, "LocalModulePassword"),
+                                    Text(this.LABELS.eniseyConnectionAddress,
+                                        "EniseyConnectionAddress", "", {
+                                       placeholder: "http://hostname:5984"
+                                   })
+                                ]
+                            }
+                        },
+                        {
+                            header: "Разрешительный режим (до 01.03.2026)",
+                            body: {
+                                padding: 10,
+                                rows: [
+                                    Text(this.LABELS.xapikey, "XAPIKEY"),
+                                ]
+                            }
+                        }
                     ]
                 },
-
-                Label("TsPiotUbder", "Для актуальных версий фронтола адрес подключения настраивается в ККМ и передается в запросе проверки марки."),
-
-                {
-                    height: 20
-                },
-                
-                Text(this.LABELS.xapikey, "XAPIKEY"),
-
-                Label("LocalModuleTitle", this.LABELS.LocalModuleTitle),
-                CheckBox(this.LABELS.enable, "LocalModuleEnable"),
-                Text(this.LABELS.connectionAddress,
-                     "LocalModuleConnectionAddress", "", {
-                    placeholder: "http://hostname:5995"
-                }),
-                Text(this.LABELS.userName, "LocalModuleUserName"),
-                PasswordBox(this.LABELS.password, "LocalModulePassword"),
-                Text(this.LABELS.eniseyConnectionAddress,
-                    "EniseyConnectionAddress", "", {
-                   placeholder: "http://hostname:5994"
-               }),
-
+    
                 {
                     padding: {
                         top: 10
