@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Text.Json;
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.TrueApi.MarkData.Check;
@@ -52,8 +53,17 @@ public class TsPiotService : ITsPiotService
             var content = await response.Content.ReadAsStringAsync();
 
             _logger.LogDebug("Ответ ТСПИоТ: {content}", content);
+            
+            var tsPiotOptions = new JsonSerializerOptions(JsonSerializeOptionsProvider.Default())
+            {
+                Converters = 
+                { 
+                    new JsonStringOrLongConverter(),
+                    new JsonDateTimeStringConverter()
+                }
+            };
 
-            var status = await JsonHelpers.DeserializeAsync<TsPiotMarkCheckResponse>(content);
+            var status = await JsonHelpers.DeserializeAsync<TsPiotMarkCheckResponse>(content, tsPiotOptions);
 
             if (status == null)
                 return Result.Failure<CheckMarksDataTrueApi>("Пустой ответ от сервера");

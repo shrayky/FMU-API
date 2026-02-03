@@ -55,5 +55,16 @@ namespace Shared.Json
             return await reader.ReadToEndAsync();
         }
         
+        public static async ValueTask<T?> DeserializeAsync<T>(string json, JsonSerializerOptions options)
+        {
+            using var stream = new MemoryStream();
+            await using var writer = new StreamWriter(stream);
+            await writer.WriteAsync(json).ConfigureAwait(false);
+            await writer.FlushAsync().ConfigureAwait(false);
+
+            stream.Position = 0;
+            
+            return await JsonSerializer.DeserializeAsync<T>(stream, options);
+        }
     }
 }
