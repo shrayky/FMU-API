@@ -25,3 +25,4 @@ public static class TsPiotClientRegistration
 
 // тестовый пиот (эмулятор)
 // https://tspiot.sandbox.crptech.ru/?mode=online&tab=marks
+// MDEwNDYwNjIyNDQ5NzA1MTIxNWdoY1JhPSYuUWl0SB05MUVFMTEdOTJXZ0RWQ0FHRHJ0WDU0Y3AxdjdSK0VBcUZBWTZkRi90SW5PdVlKMU15UG1VPQ==
