@@ -1,6 +1,5 @@
 ﻿using FmuApiDomain.TrueApi.MarkData;
 using System.Text.Json.Serialization;
-using Shared.Json;
 
 namespace FmuApiDomain.TsPiot.Models
 {

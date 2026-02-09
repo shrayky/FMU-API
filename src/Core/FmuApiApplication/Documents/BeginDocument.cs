@@ -73,23 +73,23 @@ namespace FmuApiApplication.Documents
 
                     var markData = trueApiCisData.Codes[0];
 
-                    if (markData.GroupIds.Contains(TrueApiGroup.Tobaco))
+                    if (!markData.GroupIds.Contains(TrueApiGroup.Tobaco))
+                        continue;
+                    
+                    var minPrice = _configuration.MinimalPrices.Tabaco > markData.Smp ? _configuration.MinimalPrices.Tabaco : markData.Smp;
+
+                    if (minPrice > position.Total_price * 100)
                     {
-                        var minPrice = _configuration.MinimalPrices.Tabaco > markData.Smp ? _configuration.MinimalPrices.Tabaco : markData.Smp;
+                        checkResult.Code = 3;
+                        checkResult.Error += $"\r\n {position.Text} цена ниже минимальной розничной!";
+                        checkResult.Marking_codes.Add(markInBase64);
+                    }
 
-                        if (minPrice > position.Total_price * 100)
-                        {
-                            checkResult.Code = 3;
-                            checkResult.Error += $"\r\n {position.Text} цена ниже минимальной розничной!";
-                            checkResult.Marking_codes.Add(markInBase64);
-                        }
-
-                        if (markData.Mrp < position.Total_price * 100)
-                        {
-                            checkResult.Code = 3;
-                            checkResult.Error += $"\r\n {position.Text} цена выше максимальной розничной!";
-                            checkResult.Marking_codes.Add(markInBase64);
-                        }
+                    if (markData.Mrp < position.Total_price * 100)
+                    {
+                        checkResult.Code = 3;
+                        checkResult.Error += $"\r\n {position.Text} цена выше максимальной розничной!";
+                        checkResult.Marking_codes.Add(markInBase64);
                     }
 
                 }

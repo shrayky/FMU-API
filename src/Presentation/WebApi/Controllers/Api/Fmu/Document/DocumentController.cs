@@ -22,7 +22,7 @@ namespace WebApi.Controllers.Api.Fmu.Document
         }
 
         [HttpPost]
-        async public Task<IActionResult> DocumentPostAsync(RequestDocument document)
+        public async Task<IActionResult> DocumentPostAsync(RequestDocument document)
         {
             var service = _factory.GetInstance(document);
 

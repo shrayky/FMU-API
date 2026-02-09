@@ -5,7 +5,7 @@ namespace FmuApiDomain.TrueApi.MarkData.Check
     public class CheckMarksDataTrueApi
     {
         [JsonPropertyName("code")]
-        public int Code { get; set; } = 0;
+        public int Code { get; set; }
         
         [JsonPropertyName("description")]
         public string Description { get; set; } = string.Empty;
@@ -14,7 +14,7 @@ namespace FmuApiDomain.TrueApi.MarkData.Check
         public string ReqId { get; set; } = string.Empty;
         
         [JsonPropertyName("reqTimestamp")]
-        public long ReqTimestamp { get; set; } = 0;
+        public long ReqTimestamp { get; set; }
         
         [JsonPropertyName("inst")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
@@ -29,7 +29,7 @@ namespace FmuApiDomain.TrueApi.MarkData.Check
 
         public bool AllMarksIsSold()
         {
-            int sold = 0;
+            var sold = 0;
 
             foreach (var markData in Codes)
             {
@@ -40,12 +40,11 @@ namespace FmuApiDomain.TrueApi.MarkData.Check
             return sold == Codes.Count;
         }
 
-        public bool AllMarkIsNotRealizable() => Codes.Count(p => p.Realizable == false) == Codes.Count;
-        
+        public bool AllMarkIsNotRealizable() => Codes.Count(p => !p.Realizable) == Codes.Count;
 
         public bool AllMarksIsExpire()
         {
-            int expire = 0;
+            var expire = 0;
 
             foreach (var markData in Codes)
             {
@@ -78,7 +77,7 @@ namespace FmuApiDomain.TrueApi.MarkData.Check
             if (Codes.Count != 1)
                 return "";
 
-            string code = Codes[0].PrintView ?? "";
+            var code = Codes[0].PrintView;
 
             if (code.StartsWith("01"))
                 code = $"{code.Substring(2, 14)}{code.Substring(18)}";
@@ -89,14 +88,14 @@ namespace FmuApiDomain.TrueApi.MarkData.Check
         public CodeDataTrueApi MarkData()
         {
             if (Codes.Count != 1)
-                return new();
+                return new CodeDataTrueApi();
 
             return Codes[0];
         }
 
         public void CorrectExpireDate()
         {
-            foreach (CodeDataTrueApi data in Codes)
+            foreach (var data in Codes)
             {
                 if (data.ExpireDate == null)
                     continue;
@@ -108,7 +107,7 @@ namespace FmuApiDomain.TrueApi.MarkData.Check
         }
         public void ResetErrorFields(bool resetSoldStatusForReturn = false)
         {
-            foreach (CodeDataTrueApi data in Codes)
+            foreach (var data in Codes)
                 data.ResetErrorFields(resetSoldStatusForReturn);
         }
 

@@ -35,9 +35,13 @@ namespace AutoUpdateWorkerService.Workers
                 if (stoppingToken.IsCancellationRequested)
                     break;
 
-                _logger.LogInformation("Проверяю наличие обновления в каталоге {UpdateFilesCatalog}", configuration.AutoUpdate.UpdateFilesCatalog);
+                if (!configuration.AutoUpdate.Enabled) 
+                    continue;
+                
+                _logger.LogInformation("Проверяю наличие обновления в каталоге {UpdateFilesCatalog}",
+                    configuration.AutoUpdate.UpdateFilesCatalog);
 
-                var updateResult = CheckUpdates(configuration.AutoUpdate);
+                _ = CheckUpdates(configuration.AutoUpdate);
             }
         }
 

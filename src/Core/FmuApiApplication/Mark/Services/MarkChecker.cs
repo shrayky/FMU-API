@@ -272,7 +272,7 @@ namespace FmuApiApplication.Mark.Services
                     Version = trueMarkCheckResult.Value.Version
                 }
             };
-
+            
             tsPiotCheck.SetMarkInformation(markInfo);
 
             return tsPiotCheck;

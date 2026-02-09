@@ -1,10 +1,8 @@
-using System.Reflection.Metadata;
 using FmuApiApplication.Mark.Interfaces;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Configuration.Options.Organization;
 using FmuApiDomain.Fmu.Document;
-using FmuApiDomain.Frontol.DTO;
 using FmuApiDomain.Frontol.Interfaces;
 using FmuApiDomain.MarkInformation.Interfaces;
 using Microsoft.Extensions.Logging;
