@@ -227,9 +227,12 @@ class OrganizationsConfigurationElement {
             padding: 10,
             rows: [
                 Number(this.LABELS.code, "OrganizationId", "1111"),
-                Text(this.LABELS.name, "OrganizationName"),
-                Text(this.LABELS.inn, "OrganizationInn"),
-                
+                {
+                    cols: [
+                        Text(this.LABELS.name, "OrganizationName"),
+                        Text(this.LABELS.inn, "OrganizationInn"),
+                    ]
+                },
                 {
                     view: "tabview",
                     cells: [
@@ -269,8 +272,14 @@ class OrganizationsConfigurationElement {
                                          "LocalModuleConnectionAddress", "", {
                                         placeholder: "http://hostname:5995"
                                     }),
-                                    Text(this.LABELS.userName, "LocalModuleUserName"),
-                                    PasswordBox(this.LABELS.password, "LocalModulePassword"),
+
+                                    {
+                                        cols: [
+                                            Text(this.LABELS.userName, "LocalModuleUserName"),
+                                            PasswordBox(this.LABELS.password, "LocalModulePassword"),
+                                        ]
+                                    },
+                                    
                                     Text(this.LABELS.eniseyConnectionAddress,
                                         "EniseyConnectionAddress", "", {
                                        placeholder: "http://hostname:5984"
