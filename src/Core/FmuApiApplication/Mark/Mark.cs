@@ -67,21 +67,21 @@ namespace FmuApiApplication.Mark
         {
             _logger.LogInformation("Начало проверки марки {Code}", Code);
 
-            var delegates = new CheckDelegate[]
-            {
+            CheckDelegate[] delegates =
+            [
                 async () => await _markChecker.TsPiotCheck(Code, _tsPiotConnectionSettings),
                 async () => await _markChecker.OfflineCheckAsync(Cis, PrintGroupCode),
                 async() => await _markChecker.FmuApiDatabaseCheck(SGtin, _markStateManager)
-            };
+            ];
 
             if (!_useTsPiot)
             {
-                delegates = new CheckDelegate[]
-                {
+                delegates =
+                [
                     async () => await _markChecker.OnlineCheck(Code, SGtin, CodeIsSgtin, PrintGroupCode),
                     async () => await _markChecker.OfflineCheckAsync(Cis, PrintGroupCode),
                     async() => await _markChecker.FmuApiDatabaseCheck(SGtin, _markStateManager)
-                };
+                ];
             }
 
             List<string> checkErrors = [];
@@ -121,6 +121,12 @@ namespace FmuApiApplication.Mark
 
                 _lastCheckResult.FmuAnswer.PrintGroupCode = PrintGroupCode;
 
+                if (string.IsNullOrEmpty(_lastCheckResult.TrueMarkData.Inst) &&
+                    !_lastCheckResult.FmuAnswer.OfflineRegime)
+                {
+                    _lastCheckResult.FmuAnswer.OfflineRegime = true;
+                }
+                
                 if (!_lastCheckResult.FmuAnswer.Offline)
                     await _markStateManager.Save(SGtin, _lastCheckResult.TrueMarkData);
 
@@ -140,6 +146,12 @@ namespace FmuApiApplication.Mark
         {
             _useTsPiot = true;
             _tsPiotConnectionSettings = tsPiotConnectionSettings;
+            
+            if (_tsPiotConnectionSettings.Host.StartsWith("http://"))
+                _tsPiotConnectionSettings.Host = _tsPiotConnectionSettings.Host.Replace("http://", "https://");
+
+            if (!_tsPiotConnectionSettings.Host.StartsWith("https://"))
+                _tsPiotConnectionSettings.Host = $"https://{_tsPiotConnectionSettings.Host}";
         }
 
         public Result ValidateMarkData(OperationType operation)
@@ -157,8 +169,14 @@ namespace FmuApiApplication.Mark
             }
             else
             {
+                if (!markData.IsTracking && !markData.IsOwner)
+                {
+                    markData.IsOwner = true;
+                }
+                
                 // Проверка владельца
-                if (_configuration.SaleControlConfig.CheckIsOwnerField && !markData.IsOwner)
+                if (_configuration.SaleControlConfig.CheckIsOwnerField 
+                    && !markData.IsOwner)
                 {
                     markData.Valid = false;
                     validationErrors.Add("Нельзя продавать чужую марку!");
@@ -188,8 +206,6 @@ namespace FmuApiApplication.Mark
                 // Сброс ошибок верификации, для указанных в настройках групп
                 if (!ResetErrorFields())
                     markError = string.Join(Environment.NewLine, validationErrors);
-
-                //markError = markData.MarkErrorDescription();
             }
 
             return !string.IsNullOrEmpty(markError) ? Result.Failure(markError) : Result.Success();
