@@ -247,7 +247,8 @@ namespace ApplicationConfigurationService
                 || currentSettings.Database.Enable != newSettings.Database.Enable
                 || currentSettings.Logging.LogLevel != newSettings.Logging.LogLevel
                 || currentSettings.Logging.IsEnabled != newSettings.Logging.IsEnabled
-                || currentSettings.Logging.LogDepth != newSettings.Logging.LogDepth);
+                || currentSettings.Logging.LogDepth != newSettings.Logging.LogDepth)
+                || currentSettings.ServerConfig.LocalModuleVersion != newSettings.ServerConfig.LocalModuleVersion;
 
             _appState.NeedRestartService(needToRestartService);
 

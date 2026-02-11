@@ -9,16 +9,16 @@ using System.Net.Http.Json;
 
 namespace LocalModuleIntegration.Service
 {
-    public class LocalModuleService : ILocalModuleService
+    public class LocalModuleServiceV1 : ILocalModuleService
     {
-        private readonly ILogger<LocalModuleService> _logger;
+        private readonly ILogger<LocalModuleServiceV1> _logger;
         private readonly IHttpClientFactory _httpClientFactory;
 
         private const string InitAddress = @"/api/v1/init";
         private const string StatusAddress = @"/api/v1/status";
         private const string OutCheckAddress = @"/api/v1/cis/outCheck";
 
-        public LocalModuleService(IHttpClientFactory httpClientFactory, ILogger<LocalModuleService> logger)
+        public LocalModuleServiceV1(IHttpClientFactory httpClientFactory, ILogger<LocalModuleServiceV1> logger)
         {
             _logger = logger;
             _httpClientFactory = httpClientFactory;

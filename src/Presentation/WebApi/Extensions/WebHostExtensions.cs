@@ -25,9 +25,6 @@ namespace WebApi.Extensions
 
             ConfigureCors(builder.Services, settings.ServerConfig.ApiIpPort);
 
-            //if (settings.TrueSignTokenService.ConnectionAddres != string.Empty)
-            //    builder.Services.AddHostedService<TrueSignTokenServiceLoaderWorker>();
-
             if (settings.HostsToPing.Count > 0)
             {
                 builder.Services.AddHttpClient("internetCheck");
@@ -44,7 +41,7 @@ namespace WebApi.Extensions
             });
 
             TrueApiRegistration.AddService(builder.Services);
-            LocalModuleRegistration.AddService(builder.Services);
+            LocalModuleRegistration.AddService(builder.Services, settings.ServerConfig.LocalModuleVersion);
 
             ConfigureLogging(builder, settings.Logging);
 

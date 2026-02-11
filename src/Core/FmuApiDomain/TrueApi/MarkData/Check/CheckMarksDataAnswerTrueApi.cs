@@ -77,7 +77,7 @@ namespace FmuApiDomain.TrueApi.MarkData.Check
             if (Codes.Count != 1)
                 return "";
 
-            var code = Codes[0].PrintView;
+            var code = Codes[0].Cis;
 
             if (code.StartsWith("01"))
                 code = $"{code.Substring(2, 14)}{code.Substring(18)}";

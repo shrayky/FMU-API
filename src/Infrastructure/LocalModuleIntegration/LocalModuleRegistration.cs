@@ -8,7 +8,7 @@ namespace LocalModuleIntegration
 {
     public static class LocalModuleRegistration
     {
-        public static void AddService(IServiceCollection services)
+        public static void AddService(IServiceCollection services, int localModuleVersion)
         {
             services.AddHttpClient("LocalModule", client =>
                 {
@@ -30,8 +30,11 @@ namespace LocalModuleIntegration
                     new MediaTypeWithQualityHeaderValue("application/json"));
             });
 
-            services.AddSingleton<ILocalModuleService, LocalModuleService>();
-
+            if (localModuleVersion == 2)
+                services.AddSingleton<ILocalModuleService, LocalModuleServiceV2>();
+            else
+                services.AddSingleton<ILocalModuleService, LocalModuleServiceV1>();
+            
             services.AddHostedService<LocalModuleStatusWorker>();
         }
     }
