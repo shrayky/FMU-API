@@ -121,7 +121,7 @@ namespace FmuApiApplication.Mark
 
                 _lastCheckResult.FmuAnswer.PrintGroupCode = PrintGroupCode;
 
-                if (string.IsNullOrEmpty(_lastCheckResult.TrueMarkData.Inst) &&
+                if (!string.IsNullOrEmpty(_lastCheckResult.TrueMarkData.Inst) &&
                     !_lastCheckResult.FmuAnswer.OfflineRegime)
                 {
                     _lastCheckResult.FmuAnswer.OfflineRegime = true;
