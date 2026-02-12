@@ -1,7 +1,6 @@
 using ApplicationConfigurationService;
 using AutoUpdateWorkerService;
 using CentralServerExchange;
-using CentralServerExchange.Workers;
 using CouchDb;
 using FmuApiApplication;
 using FmuApiApplication.Documents;

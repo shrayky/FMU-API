@@ -1,19 +1,16 @@
-﻿using FmuApiDomain.Attributes;
+﻿using System.Reflection;
+using FmuApiDomain.Attributes;
 using Microsoft.Extensions.DependencyInjection;
-using System.Reflection;
-using TrueApiCdn.Interface;
-using TrueApiCdn.Services;
-using TrueApiCdn.Workers;
+using TrueApi.Workers;
 
-namespace TrueApiCdn
+namespace TrueApi;
+
+public static class TrueApiRegistration
 {
-    public class TrueApiRegistration
+    public static void AddService(IServiceCollection services)
     {
-        public static void AddService(IServiceCollection services)
-        {
-            services.AddAutoRegisteredServices([Assembly.GetExecutingAssembly()]);
+        services.AddAutoRegisteredServices([Assembly.GetExecutingAssembly()]);
 
-            services.AddHostedService<CdnLoaderWorker>();
-        }
+        services.AddHostedService<CdnLoaderWorker>();
     }
 }

@@ -8,8 +8,7 @@ using Serilog;
 using Shared.FilesFolders;
 using Shared.Logging;
 using System.Net;
-using TrueApiCdn;
-
+using TrueApi;
 
 namespace WebApi.Extensions
 {
