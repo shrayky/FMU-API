@@ -14,6 +14,7 @@ using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.TrueApi.Interfaces;
+using TrueApiIntegration;
 using FrontolDb;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Scalar.AspNetCore;
@@ -98,6 +99,7 @@ bool RunHttpApiService()
     AppRegistrationExtension.AddAppServices(services);
     ServicesAndDaemonsRegistrationExtension.AddService(services);
     TsPiotClientRegistration.AddService(services);
+    TrueApiIntegrationRegistration.AddService(services);
 
     services.AddMarkServices();
     services.AddTransient<FrontolDocumentServiceFactory>();
