@@ -32,6 +32,7 @@ namespace CentralServerExchange.Workers
 
             _nextExchangeTime = DateTime.Now.AddMinutes(StartDelayMinutes);
         }
+
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             var tryCounts = 0;
