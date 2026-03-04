@@ -101,13 +101,11 @@ public class LocalModuleServiceV2 : ILocalModuleService
         httpClient.BaseAddress = new Uri(connection.ConnectionAddress);
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", connection.GetBasicAuthorizationHeader());
 
-        var encodedCis = Uri.EscapeDataString(cis);
-
         var cises = new[]
         {
             new
             {
-                cis = encodedCis
+                cis = cis
             }
         };
 
