@@ -63,6 +63,42 @@ export default function informationView(id) {
                     },
 
                     {},
+
+                    {
+                        cols: [
+                            {
+                                view: "button",
+                                value: "Перезагрузить сервис",
+                                id: "loadTrueApiToken",
+                                width: 200,
+                                autowidth: false,
+                                click: async () => {
+                                    let response = await fetch('/api/system/reboot', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json;charset=utf-8'
+                                        }
+                                    });
+
+                                    if (response.ok) {
+                                        webix.message({
+                                            text: "Служба будет перезапущена в течении минуты.",
+                                            type: "info"
+                                        });
+                                    }
+                                    else {
+                                        webix.message({
+                                            text: "Ошибка обработки запроса на перезапуск службы, смотрите лог работы.",
+                                            type: "error"
+                                        });
+                                    }
+                                    
+                                }
+                            }
+                            ,
+                            {}
+                        ]
+                    }
                 ]
             }
         ]
