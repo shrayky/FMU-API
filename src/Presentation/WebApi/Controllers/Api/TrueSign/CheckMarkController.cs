@@ -2,31 +2,30 @@
 using FmuApiDomain.TrueApi.MarkData.Check;
 using Microsoft.AspNetCore.Mvc;
 
-namespace WebApi.Controllers.Api.TrueSign
+namespace WebApi.Controllers.Api.TrueSign;
+
+[Route("api/ts/[controller]")]
+[ApiController]
+[ApiExplorerSettings(GroupName = "True API")]
+public class CheckMarkController : ControllerBase
 {
-    [Route("api/ts/[controller]")]
-    [ApiController]
-    [ApiExplorerSettings(GroupName = "True API")]
-    public class CheckMarkController : ControllerBase
+    private readonly IOnLineMarkCheckService _onlineMarkCheck;
+
+    public CheckMarkController(IOnLineMarkCheckService checkMarks)
     {
-        private readonly IOnLineMarkCheckService _onlineMarkCheck;
+        _onlineMarkCheck = checkMarks;
+    }
 
-        public CheckMarkController(IOnLineMarkCheckService checkMarks)
-        {
-            _onlineMarkCheck = checkMarks;
-        }
+    [HttpPost]
+    public async Task<IActionResult> CheckMark(List<string> marks)
+    {
+        CheckMarksRequestData checkMarksRequestData = new(marks);
 
-        [HttpPost]
-        public async Task<IActionResult> CheckMark(List<string> marks)
-        {
-            CheckMarksRequestData checkMarksRequestData = new(marks);
+        var trueMarkCheckResult = await _onlineMarkCheck.RequestMarkState(checkMarksRequestData);
 
-            var trueMarkCheckResult = await _onlineMarkCheck.RequestMarkState(checkMarksRequestData);
+        if (trueMarkCheckResult.IsFailure)
+            return NotFound(trueMarkCheckResult.Error);
 
-            if (trueMarkCheckResult.IsFailure)
-                return NotFound(trueMarkCheckResult.Error);
-
-            return Ok(trueMarkCheckResult.Value);
-        }
+        return Ok(trueMarkCheckResult.Value);
     }
 }

@@ -6,68 +6,67 @@ using Microsoft.AspNetCore.Mvc;
 using Shared.Json;
 using System.Text.Json;
 
-namespace WebApi.Controllers.Api.Configuration
+namespace WebApi.Controllers.Api.Configuration;
+
+[Route("api/configuration/[controller]")]
+[ApiController]
+[ApiExplorerSettings(GroupName = "App configuration")]
+public class ParametersController : Controller
 {
-    [Route("api/configuration/[controller]")]
-    [ApiController]
-    [ApiExplorerSettings(GroupName = "App configuration")]
-    public class ParametersController : Controller
+    private readonly IParametersService _parametersService;
+    private readonly IApplicationState _appState;
+
+    private readonly Parameters _configuration;
+
+    public ParametersController(IParametersService parametersService, IApplicationState applicationState)
     {
-        private readonly IParametersService _parametersService;
-        private readonly IApplicationState _appState;
+        _parametersService = parametersService;
+        _appState = applicationState;
 
-        private readonly Parameters _configuration;
+        _configuration = _parametersService.Current();
+    }
 
-        public ParametersController(IParametersService parametersService, IApplicationState applicationState)
+    [HttpGet]
+    public IActionResult ParametersGet()
+    {
+        WebixDataPacket packet = new()
         {
-            _parametersService = parametersService;
-            _appState = applicationState;
+            Content = _configuration
+        };
 
-            _configuration = _parametersService.Current();
+        return Ok(packet);
+    }
+
+    [HttpPost]
+    async public Task<IActionResult> ParametersPostAsync()
+    {
+        StreamReader? body = new(Request.Body);
+
+        if (body is null)
+            return BadRequest("Пустое тело запроса");
+
+        Parameters? loadPrm;
+
+        try
+        {
+            loadPrm = await JsonSerializer.DeserializeAsync<Parameters>(body.BaseStream, JsonSerializeOptionsProvider.Default());
+        }
+        catch (Exception ex)
+        {
+            return BadRequest($"Не удалось преобразовать входящий пакет данных! {ex.Message}");
         }
 
-        [HttpGet]
-        public IActionResult ParametersGet()
+        if (loadPrm == null)
+            return BadRequest();
+
+        await _parametersService.UpdateAsync(loadPrm);
+
+        var answer = new
         {
-            WebixDataPacket packet = new()
-            {
-                Content = _configuration
-            };
+            isSuccess = true,
+            needToRestart = _appState.NeedRestartService(),
+        };
 
-            return Ok(packet);
-        }
-
-        [HttpPost]
-        async public Task<IActionResult> ParametersPostAsync()
-        {
-            StreamReader? body = new(Request.Body);
-
-            if (body is null)
-                return BadRequest("Пустое тело запроса");
-
-            Parameters? loadPrm;
-
-            try
-            {
-                loadPrm = await JsonSerializer.DeserializeAsync<Parameters>(body.BaseStream, JsonSerializeOptionsProvider.Default());
-            }
-            catch (Exception ex)
-            {
-                return BadRequest($"Не удалось преобразовать входящий пакет данных! {ex.Message}");
-            }
-
-            if (loadPrm == null)
-                return BadRequest();
-
-            await _parametersService.UpdateAsync(loadPrm);
-
-            var answer = new
-            {
-                isSuccess = true,
-                needToRestart = _appState.NeedRestartService(),
-            };
-
-            return Ok(answer);
-        }
+        return Ok(answer);
     }
 }
