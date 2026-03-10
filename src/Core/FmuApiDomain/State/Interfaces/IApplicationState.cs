@@ -8,7 +8,6 @@ public interface IApplicationState
 {
     void SetOnlineStatus(bool isOnline);
     bool IsOnline();
-    TokenData TrueApiToken();
     void UpdateTrueApiToken(TokenData token);
     TokenData FmuToken();
     void UpdateFmuToken(TokenData token);
@@ -23,5 +22,6 @@ public interface IApplicationState
     void NeedRestartService(bool flag);
     bool NeedRestartService();
     void UpdateTrueApiToken(string inn, string token, DateTime lifeUntil);
-    string TrueApiToken(string inn);
+    TokenData TrueApiToken();
+    TokenData TrueApiToken(string inn);
 }

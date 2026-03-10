@@ -144,17 +144,17 @@ public class ApplicationState : IApplicationState
         _trueApiTokens.Add(organisationTokenData);
     }
 
-    public string TrueApiToken(string inn)
+    public TokenData TrueApiToken(string inn)
     {
-        var organisationTokenData = _trueApiTokens.FirstOrDefault(p => p.Inn == inn);
+        var tokenData = _trueApiTokens.FirstOrDefault(p => p.Inn == inn);
 
-        if (organisationTokenData == null)
-            return string.Empty;
+        if (tokenData == null)
+            return new();
 
-        if (organisationTokenData.LiveUntil < DateTime.Now)
-            return string.Empty;
+        if (tokenData.LiveUntil < DateTime.Now)
+            return new();
 
-        return organisationTokenData.Token;
+        return new(tokenData.Token, tokenData.LiveUntil); ;
     }
 
     public TokenData TrueApiToken()

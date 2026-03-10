@@ -14,7 +14,7 @@ class OrganizationsConfigurationElement {
             code: "Код организации (группы печати), если группы печати не используются, то все равно код должен быть 1",
             inn: "ИНН организации",
             name: "Наименование",
-            xapikey: "X-API key (действует до 1 марта 2026)",
+            xapikey: "X-API key (действует до 1 июня 2026)",
             add: "Сохранить",
             close: "Закрыть",
             enable: "Используется",
@@ -27,7 +27,9 @@ class OrganizationsConfigurationElement {
             localModuleInit: "Инициализация ЛМ",
             eniseyConnectionAddress: "Адрес подключения БД Енисей",
             tsPiotHost: "Адрес ТС ПИоТ (для Frontol ниже 28)",
-            tsPiotPort: "Порт"
+            tsPiotPort: "Порт",
+            signPassword: "Пароль от ЭЦП",
+            LoadToken: "Получить токен"
         };
 
         this.LOCAL_MODULE_STATUS = {
@@ -143,7 +145,7 @@ class OrganizationsConfigurationElement {
                 { id: "id", header: this.LABELS.code },
                 { id: "name", header: this.LABELS.name, fillspace: true },
                 { id: "inn", header: this.LABELS.inn, fillspace: true },
-                { 
+                {
                     id: "localModuleStatus",
                     header: this.LABELS.localModuleStatusTitle,
 
@@ -235,12 +237,20 @@ class OrganizationsConfigurationElement {
                 },
                 {
                     view: "tabview",
+                    height: 280,
                     cells: [
                         {
                             header: "ТС ПИОТ",
                             body: {
                                 padding: 10,
                                 rows: [
+                                    {
+                                        cols: [
+                                            Text(this.LABELS.tsPiotHost, "TsPiotHost", "", { placeholder: "localhost" }),
+                                            Text(this.LABELS.tsPiotPort, "TsPiotPort", "", { placeholder: "51401" }),
+                                        ]
+                                    },
+                                    {},
                                     {
                                         view: "template",
                                         id: "TsPiotUbder",
@@ -253,12 +263,6 @@ class OrganizationsConfigurationElement {
                                         },
                                         autoheight: true
                                     },
-                                    {
-                                        cols: [
-                                            Text(this.LABELS.tsPiotHost, "TsPiotHost", "", { placeholder: "localhost" }),
-                                            Text(this.LABELS.tsPiotPort, "TsPiotPort", "", { placeholder: "51401" }),      
-                                        ]
-                                    },
                                 ]
                             }
                         },
@@ -269,7 +273,7 @@ class OrganizationsConfigurationElement {
                                 rows: [
                                     CheckBox(this.LABELS.enable, "LocalModuleEnable"),
                                     Text(this.LABELS.connectionAddress,
-                                         "LocalModuleConnectionAddress", "", {
+                                        "LocalModuleConnectionAddress", "", {
                                         placeholder: "http://hostname:5995"
                                     }),
 
@@ -279,26 +283,96 @@ class OrganizationsConfigurationElement {
                                             PasswordBox(this.LABELS.password, "LocalModulePassword"),
                                         ]
                                     },
-                                    
+
                                     Text(this.LABELS.eniseyConnectionAddress,
                                         "EniseyConnectionAddress", "", {
-                                       placeholder: "http://hostname:5984"
-                                   })
+                                        placeholder: "http://hostname:5984"
+                                    })
                                 ]
                             }
                         },
                         {
-                            header: "Разрешительный режим (до 01.03.2026)",
+                            header: "Разрешительный режим (до 01.06.2026)",
                             body: {
                                 padding: 10,
                                 rows: [
                                     Text(this.LABELS.xapikey, "XAPIKEY"),
                                 ]
                             }
+                        },
+                        {
+                            header: "True api интеграция",
+                            body: {
+                                padding: 10,
+                                rows: [
+                                    CheckBox(this.LABELS.enable, "TrueApiIntegrationEnable"),
+                                    Text(this.LABELS.signPassword, "TrueApiIntegrationPassword"),
+
+                                    {
+                                        cols: [
+                                            {
+                                                view: "button",
+                                                value: this.LABELS.LoadToken,
+                                                id: "loadTrueApiToken",
+                                                width: 200,
+                                                autowidth: false,
+                                                click: async () => {
+                                                    const inn = $$("OrganizationInn").getValue();
+                                                    if (!inn || !String(inn).trim()) {
+                                                        webix.message({ text: "Укажите ИНН организации", type: "error" });
+                                                        return;
+                                                    }
+                                                    try {
+                                                        const response = await fetch(`/api/ts/token/inn?inn=${encodeURIComponent(inn)}`);
+                                                        if (response.status === 404) {
+                                                            webix.message({
+                                                                text: "Токен ещё не готов. Он получается через 2 минуты после старта службы, а потом обновляется каждые 10 минут.",
+                                                                type: "info"
+                                                            });
+                                                            return;
+                                                        }
+                                                        if (!response.ok) {
+                                                            webix.message({ text: "Ошибка при получении токена", type: "error" });
+                                                            return;
+                                                        }
+                                                        const data = await response.json();
+                                                        const token = data.token ?? data.Token ?? "";
+                                                        if (!token) {
+                                                            webix.message({ text: "Токен не получен", type: "error" });
+                                                            return;
+                                                        }
+                                                        await navigator.clipboard.writeText(token);
+                                                        webix.message("Токен получен и скопирован в буфер обмена");
+
+                                                    } catch (e) {
+                                                        webix.message({ text: e?.message || "Ошибка при получении токена", type: "error" });
+                                                    }
+                                                }
+                                            },
+                                            {}
+                                        ]
+                                    },
+                                    {},
+                                    
+                                    {
+                                        view: "template",
+                                        id: "TrueApiIntegrationInfo",
+                                        template: "Для работы необходимо что бы на одном ПК с fmu-api был установлен КриптоПро, а так же у пользователя от которого запущена fmu-api был установлен сертификат ЭЦП.",
+                                        css: {
+                                            "white-space": "normal",
+                                            "word-wrap": "break-word",
+                                            "line-height": "1.4",
+                                            "padding": "5px 0"
+                                        },
+                                        autoheight: true
+                                    },
+
+                                ]
+                            }
                         }
                     ]
                 },
-    
+
                 {
                     padding: {
                         top: 10
@@ -346,7 +420,7 @@ class OrganizationsConfigurationElement {
         const newData = {
             id: organizationId,
             xapikey: $$("XAPIKEY").getValue(),
-            TsPiot: {  
+            TsPiot: {
                 host: $$("TsPiotHost").getValue(),
                 port: $$("TsPiotPort").getValue(),
             },
@@ -358,6 +432,10 @@ class OrganizationsConfigurationElement {
                 userName: $$("LocalModuleUserName").getValue(),
                 password: $$("LocalModulePassword").getValue(),
                 eniseyConnectionAddress: $$("EniseyConnectionAddress").getValue()
+            },
+            trueApiIntegrationSettings: {
+                enable: $$("TrueApiIntegrationEnable").getValue(),
+                password: $$("TrueApiIntegrationPassword").getValue(),
             }
         };
 
@@ -404,11 +482,13 @@ class OrganizationsConfigurationElement {
         $$("LocalModulePassword").setValue(item.localModuleConnection.password);
         $$("EniseyConnectionAddress").setValue(item.localModuleConnection.eniseyConnectionAddress);
         $$("XAPIKEY").setValue(item.xapikey);
+        $$("TrueApiIntegrationEnable").setValue(item.trueApiIntegrationSettings.enable);
+        $$("TrueApiIntegrationPassword").setValue(item.trueApiIntegrationSettings.password);
     }
 
     _startLocalModuleStatusPolling() {
         const POLL_INTERVAL = this.POLL_INTERVAL;
-        
+
         const pollStatus = async () => {
 
             try {
@@ -417,7 +497,7 @@ class OrganizationsConfigurationElement {
                     throw new Error('Ошибка получения статусов');
 
                 const states = await response.json();
-                
+
                 const table = $$("PrintGroups");
 
                 if (!table)
@@ -441,8 +521,8 @@ class OrganizationsConfigurationElement {
                 });
 
             } catch (error) {
-                if (error.name === 'TypeError' || 
-                    error.message.includes('fetch') || 
+                if (error.name === 'TypeError' ||
+                    error.message.includes('fetch') ||
                     error.message.includes('Failed to fetch') ||
                     error.message.includes('NetworkError') ||
                     error.message.includes('ERR_CONNECTION_REFUSED')) {
@@ -453,30 +533,30 @@ class OrganizationsConfigurationElement {
         };
 
         pollingManager.register(
-            'localmodules-state-polling', 
-            pollStatus, 
+            'localmodules-state-polling',
+            pollStatus,
             this.POLL_INTERVAL,
-            { 
+            {
                 initialDelay: 1000,
-                autoStart: true 
+                autoStart: true
             }
         );
-        
+
     }
 
     _updateInitButtonState() {
         const selectedId = $$("PrintGroups").getSelectedId();
         const initButton = $$("initLm_PrintGroups");
-        
+
         if (!selectedId || !initButton) return;
 
         const item = $$("PrintGroups").getItem(selectedId);
         const connection = item.localModuleConnection;
 
         // Проверяем все условия для активации кнопки
-        const isEnabled = connection.enable && 
-            connection.connectionAddress && 
-            connection.userName && 
+        const isEnabled = connection.enable &&
+            connection.connectionAddress &&
+            connection.userName &&
             connection.password;
 
         if (isEnabled) {
@@ -488,20 +568,20 @@ class OrganizationsConfigurationElement {
 
     _initializeLocalModule() {
         const selectedId = $$("PrintGroups").getSelectedId();
-            if (!selectedId) {
-                webix.message({
-                    text: "Выберите организацию для инициализации локального модуля",
-                    type: "warning"
-                });
-                return;
-            }
+        if (!selectedId) {
+            webix.message({
+                text: "Выберите организацию для инициализации локального модуля",
+                type: "warning"
+            });
+            return;
+        }
 
         const table = $$("PrintGroups");
         const item = table.getItem(selectedId);
 
         if (!item.localModuleConnection.enable)
             return;
-        
+
         if (item.localModuleStatus === this.LOCAL_MODULE_STATUS.NOT_CONFIGURED) {
             this._startInitialization(selectedId, item);
             return;
@@ -535,8 +615,8 @@ class OrganizationsConfigurationElement {
             localModuleStatus: this.LOCAL_MODULE_STATUS.INITIALIZATION
         };
         table.updateItem(selectedId, updatedItem);
-                
-        fetch(`/api/lm/init/${selectedId}`, {method: 'POST'})
+
+        fetch(`/api/lm/init/${selectedId}`, { method: 'POST' })
             .catch(error => {
                 console.error("Ошибка при отправке запроса инициализации:", error);
                 webix.message({

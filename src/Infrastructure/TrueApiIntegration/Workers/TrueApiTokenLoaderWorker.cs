@@ -48,12 +48,15 @@ public class TrueApiTokenLoaderWorker : BackgroundService
                 if (string.IsNullOrEmpty(organisation.INN))
                     continue;
 
-                var currentToken = _applicationState.TrueApiToken(organisation.INN);
-
-                if (currentToken != string.Empty)
+                if (!organisation.TrueApiIntegrationSettings.Enable)
                     continue;
 
-                var token = await _authService.GenerateToken(organisation.INN, "12345678");
+                var tokenData = _applicationState.TrueApiToken(organisation.INN);
+
+                if (tokenData.Token != string.Empty)
+                    continue;
+
+                var token = await _authService.GenerateToken(organisation.INN, organisation.TrueApiIntegrationSettings.Password);
 
                 if (token == string.Empty)
                     continue;
