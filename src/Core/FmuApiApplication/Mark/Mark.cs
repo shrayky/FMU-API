@@ -100,7 +100,7 @@ namespace FmuApiApplication.Mark
                 if (!_lastCheckResult.HasTrueApiAnswer())
                     continue;
 
-                if (currentState.State == MarkState.Sold)
+                if (currentState.IsSold)
                     _lastCheckResult.TrueMarkData.Codes.ForEach(code => code.Sold = true);
 
                 if (_lastCheckResult.MarkInformation.State != currentState.State)
@@ -139,7 +139,6 @@ namespace FmuApiApplication.Mark
                 return Result.Success(_lastCheckResult.FmuAnswer);
                 
             return Result.Failure<FmuAnswer>($"Проверка марки {Code} не удалась по причине: {string.Join(", ", checkErrors)}");
-
         }
 
         public void SetTsPiotSettings(TsPiotConnectionSettings tsPiotConnectionSettings)
