@@ -37,7 +37,7 @@ public class MarkFabric : IMarkFabric
         var appSettings = await _parametersService.CurrentAsync();
         
         var inn = position.Organisation?.Inn ?? string.Empty;
-        var printGroupCode= await SetOrganizationId(markInstance, appSettings.OrganisationConfig.PrintGroups, inn);
+        var printGroupCode = await SetOrganizationId(markInstance, appSettings.OrganisationConfig.PrintGroups, inn);
 
         SetTsPiotSettings(markInstance, position, appSettings, printGroupCode);
         
