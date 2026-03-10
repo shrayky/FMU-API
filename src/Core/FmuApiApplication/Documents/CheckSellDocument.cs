@@ -49,18 +49,8 @@ namespace FmuApiApplication.Documents
 
         public async Task<Result<FmuAnswer>> ActionAsync()
         {
-            var cachedAnswer = _memcachedClient.Get<FmuAnswer>(Document.Mark);
-
-            if (cachedAnswer?.SGtin() == Document.Mark)
-                return Result.Success(cachedAnswer);
-
             var checkResult = await MarkInformation();
-
-            if (checkResult.IsSuccess)
-                _memcachedClient.Set(checkResult.Value.SGtin(),
-                                     checkResult.Value,
-                                     TimeSpan.FromMinutes(CacheExpirationMinutes));
-             
+                        
             return checkResult;
         }
 
