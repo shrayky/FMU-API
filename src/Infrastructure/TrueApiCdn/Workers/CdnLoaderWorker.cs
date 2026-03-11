@@ -47,61 +47,66 @@ public class CdnLoaderWorker : BackgroundService
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            var loadedCdnList = await _cdnService.GetCdnsAsync();
-                
-            if (_nextWorkDate >= DateTime.Now 
-                && loadedCdnList.Any()) 
-            {
-                await Task.Delay(CheckInterval, stoppingToken);
-                continue;
-            }
+
+            _configuration = await _parametersService.CurrentAsync();
+
+            if (!_configuration.ServerConfig.TsPiotEnabled)
+                await PermissiveModeCdnProcessing(_configuration);
 
             _nextWorkDate = DateTime.Now.AddMinutes(CheckPeriodMinutes);
-        
-            _configuration = await _parametersService.CurrentAsync();
-                
-            if (_configuration.ServerConfig.TsPiotEnabled)
-                continue;
-                
-            if (!_cdnService.ShouldUpdateCdnList() & loadedCdnList.Count > 0)
-                continue;                    
 
-            _logger.LogInformation("Загружаю список CDN");
-
-            if (!_applicationState.IsOnline())
-            {
-                _logger.LogWarning("Ошибка загрузки CDN: нет подключения к интернету");
-                continue;
-            }
-
-            var xApiKey = _configuration.OrganisationConfig.XapiKey();
-
-            if (xApiKey == string.Empty)
-            {
-                _logger.LogWarning("Не настроен XAPIKEY");
-                continue;
-            }
-
-            try
-            {
-                _ = await UpdateCdnList(xApiKey);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning("Ошибка загрузки CDN серверов: {Message} \r\n {InnerException}", ex.Message, ex.InnerException);
-            }
+            await Task.Delay(CheckInterval, stoppingToken);
         }
     }
 
-    private async Task<bool> UpdateCdnList(string xapikey)
+    private async Task PermissiveModeCdnProcessing(Parameters configuration)
+    {
+        var loadedCdnList = await _cdnService.GetCdnsAsync();
+
+        if (_nextWorkDate >= DateTime.Now
+            && loadedCdnList.Any())
+        {
+            return;
+        }
+
+        _nextWorkDate = DateTime.Now.AddMinutes(CheckPeriodMinutes);
+
+        if (!_cdnService.ShouldUpdateCdnList() && loadedCdnList.Count > 0)
+            return;
+
+        _logger.LogInformation("Загружаю список CDN");
+
+        if (!_applicationState.IsOnline())
+        {
+            _logger.LogWarning("Ошибка загрузки CDN: нет подключения к интернету");
+            return;
+        }
+
+        var xApiKey = configuration.OrganisationConfig.XapiKey();
+
+        if (xApiKey == string.Empty)
+        {
+            _logger.LogWarning("Не настроен XAPIKEY");
+            return;
+        }
+
+        try
+        {
+            await UpdateCdnList(xApiKey);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Ошибка загрузки CDN серверов: {Message} \r\n {InnerException}", ex.Message, ex.InnerException);
+        }
+    }
+
+    private async Task UpdateCdnList(string xapikey)
     {
         var cdns = await LoadCdNsAsync(xapikey);
         var trueSignCdns = await CheckAllCdnsAsync(cdns, xapikey);
 
         if (trueSignCdns.Count > 0)
             await _cdnService.SaveCdnsAsync(trueSignCdns);
-
-        return true;
     }
 
     private static Dictionary<string, string> Headers(string xapikey)

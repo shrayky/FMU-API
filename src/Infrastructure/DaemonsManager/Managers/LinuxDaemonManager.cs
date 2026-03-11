@@ -5,6 +5,8 @@ namespace ServicesAndDaemonsManager.Managers;
 
 public class LinuxDaemonManager : IDaemonManager
 {
+    private const int ProcessWaitTimeout = 30_000;
+
     public bool Restart(string daemonName)
     {
         var startInfo = new ProcessStartInfo
@@ -23,7 +25,7 @@ public class LinuxDaemonManager : IDaemonManager
             if (process is null)
                 return false;
 
-            process.WaitForExit();
+            process.WaitForExit(ProcessWaitTimeout);
 
             return process.ExitCode == 0;
         }
@@ -50,7 +52,7 @@ public class LinuxDaemonManager : IDaemonManager
             if (process is null)
                 return false;
             
-            process.WaitForExit();
+            process.WaitForExit(ProcessWaitTimeout);
             return process.ExitCode == 0;
         }
         catch (Exception)
@@ -77,7 +79,7 @@ public class LinuxDaemonManager : IDaemonManager
                 return "Не найдена";
             
             var output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit();
+            process.WaitForExit(ProcessWaitTimeout);
             return output.Trim();
         }
         catch (Exception)
