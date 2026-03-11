@@ -100,11 +100,6 @@ public class NodeInformationService : INodeInformationService
             {
                 Enabled = settings.Database.Enable
             },
-            TokenService = new TokenService()
-            {
-                Enabled = settings.TrueSignTokenService.Enable,
-                Address = settings.TrueSignTokenService.ConnectionAddress
-            },
             TimeOut = new TimeOutConfiguration()
             {
                 CdnRequest = settings.HttpRequestTimeouts.CdnRequestTimeout,
