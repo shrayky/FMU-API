@@ -9,7 +9,6 @@ const SETTINGS_MODULES = {
     databaseConnection: () => import("./elements/databaseConnection.js"),
     frontolDbConnection: () => import("./elements/frontolDb.js"),
     markUnit: () => import("./elements/markUnit.js"),
-    tokenServiceData: () => import("./elements/tokenService.js"),
     timeoutConfig: () => import("./elements/timeouts.js"),
     loggingConfigData: () => import("./elements/loggingConfiguration.js"),
     autoUpdateData: () => import("./elements/autoUpdate.js"),

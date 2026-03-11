@@ -334,9 +334,6 @@ namespace ApplicationConfigurationService
             settings.SaleControlConfig.SendEmptyTrueApiAnswerWhenTimeoutError = newSettings.SaleControl.SendEmptyTrueApiAnswerWhenTimeoutError;
             settings.SaleControlConfig.SendLocalModuleInformationalInRequestId  = newSettings.SaleControl.SendLocalModuleInformationalInRequestId;
 
-            settings.TrueSignTokenService.ConnectionAddress = newSettings.TokenService.Address;
-            settings.TrueSignTokenService.Enable = newSettings.TokenService.Enabled;
-
             settings.HttpRequestTimeouts.CdnRequestTimeout = newSettings.TimeOut.CdnRequest;
             settings.HttpRequestTimeouts.CheckInternetConnectionTimeout = newSettings.TimeOut.InternetConnectionCheck;
             settings.HttpRequestTimeouts.CheckMarkRequestTimeout = newSettings.TimeOut.TrueSignCheckRequest;

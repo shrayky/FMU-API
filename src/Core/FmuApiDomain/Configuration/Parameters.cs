@@ -19,7 +19,6 @@ namespace FmuApiDomain.Configuration
         public OrganizationConfiguration OrganisationConfig { get; set; } = new();
         public AlcoUnitConfig FrontolAlcoUnit { get; set; } = new();
         public CouchDbConnection Database { get; set; } = new();
-        public TokenServiceConfiguration TrueSignTokenService { get; set; } = new();
         public HttpRequestTimeouts HttpRequestTimeouts { get; set; } = new();
         public LogSettings Logging { get; set; } = new();
         public FrontolConnectionSettings FrontolConnectionSettings { get; set; } = new();
@@ -35,6 +34,8 @@ namespace FmuApiDomain.Configuration
         public string? XAPIKEY { get; set; }
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public TokenData? SignData { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public TokenServiceConfiguration TrueSignTokenService { get; set; } = new();
 
         [JsonConstructor]
         public Parameters()
