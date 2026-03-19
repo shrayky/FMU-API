@@ -114,7 +114,12 @@ public class AuthService : IAuthService
         store.Close();
 
         if (certificate == null)
-            return Result.Failure<string>($"Для ИНН {inn} не найден действующий сертификат");
+        {
+            var msg = $"Для ИНН {inn} не найден действующий сертификат";
+
+            _logger.LogError(msg);
+            return Result.Failure<string>(msg);
+        }
 
         _logger.LogInformation("Выбран сертификат для авторизации в true api {info}", certificate.Subject);
 

@@ -1,4 +1,4 @@
-﻿using FmuApiDomain.Configuration;
+using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Constants;
 using Shared.FilesFolders;

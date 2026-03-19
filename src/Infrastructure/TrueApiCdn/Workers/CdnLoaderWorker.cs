@@ -86,7 +86,7 @@ public class CdnLoaderWorker : BackgroundService
 
         if (xApiKey == string.Empty)
         {
-            _logger.LogWarning("Не настроен XAPIKEY");
+            _logger.LogInformation("Не настроен XAPIKEY, загрузка cdn через api разрешительного режима невозможна.");
             return;
         }
 

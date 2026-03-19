@@ -15,7 +15,7 @@ public class TrueApiTokenLoaderWorker : BackgroundService
 
     private DateTime _nextWorkDate = DateTime.Now;
     private const int CheckIntervalMinutes = 10;
-    private const int TokenLifeInHouer = 8;
+    private const int TokenLifeInHour = 8;
     private const int StartDelayMinutes = 2;
 
     public TrueApiTokenLoaderWorker(ILogger<TrueApiTokenLoaderWorker> logger,
@@ -56,12 +56,16 @@ public class TrueApiTokenLoaderWorker : BackgroundService
                 if (tokenData.Token != string.Empty)
                     continue;
 
+                _logger.LogDebug("Начинаю получать токен true api для {inn}", organisation.INN);
+
                 var token = await _authService.GenerateToken(organisation.INN, organisation.TrueApiIntegrationSettings.Password);
+
+                _logger.LogDebug("Получен токен: \"{token}\".", token);
 
                 if (token == string.Empty)
                     continue;
 
-                var tokenLifeUntil = DateAndTime.Now.AddHours(TokenLifeInHouer);
+                var tokenLifeUntil = DateAndTime.Now.AddHours(TokenLifeInHour);
 
                 _applicationState.UpdateTrueApiToken(organisation.INN, token, tokenLifeUntil);
 
