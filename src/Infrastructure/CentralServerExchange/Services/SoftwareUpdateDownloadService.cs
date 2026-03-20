@@ -1,6 +1,3 @@
-using System.Diagnostics;
-using System.IO.Compression;
-using System.Security.Cryptography;
 using CentralServerExchange.Interfaces;
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Attributes;
@@ -10,6 +7,9 @@ using FmuApiDomain.DTO.FmuApiExchangeData.Answer;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
+using System.IO.Compression;
+using System.Security.Cryptography;
 
 namespace CentralServerExchange.Services;
 
@@ -49,20 +49,41 @@ public class SoftwareUpdateDownloadService
 
             var token = parameters.FmuApiCentralServer.Token;
             var sha256 = response.UpdateHash;
-        
+
+            if (string.IsNullOrWhiteSpace(sha256))
+                return Result.Failure("Пустой UpdateHash для доступного обновления");
+
+            if (sha256.Length != 64 || !sha256.All(Uri.IsHexDigit))
+                return Result.Failure($"Некорректный формат UpdateHash: {sha256}");
+
             var requestAddress = $"{baseAddress}/fmuApiUpdate/{token}";
 
-            var prepareUpdate = await DownloadSoftware(requestAddress)
-                .Bind(async fileStream => await CheckShaHash(fileStream, sha256))
-                .Bind(async fileStream => await SaveToTemp(fileStream));
+            var downloadResult = await _exchangeService.DownloadSoftwareUpdateToTemp(requestAddress).ConfigureAwait(false);
 
-            if (prepareUpdate.IsFailure)
+            if (downloadResult.IsFailure)
             {
-                _logger.LogError(prepareUpdate.Error);
-                return Result.Failure(prepareUpdate.Error);
+                _logger.LogError(downloadResult.Error);
+                return Result.Failure(downloadResult.Error);
             }
 
-            var installResult = InstallUpdate(prepareUpdate.Value);
+            var fileName = downloadResult.Value;
+
+            var checkResult = await CheckShaHash(fileName, sha256);
+
+            if (checkResult.IsFailure)
+            {
+                try
+                {
+                    File.Delete(fileName);
+                }
+                catch
+                {}
+
+                _logger.LogError(checkResult.Error);
+                return Result.Failure(checkResult.Error);
+            }
+
+            var installResult = InstallUpdate(fileName, sha256);
 
             if (!installResult.IsFailure)
                 return Result.Success();
@@ -76,75 +97,63 @@ public class SoftwareUpdateDownloadService
         }
     }
 
-    private async Task<Result<Stream>> DownloadSoftware(string requestAddress)
+    private async Task<Result>  CheckShaHash(string filePath, string expectedSha256)
     {
-        var downloadResult = await _exchangeService.DownloadSoftwareUpdate(requestAddress).ConfigureAwait(false);
-        
-        return downloadResult.IsFailure ? Result.Failure<Stream>(downloadResult.Error) : Result.Success(downloadResult.Value);
-    }
-
-    private async Task<Result<Stream>> CheckShaHash(Stream fileStream, string expectedSha256)
-    {
+        using var fileStream = File.OpenRead(filePath);
         using var downloadedSha256 = SHA256.Create();
         var hashBytes = await downloadedSha256.ComputeHashAsync(fileStream).ConfigureAwait(false);
         var actualHash = Convert.ToHexString(hashBytes).ToLowerInvariant();
     
         fileStream.Position = 0;
 
-        if (string.Equals(actualHash, expectedSha256))
-            return Result.Success(fileStream);
+        if (string.Equals(actualHash, expectedSha256, StringComparison.OrdinalIgnoreCase))
+            return Result.Success();
         
         var errorMessage = $"Хэш {actualHash} загруженного файла обновления не совпадает с ожидаемым {expectedSha256}";
         _logger.LogError(errorMessage);
         
-        await fileStream.DisposeAsync();
-        return Result.Failure<Stream>(errorMessage);
+        return Result.Failure(errorMessage);
     }
 
-    private async Task<Result<string>> SaveToTemp(Stream stream)
-    {
-        var tmpFolder = Path.Combine(Path.GetTempPath(), ApplicationInformation.AppName);
-        var filePath = Path.Combine(tmpFolder, "update.zip");
-
-        try
-        {
-            if (!Directory.Exists(tmpFolder))
-                Directory.CreateDirectory(tmpFolder);
-
-            await using var fileStream = File.Create(filePath);
-            await stream.CopyToAsync(fileStream);
-
-            _logger.LogInformation("Обновление загружено в: {FilePath}", filePath);
-
-            return Result.Success(filePath);
-        }
-        catch (Exception e)
-        {
-            var errMsg = $"Ошибка копирования скачанного файла обновления в {filePath}: {e.Message}";
-            _logger.LogError(errMsg);
-            return Result.Failure<string>(errMsg);
-        }
-    }
-
-    private Result InstallUpdate(string updateFileName)
+    private Result InstallUpdate(string updateFileName, string sha256)
     {
         if (OperatingSystem.IsWindows())
-            return UpdateWindowsApp(updateFileName);
+            return UpdateWindowsApp(updateFileName, sha256);
         else if  (OperatingSystem.IsLinux())
             return UpdateLinuxApp(updateFileName);
         else
             return Result.Failure("Не поддерживаемая ОС");
     }
 
-    private Result UpdateWindowsApp(string updateFileName)
+    private Result UpdateWindowsApp(string updateFileName, string sha256)
     {
         var installerPath = Path.Combine(Path.GetTempPath(), ApplicationInformation.AppName);
 
         if (!Directory.Exists(installerPath))
             Directory.CreateDirectory(installerPath);
 
-        ZipFile.ExtractToDirectory(updateFileName, installerPath, true);
-        File.Delete(updateFileName);
+        try
+        {
+            ZipFile.ExtractToDirectory(updateFileName, installerPath, true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Не удалось распаковать обновление!");
+            
+            return Result.Failure(ex.Message);
+        }
+
+        try
+        {
+            File.Delete(updateFileName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Не удалось удалить zip-архив с обновлением!");
+            
+            return Result.Failure(ex.Message);
+        }
+        
         
         Process process = new();
         ProcessStartInfo startInfo = new()
@@ -152,18 +161,23 @@ public class SoftwareUpdateDownloadService
             WindowStyle = ProcessWindowStyle.Hidden,
             FileName = "cmd.exe",
             CreateNoWindow = true,
-            Arguments = $"/c {installerPath}\\{ApplicationInformation.AppName}.exe --install",
-            RedirectStandardOutput = true,
+            Arguments = $"/c \"{installerPath}\\{ApplicationInformation.AppName}.exe\" --install --checksum {sha256}",
         };
 
         _logger.LogWarning("Найдено обновление, запускаю установку {arguments}.", startInfo.Arguments);
         
         process.StartInfo = startInfo;
         process.Start();
-        
-        Task.Delay(TimeSpan.FromMinutes(5));
-        
-        //Directory.Delete(installerPath, true);
+        process.WaitForExit();
+
+        try
+        {
+            Directory.Delete(installerPath, true);
+        }
+        catch
+        {
+            _logger.LogWarning("Не удалось удалить временные файлы после установки обновления!");
+        }
 
         return Result.Success();
     }
