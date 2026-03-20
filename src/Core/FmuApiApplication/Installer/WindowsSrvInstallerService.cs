@@ -110,7 +110,8 @@ public class WindowsSrvInstallerService
 
         var xapikey = StringHelpers.ArgumentValue(installerArgs, "--xapikey", _configuration.OrganisationConfig.XapiKey());
 
-        _configuration.OrganisationConfig.SetXapiKey(xapikey);
+        if (!String.IsNullOrEmpty(xapikey))
+            _configuration.OrganisationConfig.SetXapiKey(xapikey);
 
         await _parametersService.UpdateAsync(_configuration);
 

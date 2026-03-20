@@ -1,4 +1,5 @@
 ﻿using FmuApiDomain.Webix;
+using Humanizer;
 
 namespace FmuApiDomain.Configuration.Options.Organization
 {
@@ -40,12 +41,22 @@ namespace FmuApiDomain.Configuration.Options.Organization
 
         public void SetXapiKey(string xapikey)
         {
-            SetXapiKey(xapikey, 1, "");
+            SetXapiKey(xapikey, 1);
         }
 
         public void SetXapiKey(string xapikey, int id)
         {
-            SetXapiKey(xapikey, id, "");
+            PrintGroupData? row = PrintGroups.FirstOrDefault(x => x.Id == id);
+
+            if (row == null)
+            {
+                row = new PrintGroupData { Id = id, XAPIKEY = xapikey };
+                PrintGroups.Add(row);
+            }
+            else
+            {
+                row.XAPIKEY = xapikey;
+            }
         }
 
         public void SetXapiKey(string xapikey, int id, string inn)
@@ -53,7 +64,10 @@ namespace FmuApiDomain.Configuration.Options.Organization
             PrintGroupData? row = PrintGroups.FirstOrDefault(x => x.Id == id);
 
             if (row == null)
+            {
                 row = new PrintGroupData { Id = id, XAPIKEY = xapikey, INN = inn };
+                PrintGroups.Add(row);
+            }
             else
             {
                 row.XAPIKEY = xapikey;
