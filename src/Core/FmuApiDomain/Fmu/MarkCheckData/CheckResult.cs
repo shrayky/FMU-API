@@ -1,13 +1,14 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace FmuApiDomain.Fmu.MarkCheckData
+namespace FmuApiDomain.Fmu.MarkCheckData;
+
+public class CheckResult
 {
-    public class CheckResult
-    {
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string Inn { get; set; } = string.Empty;
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string Kpp { get; set; } = string.Empty;
-        public CheckInformation Response { get; set; } = new();
-    }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public string? Inn { get; set; }
+    
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public string? Kpp { get; set; }
+    
+    public CheckInformation Response { get; set; } = new();
 }
