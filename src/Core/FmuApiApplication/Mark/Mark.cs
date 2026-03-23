@@ -106,6 +106,11 @@ namespace FmuApiApplication.Mark
                 if (_lastCheckResult.MarkInformation.State != currentState.State)
                     _lastCheckResult.MarkInformation.State = currentState.State;
 
+                if (!string.IsNullOrEmpty(_lastCheckResult.TrueMarkData.Inst) && !_lastCheckResult.FmuAnswer.OfflineRegime)
+                {
+                    _lastCheckResult.FmuAnswer.OfflineRegime = true;
+                }
+
                 var validationResult = ValidateMarkData(operation);
 
                 if (validationResult.IsFailure)
@@ -120,12 +125,6 @@ namespace FmuApiApplication.Mark
                 }
 
                 _lastCheckResult.FmuAnswer.PrintGroupCode = PrintGroupCode;
-
-                if (!string.IsNullOrEmpty(_lastCheckResult.TrueMarkData.Inst) &&
-                    !_lastCheckResult.FmuAnswer.OfflineRegime)
-                {
-                    _lastCheckResult.FmuAnswer.OfflineRegime = true;
-                }
                 
                 if (!_lastCheckResult.FmuAnswer.Offline)
                     await _markStateManager.Save(SGtin, _lastCheckResult.TrueMarkData);
