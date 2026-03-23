@@ -24,7 +24,7 @@ namespace FmuApiDomain.Fmu.Document
         public List<CheckResult> TrueMarkResponses { get; set; } = [];
         
         [JsonPropertyName("offline_truemark_response")]
-        public List<CheckMarksDataTrueApi> OffLineTrueMarkResponses { get; set; } = [];
+        public List<CheckResult> OffLineTrueMarkResponses { get; set; } = [];
         
         [JsonPropertyName("esm_response")]
         public TsPiotMarkCheckResponse EsmResponse { get; set; } = new();
@@ -91,7 +91,10 @@ namespace FmuApiDomain.Fmu.Document
             checkInformation.Version = Truemark_response.Version;
             checkInformation.Inst = Truemark_response.Inst;
 
-            TrueMarkResponses.Add(checkResult);
+            if (string.IsNullOrEmpty(checkInformation.Inst))
+                TrueMarkResponses.Add(checkResult);
+            else
+                OffLineTrueMarkResponses.Add(checkResult);
         }
 
         public FmuAnswer()
