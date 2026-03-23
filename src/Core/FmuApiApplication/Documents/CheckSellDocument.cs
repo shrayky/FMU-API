@@ -64,18 +64,20 @@ public class CheckSellDocument : IFrontolDocumentService
         
         if (checkResult.IsSuccess)
         {
-            checkResult.Value.FillFieldsForFrontol_6_25_5(Document.Inn);
+            var markCheckInfo = checkResult.Value;
 
-            if (checkResult.Value.Error == string.Empty && !checkResult.Value.OfflineRegime)
-                await CheckStatisticRepository.SuccessOnLineCheck(checkResult.Value.SGtin(), DateTime.Now);
-            else if (checkResult.Value.Error == string.Empty && checkResult.Value.OfflineRegime)
-                await CheckStatisticRepository.SuccessOffLineCheck(checkResult.Value.SGtin(), DateTime.Now);
-            else if (checkResult.Value.Error != string.Empty && !checkResult.Value.OfflineRegime)
-                await CheckStatisticRepository.OnLineCheckWithWarnings(checkResult.Value.SGtin(), DateTime.Now, checkResult.Value.Error);
-            else if (checkResult.Value.Error != string.Empty && checkResult.Value.OfflineRegime)
-                await CheckStatisticRepository.OffLineCheckWithWarnings(checkResult.Value.SGtin(), DateTime.Now, checkResult.Value.Error);
+            markCheckInfo.FillFieldsForFrontol_6_25_5(Document.Inn);
 
-            return checkResult;
+            if (markCheckInfo.Error == string.Empty && !markCheckInfo.OfflineRegime)
+                await CheckStatisticRepository.SuccessOnLineCheck(markCheckInfo.SGtin(), DateTime.Now);
+            else if (markCheckInfo.Error == string.Empty && markCheckInfo.OfflineRegime)
+                await CheckStatisticRepository.SuccessOffLineCheck(markCheckInfo.SGtin(), DateTime.Now);
+            else if (markCheckInfo.Error != string.Empty && !markCheckInfo.OfflineRegime)
+                await CheckStatisticRepository.OnLineCheckWithWarnings(markCheckInfo.SGtin(), DateTime.Now, markCheckInfo.Error);
+            else if (markCheckInfo.Error != string.Empty && markCheckInfo.OfflineRegime)
+                await CheckStatisticRepository.OffLineCheckWithWarnings(markCheckInfo.SGtin(), DateTime.Now, markCheckInfo.Error);
+
+            return Result.Success(markCheckInfo);
         }
         else
         {
