@@ -114,7 +114,7 @@ namespace FmuApiApplication.Mark
                     ErrorDescription = _lastCheckResult.FmuAnswer.Error;
                     _lastCheckResult.SetUnsuccess();
 
-                    _logger.LogWarning("При валидации данных для марки {Code} обнаружены ошибки: {Error}",
+                    _logger.LogWarning("При проверки данных для марки {Code} обнаружены ошибки: {Error}",
                                        Code,
                                        validationResult.Error);
                 }

@@ -49,7 +49,7 @@ namespace FmuApiApplication.Documents
                 return Result.Success(answer);
 
             var checkResult = await MarkInformation();
-            checkResult.Value.FillFieldsFor6255(Document.Inn);
+            checkResult.Value.FillFieldsForFrontol_6_25_5(Document.Inn);
 
             if (checkResult.IsFailure)
                 return checkResult;

@@ -71,7 +71,7 @@ namespace FmuApiDomain.Fmu.Document
             TrueMarkResponses.Add(checkResult);
         }
 
-        public void FillFieldsFor6255(string Inn)
+        public void FillFieldsForFrontol_6_25_5(string Inn)
         {
             CheckInformation checkInformation = new();
             checkInformation.Codes = Truemark_response.Codes;
