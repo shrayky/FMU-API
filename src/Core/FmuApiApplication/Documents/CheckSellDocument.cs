@@ -64,18 +64,20 @@ public class CheckSellDocument : IFrontolDocumentService
         
         if (checkResult.IsSuccess)
         {
-            checkResult.Value.FillFieldsForFrontol_6_25_5(Document.Inn);
+            var markInformation = checkResult.Value;
 
-            if (checkResult.Value.Error == string.Empty && !checkResult.Value.OfflineRegime)
-                await CheckStatisticRepository.SuccessOnLineCheck(checkResult.Value.SGtin(), DateTime.Now);
-            else if (checkResult.Value.Error == string.Empty && checkResult.Value.OfflineRegime)
-                await CheckStatisticRepository.SuccessOffLineCheck(checkResult.Value.SGtin(), DateTime.Now);
-            else if (checkResult.Value.Error != string.Empty && !checkResult.Value.OfflineRegime)
-                await CheckStatisticRepository.OnLineCheckWithWarnings(checkResult.Value.SGtin(), DateTime.Now, checkResult.Value.Error);
-            else if (checkResult.Value.Error != string.Empty && checkResult.Value.OfflineRegime)
-                await CheckStatisticRepository.OffLineCheckWithWarnings(checkResult.Value.SGtin(), DateTime.Now, checkResult.Value.Error);
+            markInformation.FillFieldsForFrontol_6_25_5(Document.Inn);
 
-            return checkResult;
+            if (markInformation.Error == string.Empty && !markInformation.OfflineRegime)
+                await CheckStatisticRepository.SuccessOnLineCheck(markInformation.SGtin(), DateTime.Now);
+            else if (markInformation.Error == string.Empty && markInformation.OfflineRegime)
+                await CheckStatisticRepository.SuccessOffLineCheck(markInformation.SGtin(), DateTime.Now);
+            else if (markInformation.Error != string.Empty && !markInformation.OfflineRegime)
+                await CheckStatisticRepository.OnLineCheckWithWarnings(markInformation.SGtin(), DateTime.Now, markInformation.Error);
+            else if (markInformation.Error != string.Empty && markInformation.OfflineRegime)
+                await CheckStatisticRepository.OffLineCheckWithWarnings(markInformation.SGtin(), DateTime.Now, markInformation.Error);
+
+            return Result.Success(markInformation);
         }
         else
         {
