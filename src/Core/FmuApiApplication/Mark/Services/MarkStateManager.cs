@@ -50,10 +50,12 @@ namespace FmuApiApplication.Mark.Services
             var markInfo = await _markCrud.GetAsync(sGtin);
 
             if (markInfo.HaveTrueApiAnswer)
+            {
                 _logger.LogInformation("Получена информация о марке {Sgtin}", sGtin);
-            else
-                _logger.LogInformation("Нет информации в БД о марке {Sgtin}", sGtin);
-            
+                return markInfo;
+            }
+
+            _logger.LogInformation("Нет информации в БД о марке {Sgtin}", sGtin);
             return new MarkEntity();
         }
 
