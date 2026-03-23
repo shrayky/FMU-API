@@ -257,6 +257,16 @@ namespace FmuApiApplication.Mark.Services
 
             var markData = trueMarkCheckResult.Value.Codes[0];
 
+            if (!string.IsNullOrEmpty(trueMarkCheckResult.Value.Inst))
+            {
+                markData.Found = true;
+                markData.Valid = true;
+                markData.Utilised = true;
+                markData.IsOwner = true;
+                markData.Verified = true;
+                markData.Realizable = true;
+            }
+
             var markInfo = new MarkEntity()
             {
                 MarkId = mark,
