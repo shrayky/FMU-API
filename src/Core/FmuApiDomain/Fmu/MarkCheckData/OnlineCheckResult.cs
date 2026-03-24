@@ -2,7 +2,7 @@
 
 namespace FmuApiDomain.Fmu.MarkCheckData;
 
-public class CheckResult
+public class OnlineCheckResult
 {
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string? Inn { get; set; }
@@ -11,11 +11,5 @@ public class CheckResult
     public string? Kpp { get; set; }
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public CheckMarkResults? Response { get; set; }
-}
-
-public record CheckMarkResults
-{
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public List<CheckInformation>? Results { get; set;}
+    public CheckInformation? Response { get; set; }
 }

@@ -21,10 +21,10 @@ public class FmuAnswer
     public CheckMarksDataTrueApi Truemark_response { get; set; } = new();
     
     [JsonPropertyName("truemark_responses")]
-    public List<CheckResult> TrueMarkResponses { get; set; } = [];
+    public List<OnlineCheckResult> TrueMarkResponses { get; set; } = [];
     
     [JsonPropertyName("offline_truemark_response")]
-    public List<CheckResult> OffLineTrueMarkResponses { get; set; } = [];
+    public List<OfflineCheckResult> OffLineTrueMarkResponses { get; set; } = [];
     
     [JsonPropertyName("esm_response")]
     public TsPiotMarkCheckResponse EsmResponse { get; set; } = new();
@@ -66,7 +66,14 @@ public class FmuAnswer
         checkMarkResults.Results = [];
         checkMarkResults.Results.Add(checkInformation);
 
-        CheckResult checkResult = new()
+        OnlineCheckResult onlineCheckResult = new OnlineCheckResult()
+        {
+            Inn = Inn,
+            Kpp = "",
+            Response = checkInformation
+        };
+
+        OfflineCheckResult offlineCheckResult = new()
         {
             Inn = Inn,
             Kpp = "",
@@ -82,9 +89,9 @@ public class FmuAnswer
         checkInformation.Inst = Truemark_response.Inst;
 
         if (string.IsNullOrEmpty(checkInformation.Inst))
-            TrueMarkResponses.Add(checkResult);
+            TrueMarkResponses.Add(onlineCheckResult);
         else
-            OffLineTrueMarkResponses.Add(checkResult);
+            OffLineTrueMarkResponses.Add(offlineCheckResult);
     }
 
     public FmuAnswer()
