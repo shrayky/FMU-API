@@ -62,11 +62,15 @@ public class FmuAnswer
         CheckInformation checkInformation = new();
         checkInformation.Codes = Truemark_response.Codes;
 
+        CheckMarkResults checkMarkResults = new();
+        checkMarkResults.Results = [];
+        checkMarkResults.Results.Add(checkInformation);
+
         CheckResult checkResult = new()
         {
             Inn = Inn,
             Kpp = "",
-            Response = checkInformation
+            Response = checkMarkResults
         };
 
         var clearedReqId = Truemark_response.ReqId.Split("&")[0];

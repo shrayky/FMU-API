@@ -5,11 +5,14 @@ namespace FmuApiDomain.TsPiot.Models;
 public record TsPiotMarkCheckResponse
 {
     [JsonPropertyName("codesResponse")]
-    public TsPiotCodesResponse Response { get; set; } = new();
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public TsPiotCodesResponse? Response { get; set; }
     
     [JsonPropertyName("message")]
-    public string Message { get; set; } = string.Empty;
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public string? Message { get; set; }
     
     [JsonPropertyName("code")]
-    public int Code { get; set; } = 0;
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public int Code { get; set; }
 }
