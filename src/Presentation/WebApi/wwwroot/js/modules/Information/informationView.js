@@ -52,6 +52,12 @@ export default function informationView(id) {
 
                     {
                         view: "label",
+                        id: "maxGroup",
+                        label: "• &#128172 <a href=\"https://web.max.ru/-69374974279783\" target=\"_blank\" style=\"color: #0088cc\">Max канал поддержки</a>"
+                    },
+
+                    {
+                        view: "label",
                         id: "gitHubPage",
                         label: "• &#128736; <a href=\"https://github.com/shrayky/FMU-API\" target=\"_blank\" style=\"color: #0088cc\">GitHub репозиторий</a>"
                     },
