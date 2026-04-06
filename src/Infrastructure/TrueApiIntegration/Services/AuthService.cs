@@ -32,7 +32,7 @@ public class AuthService : IAuthService
         _httpClientFactory = httpClientFactory;
     }
 
-    public async Task<string> GenerateToken(string inn, string password)
+    public async Task<string> GenerateToken(string inn, string password, string signatureNaumber)
     {
         var data = await DataForEncrypt();
 
@@ -42,7 +42,7 @@ public class AuthService : IAuthService
         var dataForEncrypt = data.Value.Data;
         var uuidHandShacke = data.Value.Uuid;
 
-        var encrypted = Encrypt(dataForEncrypt, inn, password);
+        var encrypted = Encrypt(dataForEncrypt, signatureNaumber, inn, password);
 
         if (encrypted.IsFailure)
             return string.Empty;
@@ -80,7 +80,7 @@ public class AuthService : IAuthService
         }
     }
 
-    private Result<string> Encrypt(string data, string inn, string password)
+    private Result<string> Encrypt(string data, string signatureNumber, string inn, string password)
     {
         var store = new CpX509Store(StoreName.My, StoreLocation.CurrentUser);
         store.Open(OpenFlags.ReadOnly);
@@ -107,8 +107,17 @@ public class AuthService : IAuthService
                     continue;
             }
 
-            certificate = storeCertificate;
-            break;
+            if (signatureNumber == string.Empty)
+            {
+                certificate = storeCertificate;
+                break;
+            }
+
+            if (storeCertificate.GetSerialNumberString() == signatureNumber)
+            {
+                certificate = storeCertificate;
+                break;
+            }
         }
 
         store.Close();

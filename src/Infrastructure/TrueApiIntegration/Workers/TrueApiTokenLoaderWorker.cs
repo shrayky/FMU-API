@@ -58,7 +58,9 @@ public class TrueApiTokenLoaderWorker : BackgroundService
 
                 _logger.LogDebug("Начинаю получать токен true api для {inn}", organisation.INN);
 
-                var token = await _authService.GenerateToken(organisation.INN, organisation.TrueApiIntegrationSettings.Password);
+                var trueApiSettings = organisation.TrueApiIntegrationSettings;
+
+                var token = await _authService.GenerateToken(organisation.INN, trueApiSettings.Password, trueApiSettings.DigitalSignature);
 
                 _logger.LogDebug("Получен токен: \"{token}\".", token);
 

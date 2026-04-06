@@ -2,6 +2,6 @@
 
 public interface IAuthService
 {
-    Task<string> GenerateToken(string inn, string password);
+    Task<string> GenerateToken(string inn, string password, string signatureNumber);
 }
 
