@@ -4,26 +4,25 @@ using CentralServerExchange;
 using CouchDb;
 using FmuApiApplication;
 using FmuApiApplication.Documents;
-using FmuApiApplication.Installer;
 using FmuApiApplication.Mark;
 using FmuApiApplication.Services.AcoUnit;
 using FmuApiApplication.Services.State;
 using FmuApiApplication.Services.Statistics;
 using FmuApiApplication.Services.TrueSign;
-using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.TrueApi.Interfaces;
-using TrueApiIntegration;
 using FrontolDb;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Scalar.AspNetCore;
 using Serilog;
 using ServicesAndDaemonsManager;
 using Shared.Strings;
+using TrueApiIntegration;
 using TsPiotClinet;
 using WebApi;
 using WebApi.Extensions;
+using WebApi.Services;
 
 var slConsole = new LoggerConfiguration()
     .MinimumLevel.Debug().WriteTo
@@ -42,10 +41,10 @@ if (OperatingSystem.IsWindows())
     _ = (args.Length == 0 ? "" : args[0]) switch
     {
         "--service" => RunHttpApiService(),
-        "--install" => await InstallAsWindowsServiceAsync(),
-        "--register" => RegisterWindowsService(),
-        "--uninstall" => UninstallWindowsService(),
-        "--unregister" => UnregisterWindowsService(),
+        "--install" => await InstallerWindowsWrapper.InstallAsWindowsServiceAsync(args) ,
+        "--register" => InstallerWindowsWrapper.RegisterWindowsService(args),
+        "--uninstall" => InstallerWindowsWrapper.UninstallWindowsService(),
+        "--unregister" => InstallerWindowsWrapper.UnregisterWindowsService(),
         _ => ShowAppInfo()
     };
 }
@@ -53,7 +52,7 @@ if (OperatingSystem.IsWindows())
 if (OperatingSystem.IsLinux())
 {
     if (args.Contains("--install"))
-        InstallAsSystemdDaemon();
+        InstallerLinuxService.InstallAsSystemdDaemon();
     else
         RunHttpApiService();
 }
@@ -179,89 +178,4 @@ bool ShowAppInfo()
             "  --register регистрация как службы windows\r\n" +
             "  --unregister удаление службы windows");
     return true;
-}
-
-async Task<bool> InstallAsWindowsServiceAsync()
-{
-    var builder = Host.CreateDefaultBuilder()
-        .ConfigureServices(services =>
-        {
-            services.AddMemoryCache();
-            services.AddSingleton<IParametersService, SimpleParametersService>();
-            services.AddSingleton<WindowsSrvInstallerService>();
-            services.AddSingleton<IApplicationState, ApplicationState>();
-        });
-
-    using var host = builder.Build();
-    var installerService = host.Services.GetRequiredService<WindowsSrvInstallerService>();
-  
-    return await installerService.InstallAsync(args);
-}
-
-bool RegisterWindowsService()
-{
-    var builder = Host.CreateDefaultBuilder()
-        .ConfigureServices(services =>
-        {
-            services.AddMemoryCache();
-            services.AddSingleton<IParametersService, SimpleParametersService>();
-            services.AddSingleton<WindowsSrvInstallerService>();
-            services.AddSingleton<IApplicationState, ApplicationState>();
-        });
-
-    using var host = builder.Build();
-    var installerService = host.Services.GetRequiredService<WindowsSrvInstallerService>();
-
-    return installerService.RegisterWindowsService(args);
-}
-
-bool UninstallWindowsService()
-{
-    var builder = Host.CreateDefaultBuilder()
-        .ConfigureServices(services =>
-        {
-            services.AddMemoryCache();
-            services.AddSingleton<IParametersService, SimpleParametersService>();
-            services.AddSingleton<WindowsSrvInstallerService>();
-            services.AddSingleton<IApplicationState, ApplicationState>();
-        });
-
-    using var host = builder.Build();
-    var installerService = host.Services.GetRequiredService<WindowsSrvInstallerService>();
-
-    return installerService.Uninstall();
-}
-
-bool UnregisterWindowsService()
-{
-    var builder = Host.CreateDefaultBuilder()
-        .ConfigureServices(services =>
-        {
-            services.AddMemoryCache();
-            services.AddSingleton<IParametersService, SimpleParametersService>();
-            services.AddSingleton<WindowsSrvInstallerService>();
-            services.AddSingleton<IApplicationState, ApplicationState>();
-        });
-
-    using var host = builder.Build();
-    var installerService = host.Services.GetRequiredService<WindowsSrvInstallerService>();
-
-    return installerService.Unregister();
-}
-
-void InstallAsSystemdDaemon()
-{
-    var builder = Host.CreateDefaultBuilder()
-        .ConfigureServices(services =>
-        {
-            services.AddMemoryCache();
-            services.AddSingleton<IParametersService, SimpleParametersService>();
-            services.AddSingleton<LinuxDaemonInstaller>();
-            services.AddSingleton<IApplicationState, ApplicationState>();
-        });
-
-    using var host = builder.Build();
-    var installerService = host.Services.GetRequiredService<LinuxDaemonInstaller>();
-
-    installerService.Register();
 }
