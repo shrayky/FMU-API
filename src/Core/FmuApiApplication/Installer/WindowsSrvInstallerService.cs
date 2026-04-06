@@ -15,21 +15,28 @@ namespace FmuApiApplication.Installer;
 public class WindowsSrvInstallerService
 {
     private readonly IParametersService _parametersService;
+    private readonly Parameters _configuration;
 
     private readonly string _serviceName = ApplicationInformation.AppName.ToLower();
     private readonly string _serviceDisplayName = ApplicationInformation.ServiceName;
     private readonly string _installDirectory;
-    private readonly Parameters _configuration;
+    private string _logDirectory;
+    private string _logFilePath;
+    private string _exeName = "fmu-api.exe";
+
 
     public WindowsSrvInstallerService(IParametersService parametersService)
     {
         _parametersService = parametersService;
-        
+
         _installDirectory = Path.Combine(Path.GetPathRoot(Environment.SystemDirectory) ?? "",
-                                        "Program Files",
-                                        ApplicationInformation.Manufacture,
-                                        ApplicationInformation.AppName);
-        
+            "Program Files",
+            ApplicationInformation.Manufacture,
+            ApplicationInformation.AppName);
+
+        _logDirectory = Folders.CommonApplicationDataFolder(ApplicationInformation.Manufacture, ApplicationInformation.AppName);
+        _logFilePath = Path.Combine(_logDirectory, "updateLog.txt");
+
         _configuration = _parametersService.Current();
     }
 
@@ -48,11 +55,16 @@ public class WindowsSrvInstallerService
 
     public async Task<bool> InstallAsync(string[] installerArgs)
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            return false;
+        StartOperationLog("installer");
+        LogInfo("Старт установки сервиса.");
+        LogInstallerDiagnostics();
+        LogInfo($"Аргументы установки: {string.Join(" ", installerArgs.Select(a => $"\"{a}\""))}");
 
         if (!Directory.Exists(_installDirectory))
+        {
+            LogInfo($"Создаю каталог установки {_installDirectory}");
             Directory.CreateDirectory(_installDirectory);
+        }
 
         var bin = Path.Combine(_installDirectory, "fmu-api.exe");
         var wwwroot = Path.Combine(_installDirectory, "wwwroot");
@@ -66,28 +78,52 @@ public class WindowsSrvInstallerService
             await Task.Delay(TimeSpan.FromSeconds(10));
         }
 
+        LogInfo("После остановки сервиса.");
+        LogInstallerDiagnostics();
+
         var serviceFileName = Environment.ProcessPath ?? Assembly.GetExecutingAssembly().Location;
         var setupFolder = Path.GetDirectoryName(serviceFileName) ?? serviceFileName.Replace("fmu-api.exe", "");
 
         var binDelete = await DeleteFileWithRetry(bin);
-        var wwwRootDelete = await DeleteDirectoryWithRetry(wwwroot);
+        var wwwRootDelete = false;
+        
+        if (binDelete)
+            wwwRootDelete = await DeleteDirectoryWithRetry(wwwroot);
 
         if (!(binDelete && wwwRootDelete))
         {
+            LogError($"Статус очистки каталога wwwroot {wwwRootDelete} удаление bin {binDelete}");
+
+            existingService?.Start();
             existingService?.Dispose();
             return false;
         }
 
-        CopyFilesRecursively(setupFolder, _installDirectory);
+        try
+        {
+            LogInfo("Копирую новые файлы");
+            CopyFilesRecursively(setupFolder, _installDirectory);
+        }
+        catch (Exception ex)
+        {
+            LogError($"Ошибка при копировании новых файлов {ex}");
+
+            existingService?.Start();
+            existingService?.Dispose();
+
+            return false;
+        }
 
         using var process = new Process();
         ProcessStartInfo startInfo = new()
         {
             WindowStyle = ProcessWindowStyle.Hidden,
         };
-        
+
         if (existingService is null)
         {
+            LogInfo("Настраиваю новый сервис (регистрирую, настраиваю правила фаервола).");
+
             process.StartInfo = startInfo;
             startInfo.FileName = "cmd.exe";
 
@@ -115,13 +151,14 @@ public class WindowsSrvInstallerService
 
         await _parametersService.UpdateAsync(_configuration);
 
-        if (existingService == null)
-            existingService = ServiceController.GetServices().FirstOrDefault(ser => ser.ServiceName == _serviceName);
+        existingService ??= ServiceController.GetServices().FirstOrDefault(ser => ser.ServiceName == _serviceName);
 
         if (existingService != null)
         {
             if (existingService.Status != ServiceControllerStatus.Running)
             {
+                LogInfo("Попытка запуска службы после установки");
+
                 existingService.Start();
 
                 try
@@ -129,7 +166,9 @@ public class WindowsSrvInstallerService
                     existingService.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromMinutes(1));
                 }
                 catch
-                {}
+                {
+                    LogError("Не удалось запустить службу");
+                }
             }
         }
 
@@ -142,13 +181,14 @@ public class WindowsSrvInstallerService
             File.WriteAllText(checkSumFileName, checksum);
         }
 
-        startInfo.Arguments = $"/c net start {_serviceName}";
-        process.Start();
+        //startInfo.Arguments = $"/c net start {_serviceName}";
+        //process.Start();
 
         existingService?.Dispose();
 
-        return true;
+        LogInfo("Установка завершена");
 
+        return true;
     }
 
     private void StopService(ServiceController service)
@@ -163,10 +203,12 @@ public class WindowsSrvInstallerService
 
         try
         {
+            LogInfo($"Ожидаю остановки службы");
             service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromMinutes(1));
         }
         catch
         {
+            LogInfo($"Служба не остановлена за 1 минуту, принудительно убиваю процесс");
             KillService();
         }
     }
@@ -181,6 +223,8 @@ public class WindowsSrvInstallerService
             {
                 if (p.Id == currentPid)
                     continue;
+
+                LogInfo($"Убиваю {p.Id} {p.MainModule?.FileName ?? "(не найден путь)"}");
 
                 p.Kill(true);
                 p.WaitForExit(TimeSpan.FromSeconds(5));
@@ -228,7 +272,7 @@ public class WindowsSrvInstallerService
         else
         {
             var bin = Path.Combine(_installDirectory, "fmu-api.exe");
-            
+
             process.StartInfo = startInfo;
             startInfo.FileName = "cmd.exe";
 
@@ -364,4 +408,57 @@ public class WindowsSrvInstallerService
         return true;
     }
 
+    private void StartOperationLog(string operationName)
+    {
+        Directory.CreateDirectory(_logDirectory);
+        _logFilePath = Path.Combine(_logDirectory, "updateLog.txt");
+        File.WriteAllText(_logFilePath, string.Empty);
+        WriteLog("INFO", $"Старт операции '{operationName}'.");
+    }
+
+    private void LogInfo(string message)
+    {
+        WriteLog("INFO", message);
+    }
+
+    private void LogError(string message)
+    {
+        WriteLog("ERROR", message);
+    }
+
+    private void WriteLog(string level, string message)
+    {
+        var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+        var line = $"[{timestamp}][{level}] {message}{Environment.NewLine}";
+
+        Console.Write(line);
+
+        if (!string.IsNullOrWhiteSpace(_logFilePath))
+            File.AppendAllText(_logFilePath, line);
+    }
+
+    private void LogInstallerDiagnostics()
+    {
+        LogInfo($"Текущий процесс установки: PID={Environment.ProcessId}, путь={Environment.ProcessPath ?? "(неизвестно)"}");
+
+        var processes = Process.GetProcessesByName(_serviceName);
+        LogInfo($"Процессы с именем '{_serviceName}' (образ {_exeName}): найдено {processes.Length}.");
+
+        foreach (var p in processes)
+        {
+            try
+            {
+                var imagePath = p.MainModule?.FileName ?? "(нет)";
+                LogInfo($"  PID={p.Id}, путь к образу={imagePath}");
+            }
+            catch (Exception ex)
+            {
+                LogInfo($"  PID={p.Id}, путь к образу недоступен: {ex.Message}");
+            }
+            finally
+            {
+                p.Dispose();
+            }
+        }
+    }
 }

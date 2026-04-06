@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using FmuApiDomain.Constants;
 
 namespace FmuApiApplication.Installer;
