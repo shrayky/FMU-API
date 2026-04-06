@@ -96,6 +96,12 @@ public class AuthService : IAuthService
                 continue;
 
 
+            if (storeCertificate.GetSerialNumberString() == signatureNumber)
+            {
+                certificate = storeCertificate;
+                break;
+            }
+
             if (storeCertificate.Subject.Contains("ОГРНИП"))
             {
                 if (!storeCertificate.Subject.Contains(inn))
@@ -108,12 +114,6 @@ public class AuthService : IAuthService
             }
 
             if (signatureNumber == string.Empty)
-            {
-                certificate = storeCertificate;
-                break;
-            }
-
-            if (storeCertificate.GetSerialNumberString() == signatureNumber)
             {
                 certificate = storeCertificate;
                 break;
