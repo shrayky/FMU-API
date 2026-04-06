@@ -376,15 +376,4 @@ FmuApi.API/wwwroot/bundle/index.js
 /src/Presentation/WebApi/wwwroot/lib/_webix
 /src/Presentation/WebApi/wwwroot/lib/webix_gpl
 /builds
-/builds
-/builds
-/builds
-/builds/fmu-api.exe
-/builds/web.config
-/builds/wwwroot
-/builds/wwwroot/bundle
-/builds/wwwroot/bundle/index.js
-/builds/wwwroot/favicon.ico
-/builds/wwwroot/lib/webix
-*.exe
-/builds/web.config
+/builds.x86-win.zip

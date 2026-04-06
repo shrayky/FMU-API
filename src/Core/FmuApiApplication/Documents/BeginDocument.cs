@@ -73,26 +73,41 @@ public class BeginDocument : IFrontolDocumentService
 
                 var markData = trueApiCisData.Codes[0];
 
-                if (markData.GroupIds == null)
-                    continue;
+                // для табака есть минимальная цена, получим ее из настроек
+                // todo: в новых фронтолах код группы приходит с запросом, можно оттуда групу достать,
+                // если онлайн проверка не прошла
+                var minimalPriceFromSettings = 0;
 
-                if (!markData.GroupIds.Contains(TrueApiGroup.Tobaco))
-                    continue;
-                
-                var minPrice = _configuration.MinimalPrices.Tabaco > markData.Smp ? _configuration.MinimalPrices.Tabaco : markData.Smp;
-
-                if (minPrice > position.Total_price * 100)
+                if (markData.GroupIds != null)
                 {
-                    checkResult.Code = 3;
-                    checkResult.Error += $"\r\n {position.Text} цена ниже минимальной розничной!";
-                    checkResult.Marking_codes.Add(markInBase64);
+                    if (!markData.GroupIds.Contains(TrueApiGroup.Tobaco))
+                    {
+                        minimalPriceFromSettings = _configuration.MinimalPrices.Tabaco;
+                    }
                 }
 
-                if (markData.Mrp < position.Total_price * 100)
+                // проверка минимальной розничной цены
+                if (markData.Smp != null)
                 {
-                    checkResult.Code = 3;
-                    checkResult.Error += $"\r\n {position.Text} цена выше максимальной розничной!";
-                    checkResult.Marking_codes.Add(markInBase64);
+                    var minPrice = minimalPriceFromSettings > markData.Smp ? minimalPriceFromSettings : markData.Smp;
+
+                    if (minPrice > position.Total_price * 100)
+                    {
+                        checkResult.Code = 3;
+                        checkResult.Error += $"\r\n {position.Text} цена ниже минимальной розничной!";
+                        checkResult.Marking_codes.Add(markInBase64);
+                    }
+                }
+
+                // проверка максимальной прозничной цены
+                if (markData.Mrp != null)
+                {
+                    if (markData.Mrp < position.Total_price * 100)
+                    {
+                        checkResult.Code = 3;
+                        checkResult.Error += $"\r\n {position.Text} цена выше максимальной розничной!";
+                        checkResult.Marking_codes.Add(markInBase64);
+                    }
                 }
 
             }
