@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>fmu-api</AssemblyName>
     <SignAssembly>False</SignAssembly>
-	<Version>11.7.0</Version>
+	<Version>11.8.0</Version>
 
       <!--<PublishTrimmed>true</PublishTrimmed>
       <TrimMode>partial</TrimMode>
@@ -60,11 +60,18 @@
     <ProjectReference Include="..\..\Infrastructure\TsPiotClinet\TsPiotClinet.csproj" />
   </ItemGroup>
 
+  <!-- npm ci подтягивает devDependencies (vite) из package-lock; без node_modules npm run build падает с "vite не является командой". -->
   <Target Name="NpmBuild" BeforeTargets="Build" Condition="'$(Configuration)' == 'Release'">
+    <Exec Command="npm ci" WorkingDirectory="$(ProjectDir)wwwroot" />
     <Exec Command="npm run build" WorkingDirectory="$(ProjectDir)wwwroot" />
   </Target>
 
-    <Target Name="CleanupPublishFolder" AfterTargets="Publish">
+    <!-- После копирования wwwroot в публикацию убираем исходники фронта и node_modules — в рантайне нужны bundle, lib, favicon. -->
+    <Target Name="PrunePublishedWwwroot" AfterTargets="Publish" Condition="Exists('$(PublishDir)wwwroot')">
+        <Exec Command="node &quot;$(ProjectDir)wwwroot\scripts\prune-wwwroot.mjs&quot; &quot;$(PublishDir)wwwroot&quot;" />
+    </Target>
+
+    <Target Name="CleanupPublishFolder" AfterTargets="PrunePublishedWwwroot">
         <ItemGroup>
             <FilesToDelete Include="$(PublishDir)**\*.pdb" />
             <FilesToDelete Include="$(PublishDir)**\*.json" />
