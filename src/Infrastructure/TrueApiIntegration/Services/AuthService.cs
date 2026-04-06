@@ -49,7 +49,7 @@ public class AuthService : IAuthService
 
         var encryptedData = encrypted.Value;
 
-        var tokenData = await FinishAuth(encryptedData, uuidHandShacke);
+        var tokenData = await FinishAuth(encryptedData, uuidHandShacke, inn);
 
         if (tokenData.IsFailure)
             return string.Empty;
@@ -176,7 +176,7 @@ public class AuthService : IAuthService
         }
     }
 
-    private async Task<Result<string>> FinishAuth(string encodedData, string requestId)
+    private async Task<Result<string>> FinishAuth(string encodedData, string requestId, string inn)
     {
         using var httpClient = _httpClientFactory.CreateClient("TrueApiIntegration");
 
@@ -187,8 +187,11 @@ public class AuthService : IAuthService
             DataWithUuid data = new()
             {
                 Uuid = requestId,
-                Data = encodedData
+                Data = encodedData,
             };
+
+            if (!string.IsNullOrEmpty(inn))
+                data.Inn = inn;
 
             var answer = await httpClient.PostAsJsonAsync(SIGNINPATH, data);
             

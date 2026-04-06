@@ -31,8 +31,10 @@ public class TrueApiTokenLoaderWorker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await Task.Delay(TimeSpan.FromMinutes(StartDelayMinutes), stoppingToken).ConfigureAwait(false);
+#if !DEBUG
 
+        await Task.Delay(TimeSpan.FromMinutes(StartDelayMinutes), stoppingToken).ConfigureAwait(false);
+#endif
         while (!stoppingToken.IsCancellationRequested)
         {
             if (DateTime.Now < _nextWorkDate)
