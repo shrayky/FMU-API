@@ -377,3 +377,6 @@ FmuApi.API/wwwroot/bundle/index.js
 /src/Presentation/WebApi/wwwroot/lib/webix_gpl
 /builds
 /builds.x86-win.zip
+/src/Presentation/WebApi/Properties/PublishProfiles/x64 full.pubxml.user
+/src/Presentation/WebApi/Properties/PublishProfiles/x64 linux.pubxml.user
+/src/Presentation/WebApi/Properties/PublishProfiles/x86 full.pubxml.user
