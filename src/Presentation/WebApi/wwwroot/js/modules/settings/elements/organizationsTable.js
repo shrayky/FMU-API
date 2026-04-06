@@ -29,7 +29,8 @@ class OrganizationsConfigurationElement {
             tsPiotHost: "Адрес ТС ПИоТ (для Frontol ниже 28)",
             tsPiotPort: "Порт",
             signPassword: "Пароль от ЭЦП",
-            LoadToken: "Получить токен"
+            LoadToken: "Получить токен",
+            DigitalSignature: "Сертификат ЭЦП",
         };
 
         this.LOCAL_MODULE_STATUS = {
@@ -237,7 +238,7 @@ class OrganizationsConfigurationElement {
                 },
                 {
                     view: "tabview",
-                    height: 280,
+                    height: 300,
                     cells: [
                         {
                             header: "ТС ПИОТ",
@@ -306,6 +307,47 @@ class OrganizationsConfigurationElement {
                                 padding: 10,
                                 rows: [
                                     CheckBox(this.LABELS.enable, "TrueApiIntegrationEnable"),
+
+                                    {
+                                        view: "richselect",
+                                        id: "TrueApiIntegrationDigitalSignature",
+                                        label: this.LABELS.DigitalSignature,
+                                        labelPosition: "top",
+                                        placeholder: "Выберите сертификат",
+                                        options: [],
+                                        on: {
+                                            onBeforeRender: async function () {
+                                                const control = this;
+                                                
+                                                if (control.config._loaded)
+                                                     return;
+                                                
+                                                try {
+                                                    const response = await fetch("/api/digitalsignature");
+                                                
+                                                    if (!response.ok) {
+                                                        webix.message({ text: "Не удалось загрузить сертификаты", type: "error" });
+                                                        return;
+                                                    }
+
+                                                    const certificates = await response.json();
+                                                    const options = certificates.map(c => ({
+                                                        id: c.number,
+                                                        value: `${c.presentation} RU")}`
+                                                    }));
+                                                
+                                                    const popup = control.getPopup();
+                                                    popup.getList().clearAll();
+                                                    popup.getList().parse(options);
+                                                    control.config._loaded = true;
+
+                                                } catch (e) {
+                                                    webix.message({ text: e?.message || "Ошибка загрузки сертификатов", type: "error" });
+                                                }
+                                            }
+                                        }
+                                    },
+
                                     Text(this.LABELS.signPassword, "TrueApiIntegrationPassword"),
 
                                     {
@@ -436,6 +478,7 @@ class OrganizationsConfigurationElement {
             trueApiIntegrationSettings: {
                 enable: $$("TrueApiIntegrationEnable").getValue(),
                 password: $$("TrueApiIntegrationPassword").getValue(),
+                digitalSignature: $$("TrueApiIntegrationDigitalSignature").getValue(),
             }
         };
 
@@ -484,6 +527,7 @@ class OrganizationsConfigurationElement {
         $$("XAPIKEY").setValue(item.xapikey);
         $$("TrueApiIntegrationEnable").setValue(item.trueApiIntegrationSettings.enable);
         $$("TrueApiIntegrationPassword").setValue(item.trueApiIntegrationSettings.password);
+        $$("TrueApiIntegrationDigitalSignature").setValue(item.trueApiIntegrationSettings.digitalSignature);
     }
 
     _startLocalModuleStatusPolling() {

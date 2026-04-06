@@ -41,8 +41,6 @@ class MonitorView {
             checkStatisticsTableLabel: "checkStatisticsTableLabel",
             pollingLabel: "pollingLabel",
         }
-
-        //this._startLocalMonitoringPolling();
     }
 
     loadConfig() {
@@ -333,7 +331,6 @@ export default function (id) {
     const monitoring = new MonitorView(id).loadConfig();
     const view = monitoring.render();
 
-    // отложенный старт для того что бы страница загрузилась полностью
     setTimeout(() => {monitoring.startLocalMonitoringPolling()}, 500);
 
     return view;
