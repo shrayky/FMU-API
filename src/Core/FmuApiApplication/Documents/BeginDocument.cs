@@ -73,6 +73,8 @@ public class BeginDocument : IFrontolDocumentService
 
                 var markData = trueApiCisData.Codes[0];
 
+                var groupId = 0;
+
                 // для табака есть минимальная цена, получим ее из настроек
                 // todo: в новых фронтолах код группы приходит с запросом, можно оттуда групу достать,
                 // если онлайн проверка не прошла
@@ -84,9 +86,11 @@ public class BeginDocument : IFrontolDocumentService
                     {
                         minimalPriceFromSettings = _configuration.MinimalPrices.Tabaco;
                     }
+
+                    groupId = markData.GroupIds[0];
                 }
 
-                // проверка минимальной розничной цены
+                // проверка минимальной розничной цены единицы товара
                 if (markData.Smp != null)
                 {
                     var minPrice = minimalPriceFromSettings > markData.Smp ? minimalPriceFromSettings : markData.Smp;
@@ -99,10 +103,21 @@ public class BeginDocument : IFrontolDocumentService
                     }
                 }
 
-                // проверка максимальной прозничной цены
-                if (markData.Mrp != null)
+                // проверка максимальной прозничной цены для ТГ=3 (табак)
+                if (markData.Mrp != null && groupId == TrueApiGroup.Tobaco)
                 {
                     if (markData.Mrp < position.Total_price * 100)
+                    {
+                        checkResult.Code = 3;
+                        checkResult.Error += $"\r\n {position.Text} цена выше максимальной розничной!";
+                        checkResult.Marking_codes.Add(markInBase64);
+                    }
+                }
+
+                // проверка минимальной прозничной цены для ТГ=16 (стики)
+                if (markData.Mrp != null && groupId == TrueApiGroup.Ncp)
+                {
+                    if (markData.Mrp > position.Total_price * 100)
                     {
                         checkResult.Code = 3;
                         checkResult.Error += $"\r\n {position.Text} цена выше максимальной розничной!";
