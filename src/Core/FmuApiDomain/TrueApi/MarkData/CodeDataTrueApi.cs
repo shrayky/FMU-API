@@ -44,7 +44,6 @@ public class CodeDataTrueApi
     public string? Message { get; set; }
     
     [JsonPropertyName("isOwner")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool IsOwner { get; set; } = false;
         
     [JsonPropertyName("productionDate")]

@@ -1,34 +1,33 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using FmuApiApplication.Services.AcoUnit;
 
-namespace WebApi.Controllers.Api.Fmu.Products_by_stamp
+namespace WebApi.Controllers.Api.Fmu.Products_by_stamp;
+
+[Route("api/fmu/[controller]")]
+[ApiController]
+[ApiExplorerSettings(GroupName = "Frontol mark unit API")]
+public class ProductsByStampController : ControllerBase
 {
-    [Route("api/fmu/[controller]")]
-    [ApiController]
-    [ApiExplorerSettings(GroupName = "Frontol mark unit API")]
-    public class ProductsByStampController : ControllerBase
+    private AlcoUnitGateway _alcoUnitGateway;
+
+    public ProductsByStampController(AlcoUnitGateway alcoUnitGateway)
     {
-        private AlcoUnitGateway _alcoUnitGateway;
+        _alcoUnitGateway = alcoUnitGateway;
+    }
 
-        public ProductsByStampController(AlcoUnitGateway alcoUnitGateway)
+    [HttpGet("{stamp}")]
+    public async Task<IActionResult> GetAsync(string stamp)
+    {
+        string answer = string.Empty;
+
+        try
         {
-            _alcoUnitGateway = alcoUnitGateway;
+            answer = await _alcoUnitGateway.ProductsByStamp(stamp);
+            return Ok(answer);
         }
-
-        [HttpGet("{stamp}")]
-        public async Task<IActionResult> GetAsync(string stamp)
+        catch (Exception ex)
         {
-            string answer = string.Empty;
-
-            try
-            {
-                answer = await _alcoUnitGateway.ProductsByStamp(stamp);
-                return Ok(answer);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            return BadRequest(ex.Message);
         }
     }
 }
