@@ -5,6 +5,12 @@ namespace FmuApiDomain.TsPiot.Models
 {
     public record TsPiotCodesResponseItem
     {
+        [JsonPropertyName("code")]
+        public int Code { get; set; }
+
+        [JsonPropertyName("description")]
+        public string Description { get; set; } = string.Empty;
+
         [JsonPropertyName("codes")]
         public List<CodeDataTrueApi> Codes { get; set; } = [];
 
@@ -25,10 +31,6 @@ namespace FmuApiDomain.TsPiot.Models
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string LocalModuleInstance { get; set; } = string.Empty;
         
-        [JsonPropertyName("code")]
-        public int Code { get; set; }
 
-        [JsonPropertyName("description")]
-        public string Description { get; set; } = string.Empty;
     }
 }
