@@ -3,6 +3,7 @@ using FmuApiDomain.LocalModule.Enums;
 using FmuApiDomain.LocalModule.Models;
 using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.TrueApiIntegration.Models;
+using FmuApiDomain.TsPiot.Models;
 
 namespace FmuApiApplication.Services.State;
 
@@ -17,6 +18,8 @@ public class ApplicationState : IApplicationState
     private bool _couchDbIsOnline { get; set; } = false;
     private bool _needRestartService { get; set; } = false;
     private List<TrueApiToken> _trueApiTokens { get; set; } = [];
+    private int TsPiotProtocolVersion { get; set; } = 1;
+    private List<TsModulePiotState> _tsPiotStates { get; set; } = [];
 
     public ApplicationState()
     {
@@ -166,5 +169,77 @@ public class ApplicationState : IApplicationState
         }
 
         return new();
+    }
+
+    public int TsPiotApiVersion(string address)
+    {
+        var protocol = _tsPiotStates.FirstOrDefault(p => p.Connection == address);
+
+        return protocol?.ProtocolVersion ?? 1;
+    }
+
+    public void TsPiotApiVersion(string address, int apiVersion, string moduleVerision)
+    {
+        var newState = new TsModulePiotState()
+        {
+            Connection = address,
+            ProtocolVersion = apiVersion,
+            Version = moduleVerision,
+            LastCheck = DateTime.Now,
+            Online = true
+        };
+
+        var state = _tsPiotStates.FirstOrDefault(p => p.Connection == address);
+
+        if (state != null)
+        {
+            _tsPiotStates.Remove(state);
+        }
+
+        _tsPiotStates.Add(newState);
+    }
+
+    public void TsPiotOffline(string address)
+    {
+        var newState = new TsModulePiotState()
+        {
+            Connection = address,
+            ProtocolVersion = 1,
+            LastCheck = DateTime.Now,
+            Online = false
+        };
+
+        var state = _tsPiotStates.FirstOrDefault(p => p.Connection == address);
+
+        if (state != null)
+        {
+            newState.ProtocolVersion = state.ProtocolVersion;
+            newState.Version = state.Version;
+
+            _tsPiotStates.Remove(state);
+        }
+
+        _tsPiotStates.Add(newState);
+    }
+
+    public bool TsPiotIsOnline(string address)
+    {
+        var state = _tsPiotStates.FirstOrDefault(p => p.Connection == address);
+
+        return state != null && state.Online;
+    }
+
+    public DateTime TsPiotLastSee(string address)
+    {
+        var state = _tsPiotStates.FirstOrDefault(p => p.Connection == address);
+
+        return state == null ? DateTime.MinValue : state.LastCheck;
+    }
+
+    public string TsPiotModuleVersion(string address)
+    {
+        var state = _tsPiotStates.FirstOrDefault(p => p.Connection == address);
+
+        return state == null ? "-" : state.Version;
     }
 }

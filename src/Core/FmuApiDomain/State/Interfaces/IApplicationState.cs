@@ -24,4 +24,10 @@ public interface IApplicationState
     void UpdateTrueApiToken(string inn, string token, DateTime lifeUntil);
     TokenData TrueApiToken();
     TokenData TrueApiToken(string inn);
+    int TsPiotApiVersion(string address);
+    void TsPiotApiVersion(string address, int apiVersion, string moduleVerision);
+    void TsPiotOffline(string address);
+    bool TsPiotIsOnline(string address);
+    DateTime TsPiotLastSee(string address);
+    string TsPiotModuleVersion(string address);
 }

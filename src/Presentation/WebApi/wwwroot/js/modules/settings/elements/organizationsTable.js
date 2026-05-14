@@ -241,7 +241,7 @@ class OrganizationsConfigurationElement {
                     height: 300,
                     cells: [
                         {
-                            header: "ТС ПИОТ",
+                            header: "ТСПИоТ",
                             body: {
                                 padding: 10,
                                 rows: [
@@ -249,6 +249,17 @@ class OrganizationsConfigurationElement {
                                         cols: [
                                             Text(this.LABELS.tsPiotHost, "TsPiotHost", "", { placeholder: "localhost" }),
                                             Text(this.LABELS.tsPiotPort, "TsPiotPort", "", { placeholder: "51401" }),
+                                        ],
+                                    },
+                                    {
+                                        view: "label",
+                                        label: "Адрес получения информации о модуле ТСПИоТ",
+
+                                    },
+                                    {
+                                        cols: [
+                                            Text(this.LABELS.tsPiotInformationPort, "TsPiotInformationPort", "", { placeholder: "51077" }),
+                                            Text(this.LABELS.tsPiotinformationEndpoint, "TsPiotinformationEndpoint", "", { placeholder: "/api/v1/info" }),
                                         ]
                                     },
                                     {},
@@ -293,7 +304,7 @@ class OrganizationsConfigurationElement {
                             }
                         },
                         {
-                            header: "Разрешительный режим (до 01.06.2026)",
+                            header: "Разрешительный режим (до 01.07.2026)",
                             body: {
                                 padding: 10,
                                 rows: [
@@ -318,13 +329,13 @@ class OrganizationsConfigurationElement {
                                         on: {
                                             onBeforeRender: async function () {
                                                 const control = this;
-                                                
+
                                                 if (control.config._loaded)
-                                                     return;
-                                                
+                                                    return;
+
                                                 try {
                                                     const response = await fetch("/api/digitalsignature");
-                                                
+
                                                     if (!response.ok) {
                                                         webix.message({ text: "Не удалось загрузить сертификаты", type: "error" });
                                                         return;
@@ -335,7 +346,7 @@ class OrganizationsConfigurationElement {
                                                         id: c.number,
                                                         value: `${c.presentation} RU")}`
                                                     }));
-                                                
+
                                                     const popup = control.getPopup();
                                                     popup.getList().clearAll();
                                                     popup.getList().parse(options);
@@ -395,7 +406,7 @@ class OrganizationsConfigurationElement {
                                         ]
                                     },
                                     {},
-                                    
+
                                     {
                                         view: "template",
                                         id: "TrueApiIntegrationInfo",
@@ -465,6 +476,8 @@ class OrganizationsConfigurationElement {
             TsPiot: {
                 host: $$("TsPiotHost").getValue(),
                 port: $$("TsPiotPort").getValue(),
+                informationPort: $$("TsPiotInformationPort").getValue(),
+                informationEndpoint: $$("TsPiotinformationEndpoint").getValue(),
             },
             inn: $$("OrganizationInn").getValue(),
             name: $$("OrganizationName").getValue(),
@@ -519,6 +532,8 @@ class OrganizationsConfigurationElement {
         $$("OrganizationName").setValue(item.name);
         $$("TsPiotHost").setValue(item.tsPiot.host);
         $$("TsPiotPort").setValue(item.tsPiot.port);
+        $$("TsPiotInformationPort").setValue(item.tsPiot.informationPort);
+        $$("TsPiotinformationEndpoint").setValue(item.tsPiot.informationEndpoint);
         $$("LocalModuleEnable").setValue(item.localModuleConnection.enable);
         $$("LocalModuleConnectionAddress").setValue(item.localModuleConnection.connectionAddress);
         $$("LocalModuleUserName").setValue(item.localModuleConnection.userName);

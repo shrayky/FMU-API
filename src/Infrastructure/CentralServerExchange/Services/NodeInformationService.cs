@@ -34,7 +34,8 @@ public class NodeInformationService : INodeInformationService
             NodeInformation = new NodeInformation(),
             FmuApiSetting = MapSettings(settings),
             CdnInformation = await MapCdn(),
-            LocalModuleInformation = MapLocalModules(settings)
+            LocalModuleInformation = MapLocalModules(settings),
+            TsPiotsInforamtion = MapTsPiotsInforamtion(settings)
         };
 
         var data = JsonSerializer.Serialize(packetPayload, JsonSerializerOptions.Default);
@@ -51,6 +52,38 @@ public class NodeInformationService : INodeInformationService
         };
 
         return packet;
+    }
+
+    private List<TsPiotInformation> MapTsPiotsInforamtion(Parameters settings)
+    {
+        if (!settings.ServerConfig.TsPiotEnabled)
+            return [];
+
+        List<TsPiotInformation> modules = [];
+
+        var printGroups = settings.OrganisationConfig.PrintGroups;
+
+        foreach (var pg in printGroups)
+        {
+            if (string.IsNullOrEmpty(pg.TsPiot.Host) || string.IsNullOrEmpty(pg.TsPiot.Port))
+                continue;
+
+            var address = $"{pg.TsPiot.Host}:{pg.TsPiot.Port}";
+
+            var state = new TsPiotInformation()
+            {
+                Address = address,
+                Name = pg.Name,
+                ProtocolVersion = _applicationState.TsPiotApiVersion(address),
+                Online = _applicationState.TsPiotIsOnline(address),
+                LastCheckTime = _applicationState.TsPiotLastSee(address),
+                Version = _applicationState.TsPiotModuleVersion(address),
+            };
+
+            modules.Add(state);
+        }
+        
+        return modules;
     }
 
     private static FmuApiSetting MapSettings(Parameters settings)
@@ -139,7 +172,6 @@ public class NodeInformationService : INodeInformationService
 
     private List<LocalModuleInformation> MapLocalModules(Parameters  settings)
     {
-
         var connectedLocalModules =
             settings.OrganisationConfig.PrintGroups.Where(printGroup => printGroup.LocalModuleConnection.Enable);
         

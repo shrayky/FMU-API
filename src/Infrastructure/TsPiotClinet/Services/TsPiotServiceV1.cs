@@ -11,27 +11,27 @@ using TsPiotClinet.Models;
 
 namespace TsPiotClinet.Services;
 
-public class TsPiotServiceV3 : ITsPiotService
+public class TsPiotServiceV1 : ITsPiotService
 {
-    private readonly ILogger<TsPiotServiceV3> _logger;
+    private readonly ILogger<TsPiotServiceV1> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
-    
-    private const string CheckAddress = @"/api/v3/codes/check";
 
-    public TsPiotServiceV3(ILogger<TsPiotServiceV3> logger, IHttpClientFactory httpClientFactory)
+    private const string CheckAddress = @"/api/v1/codes/check";
+
+    public TsPiotServiceV1(ILogger<TsPiotServiceV1> logger, IHttpClientFactory httpClientFactory)
     {
         _logger = logger;
         _httpClientFactory = httpClientFactory;
     }
 
     public async Task<Result<CheckMarksDataTrueApi>> Check(string mark, TsPiotConnectionSettings connectionSettings)
-    {        
+    {
         using var httpClient = _httpClientFactory.CreateClient("TsPiot");
 
         httpClient.BaseAddress = new Uri($"{connectionSettings.Host}:{connectionSettings.Port}");
 
         var markBase64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(mark));
-        
+
         var requestData = new TsPiotCheckMarkRequest()
         {
             ClientInfo = new(),
@@ -53,27 +53,30 @@ public class TsPiotServiceV3 : ITsPiotService
             var content = await response.Content.ReadAsStringAsync();
 
             _logger.LogDebug("Ответ ТСПИоТ: {content}", content);
-            
+
             var tsPiotOptions = new JsonSerializerOptions(JsonSerializeOptionsProvider.Default())
             {
-                Converters = 
-                { 
+                Converters =
+                {
                     new JsonStringOrLongConverter(),
                     new JsonDateTimeStringConverter()
                 }
             };
 
-            var status = await JsonHelpers.DeserializeAsync<TsPiotOnlineCheckResponseV3>(content, tsPiotOptions);
+            var status = await JsonHelpers.DeserializeAsync<TsPiotMarkCheckResponse>(content, tsPiotOptions);
 
             if (status == null)
                 return Result.Failure<CheckMarksDataTrueApi>("Пустой ответ от сервера");
 
-            if (status.CodesResponseItems.Count == 0)
+            if (status.Response == null)
+                return Result.Failure<CheckMarksDataTrueApi>("Пустой ответ от сервера");
+
+            if (status.Response.CodesResponseItems.Count == 0)
             {
                 return Result.Failure<CheckMarksDataTrueApi>("Пустой ответ от сервера: отсутствуют элементы codesResponse");
             }
 
-            var firstItem = status.CodesResponseItems[0];
+            var firstItem = status.Response.CodesResponseItems[0];
 
             if (firstItem.Code != 0)
             {

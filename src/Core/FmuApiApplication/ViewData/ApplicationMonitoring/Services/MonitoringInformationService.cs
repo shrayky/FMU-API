@@ -1,5 +1,7 @@
+using FmuApiApplication.ViewData.ApplicationMonitoring.Dto;
 using FmuApiApplication.ViewData.ApplicationMonitoring.Interfaces;
 using FmuApiDomain.Attributes;
+using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.MarkInformation.Models;
@@ -43,18 +45,51 @@ public class MonitoringInformationService : IMonitoringInformation
             CouchDbOnLine = currentSettings.Database.Enable
                 ? (_applicationState.CouchDbOnline() ? "On-line" : "Off-line")
                 : "Disabled",
-            StateOfLocalModules = await LoadStateOfLocalModules(),
-            MarkCheksStatistics = await ColleсtStatistics()
+            StateOfLocalModules = await LoadStateOfLocalModules(currentSettings),
+            MarkCheksStatistics = await ColleсtStatistics(),
+            TsPiotStates = await TsPiotModulesState(currentSettings)
         };
     }
 
-    private async Task<List<LocalModuleState>> LoadStateOfLocalModules()
+    private async Task<List<TsPiotState>> TsPiotModulesState(Parameters currentSettings)
     {
-        var currentSettings = await _parametersService.CurrentAsync();
+        List<TsPiotState> states = [];
 
+        if (!currentSettings.ServerConfig.TsPiotEnabled)
+            return states;
+
+        var printGroups = currentSettings.OrganisationConfig.PrintGroups;
+
+        foreach (var pg in printGroups)
+        {
+            if (string.IsNullOrEmpty(pg.TsPiot.Host) || string.IsNullOrEmpty(pg.TsPiot.Port))
+                continue;
+
+            var address = $"{pg.TsPiot.Host}:{pg.TsPiot.Port}";
+
+            var state = new TsPiotState()
+            {
+                Address = address,
+                Name = pg.Name,
+                ProtocolVersion = _applicationState.TsPiotApiVersion(address),
+                Online = _applicationState.TsPiotIsOnline(address),
+                LastCheckTime = _applicationState.TsPiotLastSee(address),
+                Version = _applicationState.TsPiotModuleVersion(address),
+            };
+
+            states.Add(state);
+        }
+
+        return states;
+    }
+
+    private async Task<List<LocalModuleState>> LoadStateOfLocalModules(Parameters currentSettings)
+    {
         List<LocalModuleState> stateOfLocalModules = [];
 
-        foreach (var printGroup in currentSettings.OrganisationConfig.PrintGroups.Where(printGroup => printGroup.LocalModuleConnection.Enable))
+        var printGroups = currentSettings.OrganisationConfig.PrintGroups;
+
+        foreach (var printGroup in printGroups.Where(printGroup => printGroup.LocalModuleConnection.Enable))
         {
             var fullStateInfo = _applicationState.LocalModuleInformation(printGroup.Id);
             
