@@ -41,7 +41,7 @@ if (OperatingSystem.IsWindows())
     _ = (args.Length == 0 ? "" : args[0]) switch
     {
         "--service" => RunHttpApiService(),
-        "--install" => await InstallerWindowsWrapper.InstallAsWindowsServiceAsync(args) ,
+        "--install" => await InstallerWindowsWrapper.InstallAsWindowsServiceAsync(args),
         "--register" => InstallerWindowsWrapper.RegisterWindowsService(args),
         "--uninstall" => InstallerWindowsWrapper.UninstallWindowsService(),
         "--unregister" => InstallerWindowsWrapper.UnregisterWindowsService(),

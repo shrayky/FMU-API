@@ -1,4 +1,4 @@
-namespace FmuApiDomain.ViewData.ApplicationMonitoring.Dto;
+namespace FmuApiApplication.ViewData.ApplicationMonitoring.Dto;
 
 public record LocalModuleState
 {
