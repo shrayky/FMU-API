@@ -1,9 +1,8 @@
-﻿namespace FmuApiDomain.Configuration.Options
+﻿namespace FmuApiDomain.Configuration.Options;
+
+public class ServerConfig
 {
-    public class ServerConfig
-    {
-        public int ApiIpPort { get; set; } = 2578;
-        public bool TsPiotEnabled { get; set; } = false;
-        public int LocalModuleVersion { get; set; } = 2;
-    }
+    public int ApiIpPort { get; set; } = 2578;
+    public bool TsPiotEnabled { get; set; } = false;
+    public int LocalModuleVersion { get; set; } = 2;
 }
