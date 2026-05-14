@@ -182,17 +182,17 @@ public class AuthService : IAuthService
 
         httpClient.BaseAddress = new Uri(URL);
 
+        DataWithUuid data = new()
+        {
+            Uuid = requestId,
+            Data = encodedData,
+        };
+
+        if (!string.IsNullOrEmpty(inn))
+            data.Inn = inn;
+
         try
         {
-            DataWithUuid data = new()
-            {
-                Uuid = requestId,
-                Data = encodedData,
-            };
-
-            if (!string.IsNullOrEmpty(inn))
-                data.Inn = inn;
-
             var answer = await httpClient.PostAsJsonAsync(SIGNINPATH, data);
             
             if (answer == null)

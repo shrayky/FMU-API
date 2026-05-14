@@ -20,6 +20,14 @@ public static class TrueApiIntegrationRegistration
 
         });
 
+        services.AddHttpClient("GisMtDocuments", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(5);
+            client.DefaultRequestHeaders.Accept.Add(
+                new MediaTypeWithQualityHeaderValue("application/json"));
+
+        });
+
         services.AddHostedService<TrueApiTokenLoaderWorker>();
     }
 
