@@ -43,6 +43,8 @@ public record ServerConfiguration
 {
     [JsonPropertyName("apiIpPort")]
     public int ApiIpPort { get; init; } = 0;
+    public bool TsPiotEnabled { get; set; } = false;
+    public int LocalModuleVersion { get; set; } = 0;
 }
 
 public record MinimalPrices

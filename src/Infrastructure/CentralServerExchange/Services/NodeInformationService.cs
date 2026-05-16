@@ -109,7 +109,9 @@ public class NodeInformationService : INodeInformationService
             Assembly = settings.Assembly,
             ServerConfiguration = new ServerConfiguration
             {
-                ApiIpPort = settings.ServerConfig.ApiIpPort
+                ApiIpPort = settings.ServerConfig.ApiIpPort,
+                TsPiotEnabled = settings.ServerConfig.TsPiotEnabled,
+                LocalModuleVersion = settings.ServerConfig.LocalModuleVersion,
             },
             HostsToPing = settings.HostsToPing,
             MinimalPrices = new MinimalPrices()
