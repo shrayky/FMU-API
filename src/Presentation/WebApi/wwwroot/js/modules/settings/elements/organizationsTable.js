@@ -31,6 +31,8 @@ class OrganizationsConfigurationElement {
             signPassword: "Пароль от ЭЦП",
             LoadToken: "Получить токен",
             DigitalSignature: "Сертификат ЭЦП",
+            tsPiotInformationPort: "Порт",
+            tsPiotinformationEndpoint: "Эндпоинт запроса"
         };
 
         this.LOCAL_MODULE_STATUS = {
@@ -258,8 +260,8 @@ class OrganizationsConfigurationElement {
                                     },
                                     {
                                         cols: [
-                                            Text(this.LABELS.tsPiotInformationPort, "TsPiotInformationPort", "", { placeholder: "51077" }),
                                             Text(this.LABELS.tsPiotinformationEndpoint, "TsPiotinformationEndpoint", "", { placeholder: "/api/v1/info" }),
+                                            Text(this.LABELS.tsPiotInformationPort, "TsPiotInformationPort", "", { placeholder: "51077" }),
                                         ]
                                     },
                                     {},
