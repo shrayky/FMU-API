@@ -90,12 +90,14 @@ public class BeginDocument : IFrontolDocumentService
                     groupId = markData.GroupIds[0];
                 }
 
+                var sellPrice = position.ProductPrice == 0 ? position.Total_price * 100 : position.ProductPrice * 100;
+
                 // проверка минимальной розничной цены единицы товара
                 if (markData.Smp != null)
                 {
                     var minPrice = minimalPriceFromSettings > markData.Smp ? minimalPriceFromSettings : markData.Smp;
 
-                    if (minPrice > position.Total_price * 100)
+                    if (minPrice > sellPrice)
                     {
                         checkResult.Code = 3;
                         checkResult.Error += $"\r\n {position.Text} цена ниже минимальной розничной!";
@@ -106,7 +108,7 @@ public class BeginDocument : IFrontolDocumentService
                 // проверка максимальной прозничной цены для ТГ=3 (табак)
                 if (markData.Mrp != null && groupId == TrueApiGroup.Tobaco)
                 {
-                    if (markData.Mrp < position.Total_price * 100)
+                    if (markData.Mrp < sellPrice)
                     {
                         checkResult.Code = 3;
                         checkResult.Error += $"\r\n {position.Text} цена выше максимальной розничной!";
@@ -117,10 +119,10 @@ public class BeginDocument : IFrontolDocumentService
                 // проверка минимальной прозничной цены для ТГ=16 (стики)
                 if (markData.Mrp != null && groupId == TrueApiGroup.Ncp)
                 {
-                    if (markData.Mrp > position.Total_price * 100)
+                    if (markData.Mrp > sellPrice)
                     {
                         checkResult.Code = 3;
-                        checkResult.Error += $"\r\n {position.Text} цена выше максимальной розничной!";
+                        checkResult.Error += $"\r\n {position.Text} цена ниже минимальной розничной!";
                         checkResult.Marking_codes.Add(markInBase64);
                     }
                 }

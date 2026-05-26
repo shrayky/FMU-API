@@ -36,5 +36,8 @@ namespace FmuApiDomain.Fmu.Document
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public TsPiotConnectionSettings TsPiot { get; set; } = new();
 
+        [JsonPropertyName("product_price")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public double ProductPrice { get; set; } = 0;
     }
 }
