@@ -1,7 +1,7 @@
 ﻿using FmuApiDomain.Templates.Tables;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace FmuApiDomain.Frontol.DTO
+namespace FrontolDb.Models
 {
     [Table("BARCODE")]
     public class Barcode : IdField
