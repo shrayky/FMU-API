@@ -62,6 +62,7 @@ class DatabaseConnectionConfigurationElement {
                             }
                         }
                     }),
+
                     {
                         id: this.SETTINGS_ID,
                         disabled: !this.enable,
@@ -73,6 +74,21 @@ class DatabaseConnectionConfigurationElement {
                                     PasswordBox(this.LABELS.password, "database.password", { value: this.userPassword })
                                 ]
                             },
+
+                            {
+                                view: "button",
+                                id: "fauxton_open",
+                                value: "Открыть Fauxton",
+                                inputWidth: 180,
+                                inputHeight: 40,
+                                click: _ => {
+                                    let address = $$("database.netAddress").getValue();
+                
+                                    if (address != "")
+                                        window.open(`${address}/_utils`, "_blank").focus();
+                                }
+                            },
+
                             Label("lBulkConfig", this.LABELS.bulkLabel),
                             {
                                 padding: padding,
@@ -87,22 +103,6 @@ class DatabaseConnectionConfigurationElement {
                     }
                 ]
             }
-        );
-
-        elements.push(
-            {
-                view: "button",
-                id: "fauxton_open",
-                value: "Открыть Fauxton",
-                inputWidth: 180,
-                inputHeight: 40,
-                click: _ => {
-                    let address = $$("database.netAddress").getValue();
-
-                    if (address != "")
-                        window.open(`${address}/_utils`, "_blank").focus();
-                }
-            },
         );
 
         return { id: this.id, rows: elements };

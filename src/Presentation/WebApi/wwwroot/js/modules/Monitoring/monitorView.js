@@ -312,8 +312,6 @@ class MonitorView {
                 autoStart: true 
             }
         );
-
-
     }
 
     _updateDbState(couchDbOnLine) {

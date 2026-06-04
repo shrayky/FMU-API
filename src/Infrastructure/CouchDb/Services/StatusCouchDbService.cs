@@ -122,8 +122,9 @@ namespace CouchDb.Services
 
             var marksIndexesCreated = await CreateMarksIndexes(httpClient, cancellationToken);
             var statisticIndexesCreated = await CreateStatisticIndexes(httpClient, cancellationToken);
+            var beerTaspoIndexesCerated = await CreateBeerTaspsIndexes(httpClient, cancellationToken);
 
-            if (marksIndexesCreated && statisticIndexesCreated)
+            if (marksIndexesCreated && statisticIndexesCreated && beerTaspoIndexesCerated)
             {
                 _logger.LogInformation("Индексы для баз данных CouchDB созданы успешно");
                 return true;
@@ -149,10 +150,22 @@ namespace CouchDb.Services
             var indexes = new[]
             {
                     new { name = "date-time-idx", index = new { fields = new[] { "data.checkDate" } } },
-                    new { name = "date-sgtin", index = new { fields = new[] { "data.sGtin" } } }
+                    new { name = "date-sgtin", index = new { fields = new[] { "data.sGtin" } } },
+                    new { name = "checkDay-idx", index = new { fields = new[] { "data.checkDay" } } }
                 };
 
             return await CreateIndexesForDatabase(httpClient, DatabaseNames.MarkCheckingStatistic, indexes, cancellationToken);
+        }
+
+        private async Task<bool> CreateBeerTaspsIndexes(HttpClient httpClient, CancellationToken cancellationToken)
+        {
+            var indexes = new[]
+            {
+                new { name = "markingCode-idx", index = new { fields = new[] { "data.markingCode" } } },
+                new { name = "markId-idx", index = new { fields = new[] { "data.markId" } } },
+            };
+
+            return await CreateIndexesForDatabase(httpClient, DatabaseNames.BeerOnTaps, indexes, cancellationToken);
         }
 
         private async Task<bool> CreateIndexesForDatabase(HttpClient httpClient, string databaseName, object[] indexes, CancellationToken cancellationToken)

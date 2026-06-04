@@ -1,17 +1,23 @@
 ﻿using FmuApiDomain.Frontol.Interfaces;
-using FrontolDb.Handlers;
+using FrontolDb.Repository;
+using FrontolDb.Services;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace FrontolDb
+namespace FrontolDb;
+
+public class FrontolDbService
 {
-    public class FrontolDbService
+    public static void AddService(IServiceCollection services)
     {
-        public static void AddService(IServiceCollection services)
-        {
-            services.AddDbContext<FrontolDbContext>(options => { });
+        services.AddDbContext<FrontolDbContext>(options => { });
 
-            services.AddScoped<IFrontolSprTService, FrontolSprTService>();
+        services.AddScoped<IFrontolSprTService, FrontolSprTRepo>();
 
-        }
+        // для подключений баз фронтола
+        services.AddScoped<IBeerTapsRepositoryFactory, BeerTapsRepositoryFactory>();
+        // для подключения к основной базе через di
+        services.AddScoped<IBeerTapsRepository, BeerTapsRepo>();
+
+        services.AddSingleton<FrontolAdminIniReader>();
     }
 }

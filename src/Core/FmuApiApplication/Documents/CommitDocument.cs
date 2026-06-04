@@ -72,15 +72,7 @@ public class CommitDocument : IFrontolDocumentService
 
         var frontolDocument = loadDocumentResult.Value;
 
-        SaleData saleData = new()
-        {
-            CheckNumber = frontolDocument.FrontolDocument.Number,
-            SaleDate = DateTime.Now,
-            Pos = frontolDocument.FrontolDocument.Pos,
-            IsSale = frontolDocument.FrontolDocument.Type == SaleDocumentType
-        };
-
-        var state = saleData.IsSale ? MarkState.Sold : MarkState.Returned;
+        var state = frontolDocument.FrontolDocument.Type == SaleDocumentType ? MarkState.Sold : MarkState.Returned;
 
         // Словарь: код марки (SGtin) -> количество, из фронтола марка прилетает в base64
         Dictionary<string, decimal> quantityByMark = frontolDocument.FrontolDocument.Positions
@@ -103,11 +95,18 @@ public class CommitDocument : IFrontolDocumentService
 
         foreach (var mark in marks)
         {
-            var quantity = quantityByMark[mark.Code];
-            saleData.Quantity = quantity;
+            SaleData saleData = new()
+            {
+                CheckNumber = frontolDocument.FrontolDocument.Number,
+                SaleDate = DateTime.Now,
+                Pos = frontolDocument.FrontolDocument.Pos,
+                IsSale = frontolDocument.FrontolDocument.Type == SaleDocumentType,
+                Quantity = quantityByMark[mark.Code]
+            };
+
             marksToChangeState.Add(mark.SGtin, saleData);
         }
-
+        
         await MarkChangeStateBulk(marksToChangeState, state);
 
         await TemporaryDocumentsService.Value.Delete(Document.Uid);

@@ -1,4 +1,4 @@
-using FmuApiDomain.ViewData.ApplicationMonitoring.Dto;
+using FmuApiApplication.ViewData.ApplicationMonitoring.Dto;
 
 namespace FmuApiApplication.ViewData.ApplicationMonitoring.Interfaces;
 

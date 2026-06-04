@@ -6,117 +6,152 @@ using FmuApiDomain.Repositories;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.Logging;
 
-namespace CouchDb.Repositories
+namespace CouchDb.Repositories;
+
+public class MarkCheckingStatisticRepository : BaseCouchDbRepository<StatisticEntity>, ICheckStatisticRepository
 {
-    public class MarkCheckingStatisticRepository : BaseCouchDbRepository<StatisticEntity>, ICheckStatisticRepository
+    public MarkCheckingStatisticRepository(ILogger<MarkCheckingStatisticRepository> logger, CouchDbContext context, IParametersService appConfiguration, IApplicationState applicationState) : base(logger, context, context.MarkCheckingStatistic, appConfiguration, applicationState)
     {
-        public MarkCheckingStatisticRepository(ILogger<MarkCheckingStatisticRepository> logger, CouchDbContext context, IParametersService appConfiguration, IApplicationState applicationState) : base(logger, context, context.MarkCheckingStatistic, appConfiguration, applicationState)
+
+    }
+
+    private static long ToCheckDay(DateTime checkDate) =>
+        new DateTimeOffset(DateTime.SpecifyKind(checkDate.Date, DateTimeKind.Utc)).ToUnixTimeSeconds();
+
+    public async Task FailureCheck(string mark, DateTime checkDate)
+    {
+        StatisticEntity entity = new()
         {
+            Id = $"{mark}_{checkDate}",
+            CheckDate = checkDate,
+            SGtin = mark,
+            OnLineCheck = false,
+            OffLineCheck = false,
+            SuccessCheck = false,
+            CheckDay = ToCheckDay(checkDate)
+        };
 
-        }
+        await CreateAsync(entity);
+    }
 
-        public async Task FailureCheck(string mark, DateTime checkDate)
+    public async Task SuccessOffLineCheck(string mark, DateTime checkDate)
+    {
+        StatisticEntity entity = new()
         {
-            StatisticEntity entity = new()
-            {
-                Id = $"{mark}_{checkDate}",
-                checkDate = checkDate,
-                SGtin = mark,
-                OnLineCheck = false,
-                OffLineCheck = false,
-                SuccessCheck = false
-            };
+            Id = $"{mark}_{checkDate}",
+            CheckDate = checkDate,
+            SGtin = mark,
+            OnLineCheck = false,
+            OffLineCheck= true,
+            SuccessCheck = true,
+            WarningMessage = "",
+            CheckDay = ToCheckDay(checkDate)
+        };
 
-            await CreateAsync(entity);
-        }
+        await CreateAsync(entity);
+    }
 
-        public async Task SuccessOffLineCheck(string mark, DateTime checkDate)
+    public async Task OffLineCheckWithWarnings(string mark, DateTime checkDate, string warningMessage)
+    {
+        StatisticEntity entity = new()
         {
-            StatisticEntity entity = new()
-            {
-                Id = $"{mark}_{checkDate}",
-                checkDate = checkDate,
-                SGtin = mark,
-                OnLineCheck = false,
-                OffLineCheck= true,
-                SuccessCheck = true,
-                WarningMessage = ""
-            };
+            Id = $"{mark}_{checkDate}",
+            CheckDate = checkDate,
+            SGtin = mark,
+            OnLineCheck = false,
+            OffLineCheck = true,
+            SuccessCheck = false,
+            WarningMessage = warningMessage,
+            CheckDay = ToCheckDay(checkDate)
+        };
 
-            await CreateAsync(entity);
-        }
+        await CreateAsync(entity);
+    }
 
-        public async Task OffLineCheckWithWarnings(string mark, DateTime checkDate, string warningMessage)
+    public async Task SuccessOnLineCheck(string mark, DateTime checkDate)
+    {
+        StatisticEntity entity = new()
         {
-            StatisticEntity entity = new()
-            {
-                Id = $"{mark}_{checkDate}",
-                checkDate = checkDate,
-                SGtin = mark,
-                OnLineCheck = false,
-                OffLineCheck = true,
-                SuccessCheck = false,
-                WarningMessage = warningMessage
-            };
+            Id = $"{mark}_{checkDate}",
+            CheckDate = checkDate,
+            SGtin = mark,
+            OnLineCheck = true,
+            OffLineCheck = false,
+            SuccessCheck = true,
+            CheckDay = ToCheckDay(checkDate)
+        };
 
-            await CreateAsync(entity);
-        }
+        await CreateAsync(entity);
+    }
 
-        public async Task SuccessOnLineCheck(string mark, DateTime checkDate)
+    public async Task OnLineCheckWithWarnings(string mark, DateTime checkDate, string warningMessage)
+    {
+        StatisticEntity entity = new()
         {
-            StatisticEntity entity = new()
-            {
-                Id = $"{mark}_{checkDate}",
-                checkDate = checkDate,
-                SGtin = mark,
-                OnLineCheck = true,
-                OffLineCheck = false,
-                SuccessCheck = true
-            };
+            Id = $"{mark}_{checkDate}",
+            CheckDate = checkDate,
+            SGtin = mark,
+            OnLineCheck = true,
+            OffLineCheck = false,
+            SuccessCheck = false,
+            WarningMessage = warningMessage,
+            CheckDay = ToCheckDay(checkDate)
+        };
 
-            await CreateAsync(entity);
-        }
+        await CreateAsync(entity);
+    }
 
-        public async Task OnLineCheckWithWarnings(string mark, DateTime checkDate, string warningMessage)
+    public async Task<MarkCheckStatistics> CheckStatisticsByDays(DateTime fromDate, DateTime toDate)
+    {
+        if (_context == null)
+            return new();
+
+        if (!_appState.CouchDbOnline() && _appState.NeedRestartService())
+            return new();
+
+        var appConfig = await _appConfiguration.CurrentAsync();
+        var queryLimit = appConfig.Database.QueryLimit == 0 ? 1000000 : appConfig.Database.QueryLimit;
+
+        var filteredMarks = await _database
+            .Where(p => p.Data.CheckDate >= fromDate && p.Data.CheckDate <= toDate)
+            .Take(queryLimit)
+            .ToListAsync();
+
+        var statistics = new MarkCheckStatistics
         {
-            StatisticEntity entity = new()
-            {
-                Id = $"{mark}_{checkDate}",
-                checkDate = checkDate,
-                SGtin = mark,
-                OnLineCheck = true,
-                OffLineCheck = false,
-                SuccessCheck = false,
-                WarningMessage = warningMessage
-            };
+            Total = filteredMarks.Count,
+            SuccessfulOnlineChecks = filteredMarks.Count(m => m.Data.SuccessCheck && m.Data.OnLineCheck),
+            SuccessfulOfflineChecks = filteredMarks.Count(m => m.Data.SuccessCheck && m.Data.OffLineCheck)
+        };
 
-            await CreateAsync(entity);
-        }
+        return statistics;
+    }
 
-        public async Task<MarkCheckStatistics> CheckStatisticsByDays(DateTime fromDate, DateTime toDate)
+    public async Task<MarkCheckStatistics> CheckStatisticsByDay(DateTime checkDate)
+    {
+        if (_context == null)
+            return new();
+
+        if (!_appState.CouchDbOnline() && _appState.NeedRestartService())
+            return new();
+
+        var appConfig = await _appConfiguration.CurrentAsync();
+        var queryLimit = appConfig.Database.QueryLimit == 0 ? 1000000 : appConfig.Database.QueryLimit;
+
+        var checkDay = ToCheckDay(checkDate);
+
+        var filteredMarks = await _database
+            .Where(p => p.Data.CheckDay == checkDay)
+            .Take(queryLimit)
+            .ToListAsync();
+
+        var statistics = new MarkCheckStatistics
         {
-            if (_context == null)
-                return new();
+            Total = filteredMarks.Count,
+            SuccessfulOnlineChecks = filteredMarks.Count(m => m.Data.SuccessCheck && m.Data.OnLineCheck),
+            SuccessfulOfflineChecks = filteredMarks.Count(m => m.Data.SuccessCheck && m.Data.OffLineCheck)
+        };
 
-            if (!_appState.CouchDbOnline() && _appState.NeedRestartService())
-                return new();
-
-            var appConfig = await _appConfiguration.CurrentAsync();
-            var queryLimit = appConfig.Database.QueryLimit == 0 ? 1000000 : appConfig.Database.QueryLimit;
-
-            var filteredMarks = await _database
-                .Where(p => p.Data.checkDate >= fromDate && p.Data.checkDate <= toDate)
-                .Take(queryLimit)
-                .ToListAsync();
-
-            var statistics = new MarkCheckStatistics
-            {
-                Total = filteredMarks.Count,
-                SuccessfulOnlineChecks = filteredMarks.Count(m => m.Data.SuccessCheck && m.Data.OnLineCheck),
-                SuccessfulOfflineChecks = filteredMarks.Count(m => m.Data.SuccessCheck && m.Data.OffLineCheck)
-            };
-
-            return statistics;
-        }
+        return statistics;
     }
 }

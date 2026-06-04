@@ -135,4 +135,7 @@ public record SaleControl
 
     [JsonPropertyName("resetSoldStatusForReturn")]
     public bool ResetSoldStatusForReturn { get; init; }
+
+    [JsonPropertyName("useBeerTaps")]
+    public bool UseBeUseBeerTapse { get; init; }
 }

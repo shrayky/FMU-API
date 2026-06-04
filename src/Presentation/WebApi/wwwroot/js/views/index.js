@@ -2,8 +2,9 @@
 import '../utils/customComponents.js';
 import { InitProxy } from '../utils/proxy.js';
 import { RouterService } from '../services/RouterService.js';
+import { loadParameters, SETTINGS_SAVED_EVENT } from '../services/ConfigurationService.js';
 import { createLayout, createToolbar, createSidebar } from '../components/Layout.js';
-import { MENU_ITEMS } from '../config/menu.js';
+import { buildMenuItems } from '../config/menu.js';
 
 import SettingsView from '../modules/settings/SettingsView.js';
 import InformationView from '../modules/Information/informationView.js';
@@ -17,6 +18,7 @@ class App {
     constructor() {
         this.router = new RouterService();
         this.bodyId = "body";
+        this.config = null;
         this.initRoutes();
     }
 
@@ -28,16 +30,17 @@ class App {
         this.router.register("monitorView", () => MonitorView);
         this.router.register("marksView", () => MarksView);
         this.router.register("markCheckView", () => MarkCheckView);
+        this.router.register("beerTapsView", async () => (await import("../modules/BeerTaps/beerTapsView.js")).default);
     }
 
-    createMainLayout() {
+    createMainLayout(config) {
         return createLayout({
             rows: [
                 createToolbar("FMU-API"),
                 {
                     cols: [
                         createSidebar(
-                            Object.values(MENU_ITEMS),
+                            buildMenuItems(config),
                             (id) => this.router.navigate(id, this.bodyId)
                         ),
                         { id: this.bodyId }
@@ -47,25 +50,51 @@ class App {
         });
     }
 
+    refreshMenu(config) {
+        this.config = config;
+
+        const items = buildMenuItems(config);
+        const sidebar = $$("sidebar");
+
+        if (sidebar) {
+            sidebar.clearAll();
+            sidebar.parse(items);
+        }
+
+        const visibleIds = items.map(item => item.id);
+        if (!visibleIds.includes(this.router.currentPage)) {
+            this.router.navigate("monitorView", this.bodyId);
+        }
+    }
+
     init() {
         InitProxy();
 
-        webix.ready(() => {
-            webix.ui(this.createMainLayout());
+        webix.ready(async () => {
+            try {
+                this.config = await loadParameters();
+            } catch (error) {
+                console.error("Ошибка загрузки настроек:", error);
+                webix.message({
+                    type: "error",
+                    text: "Не удалось загрузить настройки, меню отображается по умолчанию"
+                });
+            }
 
-            this.router.navigate("monitorView", "body");
+            webix.ui(this.createMainLayout(this.config));
+            this.router.navigate("monitorView", this.bodyId);
 
-            // Обработчик изменения размера окна
+            window.addEventListener(SETTINGS_SAVED_EVENT, (event) => {
+                this.refreshMenu(event.detail);
+            });
+
             webix.event(window, "resize", () => {
                 const root = $$("root");
-                const body = $$(this.bodyId);
-
                 root.$setSize(window.innerWidth, window.innerHeight);
             });
         });
     }
 }
 
-// Инициализация приложения
 const app = new App();
 app.init();

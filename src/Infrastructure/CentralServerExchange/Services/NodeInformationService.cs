@@ -129,6 +129,8 @@ public class NodeInformationService : INodeInformationService
                 SendLocalModuleInformationalInRequestId = settings.SaleControlConfig.SendLocalModuleInformationalInRequestId,
                 RejectSalesWithoutCheckInformationFrom = settings.SaleControlConfig.RejectSalesWithoutCheckInformationFrom,
                 ResetSoldStatusForReturn = settings.SaleControlConfig.ResetSoldStatusForReturn,
+                UseBeUseBeerTapse = settings.SaleControlConfig.UseBeerTaps,
+
             },
             Organizations = fmuApiOrganizations,
             Database = new Database()

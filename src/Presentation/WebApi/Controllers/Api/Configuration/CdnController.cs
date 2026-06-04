@@ -15,7 +15,7 @@ public class CdnController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> CdnListAwait()
+    public async Task<IActionResult> List()
     {
         return Ok(await _cdnService.GetCdnsAsync());
     }

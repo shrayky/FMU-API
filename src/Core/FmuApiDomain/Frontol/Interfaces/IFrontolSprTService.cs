@@ -1,9 +1,8 @@
 ﻿using CSharpFunctionalExtensions;
 
-namespace FmuApiDomain.Frontol.Interfaces
+namespace FmuApiDomain.Frontol.Interfaces;
+
+public interface IFrontolSprTService
 {
-    public interface IFrontolSprTService
-    {
-        Task<Result<int>> PrintGroupCodeByBarcodeAsync(string barCode);
-    }
+    Task<Result<int>> PrintGroupCodeByBarcodeAsync(string barCode);
 }

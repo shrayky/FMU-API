@@ -1,7 +1,6 @@
-using FmuApiApplication.ViewData.ApplicationMonitoring.Dto;
 using FmuApiDomain.ViewData.Dto;
 
-namespace FmuApiDomain.ViewData.ApplicationMonitoring.Dto;
+namespace FmuApiApplication.ViewData.ApplicationMonitoring.Dto;
 
 public record MonitoringData
 {

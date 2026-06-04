@@ -20,6 +20,8 @@ namespace CouchDb.Repositories
 
         protected readonly CouchDbConnection _configuration;
 
+        protected const string DatabaseUnavailable = "БД недоступна сейчас";
+
         protected BaseCouchDbRepository(ILogger logger,
             CouchDbContext context,
             ICouchDatabase<CouchDoc<T>> database,

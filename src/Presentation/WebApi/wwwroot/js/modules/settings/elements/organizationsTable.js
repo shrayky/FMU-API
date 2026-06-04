@@ -1,5 +1,5 @@
 import { Label, TableToolbar, Text, Number, padding, PasswordBox, CheckBox } from "../../../utils/ui.js";
-import { saveConfiguration } from '../../../utils/saveConfiguration.js';
+import { saveConfiguration } from '../../../services/ConfigurationService.js';
 import { pollingManager } from '../../../services/PollingManager.js';
 
 
@@ -110,6 +110,7 @@ class OrganizationsConfigurationElement {
         );
 
         const toolbar = TableToolbar("PrintGroups");
+
         toolbar.cols.splice(toolbar.cols.length - 1, 0, {
             view: "button",
             value: this.LABELS.localModuleInit,
@@ -169,7 +170,6 @@ class OrganizationsConfigurationElement {
                 }
             ],
             on: {
-
                 onAfterSelect: (selection) => {
                     $$("delete_PrintGroups").enable();
                     this._updateInitButtonState();
@@ -475,7 +475,7 @@ class OrganizationsConfigurationElement {
         const newData = {
             id: organizationId,
             xapikey: $$("XAPIKEY").getValue(),
-            TsPiot: {
+            tsPiot: {
                 host: $$("TsPiotHost").getValue(),
                 port: $$("TsPiotPort").getValue(),
                 informationPort: $$("TsPiotInformationPort").getValue(),
@@ -494,6 +494,7 @@ class OrganizationsConfigurationElement {
                 enable: $$("TrueApiIntegrationEnable").getValue(),
                 password: $$("TrueApiIntegrationPassword").getValue(),
                 digitalSignature: $$("TrueApiIntegrationDigitalSignature").getValue(),
+
             }
         };
 
@@ -522,7 +523,8 @@ class OrganizationsConfigurationElement {
 
         if (id == undefined) {
             let lastId = table.getLastId();
-            $$("OrganizationId").setValue(lastId == undefined ? 1 : lastId + 1);
+
+            $$("OrganizationId").setValue(lastId == undefined ? 1 : +lastId + 1);
             return
         }
 
@@ -532,16 +534,16 @@ class OrganizationsConfigurationElement {
         $$("OrganizationId").disable();
         $$("OrganizationInn").setValue(item.inn);
         $$("OrganizationName").setValue(item.name);
-        $$("TsPiotHost").setValue(item.tsPiot.host);
-        $$("TsPiotPort").setValue(item.tsPiot.port);
-        $$("TsPiotInformationPort").setValue(item.tsPiot.informationPort);
-        $$("TsPiotinformationEndpoint").setValue(item.tsPiot.informationEndpoint);
+        $$("TsPiotHost").setValue(item.tsPiot.host ?? "");
+        $$("TsPiotPort").setValue(item.tsPiot.port ?? "");
+        $$("TsPiotInformationPort").setValue(item.tsPiot.informationPort ?? "");
+        $$("TsPiotinformationEndpoint").setValue(item.tsPiot.informationEndpoint ?? "");
         $$("LocalModuleEnable").setValue(item.localModuleConnection.enable);
-        $$("LocalModuleConnectionAddress").setValue(item.localModuleConnection.connectionAddress);
-        $$("LocalModuleUserName").setValue(item.localModuleConnection.userName);
-        $$("LocalModulePassword").setValue(item.localModuleConnection.password);
+        $$("LocalModuleConnectionAddress").setValue(item.localModuleConnection.connectionAddress ?? "");
+        $$("LocalModuleUserName").setValue(item.localModuleConnection.userName ?? "");
+        $$("LocalModulePassword").setValue(item.localModuleConnection.password ?? "");
         $$("EniseyConnectionAddress").setValue(item.localModuleConnection.eniseyConnectionAddress);
-        $$("XAPIKEY").setValue(item.xapikey);
+        $$("XAPIKEY").setValue(item.xapikey ?? "");
         $$("TrueApiIntegrationEnable").setValue(item.trueApiIntegrationSettings.enable);
         $$("TrueApiIntegrationPassword").setValue(item.trueApiIntegrationSettings.password);
         $$("TrueApiIntegrationDigitalSignature").setValue(item.trueApiIntegrationSettings.digitalSignature);

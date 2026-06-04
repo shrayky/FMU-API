@@ -1,14 +1,14 @@
-import { saveConfiguration } from '../../utils/saveConfiguration.js';
+import { loadParameters, saveConfiguration } from '../../services/ConfigurationService.js';
 
 const SETTINGS_MODULES = {
     serverConfigData: () => import("./elements/serverConfiguration.js"),
+    organizationsTable: () => import("./elements/organizationsTable.js"),
     salesControl: () => import("./elements/salesControl.js"),
     minimalPrices: () => import("./elements/minimalPrices.js"),
-    organizationsTable: () => import("./elements/organizationsTable.js"),
     pingHosts: () => import("./elements/pingHostsTable.js"),
     databaseConnection: () => import("./elements/databaseConnection.js"),
-    frontolDbConnection: () => import("./elements/frontolDb.js"),
-    markUnit: () => import("./elements/markUnit.js"),
+    connectedFrontol: () => import("./elements/connectedFrontol.js"),
+    //markUnit: () => import("./elements/markUnit.js"),
     timeoutConfig: () => import("./elements/timeouts.js"),
     loggingConfigData: () => import("./elements/loggingConfiguration.js"),
     autoUpdateData: () => import("./elements/autoUpdate.js"),
@@ -26,7 +26,6 @@ export default function SettingsView(id) {
         view: "form",
         complexData: true,
         hidden: true,
-        borderless: true,
         rows: [
             {
                 cols: [
@@ -68,14 +67,9 @@ export default function SettingsView(id) {
                     });
                     loadingController = new AbortController();
                     
-                    const response = await webix.ajax()
-                        .get("api/configuration/parameters", {
-                            signal: loadingController.signal
-                        });
-                    
-                    if (!isViewVisible) return;
+                    const config = await loadParameters({ signal: loadingController.signal });
 
-                    const config = response.json().content;
+                    if (!isViewVisible) return;
 
                     for (const moduleId of Object.keys(SETTINGS_MODULES)) {
                         const module = await SETTINGS_MODULES[moduleId]();

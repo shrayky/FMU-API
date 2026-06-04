@@ -110,6 +110,9 @@ public class CodeDataTrueApi
     {
         var ignoredCodes = ignoreVerificationErrorForTrueApiGroups.Split(" ");
 
+        if (GroupIds == null)
+            return false;
+
         foreach (int groupCode in GroupIds)
         {
             foreach (string ignoredCode in ignoredCodes)

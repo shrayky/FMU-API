@@ -8,14 +8,14 @@ class SaleControllsConfigurationElement {
             title: "Контроль при продаже товаров",
             banSalesReturnedWares: "Блокировать продажу возвращенных товаров",
             ignoreVerificationErrorForTrueApiGroups: "Коды групп товаров игнорирующик проверку статусов кода маркировки в Честном Знаке",
-            checkIsOwnerField: "Проверять владельца марки",
+            checkIsOwnerField: "Проверять владельца марки средствами fmu-api",
             forFrontolMoreThen205: "Настройки для тарифного фронтола (6.21.0 и выше):",
             checkReceiptReturn: "Проверять товары из чеков возврата",
             sendEmptyTrueApiAnswerWhenTimeoutError : "Генерировать пустой ответ от честного знака при недоступности cdn",
             correctExpireDateInReturns: "Исправлять истекший срок годности в чеках возврата",
             sendLocalModuleInformationalInRequestId: "Отправлять информацию о локальном модуле для тега 1265 в requestId",
-            dateRejectsSalesWithoutCheckData: "Дата отказа в продаже данных проверки (оффлайн режим)",
             resetSoldStatusForReturn: "Для возвратов - изменять стаус `Проданно` для товаров (тарифный фронтол до 25 версии)",
+            useBeerTaps: "Использовать пивные краны"
         };
     }
 
@@ -28,8 +28,8 @@ class SaleControllsConfigurationElement {
             this.sendEmptyTrueApiAnswerWhenTimeoutError = config.saleControlConfig.sendEmptyTrueApiAnswerWhenTimeoutError;
             this.correctExpireDateInSaleReturn = config.saleControlConfig.correctExpireDateInSaleReturn;
             this.sendLocalModuleInformationalInRequestId = config.saleControlConfig.sendLocalModuleInformationalInRequestId;
-            this.rejectSalesWithoutCheckInformationFrom = new Date(config.saleControlConfig.rejectSalesWithoutCheckInformationFrom);
             this.resetSoldStatusForReturn = config.saleControlConfig.resetSoldStatusForReturn;
+            this.useBeerTaps = config.saleControlConfig.useBeerTaps;
         }
 
         return this;
@@ -46,19 +46,13 @@ class SaleControllsConfigurationElement {
             {
                 padding: padding,
                 rows: [
-                    {
-                        view: "datepicker",
-                        label: this.LABELS.dateRejectsSalesWithoutCheckData,
-                        name: "saleControlConfig.rejectSalesWithoutCheckInformationFrom",
-                        value: this.rejectSalesWithoutCheckInformationFrom,
-                        labelPosition: "top",
-                        format: "%Y-%m-%d"
-                    },
+
                     CheckBox(this.LABELS.banSalesReturnedWares, "saleControlConfig.banSalesReturnedWares", {value: this.banSalesReturnedWares}),
                     Text(this.LABELS.ignoreVerificationErrorForTrueApiGroups, "saleControlConfig.ignoreVerificationErrorForTrueApiGroups", this.ignoreVerificationErrorForTrueApiGroups),
                     CheckBox(this.LABELS.checkIsOwnerField, "saleControlConfig.checkIsOwnerField", {value: this.checkIsOwnerField}),
                     CheckBox(this.LABELS.correctExpireDateInReturns, "saleControlConfig.correctExpireDateInSaleReturn", {value: this.correctExpireDateInSaleReturn}),
                     CheckBox(this.LABELS.sendLocalModuleInformationalInRequestId, "saleControlConfig.sendLocalModuleInformationalInRequestId", {value: this.sendLocalModuleInformationalInRequestId}),
+                    CheckBox(this.LABELS.useBeerTaps, "saleControlConfig.useBeerTaps", {value: this.useBeerTaps}),
 
                     Label("scForFrontolMoreThen21", this.LABELS.forFrontolMoreThen205),
 

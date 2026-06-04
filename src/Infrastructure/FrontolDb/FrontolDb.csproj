@@ -16,4 +16,8 @@
     <ProjectReference Include="..\..\Core\FmuApiDomain\FmuApiDomain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Workers\" />
+  </ItemGroup>
+
 </Project>

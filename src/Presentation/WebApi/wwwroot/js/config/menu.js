@@ -12,6 +12,10 @@ export const MENU_ITEMS = {
         id: "cdnListInfo",
         value: "Список CDN"
     },
+    BEER_TAPS: {
+        id: "beerTapsView",
+        value: "Пивные краны"
+    },
     MARKS: {
         id: "marksView",
         value: "Марки"
@@ -30,79 +34,29 @@ export const MENU_ITEMS = {
     },
 };
 
-// Вспомогательная функция для получения плоского списка всех ID
-export const getAllMenuIds = () => {
-    const ids = [];
-    Object.values(MENU_ITEMS).forEach(item => {
-        ids.push(item.id);
-        if (item.data) {
-            item.data.forEach(subItem => ids.push(subItem.id));
-        }
-    });
-    return ids;
-};
+export function buildMenuItems(config) {
+    const items = [
+        MENU_ITEMS.MONITOR,
+        MENU_ITEMS.CONFIG,
+    ];
 
-// Вспомогательная функция для получения пути к элементу меню
-export const getMenuPath = (id) => {
-    for (const [section, item] of Object.entries(MENU_ITEMS)) {
-        if (item.id === id) return [section];
-        if (item.data) {
-            const subItem = item.data.find(sub => sub.id === id);
-            if (subItem) return [section, subItem.id];
-        }
+    const tsPiotEnabled = config?.serverConfig?.tsPiotEnabled ?? false;
+    const useBeerTaps = config?.saleControlConfig?.useBeerTaps ?? false;
+
+    if (!tsPiotEnabled) {
+        items.push(MENU_ITEMS.CDN);
     }
-    return null;
-};
 
-const subMenuData = {
-    data: [
-        {
-            id: "serverConfigData",
-            value: "Сервер"
-        },
-        {
-            id: "loggingConfigData",
-            value: "Логирование"
-        },
-        {
-            id: "autoUpdateData",
-            value: "Автоматическое обновление"
-        },
-        {
-            id: "organisationsData",
-            value: "Организации"
-        },
-        {
-            id: "checkInternetConnectionHosts",
-            value: "Проверка интернета"
-        },
-        {
-            id: "couchDbData",
-            value: "База данных"
-        },
-        {
-            id: "frontolDbConnection",
-            value: "Frontol"
-        },
-        {
-            id: "frontolMarkUnit",
-            value: "Frontol Markunit"
-        },
-        {
-            id: "tokenServiceData",
-            value: "Сервис получения токена ЧЗ"
-        },
-        {
-            id: "timeoutConfig",
-            value: "Таймауты"
-        },
-        {
-            id: "salesControl",
-            value: "Контроль продаж"
-        },
-        {
-            id: "minimalPrices",
-            value: "Минимальные цены"
-        }
-    ]
+    if (useBeerTaps) {
+        items.push(MENU_ITEMS.BEER_TAPS);
+    }
+
+    items.push(
+        MENU_ITEMS.MARKS,
+        MENU_ITEMS.MARK_CHECK,
+        MENU_ITEMS.LOGS,
+        MENU_ITEMS.INFO,
+    );
+
+    return items;
 }
