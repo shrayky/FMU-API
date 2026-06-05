@@ -1,7 +1,7 @@
 using System.Reflection;
+using FmuApiApplication.BeerTaps.Workers;
 using FmuApiApplication.ViewData.ApplicationMonitoring.Workers;
 using FmuApiDomain.Attributes;
-using FrontolDb.Workers;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace FmuApiApplication;

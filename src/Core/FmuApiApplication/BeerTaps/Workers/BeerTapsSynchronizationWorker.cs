@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace FrontolDb.Workers;
+namespace FmuApiApplication.BeerTaps.Workers;
 
 public class BeerTapsSynchronizationWorker : BackgroundService
 {
