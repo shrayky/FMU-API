@@ -11,8 +11,7 @@ using Shared.Json;
 using System.Text.Json;
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration.Options.Organization;
-using FmuApiDomain.DTO.FmuApiExchangeData.Request;
-using FmuApiDomain.Frontol.DTO;
+using FmuApiDomain.DTO.FmuApiExchangeData.NodeInformation;
 
 namespace ApplicationConfigurationService
 {

@@ -1,4 +1,4 @@
-using FmuApiDomain.DTO.FmuApiExchangeData.Request;
+using FmuApiDomain.DTO.FmuApiExchangeData.DataPacket;
 
 namespace CentralServerExchange.Interfaces;
 

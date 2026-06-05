@@ -12,7 +12,6 @@ public class MarkCheckingStatisticRepository : BaseCouchDbRepository<StatisticEn
 {
     public MarkCheckingStatisticRepository(ILogger<MarkCheckingStatisticRepository> logger, CouchDbContext context, IParametersService appConfiguration, IApplicationState applicationState) : base(logger, context, context.MarkCheckingStatistic, appConfiguration, applicationState)
     {
-
     }
 
     private static long ToCheckDay(DateTime checkDate) =>

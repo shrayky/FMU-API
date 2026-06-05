@@ -31,7 +31,9 @@ public class ExchangeActionsService : ICentralServerExchangeActions
     public async Task<bool> StartExchange()
     {
         var configuration = await _parametersService.CurrentAsync().ConfigureAwait(false);
+        
         var data = await _nodeInformationService.Create().ConfigureAwait(false);
+
         var baseAddress = $"{configuration.FmuApiCentralServer.Address}/api/FmuApiInstanceMonitoring";
             
         var exchangeResult = await _exchangeService.ActExchange(data, baseAddress).ConfigureAwait(false);

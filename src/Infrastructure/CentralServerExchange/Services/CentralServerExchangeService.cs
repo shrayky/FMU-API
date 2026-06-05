@@ -3,7 +3,7 @@ using CSharpFunctionalExtensions;
 using FmuApiDomain.Attributes;
 using FmuApiDomain.Constants;
 using FmuApiDomain.DTO.FmuApiExchangeData.Answer;
-using FmuApiDomain.DTO.FmuApiExchangeData.Request;
+using FmuApiDomain.DTO.FmuApiExchangeData.DataPacket;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shared.Http;

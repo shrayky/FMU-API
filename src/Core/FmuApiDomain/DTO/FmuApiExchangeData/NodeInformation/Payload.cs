@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace FmuApiDomain.DTO.FmuApiExchangeData.Request;
+namespace FmuApiDomain.DTO.FmuApiExchangeData.NodeInformation;
 
 public record Payload
 {
@@ -18,4 +18,7 @@ public record Payload
 
     [JsonPropertyName("tsPiots")]
     public List<TsPiotInformation> TsPiotsInforamtion {  get; init; } = [];
+
+    [JsonPropertyName("statistics")]
+    public List<CheckMarkStatisticInformation> CheckMarkStatisticInformation { get; init; } = [];
 }

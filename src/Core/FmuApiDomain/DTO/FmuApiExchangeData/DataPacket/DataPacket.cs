@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace FmuApiDomain.DTO.FmuApiExchangeData.Request;
+namespace FmuApiDomain.DTO.FmuApiExchangeData.DataPacket;
 
 public record DataPacket
 {

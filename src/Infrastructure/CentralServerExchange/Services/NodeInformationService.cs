@@ -3,7 +3,8 @@ using CentralServerExchange.Interfaces;
 using FmuApiDomain.Attributes;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.DTO.FmuApiExchangeData.Request;
+using FmuApiDomain.DTO.FmuApiExchangeData.DataPacket;
+using FmuApiDomain.DTO.FmuApiExchangeData.NodeInformation;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Shared.Strings;
@@ -35,7 +36,8 @@ public class NodeInformationService : INodeInformationService
             FmuApiSetting = MapSettings(settings),
             CdnInformation = await MapCdn(),
             LocalModuleInformation = MapLocalModules(settings),
-            TsPiotsInforamtion = MapTsPiotsInforamtion(settings)
+            TsPiotsInforamtion = MapTsPiotsInforamtion(settings),
+            
         };
 
         var data = JsonSerializer.Serialize(packetPayload, JsonSerializerOptions.Default);

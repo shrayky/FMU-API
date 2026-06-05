@@ -1,6 +1,6 @@
 using CSharpFunctionalExtensions;
 using FmuApiDomain.DTO.FmuApiExchangeData.Answer;
-using FmuApiDomain.DTO.FmuApiExchangeData.Request;
+using FmuApiDomain.DTO.FmuApiExchangeData.DataPacket;
 
 namespace CentralServerExchange.Interfaces;
 

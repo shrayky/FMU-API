@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace FmuApiDomain.DTO.FmuApiExchangeData.Request;
+namespace FmuApiDomain.DTO.FmuApiExchangeData.NodeInformation;
 
 public record NodeInformation
 {
