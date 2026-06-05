@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
 using FmuApiDomain.Configuration.Options;
 
-namespace FmuApiDomain.DTO.FmuApiExchangeData.NodeInformation;
+namespace FmuApiDomain.DTO.FmuApiExchangeData;
 
 public record FmuApiSetting
 {

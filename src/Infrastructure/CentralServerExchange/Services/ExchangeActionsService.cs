@@ -7,10 +7,6 @@ using FmuApiDomain.DTO.FmuApiExchangeData.Answer;
 using FmuApiDomain.DTO.FmuApiExchangeData.DataPacket;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System.Net;
-using System.Net.Sockets;
-using static CSharpFunctionalExtensions.Result;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace CentralServerExchange.Services;
 
@@ -40,11 +36,11 @@ public class ExchangeActionsService : ICentralServerExchangeActions
     public async Task<bool> StartExchange()
     {
         var configuration = await _parametersService.CurrentAsync().ConfigureAwait(false);
-        var baseAddress = $"{address}/{EndppintAddress}";
+        var baseAddress = $"{configuration.FmuApiCentralServer.Address}/{EndppintAddress}";
 
         var data = await CreateDataPacket();
 
-        var exchangeResult = await SendPacket(data, configuration.FmuApiCentralServer.Address);
+        var exchangeResult = await SendPacket(data, baseAddress);
             
         if (exchangeResult.IsFailure)
             return false;
@@ -77,6 +73,6 @@ public class ExchangeActionsService : ICentralServerExchangeActions
             return Result.Failure<FmuApiCentralResponse>(exchangeResult.Error);
         }
 
-        return ex;
+        return exchangeResult;
     }
 }

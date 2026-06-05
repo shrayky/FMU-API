@@ -1,5 +1,5 @@
 ﻿using CSharpFunctionalExtensions;
-using FmuApiDomain.DTO.FmuApiExchangeData.NodeInformation;
+using FmuApiDomain.DTO.FmuApiExchangeData;
 
 namespace FmuApiDomain.Configuration.Interfaces;
 

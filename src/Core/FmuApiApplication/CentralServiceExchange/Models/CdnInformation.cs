@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace FmuApiDomain.DTO.FmuApiExchangeData.NodeInformation;
+namespace FmuApiApplication.CentralServiceExchange.Models;
 
 public record CdnInformation
 {

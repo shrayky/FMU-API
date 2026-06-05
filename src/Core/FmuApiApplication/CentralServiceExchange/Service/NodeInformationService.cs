@@ -1,10 +1,12 @@
 using System.Text.Json;
+using FmuApiApplication.CentralServiceExchange.Models;
+using FmuApiApplication.StateCollectors;
 using FmuApiDomain.Attributes;
 using FmuApiDomain.CentralServiceExchange.Interfaces;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
+using FmuApiDomain.DTO.FmuApiExchangeData;
 using FmuApiDomain.DTO.FmuApiExchangeData.DataPacket;
-using FmuApiDomain.DTO.FmuApiExchangeData.NodeInformation;
 using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,8 +40,8 @@ public class NodeInformationService : INodeInformationService
             NodeInformation = new NodeInformation(),
             FmuApiSetting = MapSettings(settings),
             CdnInformation = await MapCdn(),
-            LocalModuleInformation = MapLocalModules(settings),
-            TsPiotsInforamtion = MapTsPiotsInforamtion(settings),
+            LocalModuleInformation = LmStateCollector.Collect(settings, _applicationState),
+            TsPiotsInforamtion = TsPiotStateCollector.Collect(settings, _applicationState),
             CheckMarkStatisticInformation = await CollectCheckStatisitics(settings)
         };
 
@@ -79,38 +81,6 @@ public class NodeInformationService : INodeInformationService
         });
 
         return asnwer;
-    }
-
-    private List<TsPiotInformation> MapTsPiotsInforamtion(Parameters settings)
-    {
-        if (!settings.ServerConfig.TsPiotEnabled)
-            return [];
-
-        List<TsPiotInformation> modules = [];
-
-        var printGroups = settings.OrganisationConfig.PrintGroups;
-
-        foreach (var pg in printGroups)
-        {
-            if (string.IsNullOrEmpty(pg.TsPiot.Host) || string.IsNullOrEmpty(pg.TsPiot.Port))
-                continue;
-
-            var address = $"{pg.TsPiot.Host}:{pg.TsPiot.Port}";
-
-            var state = new TsPiotInformation()
-            {
-                Address = address,
-                Name = pg.Name,
-                ProtocolVersion = _applicationState.TsPiotApiVersion(address),
-                Online = _applicationState.TsPiotIsOnline(address),
-                LastCheckTime = _applicationState.TsPiotLastSee(address),
-                Version = _applicationState.TsPiotModuleVersion(address),
-            };
-
-            modules.Add(state);
-        }
-        
-        return modules;
     }
 
     private static FmuApiSetting MapSettings(Parameters settings)
@@ -199,33 +169,5 @@ public class NodeInformationService : INodeInformationService
         }
 
         return cdnToUpload;
-    }
-
-    private List<LocalModuleInformation> MapLocalModules(Parameters  settings)
-    {
-        var connectedLocalModules =
-            settings.OrganisationConfig.PrintGroups.Where(printGroup => printGroup.LocalModuleConnection.Enable);
-        
-        List<LocalModuleInformation> localModulesStateToUpload = [];
-        
-        foreach (var printGroup in connectedLocalModules)
-        {
-            var state = _applicationState.LocalModuleInformation(printGroup.Id);
-
-            var lmInfo = new LocalModuleInformation()
-            {
-                Id = printGroup.Id,
-                Address = printGroup.LocalModuleConnection.ConnectionAddress,
-                Version = state.Version,
-                LastSync = state.LastSyncTimestamp,
-                OperationMode = state.OperationModeRaw,
-                Status = state.StatusRaw
-            };
-            
-            localModulesStateToUpload.Add(lmInfo);
-
-        }
-
-        return localModulesStateToUpload;
     }
 }

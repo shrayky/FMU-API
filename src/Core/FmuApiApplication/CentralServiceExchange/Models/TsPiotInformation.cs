@@ -1,4 +1,4 @@
-﻿namespace FmuApiDomain.DTO.FmuApiExchangeData.NodeInformation;
+﻿namespace FmuApiApplication.CentralServiceExchange.Models;
 
 public record TsPiotInformation
 {

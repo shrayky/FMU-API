@@ -1,6 +1,6 @@
 ﻿using FmuApiDomain.MarkInformation.Models;
 
-namespace FmuApiDomain.DTO.FmuApiExchangeData.NodeInformation;
+namespace FmuApiApplication.CentralServiceExchange.Models;
 
 public record CheckMarkStatisticInformation
 {
