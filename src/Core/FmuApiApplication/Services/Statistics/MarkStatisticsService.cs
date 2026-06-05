@@ -59,5 +59,11 @@ namespace FmuApiApplication.Services.Statistics
 
             return await ByDays(fromDate, toDate);
         }
+
+        public async Task<MarkCheckStatistics> ByDay(DateTime day)
+        {
+            var dayInUnixTime = new DateTimeOffset(DateTime.SpecifyKind(day.Date, DateTimeKind.Utc)).ToUnixTimeSeconds();
+            return await _repository.CheckStatisticsByDay(dayInUnixTime);
+        }
     }
 }

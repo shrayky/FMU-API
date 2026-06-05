@@ -1,6 +1,6 @@
 using FmuApiDomain.DTO.FmuApiExchangeData.DataPacket;
 
-namespace CentralServerExchange.Interfaces;
+namespace FmuApiDomain.CentralServiceExchange.Interfaces;
 
 public interface INodeInformationService
 {

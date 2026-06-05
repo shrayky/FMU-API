@@ -1,29 +1,32 @@
 using System.Text.Json;
-using CentralServerExchange.Interfaces;
 using FmuApiDomain.Attributes;
+using FmuApiDomain.CentralServiceExchange.Interfaces;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.DTO.FmuApiExchangeData.DataPacket;
 using FmuApiDomain.DTO.FmuApiExchangeData.NodeInformation;
+using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Shared.Strings;
 using TrueApiCdn.Interface;
 
-namespace CentralServerExchange.Services;
+namespace FmuApiApplication.CentralServiceExchange.Service;
 
-[AutoRegisterService(ServiceLifetime.Singleton)]
+[AutoRegisterService(ServiceLifetime.Scoped)]
 public class NodeInformationService : INodeInformationService
 {
     private readonly IParametersService _parametersService;
     private readonly ICdnService _cdnService;
     private IApplicationState _applicationState;
+    private IMarkStatisticsService _markStatisticsService;
 
-    public NodeInformationService(IParametersService parametersService, ICdnService cdnService, IApplicationState applicationState)
+    public NodeInformationService(IParametersService parametersService, ICdnService cdnService, IApplicationState applicationState, IMarkStatisticsService markStatisticsService)
     {
         _parametersService = parametersService;
         _cdnService = cdnService;
-        _applicationState =  applicationState;
+        _applicationState = applicationState;
+        _markStatisticsService = markStatisticsService;
     }
 
     public async Task<DataPacket> Create()
@@ -37,7 +40,7 @@ public class NodeInformationService : INodeInformationService
             CdnInformation = await MapCdn(),
             LocalModuleInformation = MapLocalModules(settings),
             TsPiotsInforamtion = MapTsPiotsInforamtion(settings),
-            
+            CheckMarkStatisticInformation = await CollectCheckStatisitics(settings)
         };
 
         var data = JsonSerializer.Serialize(packetPayload, JsonSerializerOptions.Default);
@@ -54,6 +57,28 @@ public class NodeInformationService : INodeInformationService
         };
 
         return packet;
+    }
+
+    private async Task<List<CheckMarkStatisticInformation>> CollectCheckStatisitics(Parameters settings)
+    {
+        if (!settings.Database.Enable)
+            return [];
+
+        List<CheckMarkStatisticInformation> asnwer = [];
+
+        asnwer.Add(new()
+        {
+            Date = new DateTimeOffset(DateTime.SpecifyKind(DateTime.Now.Date, DateTimeKind.Utc)).ToUnixTimeSeconds(),
+            MarkCheckStatistics = await _markStatisticsService.ByDay(DateTime.Now)
+        });
+
+        asnwer.Add(new()
+        {
+            Date = new DateTimeOffset(DateTime.SpecifyKind(DateTime.Now.AddDays(-1).Date, DateTimeKind.Utc)).ToUnixTimeSeconds(),
+            MarkCheckStatistics = await _markStatisticsService.ByDay(DateTime.Now.AddDays(-1))
+        });
+
+        return asnwer;
     }
 
     private List<TsPiotInformation> MapTsPiotsInforamtion(Parameters settings)

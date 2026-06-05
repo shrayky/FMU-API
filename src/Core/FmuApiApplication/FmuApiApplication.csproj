@@ -27,4 +27,8 @@
     <ProjectReference Include="..\FmuApiDomain\FmuApiDomain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="StateCollectors\" />
+  </ItemGroup>
+
 </Project>

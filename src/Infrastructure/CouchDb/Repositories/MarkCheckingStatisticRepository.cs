@@ -153,4 +153,30 @@ public class MarkCheckingStatisticRepository : BaseCouchDbRepository<StatisticEn
 
         return statistics;
     }
+
+    public async Task<MarkCheckStatistics> CheckStatisticsByDay(long day)
+    {
+        if (_context == null)
+            return new();
+
+        if (!_appState.CouchDbOnline() && _appState.NeedRestartService())
+            return new();
+
+        var appConfig = await _appConfiguration.CurrentAsync();
+        var queryLimit = appConfig.Database.QueryLimit == 0 ? 1000000 : appConfig.Database.QueryLimit;
+
+        var filteredMarks = await _database
+            .Where(p => p.Data.CheckDay == day)
+            .Take(queryLimit)
+            .ToListAsync();
+
+        var statistics = new MarkCheckStatistics
+        {
+            Total = filteredMarks.Count,
+            SuccessfulOnlineChecks = filteredMarks.Count(m => m.Data.SuccessCheck && m.Data.OnLineCheck),
+            SuccessfulOfflineChecks = filteredMarks.Count(m => m.Data.SuccessCheck && m.Data.OffLineCheck)
+        };
+
+        return statistics;
+    }
 }

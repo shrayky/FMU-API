@@ -10,5 +10,5 @@ public interface ICheckStatisticRepository
     Task OffLineCheckWithWarnings(string mark, DateTime checkDate, string warningMessage);
     Task FailureCheck(string mark, DateTime checkDate);
     Task<MarkCheckStatistics> CheckStatisticsByDays(DateTime fromDate, DateTime toDate);
-    Task<MarkCheckStatistics> CheckStatisticsByDay(DateTime date);
+    Task<MarkCheckStatistics> CheckStatisticsByDay(long day);
 }

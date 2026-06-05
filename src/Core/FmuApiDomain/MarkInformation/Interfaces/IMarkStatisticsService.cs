@@ -8,5 +8,6 @@ namespace FmuApiDomain.MarkInformation.Interfaces
         Task<MarkCheckStatistics> LastWeek();
         Task<MarkCheckStatistics> LastMonth();
         Task<MarkCheckStatistics> ByDays(DateTime fromDate, DateTime toDate);
+        Task<MarkCheckStatistics> ByDay(DateTime date);
     }
 }
