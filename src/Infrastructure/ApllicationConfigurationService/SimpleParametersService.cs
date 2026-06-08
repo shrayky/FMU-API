@@ -163,6 +163,9 @@ public class SimpleParametersService : IParametersService
         if (settings.AppVersion == 10 & settings.Assembly < 2)
             settings = MigrationTo10_2.DoMigration(settings);
 
+        if (settings.AppVersion == 11 & settings.Assembly < 10)
+            settings = MigrationTo11_10.DoMigration(settings);
+
         settings.AppVersion = ApplicationInformation.AppVersion;
 
         SaveConfiguration(settings, true);
