@@ -21,8 +21,18 @@ public class FrontolDbContext : DbContext
     {
         _parametersService = parametersService;
         _configuration = _parametersService.Current();
-        _connectionString = _configuration.FrontolConnectionSettings.ConnectionStringBuild();
 
+        var frontolConnetionId = _configuration.ConnectedFrontolSettings.PrintGroupSourseId;
+
+        if (frontolConnetionId != 0)
+        {
+            var connection = _configuration.ConnectedFrontolSettings.ConnectionSettings.FirstOrDefault(p => p.Id == frontolConnetionId);
+
+            if (connection != null)
+            {
+                _connectionString = connection.ConnectionStringBuild();
+            }
+        }
     }
 
     public FrontolDbContext(string connectionString)

@@ -37,7 +37,9 @@ public class FrontolSprTRepo : IFrontolSprTService
     {
         var appParams = await _parametersService.CurrentAsync();
 
-        if (!appParams.FrontolConnectionSettings.ConnectionEnable())
+        var frontolConnetionId = appParams.ConnectedFrontolSettings.PrintGroupSourseId;
+
+        if (frontolConnetionId == 0)
             return Result.Success(0);
 
         if (appParams.OrganisationConfig.PrintGroups.Count <= 1)
@@ -51,7 +53,6 @@ public class FrontolSprTRepo : IFrontolSprTService
         try
         {
             code = await PrintGroupCodeByWareBarcodeAsync(barCode);
-
         }
         catch (Exception e)
         {
