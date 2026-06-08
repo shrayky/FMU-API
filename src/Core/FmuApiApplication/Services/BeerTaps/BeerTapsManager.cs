@@ -1,6 +1,7 @@
 ﻿using CSharpFunctionalExtensions;
 using FmuApiApplication.Mark.Interfaces;
 using FmuApiDomain.Attributes;
+using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.Database.Dto;
 using FmuApiDomain.DTO.BeerTaps;
@@ -21,13 +22,15 @@ public class BeerTapsManager : IBeerOnTapManager
     private readonly IBeerOnTapsRepository _tapsRepository;
     private readonly IMarkParser _markParser;
     private readonly IBeerTapsRepositoryFactory _frontolBeerTapsFactory;
+    private readonly IParametersService _parametersService;
 
-    public BeerTapsManager(ILogger<BeerTapsManager> logger, IBeerOnTapsRepository tapsRepository, IMarkParser markParser, IBeerTapsRepositoryFactory frontolBeerTapsFactory)
+    public BeerTapsManager(ILogger<BeerTapsManager> logger, IBeerOnTapsRepository tapsRepository, IMarkParser markParser, IBeerTapsRepositoryFactory frontolBeerTapsFactory, IParametersService parametersService)
     {
         _logger = logger;
         _tapsRepository = tapsRepository;
         _markParser = markParser;
         _frontolBeerTapsFactory = frontolBeerTapsFactory;
+        _parametersService = parametersService;
     }
 
     public async Task<Result> TapOperation(TapBeerOperation document)
@@ -51,6 +54,10 @@ public class BeerTapsManager : IBeerOnTapManager
         }
         else
             return Result.Failure($"Неизвестный тип операции постановки/снятия на кран {document.Type}");
+
+        var settings = await _parametersService.CurrentAsync();
+
+        var syncResult = await SyncFrontolBeerTaps(settings.ConnectedFrontolSettings.ConnectionSettings);
 
         return operationResult.IsSuccess ? Result.Success() : Result.Failure(operationResult.Error);
     }
@@ -115,6 +122,7 @@ public class BeerTapsManager : IBeerOnTapManager
                 continue;
 
             var repo = _frontolBeerTapsFactory.Create(connection.ConnectionStringBuild());
+            
             var frontolMarks = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             try
