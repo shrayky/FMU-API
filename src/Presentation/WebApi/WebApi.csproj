@@ -55,6 +55,7 @@
     <ProjectReference Include="..\..\Infrastructure\FrontolDb\FrontolDb.csproj" />
     <ProjectReference Include="..\..\Infrastructure\LocalModuleIntegration\LocalModuleIntegration.csproj" />
     <ProjectReference Include="..\..\Infrastructure\LogService\LogService.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\PacketTrapper\PacketTrapper\FmuPacketTrapper.csproj" />
     <ProjectReference Include="..\..\Infrastructure\TrueApiCdn\TrueApi.csproj" />
     <ProjectReference Include="..\..\Infrastructure\TrueApiIntegration\TrueApiIntegration.csproj" />
     <ProjectReference Include="..\..\Infrastructure\TsPiotClinet\TsPiotClinet.csproj" />
