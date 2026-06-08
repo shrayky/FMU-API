@@ -122,7 +122,7 @@ public record SaleControl
     public bool CorrectExpireDateInSaleReturn { get; init; }
 
     [JsonPropertyName("sendEmptyTrueApiAnswerWhenTimeoutError")]
-    public bool SendEmptyTrueApiAnswerWhenTimeoutError { get; init; }
+    public bool? SendEmptyTrueApiAnswerWhenTimeoutError { get; init; }
 
     [JsonPropertyName("checkIsOwnerField")]
     public bool CheckIsOwnerField { get; init; }
@@ -131,7 +131,7 @@ public record SaleControl
     public bool SendLocalModuleInformationalInRequestId { get; init; }
 
     [JsonPropertyName("rejectSalesWithoutCheckInformationFrom")]
-    public DateTime RejectSalesWithoutCheckInformationFrom { get; init; }
+    public DateTime? RejectSalesWithoutCheckInformationFrom { get; init; }
 
     [JsonPropertyName("resetSoldStatusForReturn")]
     public bool ResetSoldStatusForReturn { get; init; }
