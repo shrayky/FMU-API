@@ -86,7 +86,8 @@ public class MarkFabric : IMarkFabric
             if (organisation != null)
                 pgCode = organisation.Id;
         }
-        else
+        
+        if (pgCode == 0)
         {
             var result = await _frontolSprTService.PrintGroupCodeByBarcodeAsync(mark.Barcode);
 
