@@ -23,6 +23,7 @@ public class BeerTapsRepo : IBeerTapsRepository, IDisposableBeerTapsRepository
         _ownsContext = true;
 
         _db = new FrontolDbContext(connectionString);
+        _db.Database.SetCommandTimeout(TimeSpan.FromSeconds(2));
     }
 
     public BeerTapsRepo(FrontolDbContext frontolDbContext, IParametersService parametersService)
@@ -156,6 +157,7 @@ public class BeerTapsRepo : IBeerTapsRepository, IDisposableBeerTapsRepository
         {
             await using var command = connection.CreateCommand();
             command.CommandText = "SELECT GEN_ID(GCHNG, 1) FROM RDB$DATABASE";
+            command.CommandTimeout = 1;
 
             var result = await command.ExecuteScalarAsync();
             return Convert.ToInt32(result ?? 0);
