@@ -5,11 +5,11 @@ using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.Fmu.Document.Enums;
 using FmuApiDomain.Fmu.Document.Interface;
+using FmuApiDomain.Fmu.PacketTrapper.Interfaces;
 using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.Repositories;
 using FmuApiDomain.TrueApi.MarkData;
 using FmuApiDomain.TrueApi.MarkData.Check;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -17,28 +17,28 @@ namespace FmuApiApplication.Documents;
 
 public class CheckSellDocument : IFrontolDocumentService
 {
-    private RequestDocument Document { get; set; }
-    private ILogger<CheckSellDocument> Logger { get; set; }
-    private IMarkFabric MarkFabric { get; set; }
-    private readonly IMemoryCache _memcachedClient;
-    IParametersService ParametersService { get; set; }
-    private ICheckStatisticRepository CheckStatisticRepository { get; set; }
+    private ILogger<CheckSellDocument> _logger { get; set; }
+    private IMarkFabric _markFabric { get; set; }
+    IParametersService _parametersService { get; set; }
+    private ICheckStatisticRepository _checkStatisticRepository { get; set; }
+    private IFmuPacketTrapper _packetTrapper { get; set; }
 
+    private RequestDocument _document { get; set; }
     private const int CacheExpirationMinutes = 30;
     private readonly Parameters _configuration;
 
     private CheckSellDocument(RequestDocument requestDocument, IServiceProvider provider)
     {
-        Document = requestDocument;
+        _document = requestDocument;
 
-        MarkFabric = provider.GetRequiredService<IMarkFabric>();
+        _markFabric = provider.GetRequiredService<IMarkFabric>();
 
-        CheckStatisticRepository = provider.GetRequiredService<ICheckStatisticRepository>();
+        _checkStatisticRepository = provider.GetRequiredService<ICheckStatisticRepository>();
 
-        Logger = provider.GetRequiredService<ILogger<CheckSellDocument>>();
-        _memcachedClient = provider.GetRequiredService<IMemoryCache>();
-        ParametersService = provider.GetRequiredService<IParametersService>();
-        _configuration = ParametersService.Current();
+        _logger = provider.GetRequiredService<ILogger<CheckSellDocument>>();
+        _parametersService = provider.GetRequiredService<IParametersService>();
+        _configuration = _parametersService.Current();
+        _packetTrapper = provider.GetRequiredService<IFmuPacketTrapper>();
     }
 
     private static CheckSellDocument CreateObject(RequestDocument requestDocument, IServiceProvider provider)
@@ -50,15 +50,17 @@ public class CheckSellDocument : IFrontolDocumentService
     public async Task<Result<FmuAnswer>> ActionAsync()
     {
         var checkResult = await MarkInformation();
-                    
+
+        await _packetTrapper.SaveCheckResultForCashRegister(_document, checkResult.Value);
+
         return checkResult;
     }
 
     private async Task<Result<FmuAnswer>> MarkInformation()
     {
-        Logger.LogInformation("Марка для проверки {markCodeData}", Document.Mark);
+        _logger.LogInformation("Марка для проверки {markCodeData}", _document.Mark);
         
-        var mark = await MarkFabric.Create(Document.Positions[0], Document.Mark);
+        var mark = await _markFabric.Create(_document.Positions[0], _document.Mark);
 
         var checkResult = await mark.PerformCheckAsync(OperationType.Sale);
         
@@ -66,31 +68,27 @@ public class CheckSellDocument : IFrontolDocumentService
         {
             var markInformation = checkResult.Value;
 
-            markInformation.FillFieldsForFrontol_6_25_5(Document.Inn);
+            markInformation.FillFieldsForFrontol_6_25_5(_document.Inn);
 
             if (markInformation.Error == string.Empty && !markInformation.OfflineRegime)
-                await CheckStatisticRepository.SuccessOnLineCheck(markInformation.SGtin(), DateTime.Now);
+                await _checkStatisticRepository.SuccessOnLineCheck(markInformation.SGtin(), DateTime.Now);
             else if (markInformation.Error == string.Empty && markInformation.OfflineRegime)
-                await CheckStatisticRepository.SuccessOffLineCheck(markInformation.SGtin(), DateTime.Now);
+                await _checkStatisticRepository.SuccessOffLineCheck(markInformation.SGtin(), DateTime.Now);
             else if (markInformation.Error != string.Empty && !markInformation.OfflineRegime)
-                await CheckStatisticRepository.OnLineCheckWithWarnings(markInformation.SGtin(), DateTime.Now, markInformation.Error);
+                await _checkStatisticRepository.OnLineCheckWithWarnings(markInformation.SGtin(), DateTime.Now, markInformation.Error);
             else if (markInformation.Error != string.Empty && markInformation.OfflineRegime)
-                await CheckStatisticRepository.OffLineCheckWithWarnings(markInformation.SGtin(), DateTime.Now, markInformation.Error);
+                await _checkStatisticRepository.OffLineCheckWithWarnings(markInformation.SGtin(), DateTime.Now, markInformation.Error);
 
             return Result.Success(markInformation);
         }
         else
         {
-            await CheckStatisticRepository.FailureCheck(mark.SGtin, DateTime.Now);
+            await _checkStatisticRepository.FailureCheck(mark.SGtin, DateTime.Now);
         }
 
-        Logger.LogError(checkResult.Error);
+        _logger.LogError(checkResult.Error);
 
-        if (_configuration.SaleControlConfig.SendEmptyTrueApiAnswerWhenTimeoutError
-            && _configuration.SaleControlConfig.RejectSalesWithoutCheckInformationFrom < DateTime.Now)
-            return Result.Success(CreateFakeAnswer(mark, checkResult.Error));
-        else
-            return checkResult;
+        return checkResult;
     }
 
     private FmuAnswer CreateFakeAnswer(IMark mark, string error)
@@ -121,7 +119,7 @@ public class CheckSellDocument : IFrontolDocumentService
             Codes = [fakeCodeData]
         };
 
-        Logger.LogWarning("[{Date}] - Ошибка проверки кода марки {Code}: {Error}",
+        _logger.LogWarning("[{Date}] - Ошибка проверки кода марки {Code}: {Error}",
             DateTime.Now, mark.Code, error);
 
         return new FmuAnswer

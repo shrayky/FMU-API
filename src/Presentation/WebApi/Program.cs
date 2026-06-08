@@ -12,6 +12,7 @@ using FmuApiApplication.Services.TrueSign;
 using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.TrueApi.Interfaces;
+using FmuPacketTrapper;
 using FrontolDb;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Scalar.AspNetCore;
@@ -99,6 +100,7 @@ bool RunHttpApiService()
     ServicesAndDaemonsRegistrationExtension.AddService(services);
     TsPiotClientRegistration.AddService(services);
     TrueApiIntegrationRegistration.AddService(services);
+    FmuPacketTrapperRegistration.AddService(services);
 
     services.AddMarkServices();
     services.AddTransient<FrontolDocumentServiceFactory>();

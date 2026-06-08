@@ -1,9 +1,11 @@
-import { Label, TextBox, Text, padding, CheckBox } from "../../../utils/ui.js";
+import { Label, Text, Number, padding, CheckBox } from "../../../utils/ui.js";
+import { windowsPathValidation } from "../../../utils/validators.js";
 
 class SaleControllsConfigurationElement {
     constructor(id) {
         this.id = id;
         this.SETTINGS_ID = "saleControlls";
+        this.MARK_CHECK_RESULT_SAVE_ID = "markCheckResultSaveSettings";
         this.LABELS = {
             title: "Контроль при продаже товаров",
             banSalesReturnedWares: "Блокировать продажу возвращенных товаров",
@@ -11,11 +13,14 @@ class SaleControllsConfigurationElement {
             checkIsOwnerField: "Проверять владельца марки средствами fmu-api",
             forFrontolMoreThen205: "Настройки для тарифного фронтола (6.21.0 и выше):",
             checkReceiptReturn: "Проверять товары из чеков возврата",
-            sendEmptyTrueApiAnswerWhenTimeoutError : "Генерировать пустой ответ от честного знака при недоступности cdn",
             correctExpireDateInReturns: "Исправлять истекший срок годности в чеках возврата",
             sendLocalModuleInformationalInRequestId: "Отправлять информацию о локальном модуле для тега 1265 в requestId",
             resetSoldStatusForReturn: "Для возвратов - изменять стаус `Проданно` для товаров (тарифный фронтол до 25 версии)",
-            useBeerTaps: "Использовать пивные краны"
+            useBeerTaps: "Использовать пивные краны",
+            markCheckResultSaveTitle: "Сохранение результатов проверки марки в текустовый файл (для печсати через скрипты драйвера ккт атол):",
+            markCheckResultSaveEnable: "Сохранять результаты проверки марки в файлы",
+            markCheckResultSaveDirectory: "Каталог для сохранения файлов",
+            markCheckResultSaveFileLifespanHours: "Время жизни файлов (часов)",
         };
     }
 
@@ -25,11 +30,15 @@ class SaleControllsConfigurationElement {
             this.ignoreVerificationErrorForTrueApiGroups = config.saleControlConfig.ignoreVerificationErrorForTrueApiGroups;
             this.checkIsOwnerField = config.saleControlConfig.checkIsOwnerField;
             this.checkReceiptReturn = config.saleControlConfig.checkReceiptReturn;
-            this.sendEmptyTrueApiAnswerWhenTimeoutError = config.saleControlConfig.sendEmptyTrueApiAnswerWhenTimeoutError;
             this.correctExpireDateInSaleReturn = config.saleControlConfig.correctExpireDateInSaleReturn;
             this.sendLocalModuleInformationalInRequestId = config.saleControlConfig.sendLocalModuleInformationalInRequestId;
             this.resetSoldStatusForReturn = config.saleControlConfig.resetSoldStatusForReturn;
             this.useBeerTaps = config.saleControlConfig.useBeerTaps;
+
+            const markCheckResultSave = config.saleControlConfig.markCheckResultSave ?? {};
+            this.markCheckResultSaveEnable = markCheckResultSave.enable ?? false;
+            this.markCheckResultSaveDirectory = markCheckResultSave.directory ?? "";
+            this.markCheckResultSaveFileLifespanHours = markCheckResultSave.fileLifespanHours ?? 1;
         }
 
         return this;
@@ -60,9 +69,40 @@ class SaleControllsConfigurationElement {
                         padding: { left: 20, },
                         rows: [
                             CheckBox(this.LABELS.checkReceiptReturn, "saleControlConfig.checkReceiptReturn", { value: this.checkReceiptReturn }),
-                            CheckBox(this.LABELS.sendEmptyTrueApiAnswerWhenTimeoutError, "saleControlConfig.sendEmptyTrueApiAnswerWhenTimeoutError", { value: this.sendEmptyTrueApiAnswerWhenTimeoutError }),
                             CheckBox(this.LABELS.resetSoldStatusForReturn, "saleControlConfig.resetSoldStatusForReturn", { value: this.resetSoldStatusForReturn }),
                         ]
+                    },
+
+                    CheckBox(this.LABELS.markCheckResultSaveTitle, "saleControlConfig.markCheckResultSave.enable", {
+                        value: this.markCheckResultSaveEnable,
+                        on: {
+                            onChange: (enabled) => {
+                                if (enabled) {
+                                    $$(this.MARK_CHECK_RESULT_SAVE_ID).enable();
+                                } else {
+                                    $$(this.MARK_CHECK_RESULT_SAVE_ID).disable();
+                                }
+                            }
+                        }
+                    }),
+
+                    {
+                        id: this.MARK_CHECK_RESULT_SAVE_ID,
+                        disabled: !this.markCheckResultSaveEnable,
+                        padding: padding,
+                        rows: [
+                            Text(
+                                this.LABELS.markCheckResultSaveDirectory,
+                                "saleControlConfig.markCheckResultSave.directory",
+                                this.markCheckResultSaveDirectory,
+                                windowsPathValidation
+                            ),
+                            Number(
+                                this.LABELS.markCheckResultSaveFileLifespanHours,
+                                "saleControlConfig.markCheckResultSave.fileLifespanHours",
+                                this.markCheckResultSaveFileLifespanHours
+                            ),
+                        ],
                     }
                 ]
             }
