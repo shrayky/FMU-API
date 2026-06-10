@@ -11,7 +11,7 @@ public record TsPiotConnectionSettings
     public string Port { get; set; } = string.Empty;
 
     [JsonPropertyName("informationPort")]
-    public string InformationPort { get; set; } = "51077";
+    public int InformationPort { get; set; } = 51077;
 
     [JsonPropertyName("informationEndpoint")]
     public string InformationEndpoint { get; set; } = "/api/v1/info";

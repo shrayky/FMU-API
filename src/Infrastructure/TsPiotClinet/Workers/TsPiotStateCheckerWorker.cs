@@ -76,7 +76,7 @@ namespace TsPiotClinet.Workers
 
         private async Task<Result<string>> AskModuleVersion(TsPiotConnectionSettings tsPiot)
         {
-            if (string.IsNullOrEmpty(tsPiot.InformationEndpoint) || string.IsNullOrEmpty(tsPiot.InformationPort))
+            if (string.IsNullOrEmpty(tsPiot.InformationEndpoint) || tsPiot.InformationPort <= 0)
                 return Result.Failure<string>("-");
 
             var address = $"{tsPiot.Host}:{tsPiot.InformationPort}";
