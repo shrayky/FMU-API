@@ -1,0 +1,7 @@
+{
+  "profiles": {
+    "fmu-api": {
+      "commandName": "Executable"
+    }
+  }
+}
