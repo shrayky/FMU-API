@@ -34,9 +34,9 @@ if not exist %SOURCE_X86% (
 )
 
 rem Создаем ZIP архивы с именем версия-платформа.zip
-powershell -Command "Compress-Archive -Path '%SOURCE_X64%\fmu-api.exe', '%SOURCE_WWW%' -DestinationPath '%OUTPUT_X64%'"
-powershell -Command "Compress-Archive -Path '%SOURCE_X86%\fmu-api.exe', '%SOURCE_WWW%' -DestinationPath '%OUTPUT_X86%'"
-powershell -Command "Compress-Archive -Path '%SOURCE_X64l%\fmu-api', '%SOURCE_WWW%' -DestinationPath '%OUTPUT_X64l%'"
+powershell -Command "Compress-Archive -Path '%SOURCE_X64%\fmu-api.exe', '%SOURCE_X64%\wwwroot' -DestinationPath '%OUTPUT_X64%'"
+powershell -Command "Compress-Archive -Path '%SOURCE_X86%\fmu-api.exe', '%SOURCE_X86%\wwwroot' -DestinationPath '%OUTPUT_X86%'"
+powershell -Command "Compress-Archive -Path '%SOURCE_X64l%\fmu-api', '%SOURCE_X64l%\wwwroot' -DestinationPath '%OUTPUT_X64l%'"
 
 echo Archives successfully created:
 echo - %OUTPUT_X64%
