@@ -76,7 +76,7 @@ public class FmuPacketTrapper : IFmuPacketTrapper
                 return Result.Failure(err);
             }
 
-            var fileName = Path.Combine(_folderPath, string.Concat(markCode, "txt"));
+            var fileName = Path.Combine(_folderPath, string.Concat(markCode, ".txt"));
 
 
             StreamWriter file = new(fileName, false);
