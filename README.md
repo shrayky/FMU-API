@@ -13,14 +13,13 @@ dotnet publish FmuApi.API/FmuApiAPI.csproj -c Release -r win-x64 --self-containe
 
 ## Быстрая установка
 
-1. Установите предварительные требования:
-   - Frontol (не обязательно)
-   - CouchDB
-
-2. Установите FMU-API через командную строку администратора:
+1. Установите FMU-API через командную строку администратора:
    ```bash
    C:\FMU-API\fmu-api.exe --install
    ```
+2. Опиционально
+   - Frontol
+   - Apache CouchDB
 
 3. Настройте через веб-интерфейс http://localhost:2578/
 
