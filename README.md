@@ -23,7 +23,9 @@ dotnet publish FmuApi.API/FmuApiAPI.csproj -c Release -r win-x64 --self-containe
 
 3. Настройте через веб-интерфейс http://localhost:2578/
 
-Подробная инструкция по установке с иллюстрациями доступна в файле [docs/installation.pdf](docs/installation.pdf)
+Инструкция по установке доступна в [wiki](https://github.com/shrayky/FMU-API/wiki/%D0%A3%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%BA%D0%B0-fmu%E2%80%90api)
+
+Подробная инструкция по установке и настройке fmu-api с фронтол с иллюстрациями доступна в файле [docs/installation.pdf](docs/installation.pdf)
 
 ## Поддержка
 
