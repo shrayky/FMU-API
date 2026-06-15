@@ -74,7 +74,7 @@ namespace CouchDb.Repositories
             if (_context == null)
                 return new();
 
-            if (!_appState.CouchDbOnline() && _appState.NeedRestartService())
+            if (!_appState.CouchDbOnline())
                 return new();
 
             var dbInfo = await _database.GetInfoAsync();

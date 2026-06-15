@@ -105,7 +105,7 @@ public class MarkCheckingStatisticRepository : BaseCouchDbRepository<StatisticEn
         if (_context == null)
             return new();
 
-        if (!_appState.CouchDbOnline() && _appState.NeedRestartService())
+        if (!_appState.CouchDbOnline())
             return new();
 
         var appConfig = await _appConfiguration.CurrentAsync();
@@ -131,7 +131,7 @@ public class MarkCheckingStatisticRepository : BaseCouchDbRepository<StatisticEn
         if (_context == null)
             return new();
 
-        if (!_appState.CouchDbOnline() && _appState.NeedRestartService())
+        if (!_appState.CouchDbOnline())
             return new();
 
         var appConfig = await _appConfiguration.CurrentAsync();
@@ -159,7 +159,7 @@ public class MarkCheckingStatisticRepository : BaseCouchDbRepository<StatisticEn
         if (_context == null)
             return new();
 
-        if (!_appState.CouchDbOnline() && _appState.NeedRestartService())
+        if (!_appState.CouchDbOnline())
             return new();
 
         var appConfig = await _appConfiguration.CurrentAsync();
