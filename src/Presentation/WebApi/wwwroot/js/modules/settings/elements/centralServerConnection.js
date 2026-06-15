@@ -14,7 +14,8 @@ class CentralServerConnectionElement {
             secret: "Секретный ключ",
             interval: "Интервал обмена (минут)",
             downloadNewVersion: "Загружать и устанавливать новую версию",
-            doExchangeWithServer: "Выполнить обмен"
+            doExchangeWithServer: "Выполнить обмен",
+            addressTip: "⚠️ можно указать несколько адресов через точку с запятой",
         };
     }
 
@@ -64,6 +65,8 @@ class CentralServerConnectionElement {
                                  "fmuApiCentralServer.address",
                                  this.address,
                                  httpAddressValidation),
+
+                            Label("lAddressTip", this.LABELS.addressTip),
 
                             Text(this.LABELS.token,
                                  "fmuApiCentralServer.token",

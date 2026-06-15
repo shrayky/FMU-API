@@ -35,21 +35,35 @@ public class ExchangeActionsService : ICentralServerExchangeActions
 
     public async Task<bool> StartExchange()
     {
-        var configuration = await _parametersService.CurrentAsync().ConfigureAwait(false);
-        var baseAddress = $"{configuration.FmuApiCentralServer.Address}/{EndppintAddress}";
-
         var data = await CreateDataPacket();
 
-        var exchangeResult = await SendPacket(data, baseAddress);
-            
-        if (exchangeResult.IsFailure)
-            return false;
+        var configuration = await _parametersService.CurrentAsync().ConfigureAwait(false);
+        var serverAddress = configuration.FmuApiCentralServer.Address;
+        var adresess = serverAddress.Split(';');
 
-        await _softwareUpdateDownloadService.DownloadAndInstall(exchangeResult.Value, baseAddress).ConfigureAwait(false);
+        _logger.LogDebug("Пакет для отправки в fmu-api-central: {data}", data);
 
-        await _configurationDownloadService.DownloadAndApply(exchangeResult.Value, baseAddress, configuration.FmuApiCentralServer.Token).ConfigureAwait(false);
+        var success = false;
+
+        foreach (var centralAddress in adresess)
+        {
+            var baseAddress = $"{centralAddress}/{EndppintAddress}";
+            var exchangeResult = await SendPacket(data, baseAddress);
+
+            if (exchangeResult.IsFailure)
+            {
+                _logger.LogError("Не удалось отрпавить данные в центр по адресу {baseAddress}!", baseAddress);
+                continue;
+            }
+
+            success = true;
+
+            await _softwareUpdateDownloadService.DownloadAndInstall(exchangeResult.Value, baseAddress).ConfigureAwait(false);
+
+            await _configurationDownloadService.DownloadAndApply(exchangeResult.Value, baseAddress, configuration.FmuApiCentralServer.Token).ConfigureAwait(false);
+        }
             
-        return true;
+        return success;
     }
 
     private async Task<DataPacket> CreateDataPacket()
