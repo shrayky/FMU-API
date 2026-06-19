@@ -16,10 +16,13 @@ public static class LmStateCollector
         {
             var fullStateInfo = appState.LocalModuleInformation(printGroup.Id);
 
+            if (fullStateInfo == null)
+                continue;
+
             LocalModuleStateInformation lmState = new()
             {
                 Address = printGroup.LocalModuleConnection.ConnectionAddress,
-                Version = fullStateInfo.Version,
+                Version = fullStateInfo.Version ?? "",
                 LastSyncTime = fullStateInfo.LastSyncDateTime,
                 State = fullStateInfo.StatusRaw,
                 IsReady = fullStateInfo.IsReady,

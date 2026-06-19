@@ -3,6 +3,7 @@ using FmuApiDomain.LocalModule.Models;
 using FmuApiDomain.TrueApi.MarkData.Check;
 using LocalModuleIntegration.Interfaces;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Serialization;
 using Shared.Json;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -42,20 +43,30 @@ public class LocalModuleServiceV2 : ILocalModuleService
             token = token
         };
 
-        var response = await httpClient.PostAsJsonAsync(InitAddress, content);
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync(InitAddress, content);
 
-        if (response.IsSuccessStatusCode)
+            if (response.IsSuccessStatusCode)
+                return response.IsSuccessStatusCode;
+
+            var errorContent = await response.Content.ReadAsStringAsync();
+         
+            _logger.LogError(
+                "Ошибка при инициализации ЛМ. Код: {StatusCode}, Причина: {ReasonPhrase}, Тело: {ErrorContent}",
+                (int)response.StatusCode,
+                response.ReasonPhrase,
+                errorContent
+            );
+
             return response.IsSuccessStatusCode;
-            
-        var errorContent = await response.Content.ReadAsStringAsync();
-        _logger.LogError(
-            "Ошибка при инициализации ЛМ. Код: {StatusCode}, Причина: {ReasonPhrase}, Тело: {ErrorContent}",
-            (int)response.StatusCode,
-            response.ReasonPhrase,
-            errorContent
-        );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Ошибка при инициализации ЛМ");
+        }
 
-        return response.IsSuccessStatusCode;
+        return false;
     }
         
     public async Task<LocalModuleState> StateAsync(LocalModuleConnection connection)
