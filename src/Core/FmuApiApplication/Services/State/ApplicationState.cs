@@ -193,6 +193,8 @@ public class ApplicationState : IApplicationState
 
         if (state != null)
         {
+            newState.Organization = state.Organization;
+            newState.LicenseActiveTill = state.LicenseActiveTill;
             _tsPiotStates.Remove(state);
         }
 
@@ -215,6 +217,8 @@ public class ApplicationState : IApplicationState
         {
             newState.ProtocolVersion = state.ProtocolVersion;
             newState.Version = state.Version;
+            newState.Organization = state.Organization;
+            newState.LicenseActiveTill = state.LicenseActiveTill;
 
             _tsPiotStates.Remove(state);
         }
@@ -241,5 +245,34 @@ public class ApplicationState : IApplicationState
         var state = _tsPiotStates.FirstOrDefault(p => p.Connection == address);
 
         return state == null ? "-" : state.Version;
+    }
+
+    public void UpdateTsPiotLicense(string address, int organizationId, DateTime licenseActiveTill)
+    {
+        var state = _tsPiotStates.FirstOrDefault(p => p.Connection == address);
+
+        if (state != null)
+        {
+            _tsPiotStates.Remove(state);
+            state.Organization = organizationId;
+            state.LicenseActiveTill = licenseActiveTill;
+            _tsPiotStates.Add(state);
+            return;
+        }
+
+        _tsPiotStates.Add(new TsModulePiotState
+        {
+            Connection = address,
+            Organization = organizationId,
+            LicenseActiveTill = licenseActiveTill,
+            LastCheck = DateTime.Now
+        });
+    }
+
+    public DateTime? TsPiotLicenseActiveTill(string address)
+    {
+        var state = _tsPiotStates.FirstOrDefault(p => p.Connection == address);
+
+        return state?.LicenseActiveTill;
     }
 }

@@ -6,7 +6,7 @@ using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Shared.Json;
-using System.Text;
+using System.Globalization;
 using TsPiotClinet.Models;
 
 namespace TsPiotClinet.Workers
@@ -70,7 +70,8 @@ namespace TsPiotClinet.Workers
 
                 if (checkProtocolResult.IsFailure)
                     _applicationState.TsPiotOffline(address);
-                
+
+                await FetchLicenseInfo(printGroups, printGroup.TsPiot);
             }
         }
 
@@ -182,6 +183,86 @@ namespace TsPiotClinet.Workers
             }
 
             return Result.Failure<int>($"Не удалось подключится к экземпляру ТСПиОТ {tsPiot.Host}:{tsPiot.Port}");
+        }
+
+        private async Task FetchLicenseInfo(List<PrintGroupData> printGroups, TsPiotConnectionSettings tsPiot)
+        {
+            if (tsPiot.InformationPort <= 0)
+                return;
+
+            var baseAddress = BuildInformationBaseAddress(tsPiot);
+
+            if (baseAddress == null)
+                return;
+
+            using var httpClient = _httpClientFactory.CreateClient("TsPiotVerisonChecker");
+            httpClient.BaseAddress = baseAddress;
+
+            try
+            {
+                var listResponse = await httpClient.GetAsync("/api/v1/instances/info");
+                if (!listResponse.IsSuccessStatusCode)
+                    return;
+
+                var listContent = await listResponse.Content.ReadAsStringAsync();
+                var instancesInfo = await JsonHelpers.DeserializeAsync<TsPiotInstancesInfoResponse>(listContent);
+                if (instancesInfo?.Instances == null)
+                    return;
+
+                foreach (var instance in instancesInfo.Instances)
+                {
+                    if (string.IsNullOrEmpty(instance.Id))
+                        continue;
+
+                    var detailResponse = await httpClient.GetAsync($"/api/v1/instances/info/{instance.Id}");
+
+                    if (!detailResponse.IsSuccessStatusCode)
+                        continue;
+
+                    var detailContent = await detailResponse.Content.ReadAsStringAsync();
+
+                    var instanceDetail = await JsonHelpers.DeserializeAsync<TsPiotInstanceDetailResponse>(detailContent);
+                    if (instanceDetail == null)
+                        continue;
+
+                    var kktInn = instanceDetail.RegData.KktInn;
+                    if (string.IsNullOrEmpty(kktInn))
+                        continue;
+
+                    var activeLicense = instanceDetail.Licenses.FirstOrDefault(l => l.IsActive);
+
+                    if (activeLicense == null || string.IsNullOrEmpty(activeLicense.ActiveTill))
+                        continue;
+
+                    if (!DateTime.TryParse(activeLicense.ActiveTill, CultureInfo.InvariantCulture, DateTimeStyles.None, out var licenseActiveTill))
+                        continue;
+
+                    var organization = printGroups.FirstOrDefault(p => p.INN == kktInn);
+
+                    if (organization == null || string.IsNullOrEmpty(organization.TsPiot.Host) || string.IsNullOrEmpty(organization.TsPiot.Port))
+                        continue;
+
+                    var address = $"{organization.TsPiot.Host}:{organization.TsPiot.Port}";
+                    _applicationState.UpdateTsPiotLicense(address, organization.Id, licenseActiveTill);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug("Ошибка получения срока лицензии ТСПИоТ: {ex}", ex);
+            }
+        }
+        
+        private static Uri? BuildInformationBaseAddress(TsPiotConnectionSettings tsPiot)
+        {
+            var address = $"{tsPiot.Host}:{tsPiot.InformationPort}";
+
+            if (address.Contains("https://"))
+                address = address.Replace("https://", "http://");
+
+            if (!address.Contains("http://"))
+                address = $"http://{address}";
+
+            return Uri.TryCreate(address, UriKind.Absolute, out var uri) ? uri : null;
         }
     }
 }

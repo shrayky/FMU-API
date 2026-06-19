@@ -35,9 +35,10 @@ class MonitorView {
             tsPiot: "Модули ТСПИоТ",
             tspiotName: "Имя",
             tspiotAddress: "Адрес",
-            tspiotProtocolVersion: "Версия протокола",
+            tspiotProtocolVersion: "Протокол",
             tspiotOnline: "Онлайн",
-            tspiotLastCheck: "Последняя проверка"
+            tspiotLastCheck: "Последняя проверка",
+            tspiotLicenseActiveTill: "Срок лицензии"
         }
         this.NAMES = {
             toolbarLabel: "toolbarLabel",
@@ -109,6 +110,7 @@ class MonitorView {
                         fillspace: true,
                         sort: "string"
                     },
+                    
                     {
                         id: "address",
                         header: this.LABELS.tspiotAddress,
@@ -121,12 +123,14 @@ class MonitorView {
                         width: 160,
                         sort: "number"
                     },
+                    
                     {
                         id: "version",
                         header: this.LABELS.version,
                         width: 150,
                         sort: "string"
                     },
+                    
                     {
                         id: "online",
                         header: this.LABELS.tspiotOnline,
@@ -138,6 +142,20 @@ class MonitorView {
                             return `<span style="color: ${color};">${text}</span>`;
                         }
                     },
+                    
+                    {
+                        id: "licenseActiveTill",
+                        header: this.LABELS.tspiotLicenseActiveTill,
+                        width: 200,
+                        sort: "date",
+                        format: function (value) {
+                            if (!value) return "Нет данных";
+                            const date = new Date(value);
+                            if (date.getFullYear() <= 1970) return "Нет данных";
+                            return date.toLocaleDateString();
+                        }
+                    },
+
                     {
                         id: "lastCheckTime",
                         header: this.LABELS.tspiotLastCheck,
@@ -149,6 +167,7 @@ class MonitorView {
                             return date.toLocaleString();
                         }
                     },
+                   
                 ],
                 autoheight: true,
                 scroll: false,
@@ -417,7 +436,8 @@ class MonitorView {
                 protocolVersion: row.protocolVersion != null ? row.protocolVersion : "—",
                 version: row.version || "Нет данных",
                 online: !!row.online,
-                lastCheckTime: row.lastCheckTime
+                lastCheckTime: row.lastCheckTime,
+                licenseActiveTill: row.licenseActiveTill
             };
         });
 

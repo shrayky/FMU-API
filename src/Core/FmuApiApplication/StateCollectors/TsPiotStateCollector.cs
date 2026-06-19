@@ -30,6 +30,7 @@ public static class TsPiotStateCollector
                 Online = appState.TsPiotIsOnline(address),
                 LastCheckTime = appState.TsPiotLastSee(address),
                 Version = appState.TsPiotModuleVersion(address),
+                LicenseActiveTill = appState.TsPiotLicenseActiveTill(address),
             };
 
             modules.Add(state);

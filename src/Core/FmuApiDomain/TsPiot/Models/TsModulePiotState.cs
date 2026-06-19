@@ -8,4 +8,5 @@ public record TsModulePiotState
     public bool Online { get; set; } = false;
     public DateTime LastCheck { get; set; } = DateTime.MinValue;
     public string Version {  get; set; } = string.Empty;
+    public DateTime? LicenseActiveTill { get; set; }
 }

@@ -30,4 +30,6 @@ public interface IApplicationState
     bool TsPiotIsOnline(string address);
     DateTime TsPiotLastSee(string address);
     string TsPiotModuleVersion(string address);
+    void UpdateTsPiotLicense(string address, int organizationId, DateTime licenseActiveTill);
+    DateTime? TsPiotLicenseActiveTill(string address);
 }
