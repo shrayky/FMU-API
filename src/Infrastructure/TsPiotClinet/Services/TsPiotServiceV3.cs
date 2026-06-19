@@ -32,10 +32,10 @@ public class TsPiotServiceV3 : ITsPiotService
 
         var markBase64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(mark));
         
-        var requestData = new TsPiotCheckMarkRequest()
+        var requestData = new TsPiotCheckMarkRequestV3()
         {
             ClientInfo = new(),
-            Codes = [markBase64]
+            Codes = [new(markBase64)]
         };
 
         try
