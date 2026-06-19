@@ -149,8 +149,7 @@ namespace TsPiotClinet.Workers
 
                 try
                 {
-                    var emptyCnt = new StringContent(string.Empty, Encoding.UTF8, "text/plain");
-                    var response = await httpClient.PostAsync(requestPath, emptyCnt);
+                    var response = await httpClient.GetAsync(requestPath);
 
                     if (!response.IsSuccessStatusCode)
                     {
