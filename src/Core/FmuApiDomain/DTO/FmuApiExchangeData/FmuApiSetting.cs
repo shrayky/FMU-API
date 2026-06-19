@@ -29,14 +29,16 @@ public record FmuApiSetting
     [JsonPropertyName("Database")]
     public Database Database { get; init; } = new();
     
-    [JsonPropertyName("TokenService")]
-    public TokenService TokenService { get; init; } = new();
-    
     [JsonPropertyName("timeOut")]
     public TimeOutConfiguration TimeOut { get; init; } = new();
     
     [JsonPropertyName("logging")]
     public Logging Logging { get; init; } = new();
+
+
+    [Obsolete]
+    [JsonPropertyName("TokenService")]
+    public TokenService TokenService { get; init; } = new();
 }
 
 public record ServerConfiguration
