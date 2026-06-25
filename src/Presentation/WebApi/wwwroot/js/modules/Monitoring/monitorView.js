@@ -103,14 +103,16 @@ class MonitorView {
             {
                 id: this.NAMES.tsPiotTable,
                 view: "datatable",
+                css: "webix_data_border",
                 columns: [
                     {
                         id: "name",
                         header: this.LABELS.tspiotName,
+                        width: 220,
                         fillspace: true,
                         sort: "string"
                     },
-                    
+
                     {
                         id: "address",
                         header: this.LABELS.tspiotAddress,
@@ -119,35 +121,55 @@ class MonitorView {
                     },
                     {
                         id: "protocolVersion",
-                        header: this.LABELS.tspiotProtocolVersion,
-                        width: 160,
-                        sort: "number"
+                        header:
+                        {
+                            text: this.LABELS.tspiotProtocolVersion,
+                            css: { "text-align": "center" }
+                        },
+                        width: 100,
+                        sort: "number",
+                        css: { "text-align": "center" }
                     },
-                    
+
                     {
                         id: "version",
-                        header: this.LABELS.version,
-                        width: 150,
-                        sort: "string"
+                        header:
+                        {
+                            text: this.LABELS.version,
+                            css: { "text-align": "center" }
+                        },
+                        width: 160,
+                        sort: "string",
+                        css: { "text-align": "center" }
                     },
-                    
+
                     {
                         id: "online",
-                        header: this.LABELS.tspiotOnline,
+                        header:
+                        {
+                            text: this.LABELS.tspiotOnline,
+                            css: { "text-align": "center" }
+                        },
                         width: 100,
                         sort: "string",
+                        css: { "text-align": "center" },
                         template: function (obj) {
                             var color = obj.online ? "#00BFFF" : "#ff0000";
                             var text = obj.online ? "Да" : "Нет";
                             return `<span style="color: ${color};">${text}</span>`;
                         }
                     },
-                    
+
                     {
                         id: "licenseActiveTill",
-                        header: this.LABELS.tspiotLicenseActiveTill,
+                        header:
+                        {
+                            text: this.LABELS.tspiotLicenseActiveTill,
+                            css: { "text-align": "center" }
+                        },
                         width: 200,
                         sort: "date",
+                        css: { "text-align": "center" },
                         format: function (value) {
                             if (!value) return "Нет данных";
                             const date = new Date(value);
@@ -158,16 +180,21 @@ class MonitorView {
 
                     {
                         id: "lastCheckTime",
-                        header: this.LABELS.tspiotLastCheck,
-                        width: 300,
+                        header:
+                        {
+                            text: this.LABELS.tspiotLastCheck,
+                            css: { "text-align": "center" }
+                        },
+                        width: 200,
                         sort: "date",
+                        css: { "text-align": "center" },
                         format: function (value) {
                             const date = new Date(value);
                             if (date.getFullYear() <= 1970) return "Нет данных";
                             return date.toLocaleString();
                         }
                     },
-                   
+
                 ],
                 autoheight: true,
                 scroll: false,
@@ -186,6 +213,7 @@ class MonitorView {
             {
                 id: this.NAMES.localModulesTable,
                 view: "datatable",
+                css: "webix_data_border",
                 columns: [
                     {
                         id: "url",
@@ -195,15 +223,25 @@ class MonitorView {
                     },
                     {
                         id: "version",
-                        header: this.LABELS.version,
+                        header: 
+                        {
+                            text: this.LABELS.version,
+                            css: { "text-align": "center" }
+                        },
                         width: 150,
-                        sort: "string"
+                        sort: "string",
+                        css: { "text-align": "center" }
                     },
                     {
                         id: "lastSyncDateTime",
-                        header: this.LABELS.lastSync,
+                        header: 
+                        {
+                            text: this.LABELS.lastSync,
+                            css: { "text-align": "center" }
+                        },
                         width: 300,
                         sort: "date",
+                        css: { "text-align": "center" },
                         format: function (value) {
                             const date = new Date(value);
                             if (date.getFullYear() <= 1970) return "Нет данных";
@@ -212,9 +250,14 @@ class MonitorView {
                     },
                     {
                         id: "status",
-                        header: this.LABELS.status,
+                        header: 
+                        {
+                            text: this.LABELS.status,
+                            css: { "text-align": "center" }
+                        },
                         width: 120,
                         sort: "string",
+                        css: { "text-align": "center" },
                         template: function (obj) {
                             var color = obj.isReady ? "#00BFFF" : "#ff0000";
                             return `<span style="color: ${color};">${obj.status || "Нет данных"}</span>`;
@@ -239,6 +282,7 @@ class MonitorView {
             {
                 id: this.NAMES.checkStatisticsTable,
                 view: "datatable",
+                css: "webix_data_border",
                 columns: [
                     {
                         id: "period",
@@ -248,25 +292,44 @@ class MonitorView {
                     },
                     {
                         id: "totalChecks",
-                        header: this.LABELS.totalChecks,
+                        header:
+                        {
+                            text: this.LABELS.totalChecks,
+                            css: { "text-align": "center" }
+                        },
                         sort: "number",
+                        css: { "text-align": "center" }
                     },
                     {
                         id: "successfulOnline",
-                        header: this.LABELS.successfulOnlineChecks,
+                        header:
+                        {
+                            text: this.LABELS.successfulOnlineChecks,
+                            css: { "text-align": "center" }
+                        },
                         sort: "date",
+                        css: { "text-align": "center" }
                     },
                     {
                         id: "successfulOffline",
-                        header: this.LABELS.successfulOfflineChecks,
+                        header:
+                        {
+                            text: this.LABELS.successfulOfflineChecks,
+                            css: { "text-align": "center" }
+                        },
                         sort: "date",
+                        css: { "text-align": "center" }
                     },
                     {
                         id: "successRate",
-                        header: this.LABELS.successRatePercentage,
+                        header:
+                        {
+                            text: this.LABELS.successRatePercentage,
+                            css: { "text-align": "center" }
+                        },
                         sort: "date",
-                    },
-                    {}
+                        css: { "text-align": "center" }
+                    }
                 ],
                 autoheight: true,
                 scroll: false,
@@ -278,7 +341,7 @@ class MonitorView {
 
     startLocalMonitoringPolling() {
         const POLL_INTERVAL = this.POLL_INTERVAL;
-        
+
         const pollStatus = async () => {
 
             if (this.isPolling) {
@@ -288,11 +351,11 @@ class MonitorView {
 
 
             const indicator = $$(this.NAMES.pollingLabel);
-            
+
             if (indicator)
                 indicator.show();
 
-            try {              
+            try {
 
                 const response = await fetch(this.monitoringApiAddress);
 
@@ -307,14 +370,14 @@ class MonitorView {
                 this._updateCheckStatistics(monitoringData.markCheksStatistics, monitoringData.couchDbOnLine);
 
             } catch (error) {
-                if (error.name === 'TypeError' || 
-                    error.message.includes('fetch') || 
+                if (error.name === 'TypeError' ||
+                    error.message.includes('fetch') ||
                     error.message.includes('Failed to fetch') ||
                     error.message.includes('NetworkError') ||
                     error.message.includes('ERR_CONNECTION_REFUSED')) {
                     return;
                 }
-                
+
                 console.error("Ошибка при получении данных о состоянии сервиса:", error);
             }
 
@@ -323,12 +386,12 @@ class MonitorView {
         };
 
         pollingManager.register(
-            'system-monitoring-polling', 
-            pollStatus, 
+            'system-monitoring-polling',
+            pollStatus,
             this.POLL_INTERVAL,
-            { 
+            {
                 initialDelay: 1000,
-                autoStart: true 
+                autoStart: true
             }
         );
     }
@@ -385,7 +448,7 @@ class MonitorView {
             tableLabel.hide();
             return;
         }
-            
+
         table.clearAll();
 
         const statisticsData = [
@@ -428,7 +491,7 @@ class MonitorView {
         if (!table)
             return;
 
-       const tableData = tspiotInfo.map((row, index) => {
+        const tableData = tspiotInfo.map((row, index) => {
             return {
                 id: row.address || `tspiot_${index}`,
                 name: row.name || "Неизвестно",
@@ -463,7 +526,7 @@ export default function (id) {
     const monitoring = new MonitorView(id).loadConfig();
     const view = monitoring.render();
 
-    setTimeout(() => {monitoring.startLocalMonitoringPolling()}, 500);
+    setTimeout(() => { monitoring.startLocalMonitoringPolling() }, 500);
 
     return view;
 }
