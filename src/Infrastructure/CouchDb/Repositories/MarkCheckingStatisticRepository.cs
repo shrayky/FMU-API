@@ -1,4 +1,5 @@
 ﻿using CouchDB.Driver.Extensions;
+using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Database.Dto;
 using FmuApiDomain.MarkInformation.Models;
@@ -178,5 +179,33 @@ public class MarkCheckingStatisticRepository : BaseCouchDbRepository<StatisticEn
         };
 
         return statistics;
+    }
+
+    public async Task<CSharpFunctionalExtensions.Result> ClearStorageToDay(DateTime dateToCutStorage, CancellationToken stoppingToken)
+    {
+        if (_context == null)
+            return Result.Failure(DatabaseUnavailable);
+        
+        _logger.LogInformation("Начинаю удаление устаревших данных статистики марок до {date}.", dateToCutStorage);
+        
+        var data = await _database
+                    .Where(p => p.Data.CheckDate <= dateToCutStorage)
+                    .Take(1000)
+                    .ToListAsync(stoppingToken);
+
+        if (data.Count > 0)
+        {
+            _logger.LogInformation("Удаляю {rows} записей из статистики.", data.Count);
+
+            await _database.DeleteRangeAsync(data, stoppingToken);
+
+            _logger.LogInformation("Удаление устаревших данных статистики марок завершено.");
+        }
+        else
+        {
+            _logger.LogInformation("Удаление устаревших данных статистики марок завершено - удалять нечего.");
+        }
+
+        return Result.Success();
     }
 }

@@ -16,7 +16,7 @@ namespace CouchDb.Workers
 
         private readonly TimeSpan _checkInterval = TimeSpan.FromSeconds(10);
 
-        public CouchDbStatusWorker(ILogger<CouchDbStatusWorker> logger, IParametersService parametersService, IApplicationState applicationState, IStatusDbService statusDbService )
+        public CouchDbStatusWorker(ILogger<CouchDbStatusWorker> logger, IParametersService parametersService, IApplicationState applicationState, IStatusDbService statusDbService)
         {
             _logger = logger;
             _parametersService = parametersService;

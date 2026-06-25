@@ -64,5 +64,6 @@ public static class CouchDbServicesRegistration
         services.AddHostedService<CouchDbStatusWorker>();
         services.AddHostedService<DatabaseCompactWorker>();
         services.AddHostedService<CouchDbMigrationTo102Worker>();
+        services.AddHostedService<ClearingStorageOfStatisticsWorker>();
     }
 }

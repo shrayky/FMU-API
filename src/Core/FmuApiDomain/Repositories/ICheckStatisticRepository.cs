@@ -1,4 +1,5 @@
-﻿using FmuApiDomain.MarkInformation.Models;
+﻿using CSharpFunctionalExtensions;
+using FmuApiDomain.MarkInformation.Models;
 
 namespace FmuApiDomain.Repositories;
 
@@ -11,4 +12,5 @@ public interface ICheckStatisticRepository
     Task FailureCheck(string mark, DateTime checkDate);
     Task<MarkCheckStatistics> CheckStatisticsByDays(DateTime fromDate, DateTime toDate);
     Task<MarkCheckStatistics> CheckStatisticsByDay(long day);
+    Task<Result> ClearStorageToDay(DateTime day, CancellationToken stoppingToken);
 }

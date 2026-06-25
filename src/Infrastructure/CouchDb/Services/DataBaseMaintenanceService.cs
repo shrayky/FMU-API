@@ -26,6 +26,7 @@ public class DataBaseMaintenanceService
                await _dbContext.Marks.CompactAsync();
                await _dbContext.Documents.CompactAsync();
                await _dbContext.MarkCheckingStatistic.CompactAsync();
+               await _dbContext.BeerOnTap.CompactAsync();
           }
           catch (Exception e)
           {

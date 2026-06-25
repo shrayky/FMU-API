@@ -16,6 +16,9 @@ class DatabaseConnectionConfigurationElement {
             bulkLabel: "Параметры пакетной обработки",
             queryLimit: "Максимальное количество записей для запроса выборки",
             queryTimeout: "Таймаут запроса (секунд)",
+            statisticsStorageLabel: "Хранение статистики",
+            clearStorageOfStatistics: "Очищать хранилище статистики",
+            depthOfStorageOfStatisticsInDays: "Глубина хранения статистики (дней)",
         };
     }
 
@@ -33,6 +36,9 @@ class DatabaseConnectionConfigurationElement {
             this.bulkParallelTasks = settings.bulkParallelTasks;
             this.queryLimit = settings.queryLimit;
             this.queryTimeout = settings.queryTimeoutSeconds;
+
+            this.clearStorageOfStatistics = settings.clearStorageOfStatistics;
+            this.depthOfStorageOfStatisticsInDays = settings.depthOfStorageOfStatisticsInDays;
         }
 
         return this;
@@ -98,7 +104,37 @@ class DatabaseConnectionConfigurationElement {
                                     Number(this.LABELS.queryTimeout, "database.queryTimeoutSeconds", this.queryTimeout),
                                 ]
                             },
-                            
+
+                            Label("lStatisticsStorage", this.LABELS.statisticsStorageLabel),
+                            {
+                                padding: padding,
+                                rows: [
+                                    CheckBox(this.LABELS.clearStorageOfStatistics, "database.clearStorageOfStatistics", {
+                                        value: this.clearStorageOfStatistics,
+                                        on: {
+                                            onChange: (enabled) => {
+                                                if (enabled) {
+                                                    $$("statisticsStorageSettings").enable();
+                                                }
+                                                else {
+                                                    $$("statisticsStorageSettings").disable();
+                                                }
+                                            }
+                                        }
+                                    }),
+                                    {
+                                        id: "statisticsStorageSettings",
+                                        disabled: !this.clearStorageOfStatistics,
+                                        rows: [
+                                            Number(
+                                                this.LABELS.depthOfStorageOfStatisticsInDays,
+                                                "database.depthOfStorageOfStatisticsInDays",
+                                                this.depthOfStorageOfStatisticsInDays
+                                            ),
+                                        ]
+                                    },
+                                ]
+                            },
                         ]
                     }
                 ]

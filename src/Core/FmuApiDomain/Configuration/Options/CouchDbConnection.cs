@@ -1,36 +1,48 @@
 ﻿
 using System.Text.Json.Serialization;
 
-namespace FmuApiDomain.Configuration.Options
+namespace FmuApiDomain.Configuration.Options;
+
+public class CouchDbConnection
 {
-    public class CouchDbConnection
-    {
-        public bool Enable { get; set; } = false;
-        public string NetAddress { get; set; } = string.Empty;
-        public string UserName { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
-        public int BulkBatchSize { get; set; } = 1000;
-        public int BulkParallelTasks { get; set; } = 4;
-        public int QueryLimit { get; set; } = 1000000;
-        
-        public int QueryTimeoutSeconds { get; set; } = 300;
+    public bool Enable { get; set; } = false;
+    
+    public string NetAddress { get; set; } = string.Empty;
+    
+    public string UserName { get; set; } = string.Empty;
+    
+    public string Password { get; set; } = string.Empty;
+    
+    public int BulkBatchSize { get; set; } = 1000;
+    
+    public int BulkParallelTasks { get; set; } = 4;
+    
+    public int QueryLimit { get; set; } = 1000000;
+    
+    public int QueryTimeoutSeconds { get; set; } = 300;
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string? NetAdres { get; set; } = string.Empty;
-        
-        //Эти поля сохранены для совместимости со старыми версиями, сейчас имена баз жестко прописаны в коде
-        public string MarksStateDbName { get; set; } = string.Empty;
-        public string FrontolDocumentsDbName { get; set; } = string.Empty;
-        public string AlcoStampsDbName { get; set; } = string.Empty;
+    public bool ClearStorageOfStatistics { get; set; } = false;
 
-        [JsonIgnore]
-        public bool ConfigurationIsEnabled => !string.IsNullOrWhiteSpace(NetAddress) &&
-                                                !string.IsNullOrWhiteSpace(UserName) &&
-                                                !string.IsNullOrWhiteSpace(Password) &&
-                                                Enable;
+    public int DepthOfStorageOfStatisticsInDays { get; set; } = 30;
+    
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? NetAdres { get; set; } = string.Empty;
 
-        [JsonIgnore]
-        public bool DatabaseCheckIsEnabled => ConfigurationIsEnabled && Enable;
+    //Эти поля сохранены для совместимости со старыми версиями, сейчас имена баз жестко прописаны в коде
+    [Obsolete]
+    public string MarksStateDbName { get; set; } = string.Empty;
+    [Obsolete]
+    public string FrontolDocumentsDbName { get; set; } = string.Empty;
+    [Obsolete]
+    public string AlcoStampsDbName { get; set; } = string.Empty;
 
-    }
+    [JsonIgnore]
+    public bool ConfigurationIsEnabled => !string.IsNullOrWhiteSpace(NetAddress) &&
+                                            !string.IsNullOrWhiteSpace(UserName) &&
+                                            !string.IsNullOrWhiteSpace(Password) &&
+                                            Enable;
+
+    [JsonIgnore]
+    public bool DatabaseCheckIsEnabled => ConfigurationIsEnabled && Enable;
+
 }
