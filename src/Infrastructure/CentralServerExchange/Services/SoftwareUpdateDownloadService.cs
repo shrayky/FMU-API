@@ -40,6 +40,18 @@ public class SoftwareUpdateDownloadService
             || !response.SoftwareUpdateAvailable)
             return Result.Success();
 
+        if (parameters.FmuApiCentralServer.SchedulerUpdateInstall.Count > 0)
+        {
+            var now = TimeOnly.FromDateTime(DateTime.Now);
+            var isInSchedule = parameters.FmuApiCentralServer.SchedulerUpdateInstall.Any(interval => now >= interval.BeginTime && now <= interval.EndTime);
+
+            if (!isInSchedule)
+            {
+                _logger.LogInformation("Обновление отложено: текущее время вне разрешённых интервалов");
+                return Result.Success();
+            }
+        }
+
         if (!await UpdateLock.WaitAsync(0))
             return Result.Failure("Обновление уже запущено");
 

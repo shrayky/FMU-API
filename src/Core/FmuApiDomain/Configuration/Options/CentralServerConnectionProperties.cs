@@ -18,7 +18,10 @@ public record ScheduleTime
     [JsonPropertyName("id")]
     public int Id { get; set; }
 
-    [JsonPropertyName("time")]
+    [JsonPropertyName("beginTime")]
 
-    public TimeOnly Time { get; set; }
+    public TimeOnly BeginTime { get; set; }
+
+    [JsonPropertyName("endTime")]
+    public TimeOnly EndTime { get; set; }
 }
