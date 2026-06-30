@@ -1,4 +1,5 @@
 ﻿using CouchDB.Driver.Extensions;
+using CouchDb.Documents;
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Database.Dto;
@@ -112,10 +113,13 @@ public class MarkCheckingStatisticRepository : BaseCouchDbRepository<StatisticEn
         var appConfig = await _appConfiguration.CurrentAsync();
         var queryLimit = appConfig.Database.QueryLimit == 0 ? 1000000 : appConfig.Database.QueryLimit;
 
-        var filteredMarks = await _database
-            .Where(p => p.Data.CheckDate >= fromDate && p.Data.CheckDate <= toDate)
-            .Take(queryLimit)
-            .ToListAsync();
+        var filteredMarks = await ExecuteSafetyDbOperation(
+            async () => await _database
+                .Where(p => p.Data.CheckDate >= fromDate && p.Data.CheckDate <= toDate)
+                .Take(queryLimit)
+                .ToListAsync(),
+            "CheckStatisticsByDays",
+            new List<CouchDoc<StatisticEntity>>());
 
         var statistics = new MarkCheckStatistics
         {
@@ -140,10 +144,13 @@ public class MarkCheckingStatisticRepository : BaseCouchDbRepository<StatisticEn
 
         var checkDay = ToCheckDay(checkDate);
 
-        var filteredMarks = await _database
-            .Where(p => p.Data.CheckDay == checkDay)
-            .Take(queryLimit)
-            .ToListAsync();
+        var filteredMarks = await ExecuteSafetyDbOperation(
+            async () => await _database
+                .Where(p => p.Data.CheckDay == checkDay)
+                .Take(queryLimit)
+                .ToListAsync(),
+            "CheckStatisticsByDayDateTime",
+            new List<CouchDoc<StatisticEntity>>());
 
         var statistics = new MarkCheckStatistics
         {
@@ -166,10 +173,13 @@ public class MarkCheckingStatisticRepository : BaseCouchDbRepository<StatisticEn
         var appConfig = await _appConfiguration.CurrentAsync();
         var queryLimit = appConfig.Database.QueryLimit == 0 ? 1000000 : appConfig.Database.QueryLimit;
 
-        var filteredMarks = await _database
-            .Where(p => p.Data.CheckDay == day)
-            .Take(queryLimit)
-            .ToListAsync();
+        var filteredMarks = await ExecuteSafetyDbOperation(
+            async () => await _database
+                .Where(p => p.Data.CheckDay == day)
+                .Take(queryLimit)
+                .ToListAsync(),
+            "CheckStatisticsByDayUnix",
+            new List<CouchDoc<StatisticEntity>>());
 
         var statistics = new MarkCheckStatistics
         {
@@ -187,17 +197,28 @@ public class MarkCheckingStatisticRepository : BaseCouchDbRepository<StatisticEn
             return Result.Failure(DatabaseUnavailable);
         
         _logger.LogInformation("Начинаю удаление устаревших данных статистики марок до {date}.", dateToCutStorage);
-        
-        var data = await _database
-                    .Where(p => p.Data.CheckDate <= dateToCutStorage)
-                    .Take(1000)
-                    .ToListAsync(stoppingToken);
+
+        var data = await ExecuteSafetyDbOperation(
+            async () => await _database
+                .Where(p => p.Data.CheckDate <= dateToCutStorage)
+                .Take(1000)
+                .ToListAsync(stoppingToken),
+            "ClearStorageToDaySelect",
+            (List<CouchDoc<StatisticEntity>>?)null);
+
+        if (data == null)
+            return Result.Failure(DatabaseUnavailable);
 
         if (data.Count > 0)
         {
             _logger.LogInformation("Удаляю {rows} записей из статистики.", data.Count);
 
-            await _database.DeleteRangeAsync(data, stoppingToken);
+            var deleted = await ExecuteSafetyDbOperation(
+                async () => await _database.DeleteRangeAsync(data, stoppingToken),
+                "ClearStorageToDayDelete");
+
+            if (!deleted)
+                return Result.Failure(DatabaseUnavailable);
 
             _logger.LogInformation("Удаление устаревших данных статистики марок завершено.");
         }

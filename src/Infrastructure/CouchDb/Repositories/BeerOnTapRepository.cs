@@ -1,4 +1,5 @@
 ﻿using CouchDB.Driver.Extensions;
+using CouchDb.Documents;
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Database.Dto;
@@ -74,21 +75,19 @@ public class BeerOnTapRepository : BaseCouchDbRepository<BeerTapEntity>, IBeerOn
         if (_context == null)
             return Result.Failure<List<BeerTapEntity>>(DatabaseUnavailable);
 
-        try
-        {
-            var queryLimit = _configuration.QueryLimit;
+        var queryLimit = _configuration.QueryLimit;
 
-            var entities = await _database.Take(queryLimit).ToListAsync();
+        var entities = await ExecuteSafetyDbOperation(
+            async () => await _database.Take(queryLimit).ToListAsync(),
+            "All",
+            (List<CouchDoc<BeerTapEntity>>?)null);
 
-            List<BeerTapEntity> answer = [];
-            answer.AddRange(entities.Select(node => node.Data));
+        if (entities == null)
+            return Result.Failure<List<BeerTapEntity>>(DatabaseUnavailable);
 
-            return Result.Success(answer);
-        }
-        catch (Exception ex)
-        {
-            return Result.Failure<List<BeerTapEntity>>(ex.Message);
-        }
+        List<BeerTapEntity> answer = entities.Select(node => node.Data).ToList();
+
+        return Result.Success(answer);
     }
 
     public async Task<Result> AddSale(string sGtin, int saledVolume)

@@ -77,13 +77,22 @@ namespace CouchDb.Repositories
             if (!_appState.CouchDbOnline())
                 return new();
 
-            var dbInfo = await _database.GetInfoAsync();
-            var totalCount = dbInfo.DocCount;
+            var totalCount = await ExecuteSafetyDbOperation(
+                async () =>
+                {
+                    var dbInfo = await _database.GetInfoAsync();
+                    return (int?)dbInfo.DocCount;
+                },
+                "SearchMarkDataGetInfo",
+                (int?)null);
+
+            if (totalCount == null)
+                return new();
 
             Result<MarkSearchResult> searchResult;
             
             if (string.IsNullOrEmpty(searchTerm))
-                searchResult = await AllMarksWithPagination(page, pageSize, totalCount);
+                searchResult = await AllMarksWithPagination(page, pageSize, totalCount.Value);
             else
                 searchResult = await SearchMarksWithPagination(searchTerm, page, pageSize);
 

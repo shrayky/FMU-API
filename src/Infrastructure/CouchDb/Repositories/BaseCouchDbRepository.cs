@@ -162,17 +162,19 @@ namespace CouchDb.Repositories
 
         public async Task<Result<List<T>>> ExecuteMangoQueryAsync(object mangoQuery)
         {
-            try
-            {
-                var result = await _database.QueryAsync(mangoQuery);
-                var data = result.Select(p => p.Data).ToList();
-                return Result.Success(data);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError("Ошибка выполнения Mango запроса: {ex}", ex);
-                return Result.Failure<List<T>>($"Ошибка запроса к БД: {ex.Message}");
-            }
+            var data = await ExecuteSafetyDbOperation(
+                async () =>
+                {
+                    var result = await _database.QueryAsync(mangoQuery);
+                    return result.Select(p => p.Data).ToList();
+                },
+                "MangoQuery",
+                (List<T>?)null);
+
+            if (data == null)
+                return Result.Failure<List<T>>("Ошибка запроса к БД");
+
+            return Result.Success(data);
         }
 
         private async Task<CouchDoc<T>?> CouchDocGet(string id)
@@ -202,7 +204,7 @@ namespace CouchDb.Repositories
                 false);
         }
 
-        private async Task<TResult> ExecuteSafetyDbOperation<TResult>(Func<Task<TResult>> operation, string operationName, TResult defaultValue)
+        protected async Task<TResult> ExecuteSafetyDbOperation<TResult>(Func<Task<TResult>> operation, string operationName, TResult defaultValue)
         {
             if (!_configuration.Enable)
                 return defaultValue;
@@ -222,7 +224,7 @@ namespace CouchDb.Repositories
             }
         }
 
-        private async Task<bool> ExecuteSafetyDbOperation(Func<Task> operation, string operationName)
+        protected async Task<bool> ExecuteSafetyDbOperation(Func<Task> operation, string operationName)
         {
             if (!_configuration.Enable)
                 return false;
