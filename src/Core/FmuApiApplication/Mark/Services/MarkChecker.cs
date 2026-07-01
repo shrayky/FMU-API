@@ -162,9 +162,6 @@ namespace FmuApiApplication.Mark.Services
 
             var xApiKey = _configuration.OrganisationConfig.XapiKey(organizationId);
 
-            if (string.IsNullOrEmpty(xApiKey))
-                return MarkCheckResult.Failure($"Не получен XAPIKEY для организации с кодом {organizationId}, off-line проверка {cis} невозможна.");
-
             var connection = _configuration.OrganisationConfig.LocalModuleConnection(organizationId);
 
             if (!connection.Enable)
