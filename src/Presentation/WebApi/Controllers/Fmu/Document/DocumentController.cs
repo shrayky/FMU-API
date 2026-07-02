@@ -42,4 +42,28 @@ public class DocumentController : ControllerBase
 
         return _responseService.Ok(result.Value);
     }
+
+    [HttpPost("inn")]
+    public async Task<IActionResult> DocumentPostAsync(RequestDocument document, string inn)
+    {
+
+        foreach (var position in document.Positions)
+        {
+            position.Organisation.Inn = inn;
+        }
+
+        var service = _factory.GetInstance(document);
+
+        if (service == null)
+        {
+            return BadRequest();
+        }
+
+        var result = await service.ActionAsync();
+
+        if (result.IsFailure)
+            return _responseService.BadRequest(result.Error);
+
+        return _responseService.Ok(result.Value);
+    }
 }
