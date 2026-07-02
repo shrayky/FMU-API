@@ -98,25 +98,29 @@ class MonitorView {
             {
                 view: "label",
                 label: this.LABELS.tsPiot,
-                id: this.NAMES.tsPiotTableLabel
+                id: this.NAMES.tsPiotTableLabel,
             },
             {
                 id: this.NAMES.tsPiotTable,
                 view: "datatable",
                 css: "webix_data_border",
+                autoheight: true,
+                select: false,
+                scroll: false,
+                data: [],
                 columns: [
                     {
                         id: "name",
                         header: this.LABELS.tspiotName,
                         width: 220,
-                        fillspace: true,
                         sort: "string"
                     },
 
                     {
                         id: "address",
                         header: this.LABELS.tspiotAddress,
-                        width: 220,
+                        minWidth: 220,
+                        fillspace: true,
                         sort: "string"
                     },
                     {
@@ -196,10 +200,6 @@ class MonitorView {
                     },
 
                 ],
-                autoheight: true,
-                scroll: false,
-                select: false,
-                data: []
             }
         ];
     }
