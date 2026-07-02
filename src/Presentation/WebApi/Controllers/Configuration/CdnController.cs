@@ -1,0 +1,22 @@
+﻿using Microsoft.AspNetCore.Mvc;
+using TrueApiCdn.Interface;
+
+namespace WebApi.Controllers.Configuration;
+
+[Route("api/configuration/[controller]")]
+[ApiController]
+[ApiExplorerSettings(GroupName = "App configuration")]
+public class CdnController : Controller
+{
+    private readonly ICdnService _cdnService;
+    public CdnController(ICdnService cdnService) 
+    {
+        _cdnService = cdnService;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> List()
+    {
+        return Ok(await _cdnService.GetCdnsAsync());
+    }
+}
