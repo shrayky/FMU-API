@@ -12,8 +12,8 @@ public class DatabaseCompactWorker : BackgroundService
     private readonly DataBaseMaintenanceService _maintenanceService;
 
     private const int StartDelay = 5;
-    private const int WorkIntervalHours = 12; 
-    
+    private const int WorkIntervalHours = 12;
+
     public DatabaseCompactWorker(ILogger<DatabaseCompactWorker> logger, IApplicationState applicationState, DataBaseMaintenanceService maintenanceService)
     {
         _logger = logger;
@@ -42,7 +42,7 @@ public class DatabaseCompactWorker : BackgroundService
             }
             catch (Exception e)
             {
-                _logger.LogError("Обслуживание БД завершено с ошибкой: {err}", e.Message);    
+                _logger.LogError("Обслуживание БД завершено с ошибкой: {err}", e.Message);
             }
 
             await Task.Delay(TimeSpan.FromHours(WorkIntervalHours), stoppingToken);

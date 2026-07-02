@@ -20,7 +20,7 @@ public class SoftwareUpdateDownloadService
     private readonly IParametersService _parametersService;
     private readonly IExchangeService _exchangeService;
     private readonly IApplicationState _appState;
-    
+
     private static readonly SemaphoreSlim UpdateLock = new(1, 1);
 
     public SoftwareUpdateDownloadService(ILogger<SoftwareUpdateDownloadService> logger, IParametersService parametersService, IExchangeService exchangeService, IApplicationState appState)
@@ -35,8 +35,8 @@ public class SoftwareUpdateDownloadService
     {
         var parameters = await _parametersService.CurrentAsync();
 
-        if (!parameters.FmuApiCentralServer.DownloadNewVersion 
-            || !_appState.IsOnline() 
+        if (!parameters.FmuApiCentralServer.DownloadNewVersion
+            || !_appState.IsOnline()
             || !response.SoftwareUpdateAvailable)
             return Result.Success();
 
@@ -89,7 +89,7 @@ public class SoftwareUpdateDownloadService
                     File.Delete(fileName);
                 }
                 catch
-                {}
+                { }
 
                 _logger.LogError(checkResult.Error);
                 return Result.Failure(checkResult.Error);
@@ -99,7 +99,7 @@ public class SoftwareUpdateDownloadService
 
             if (!installResult.IsFailure)
                 return Result.Success();
-            
+
             _logger.LogError(installResult.Error);
             return Result.Failure(installResult.Error);
         }
@@ -109,21 +109,21 @@ public class SoftwareUpdateDownloadService
         }
     }
 
-    private async Task<Result>  CheckShaHash(string filePath, string expectedSha256)
+    private async Task<Result> CheckShaHash(string filePath, string expectedSha256)
     {
         using var fileStream = File.OpenRead(filePath);
         using var downloadedSha256 = SHA256.Create();
         var hashBytes = await downloadedSha256.ComputeHashAsync(fileStream).ConfigureAwait(false);
         var actualHash = Convert.ToHexString(hashBytes).ToLowerInvariant();
-    
+
         fileStream.Position = 0;
 
         if (string.Equals(actualHash, expectedSha256, StringComparison.OrdinalIgnoreCase))
             return Result.Success();
-        
+
         var errorMessage = $"Хэш {actualHash} загруженного файла обновления не совпадает с ожидаемым {expectedSha256}";
         _logger.LogError(errorMessage);
-        
+
         return Result.Failure(errorMessage);
     }
 
@@ -131,7 +131,7 @@ public class SoftwareUpdateDownloadService
     {
         if (OperatingSystem.IsWindows())
             return UpdateWindowsApp(updateFileName, sha256);
-        else if  (OperatingSystem.IsLinux())
+        else if (OperatingSystem.IsLinux())
             return UpdateLinuxApp(updateFileName);
         else
             return Result.Failure("Не поддерживаемая ОС");
@@ -151,7 +151,7 @@ public class SoftwareUpdateDownloadService
         catch (Exception ex)
         {
             _logger.LogWarning("Не удалось распаковать обновление!");
-            
+
             return Result.Failure(ex.Message);
         }
 
@@ -162,11 +162,11 @@ public class SoftwareUpdateDownloadService
         catch (Exception ex)
         {
             _logger.LogWarning("Не удалось удалить zip-архив с обновлением!");
-            
+
             return Result.Failure(ex.Message);
         }
-        
-        
+
+
         Process process = new();
         ProcessStartInfo startInfo = new()
         {
@@ -177,7 +177,7 @@ public class SoftwareUpdateDownloadService
         };
 
         _logger.LogWarning("Найдено обновление, запускаю установку {arguments}.", startInfo.Arguments);
-        
+
         process.StartInfo = startInfo;
         process.Start();
         process.WaitForExit();
@@ -202,7 +202,7 @@ public class SoftwareUpdateDownloadService
         //const string appFileName = $"{appDirectory}/fmu-api";
         //const string oldAppFileName = $"{appFileName}.old";
         //const string backUpFileName = $"{appFileName}.bkp";
-        
+
         var installerPath = Path.Combine(Path.GetTempPath(), ApplicationInformation.AppName);
 
         try
@@ -212,7 +212,7 @@ public class SoftwareUpdateDownloadService
         }
         catch (Exception e)
         {
-            return Result.Failure($"Ошибка распаковки обновления в {installerPath}: {e.Message}"); 
+            return Result.Failure($"Ошибка распаковки обновления в {installerPath}: {e.Message}");
         }
 
         Process process = new();
@@ -224,12 +224,12 @@ public class SoftwareUpdateDownloadService
             Arguments = "--install",
             RedirectStandardOutput = true,
         };
-       
+
         process.StartInfo = startInfo;
         //var info = process.Start();
         //var outI = process.StandardOutput.ReadToEnd();
         process.Start();
-        
+
         Task.Delay(TimeSpan.FromMinutes(15));
 
         return Result.Success();

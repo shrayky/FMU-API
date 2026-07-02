@@ -13,7 +13,7 @@ public class InternetConnectionCheckWorker : BackgroundService
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IApplicationState _applicationState;
     private readonly ILogger<InternetConnectionCheckWorker> _logger;
-    
+
     private readonly int _checkPeriodMinutes = 2;
     private DateTime _nextWorkDate = DateTime.Now;
     private readonly int _checkInterval = 60_000;
@@ -31,7 +31,7 @@ public class InternetConnectionCheckWorker : BackgroundService
 
         _configuration = _parametersService.Current();
     }
-    
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
@@ -52,7 +52,7 @@ public class InternetConnectionCheckWorker : BackgroundService
                 .Select(address => address.Value.Trim())
                 .Where(address => address != string.Empty)
                 .ToList();
-            
+
             foreach (var address in hosts)
             {
                 if (address.StartsWith("http") || address.StartsWith("https"))
@@ -65,7 +65,7 @@ public class InternetConnectionCheckWorker : BackgroundService
             }
 
             _applicationState.SetOnlineStatus(online);
-            
+
         }
     }
 

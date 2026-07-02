@@ -46,7 +46,7 @@ namespace LocalModuleIntegration.Service
 
             if (response.IsSuccessStatusCode)
                 return response.IsSuccessStatusCode;
-            
+
             var errorContent = await response.Content.ReadAsStringAsync();
             _logger.LogError(
                 "Ошибка при инициализации ЛМ. Код: {StatusCode}, Причина: {ReasonPhrase}, Тело: {ErrorContent}",
@@ -123,7 +123,7 @@ namespace LocalModuleIntegration.Service
                     response.ReasonPhrase,
                     errorContent
                 );
-                
+
                 return new();
             }
 
@@ -134,7 +134,7 @@ namespace LocalModuleIntegration.Service
         {
             if (address == string.Empty)
                 return true;
-            
+
             using var httpClientEnisey = _httpClientFactory.CreateClient("Enisey");
             httpClientEnisey.BaseAddress = new Uri(address);
 

@@ -8,7 +8,7 @@ using FmuApiDomain.Repositories;
 namespace CouchDb.Handlers;
 
 [Obsolete]
-public class MarkInformationHandler: IMarkInformationRepository
+public class MarkInformationHandler : IMarkInformationRepository
 {
     private CouchDbContext? _context;
 

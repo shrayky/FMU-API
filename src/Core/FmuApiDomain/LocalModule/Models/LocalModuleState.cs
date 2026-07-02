@@ -10,28 +10,28 @@ public class LocalModuleState
 
     [JsonPropertyName("status")]
     public string StatusRaw { get; set; } = string.Empty;
-    
+
     [JsonPropertyName("serviceUrl")]
     public string ServiceUrl { get; set; } = string.Empty;
-    
+
     [JsonPropertyName("operationMode")]
     public string OperationModeRaw { get; set; } = string.Empty;
-    
+
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
-    
+
     [JsonPropertyName("lastUpdate")]
     public long LastUpdate { get; set; }
-    
+
     [JsonPropertyName("lastSync")]
     public long LastSyncTimestamp { get; set; }
-    
+
     [JsonPropertyName("inst")]
     public string InstanceId { get; set; } = string.Empty;
 
     [JsonPropertyName("inn")]
     public string Inn { get; set; } = string.Empty;
-    
+
     [JsonPropertyName("dbVersion")]
     public string DbVersion { get; set; } = string.Empty;
 
@@ -59,16 +59,16 @@ public class LocalModuleState
         "service" => OperationMode.Service,
         _ => OperationMode.Unknown
     };
-    
+
     [JsonIgnore]
     public bool IsConfigured => Status != LocalModuleStatus.NotConfigured;
-    
+
     [JsonIgnore]
     public bool IsReady => Status == LocalModuleStatus.Ready;
-    
+
     [JsonIgnore]
     public bool HasSyncError => Status == LocalModuleStatus.SyncError;
-    
+
     [JsonIgnore]
     public bool IsInServiceMode => OperationMode == OperationMode.Service;
 }

@@ -3,7 +3,6 @@ using FmuApiDomain.LocalModule.Models;
 using FmuApiDomain.TrueApi.MarkData.Check;
 using LocalModuleIntegration.Interfaces;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Serialization;
 using Shared.Json;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -51,7 +50,7 @@ public class LocalModuleServiceV2 : ILocalModuleService
                 return response.IsSuccessStatusCode;
 
             var errorContent = await response.Content.ReadAsStringAsync();
-         
+
             _logger.LogError(
                 "Ошибка при инициализации ЛМ. Код: {StatusCode}, Причина: {ReasonPhrase}, Тело: {ErrorContent}",
                 (int)response.StatusCode,
@@ -68,7 +67,7 @@ public class LocalModuleServiceV2 : ILocalModuleService
 
         return false;
     }
-        
+
     public async Task<LocalModuleState> StateAsync(LocalModuleConnection connection)
     {
         if (!connection.Enable)
@@ -90,18 +89,18 @@ public class LocalModuleServiceV2 : ILocalModuleService
 
         var state = await JsonHelpers.DeserializeAsync<LocalModuleState>(await response.Content.ReadAsStreamAsync());
 
-        if (response.IsSuccessStatusCode) 
+        if (response.IsSuccessStatusCode)
             return state ?? new LocalModuleState();
-            
+
         var errorContent = await response.Content.ReadAsStringAsync();
-            
+
         _logger.LogError(
             "Ошибка получения статуса ЛМ. Код: {StatusCode}, Причина: {ReasonPhrase}, Тело: {ErrorContent}",
             (int)response.StatusCode,
             response.ReasonPhrase,
             errorContent
         );
-                
+
         return new LocalModuleState();
     }
 
@@ -124,33 +123,33 @@ public class LocalModuleServiceV2 : ILocalModuleService
         {
             cis_list = cises
         };
-            
+
         var response = await httpClient.PostAsJsonAsync(OutCheckAddress, content);
 
         if (!response.IsSuccessStatusCode)
         {
             var errorContent = await response.Content.ReadAsStringAsync();
-            
+
             _logger.LogWarning("Ошибка в ответе от локального модуля: {err}", errorContent);
-            
+
             return new CheckMarksDataTrueApi();
         }
 
         var responseContent = await response.Content.ReadAsStringAsync();
-        
+
         CheckMarksDataTrueApi? status = null;
-        
+
         var wrapper = await JsonHelpers.DeserializeAsync<LocalModuleResponseWrapper>(responseContent);
-                    
+
         if (wrapper?.Results != null && wrapper.Results.Count > 0)
             status = wrapper.Results[0];
-        
+
         if (status == null)
             return new CheckMarksDataTrueApi();
 
-        if (status.Code == 0) 
+        if (status.Code == 0)
             return status;
-        
+
         _logger.LogWarning("Ошибка в ответе от локального модуля: {err}", status.Description);
         return new CheckMarksDataTrueApi();
     }
@@ -159,7 +158,7 @@ public class LocalModuleServiceV2 : ILocalModuleService
     {
         if (address == string.Empty)
             return true;
-            
+
         using var httpClientEnisey = _httpClientFactory.CreateClient("Enisey");
         httpClientEnisey.BaseAddress = new Uri(address);
 

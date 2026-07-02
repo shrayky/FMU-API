@@ -6,7 +6,7 @@ public class OfflineCheckResult
 {
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string? Inn { get; set; }
-    
+
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string? Kpp { get; set; }
 
@@ -17,7 +17,7 @@ public class OfflineCheckResult
 public record CheckMarkResults
 {
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public List<CheckInformation>? Results { get; set;}
+    public List<CheckInformation>? Results { get; set; }
 
 
 }

@@ -17,7 +17,7 @@ namespace FmuApiDomain.Configuration.Options
 
             var credentials = Convert.ToBase64String(
                 Encoding.UTF8.GetBytes($"{UserName}:{Password}"));
-                
+
             return credentials;
         }
 

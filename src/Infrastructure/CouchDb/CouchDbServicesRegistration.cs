@@ -1,4 +1,5 @@
 ﻿using CouchDb.Repositories;
+using CouchDb.Services;
 using CouchDb.Workers;
 using CouchDb.Workers.DatabaseMigrationWorkers;
 using CouchDB.Driver.DependencyInjection;
@@ -8,7 +9,6 @@ using FmuApiDomain.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Headers;
 using System.Reflection;
-using CouchDb.Services;
 
 namespace CouchDb;
 
@@ -32,7 +32,7 @@ public static class CouchDbServicesRegistration
                 options.UseEndpoint(settings.Database.NetAddress);
                 options.UseBasicAuthentication(settings.Database.UserName, settings.Database.Password);
             }
-            
+
             options.ConfigureFlurlClient(clientFlurlHttpSettings =>
                 clientFlurlHttpSettings.Timeout = TimeSpan.FromSeconds(settings.Database.QueryTimeoutSeconds));
         });

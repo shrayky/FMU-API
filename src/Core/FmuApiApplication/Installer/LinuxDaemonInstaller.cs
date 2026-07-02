@@ -6,13 +6,13 @@ public class LinuxDaemonInstaller
 {
     private const string GuardAppName = "Apps-Guardian";
     private const string GuardUserName = "fmu-api-guard";
-    
+
     public void Register()
     {
         var installScript = GenerateInstallScript();
         var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "install.sh");
         File.WriteAllText(scriptPath, installScript);
-        
+
         var uninstallScript = GenerateUninstallScript();
         scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "uninstall.sh");
         File.WriteAllText(scriptPath, uninstallScript);
@@ -28,7 +28,7 @@ public class LinuxDaemonInstaller
         var checkPermissionsScript = GenerateCheckGuardianPermissionsScript();
         scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "check-guardian-permissions.sh");
         File.WriteAllText(scriptPath, checkPermissionsScript);*/
-    
+
         Console.WriteLine("=== Созданы файлы ===");
         Console.WriteLine($"Установка: install-fmu-api.sh");
         Console.WriteLine($"Удаление: uninstall-fmu-api.sh");
@@ -37,11 +37,11 @@ public class LinuxDaemonInstaller
         //Console.WriteLine($"Проверка прав Guardian: check-guardian-permissions.sh");
     }
 
-private static string GenerateInstallScript()
-{
-    var appPath = AppDomain.CurrentDomain.BaseDirectory;
+    private static string GenerateInstallScript()
+    {
+        var appPath = AppDomain.CurrentDomain.BaseDirectory;
 
-    return $@"#!/bin/bash
+        return $@"#!/bin/bash
 set -e
 
 echo '=== Установка FMU-API как systemd сервиса ==='
@@ -162,14 +162,14 @@ echo 'Приложение установлено в: $APP_PATH'
 echo 'Для запуска сервиса: sudo systemctl start {ApplicationInformation.AppName.ToLower()}'
 echo 'Для проверки статуса: sudo systemctl status {ApplicationInformation.AppName.ToLower()}'
 echo 'Для просмотра логов: sudo journalctl -u {ApplicationInformation.AppName.ToLower()} -f'";
-}
+    }
 
-private static string GenerateUninstallScript()
-{
-    var appPath = AppDomain.CurrentDomain.BaseDirectory;
-    var serviceName = ApplicationInformation.AppName.ToLower();
+    private static string GenerateUninstallScript()
+    {
+        var appPath = AppDomain.CurrentDomain.BaseDirectory;
+        var serviceName = ApplicationInformation.AppName.ToLower();
 
-    return $@"#!/bin/bash
+        return $@"#!/bin/bash
 set -e
 
 echo '=== Удаление {ApplicationInformation.AppName} ==='
@@ -257,14 +257,14 @@ else
 fi
 
 echo '=== Удаление завершено ==='";
-}
-    
-private static string GenerateGuardianTask()
+    }
+
+    private static string GenerateGuardianTask()
     {
         var targetPath = $"/opt/{ApplicationInformation.Manufacture}/{ApplicationInformation.AppName}";
         var serviceName = ApplicationInformation.AppName.ToLower();
         var updatePath = Path.Combine(Path.GetTempPath(), ApplicationInformation.AppName);
-    
+
         return $@"{{
   ""Name"": ""{ApplicationInformation.AppName}"",
   ""Enabled"": true,
@@ -277,8 +277,9 @@ private static string GenerateGuardianTask()
     }
 
     private static string GenerateFixGuardianPermissionsScript()
-    {{
-        return $@"#!/bin/bash
+    {
+        {
+            return $@"#!/bin/bash
 
 echo '=== Исправление прав Guardian для FMU-API ==='
 echo ''
@@ -402,11 +403,13 @@ echo ''
 echo 'Проверьте результат командой:'
 echo '    sudo bash check-guardian-permissions.sh'
 ";
-    }}
+        }
+    }
 
     private static string GenerateCheckGuardianPermissionsScript()
-    {{
-        return $@"#!/bin/bash
+    {
+        {
+            return $@"#!/bin/bash
 
 echo '=== Диагностика прав Guardian для FMU-API ==='
 echo ''
@@ -552,5 +555,6 @@ echo '3. Установите права: sudo chmod -R u=rwx,g=rwx,o= $APP_PATH
 echo '4. ОБЯЗАТЕЛЬНО перезапустите Guardian: sudo systemctl restart {GuardAppName.ToLower()}'
 echo '5. Проверьте что .aspnet создается с групповыми правами после запуска fmu-api'
 ";
-    }}
+        }
+    }
 }

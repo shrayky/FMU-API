@@ -1,8 +1,8 @@
 ﻿using CSharpFunctionalExtensions;
 using FmuApiDomain.Fmu.Document;
-using FmuApiDomain.TrueApi.MarkData.Check;
-using FmuApiDomain.MarkInformation.Entities;
 using FmuApiDomain.Fmu.Document.Enums;
+using FmuApiDomain.MarkInformation.Entities;
+using FmuApiDomain.TrueApi.MarkData.Check;
 
 namespace FmuApiDomain.MarkInformation.Interfaces
 {

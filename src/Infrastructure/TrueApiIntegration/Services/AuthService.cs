@@ -194,7 +194,7 @@ public class AuthService : IAuthService
         try
         {
             var answer = await httpClient.PostAsJsonAsync(SIGNINPATH, data);
-            
+
             if (answer == null)
                 throw new Exception($"Пустой ответ от {SIGNINPATH}");
 

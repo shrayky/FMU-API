@@ -1,5 +1,3 @@
-using System.Net.Http.Json;
-using System.Text.Json;
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.TrueApi.MarkData.Check;
@@ -7,6 +5,8 @@ using FmuApiDomain.TsPiot.Interfaces;
 using FmuApiDomain.TsPiot.Models;
 using Microsoft.Extensions.Logging;
 using Shared.Json;
+using System.Net.Http.Json;
+using System.Text.Json;
 using TsPiotClinet.Models;
 
 namespace TsPiotClinet.Services;

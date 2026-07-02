@@ -59,7 +59,8 @@ namespace CouchDb.Workers.DatabaseMigrationWorkers
                 {
                     var emptyDb = await MigrateMarkDataAsync(dataBatchSize, appParameters);
 
-                    if (emptyDb) {
+                    if (emptyDb)
+                    {
                         appParameters.Database.MarksStateDbName = string.Empty;
                         appParameters.Database.FrontolDocumentsDbName = string.Empty;
                         await _parametersService.UpdateAsync(appParameters);

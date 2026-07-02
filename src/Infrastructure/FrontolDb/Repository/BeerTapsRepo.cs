@@ -79,7 +79,7 @@ public class BeerTapsRepo : IBeerTapsRepository, IDisposableBeerTapsRepository
             beerTapsCount++;
 
             var tapRow = await _db.BeerTaps.FirstOrDefaultAsync(p => p.Name == beerTap.TapName);
-                        
+
             if (tapRow == null)
             {
                 tapRow = new BeerTapEntity()
@@ -93,7 +93,7 @@ public class BeerTapsRepo : IBeerTapsRepository, IDisposableBeerTapsRepository
                     TapCode = beerTapsCount,
                     Id = await GEN_ID(),
                 };
-                
+
                 await _db.BeerTaps.AddAsync(tapRow);
             }
             else

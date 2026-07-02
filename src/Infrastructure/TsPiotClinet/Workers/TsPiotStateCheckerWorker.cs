@@ -155,7 +155,7 @@ namespace TsPiotClinet.Workers
                     if (!response.IsSuccessStatusCode)
                     {
                         var errorContent = await response.Content.ReadAsStringAsync();
-                        
+
                         _logger.LogDebug("Ошибка в ответе проверки версии протокола от ТСПИоТ: {StatusCode}, {Error}", response.StatusCode,
                             errorContent);
 
@@ -251,7 +251,7 @@ namespace TsPiotClinet.Workers
                 _logger.LogDebug("Ошибка получения срока лицензии ТСПИоТ: {ex}", ex);
             }
         }
-        
+
         private static Uri? BuildInformationBaseAddress(TsPiotConnectionSettings tsPiot)
         {
             var address = $"{tsPiot.Host}:{tsPiot.InformationPort}";

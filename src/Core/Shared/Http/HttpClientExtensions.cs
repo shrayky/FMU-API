@@ -1,5 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
-using CSharpFunctionalExtensions;
+﻿using CSharpFunctionalExtensions;
+using Microsoft.Extensions.Logging;
 
 namespace Shared.Http
 {

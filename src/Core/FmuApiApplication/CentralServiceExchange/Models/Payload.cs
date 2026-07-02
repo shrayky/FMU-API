@@ -19,7 +19,7 @@ public record Payload
     public List<LocalModuleStateInformation> LocalModuleInformation { get; init; } = [];
 
     [JsonPropertyName("tsPiots")]
-    public List<TsPiotStateInfotmation> TsPiotsInforamtion {  get; init; } = [];
+    public List<TsPiotStateInfotmation> TsPiotsInforamtion { get; init; } = [];
 
     [JsonPropertyName("statistics")]
     public List<CheckMarkStatisticInformation> CheckMarkStatisticInformation { get; init; } = [];

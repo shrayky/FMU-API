@@ -14,7 +14,7 @@ namespace CentralServerExchange.Services;
 public class ExchangeActionsService : ICentralServerExchangeActions
 {
     private readonly ILogger<ExchangeActionsService> _logger;
-    
+
     private readonly IParametersService _parametersService;
     private readonly IExchangeService _exchangeService;
     private readonly ConfigurationDownloadService _configurationDownloadService;

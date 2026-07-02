@@ -1,7 +1,10 @@
 ﻿using ApplicationConfigurationService.Migrations;
+using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
+using FmuApiDomain.Configuration.Options.Organization;
 using FmuApiDomain.Constants;
+using FmuApiDomain.DTO.FmuApiExchangeData;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,9 +12,6 @@ using Microsoft.Extensions.Logging;
 using Shared.FilesFolders;
 using Shared.Json;
 using System.Text.Json;
-using CSharpFunctionalExtensions;
-using FmuApiDomain.Configuration.Options.Organization;
-using FmuApiDomain.DTO.FmuApiExchangeData;
 
 namespace ApplicationConfigurationService;
 
@@ -27,7 +27,7 @@ public class SimpleParametersService : IParametersService
     private const string CacheKey = "app_settings";
     private const int CacheExpirationMinutes = 600;
     private static readonly object Lock = new();
-    
+
     private static readonly SemaphoreSlim _semaphore = new(1, 1);
 
     public SimpleParametersService(IServiceProvider services)
@@ -35,8 +35,8 @@ public class SimpleParametersService : IParametersService
         _services = services;
         _logger = _services.GetRequiredService<ILogger<SimpleParametersService>>();
         _cacheService = _services.GetRequiredService<IMemoryCache>();
-        _appState = _services.GetRequiredService<IApplicationState>();            
-        
+        _appState = _services.GetRequiredService<IApplicationState>();
+
         var configFolder = Folders.CommonApplicationDataFolder(ApplicationInformation.Manufacture, ApplicationInformation.AppName);
 
         _configPath = Path.Combine(configFolder, "config.json");
@@ -99,7 +99,7 @@ public class SimpleParametersService : IParametersService
                     return LoadBackupConfiguration();
                 }
                 else
-                { 
+                {
                     _logger.LogWarning("Файл конфигурации поврежден или пуст. Создаю новый файл с настройками по умолчанию");
                     return DefaultConfiguration();
                 }
@@ -120,7 +120,7 @@ public class SimpleParametersService : IParametersService
     private Parameters LoadBackupConfiguration()
     {
         string jsonContent;
-      
+
         try
         {
             _semaphore.Wait();
@@ -132,7 +132,7 @@ public class SimpleParametersService : IParametersService
         }
 
         var loadedConfiguration = JsonSerializer.Deserialize<Parameters>(jsonContent);
-      
+
         if (loadedConfiguration == null)
         {
             _logger.LogWarning("Резервная копия конфигурации повреждена. Создаю новый файл с настройками по умолчанию");
@@ -140,7 +140,7 @@ public class SimpleParametersService : IParametersService
         }
 
         _logger.LogInformation("Конфигурация успешно загружена из резервной копии");
-       
+
         loadedConfiguration = CheckMigration(loadedConfiguration);
         CacheSettings(loadedConfiguration);
 
@@ -156,7 +156,7 @@ public class SimpleParametersService : IParametersService
 
         if (isUpToDate)
             return settings;
-        
+
         if (settings.AppVersion < 9)
             settings = MigrationTo9.DoMigration(settings);
 
@@ -261,7 +261,7 @@ public class SimpleParametersService : IParametersService
 
     private void CacheSettings(Parameters settings)
     {
-        _cacheService.Set(CacheKey, 
+        _cacheService.Set(CacheKey,
                           settings,
                           TimeSpan.FromMinutes(CacheExpirationMinutes));
     }
@@ -317,7 +317,7 @@ public class SimpleParametersService : IParametersService
     public async Task<Parameters> CurrentAsync()
         => await Task.Run(() => { return Current(); });
 
-    public async Task UpdateAsync(Parameters parameters) 
+    public async Task UpdateAsync(Parameters parameters)
         => await SaveConfigurationAsync(parameters);
 
     public async Task<Result> ApplyFromCentral(FmuApiSetting newSettings)
@@ -325,9 +325,9 @@ public class SimpleParametersService : IParametersService
         var settings = await CurrentAsync();
 
         settings.HostsToPing = newSettings.HostsToPing;
-        
+
         settings.MinimalPrices.Tabaco = newSettings.MinimalPrices.Tabaco;
-        
+
         settings.SaleControlConfig.BanSalesReturnedWares = newSettings.SaleControl.BanSalesReturnedWares;
         settings.SaleControlConfig.CheckIsOwnerField = newSettings.SaleControl.CheckIsOwnerField;
         settings.SaleControlConfig.CheckReceiptReturn = newSettings.SaleControl.CheckReceiptReturn;
@@ -335,7 +335,7 @@ public class SimpleParametersService : IParametersService
         settings.SaleControlConfig.IgnoreVerificationErrorForTrueApiGroups = newSettings.SaleControl.IgnoreVerificationErrorForTrueApiGroups;
         settings.SaleControlConfig.ResetSoldStatusForReturn = newSettings.SaleControl.ResetSoldStatusForReturn;
         settings.SaleControlConfig.SendEmptyTrueApiAnswerWhenTimeoutError = newSettings.SaleControl.SendEmptyTrueApiAnswerWhenTimeoutError;
-        settings.SaleControlConfig.SendLocalModuleInformationalInRequestId  = newSettings.SaleControl.SendLocalModuleInformationalInRequestId;
+        settings.SaleControlConfig.SendLocalModuleInformationalInRequestId = newSettings.SaleControl.SendLocalModuleInformationalInRequestId;
 
         settings.HttpRequestTimeouts.CdnRequestTimeout = newSettings.TimeOut.CdnRequest;
         settings.HttpRequestTimeouts.CheckInternetConnectionTimeout = newSettings.TimeOut.InternetConnectionCheck;
@@ -346,7 +346,7 @@ public class SimpleParametersService : IParametersService
         settings.Logging.LogDepth = newSettings.Logging.LogDepth;
 
         List<int> loadedPrintGroupsIds = [];
-        
+
         foreach (var loadedOrganization in newSettings.Organizations)
         {
             var current = settings.OrganisationConfig.PrintGroups.FirstOrDefault(x => x.Id == loadedOrganization.Id);
@@ -369,19 +369,19 @@ public class SimpleParametersService : IParametersService
                 current.INN = loadedOrganization.Inn;
                 current.XAPIKEY = loadedOrganization.XApiKey;
             }
-            
+
             loadedPrintGroupsIds.Add(loadedOrganization.Id);
         }
 
         var groupsToDelete = settings.OrganisationConfig.PrintGroups.Where(x => !loadedPrintGroupsIds.Contains(x.Id));
-        
+
         foreach (var groupToDelete in groupsToDelete)
         {
-            settings.OrganisationConfig.PrintGroups.Remove(groupToDelete);  
+            settings.OrganisationConfig.PrintGroups.Remove(groupToDelete);
         }
-        
+
         await SaveConfigurationAsync(settings);
-        
+
         return Result.Success();
     }
 }

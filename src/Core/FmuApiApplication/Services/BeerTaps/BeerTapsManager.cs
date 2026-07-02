@@ -122,7 +122,7 @@ public class BeerTapsManager : IBeerOnTapManager
                 continue;
 
             var repo = _frontolBeerTapsFactory.Create(connection.ConnectionStringBuild());
-            
+
             var frontolMarks = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             try

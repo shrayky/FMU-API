@@ -5,7 +5,7 @@ using FmuApiDomain.TrueApi.MarkData;
 
 namespace FmuApiDomain.MarkInformation.Entities
 {
-    public class MarkEntity: IHaveStringId
+    public class MarkEntity : IHaveStringId
     {
         public string Id { get; set; } = string.Empty;
         public string MarkId { get; set; } = string.Empty;
@@ -21,7 +21,7 @@ namespace FmuApiDomain.MarkInformation.Entities
         {
             string state = string.IsNullOrEmpty(existMark.State) ? MarkState.Stock : existMark.State;
 
-            var entity = new MarkEntity() 
+            var entity = new MarkEntity()
             {
                 Id = string.IsNullOrEmpty(existMark.Id) ? sGtin : existMark.Id,
                 MarkId = sGtin,

@@ -1,11 +1,11 @@
 ﻿using CSharpFunctionalExtensions;
-using FmuApiDomain.TrueApi.ProductInfo;
+using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.TrueApi;
+using FmuApiDomain.TrueApi.ProductInfo;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
 using Shared.Http;
 using System.Net.Http.Json;
-using FmuApiDomain.State.Interfaces;
 
 namespace FmuApiApplication.Services.TrueSign;
 
@@ -44,7 +44,7 @@ public class ProductInfo
 
             if (information == null)
                 return Result.Failure<ProductsInformationTrueApi>("Ошибка выполнения запроса");
-                
+
             return Result.Success(information);
 
         }
@@ -52,6 +52,6 @@ public class ProductInfo
         {
             return Result.Failure<ProductsInformationTrueApi>($"Ошибка выполнения запроса {ex.Message}");
         }
-        
+
     }
 }

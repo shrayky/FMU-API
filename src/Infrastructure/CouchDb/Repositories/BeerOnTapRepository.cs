@@ -1,5 +1,5 @@
-﻿using CouchDB.Driver.Extensions;
-using CouchDb.Documents;
+﻿using CouchDb.Documents;
+using CouchDB.Driver.Extensions;
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Database.Dto;

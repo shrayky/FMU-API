@@ -26,7 +26,7 @@ namespace CouchDb
 
             if (!string.IsNullOrEmpty(settings.FrontolDocumentsDbName))
                 FrontolDocumentsDb = settings.FrontolDocumentsDbName.ToLower();
-                
+
             if (!string.IsNullOrEmpty(settings.AlcoStampsDbName))
                 AlcoStampsDb = settings.AlcoStampsDbName.ToLower();
         }

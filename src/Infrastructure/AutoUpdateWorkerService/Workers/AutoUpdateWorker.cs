@@ -34,9 +34,9 @@ public class AutoUpdateWorker : BackgroundService
             if (stoppingToken.IsCancellationRequested)
                 break;
 
-            if (!configuration.AutoUpdate.Enabled) 
+            if (!configuration.AutoUpdate.Enabled)
                 continue;
-            
+
             _logger.LogInformation("Проверяю наличие обновления в каталоге {UpdateFilesCatalog}",
                 configuration.AutoUpdate.UpdateFilesCatalog);
 
@@ -55,7 +55,7 @@ public class AutoUpdateWorker : BackgroundService
 
         if (!File.Exists(updateFileName))
         {
-            _logger.LogInformation("Не найден файл обновления {updateFileName}",  updateFileName);
+            _logger.LogInformation("Не найден файл обновления {updateFileName}", updateFileName);
             return Result.Failure("No updates");
         }
 

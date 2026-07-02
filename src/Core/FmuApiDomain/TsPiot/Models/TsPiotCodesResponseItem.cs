@@ -30,7 +30,7 @@ namespace FmuApiDomain.TsPiot.Models
         [JsonPropertyName("inst")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string LocalModuleInstance { get; set; } = string.Empty;
-        
+
 
     }
 }

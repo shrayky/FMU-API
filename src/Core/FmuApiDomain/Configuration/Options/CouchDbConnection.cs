@@ -6,25 +6,25 @@ namespace FmuApiDomain.Configuration.Options;
 public class CouchDbConnection
 {
     public bool Enable { get; set; } = false;
-    
+
     public string NetAddress { get; set; } = string.Empty;
-    
+
     public string UserName { get; set; } = string.Empty;
-    
+
     public string Password { get; set; } = string.Empty;
-    
+
     public int BulkBatchSize { get; set; } = 1000;
-    
+
     public int BulkParallelTasks { get; set; } = 4;
-    
+
     public int QueryLimit { get; set; } = 1000000;
-    
+
     public int QueryTimeoutSeconds { get; set; } = 300;
 
     public bool ClearStorageOfStatistics { get; set; } = false;
 
     public int DepthOfStorageOfStatisticsInDays { get; set; } = 30;
-    
+
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? NetAdres { get; set; } = string.Empty;
 

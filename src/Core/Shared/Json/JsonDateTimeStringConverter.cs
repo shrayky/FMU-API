@@ -5,7 +5,7 @@ namespace Shared.Json;
 
 public class JsonDateTimeStringConverter : JsonConverter<DateTime>
 {
-    private static readonly string[] SupportedFormats = 
+    private static readonly string[] SupportedFormats =
     {
         "yyyy-MM-dd HH:mm:ss",
         "yyyy-MM-dd",

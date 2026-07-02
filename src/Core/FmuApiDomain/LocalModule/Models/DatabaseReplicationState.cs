@@ -15,7 +15,7 @@ namespace FmuApiDomain.LocalModule.Models
 
         [JsonPropertyName("timeLag")]
         [JsonConverter(typeof(JsonStringOrIntConverter))]
-        public string TimeLagRaw { get; set; } =  string.Empty;
+        public string TimeLagRaw { get; set; } = string.Empty;
 
         public int? DocCountLocal => ParseIntOrNull(LocalDocCountRaw);
         public int? DocCountServer => ParseIntOrNull(ServerDocCountRaw);

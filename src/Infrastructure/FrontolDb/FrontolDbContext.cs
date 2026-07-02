@@ -12,7 +12,7 @@ public class FrontolDbContext : DbContext
     public DbSet<Sprt> Sprts { get; set; }
     public DbSet<Barcode> Barcodes { get; set; }
     public DbSet<PrintGroup> PrintGroups { get; set; }
-    public DbSet<BeerTapEntity> BeerTaps {  get; set; }
+    public DbSet<BeerTapEntity> BeerTaps { get; set; }
 
     private readonly IParametersService _parametersService;
     private readonly Parameters _configuration;

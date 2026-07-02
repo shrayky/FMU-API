@@ -1,9 +1,9 @@
-using System.Net.Http.Headers;
-using System.Reflection;
 using CentralServerExchange.Services;
 using CentralServerExchange.Workers;
 using FmuApiDomain.Attributes;
 using Microsoft.Extensions.DependencyInjection;
+using System.Net.Http.Headers;
+using System.Reflection;
 
 namespace CentralServerExchange;
 
@@ -12,7 +12,7 @@ public static class CentralServerExchangeRegistrationExtension
     public static IServiceCollection AddExchangeWithFmuApiCentral(this IServiceCollection services)
     {
         services.AddAutoRegisteredServices([Assembly.GetExecutingAssembly()]);
-        
+
         services.AddHostedService<CentralServerExchangeWorker>();
 
         services.AddHttpClient<CentralServerExchangeService>(client =>
@@ -21,7 +21,7 @@ public static class CentralServerExchangeRegistrationExtension
             client.DefaultRequestHeaders.Accept.Add(
                 new MediaTypeWithQualityHeaderValue("application/json"));
         });
-        
+
         return services;
     }
 }

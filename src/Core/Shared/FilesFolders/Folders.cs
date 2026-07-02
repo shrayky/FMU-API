@@ -37,20 +37,20 @@
 
             return configFolder;
         }
-        
+
         public static void CopyDirectory(string sourceDir, string targetDir)
         {
             var dir = new DirectoryInfo(sourceDir);
-    
+
             if (!Directory.Exists(targetDir))
                 Directory.CreateDirectory(targetDir);
-    
+
             foreach (var file in dir.GetFiles())
             {
                 var targetFilePath = Path.Combine(targetDir, file.Name);
                 file.CopyTo(targetFilePath, true);
             }
-    
+
             foreach (var subDir in dir.GetDirectories())
             {
                 var targetSubDir = Path.Combine(targetDir, subDir.Name);

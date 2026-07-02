@@ -79,7 +79,8 @@ public class ApplicationState : IApplicationState
     {
         var lmStatusInfo = _localModules.FirstOrDefault(p => p.Organization == organizationId);
 
-        if (lmStatusInfo == null) {
+        if (lmStatusInfo == null)
+        {
             lmStatusInfo = new()
             {
                 Organization = organizationId,

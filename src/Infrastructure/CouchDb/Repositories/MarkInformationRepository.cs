@@ -90,7 +90,7 @@ namespace CouchDb.Repositories
                 return new();
 
             Result<MarkSearchResult> searchResult;
-            
+
             if (string.IsNullOrEmpty(searchTerm))
                 searchResult = await AllMarksWithPagination(page, pageSize, totalCount.Value);
             else

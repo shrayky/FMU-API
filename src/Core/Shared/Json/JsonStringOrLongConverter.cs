@@ -10,8 +10,8 @@ public class JsonStringOrLongConverter : JsonConverter<long>
         return reader.TokenType switch
         {
             JsonTokenType.Number => reader.GetInt64(),
-            JsonTokenType.String => long.TryParse(reader.GetString(), out var result) 
-                ? result 
+            JsonTokenType.String => long.TryParse(reader.GetString(), out var result)
+                ? result
                 : throw new JsonException($"Не удалось преобразовать строку '{reader.GetString()}' в long"),
             _ => throw new JsonException($"Неожиданный тип токена: {reader.TokenType}")
         };

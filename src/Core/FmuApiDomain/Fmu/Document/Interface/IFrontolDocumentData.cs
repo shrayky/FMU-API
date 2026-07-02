@@ -4,7 +4,7 @@
     {
         RequestDocument Document { get; set; }
         string Id { get; set; }
-        string Rev {  get; set; }
+        string Rev { get; set; }
         bool Deleted { get; }
     }
 }

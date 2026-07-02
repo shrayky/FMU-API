@@ -12,7 +12,7 @@ public static class ServiceAndDaemonsManagerFactory
 
         if (OperatingSystem.IsLinux())
             return new LinuxDaemonManager();
-        
+
         throw new Exception("Нет менеджера служб для текущей ОС");
     }
 }

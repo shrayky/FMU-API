@@ -2,7 +2,7 @@
 {
     public class TokenServiceConfiguration
     {
-        public bool Enable {  get; set; }
+        public bool Enable { get; set; }
         public string ConnectionAddress { get; set; } = string.Empty;
     }
 }

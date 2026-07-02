@@ -26,7 +26,7 @@ public static class LmStateCollector
                 LastSyncTime = fullStateInfo.LastSyncDateTime,
                 State = fullStateInfo.StatusRaw,
                 IsReady = fullStateInfo.IsReady,
-                
+
                 Id = printGroup.Id,
                 LastSync = fullStateInfo.LastSyncTimestamp,
                 OperationMode = fullStateInfo.OperationModeRaw,

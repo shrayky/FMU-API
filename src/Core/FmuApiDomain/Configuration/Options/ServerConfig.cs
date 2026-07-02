@@ -1,7 +1,7 @@
 ﻿namespace FmuApiDomain.Configuration.Options;
 
-using System.Text.Json.Serialization;
 using Shared.Json;
+using System.Text.Json.Serialization;
 
 public class ServerConfig
 {

@@ -6,24 +6,24 @@ namespace FmuApiDomain.TrueApi.MarkData.Check
     {
         [JsonPropertyName("code")]
         public int Code { get; set; }
-        
+
         [JsonPropertyName("description")]
         public string Description { get; set; } = string.Empty;
-        
+
         [JsonPropertyName("reqId")]
         public string ReqId { get; set; } = string.Empty;
-        
+
         [JsonPropertyName("reqTimestamp")]
         public long ReqTimestamp { get; set; }
-        
+
         [JsonPropertyName("inst")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string Inst { get; set; } = "";
-        
+
         [JsonPropertyName("version")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string Version { get; set; } = "";
-        
+
         [JsonPropertyName("codes")]
         public List<CodeDataTrueApi> Codes { get; set; } = [];
 

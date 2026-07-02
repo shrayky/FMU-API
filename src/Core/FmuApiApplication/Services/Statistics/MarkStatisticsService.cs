@@ -30,7 +30,7 @@ namespace FmuApiApplication.Services.Statistics
         {
             if (!_parameters.Database.Enable)
                 return new MarkCheckStatistics();
-            
+
             var statistics = await _repository.CheckStatisticsByDays(fromDate, toDate);
 
             return statistics;
@@ -43,7 +43,7 @@ namespace FmuApiApplication.Services.Statistics
 
             return await ByDays(fromDate, toDate);
         }
-        
+
         public async Task<MarkCheckStatistics> LastMonth()
         {
             var toDate = DateTime.Now.Date.AddDays(-1);

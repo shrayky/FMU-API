@@ -33,10 +33,10 @@ namespace Shared.Json
             await writer.FlushAsync().ConfigureAwait(false);
 
             stream.Position = 0;
-                
+
             return await JsonSerializer.DeserializeAsync<T>(stream);
         }
-        
+
         public static async Task<string> SerializeAsync<T>(T obj)
         {
             using var stream = new MemoryStream();
@@ -45,7 +45,7 @@ namespace Shared.Json
             using var reader = new StreamReader(stream);
             return await reader.ReadToEndAsync();
         }
-        
+
         public static async Task<string> SerializeAsync<T>(T obj, JsonSerializerOptions options)
         {
             using var stream = new MemoryStream();
@@ -54,7 +54,7 @@ namespace Shared.Json
             using var reader = new StreamReader(stream);
             return await reader.ReadToEndAsync();
         }
-        
+
         public static async ValueTask<T?> DeserializeAsync<T>(string json, JsonSerializerOptions options)
         {
             using var stream = new MemoryStream();
@@ -63,7 +63,7 @@ namespace Shared.Json
             await writer.FlushAsync().ConfigureAwait(false);
 
             stream.Position = 0;
-            
+
             return await JsonSerializer.DeserializeAsync<T>(stream, options);
         }
     }

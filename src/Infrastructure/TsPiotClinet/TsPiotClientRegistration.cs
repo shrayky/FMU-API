@@ -47,7 +47,7 @@ public static class TsPiotClientRegistration
         services.AddScoped<ITsPiotService, TsPiotFabricService>();
 
         services.AddHostedService<TsPiotStateCheckerWorker>();
-    }   
+    }
 }
 
 // тестовый пиот (эмулятор)

@@ -34,7 +34,7 @@ namespace LocalModuleIntegration
                 services.AddSingleton<ILocalModuleService, LocalModuleServiceV2>();
             else
                 services.AddSingleton<ILocalModuleService, LocalModuleServiceV1>();
-            
+
             services.AddHostedService<LocalModuleStatusWorker>();
         }
     }

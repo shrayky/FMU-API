@@ -8,20 +8,20 @@ namespace CentralServerExchange.Workers;
 public class CentralServerExchangeWorker : BackgroundService
 {
     private readonly ILogger<CentralServerExchangeWorker> _logger;
-    
+
     private readonly IParametersService _parametersService;
     private readonly ICentralServerExchangeActions _exchangeActions;
-    
+
     private DateTime _nextExchangeTime;
 
     private const int TryAfterErrorLimit = 10;
 #if DEBUG
-    private const int StartDelayMinutes = 1;            
+    private const int StartDelayMinutes = 1;
 #else
     private const int StartDelayMinutes = 5;        
 #endif
     private const int DelayAfterErrorMinutes = 1;
-    
+
     public CentralServerExchangeWorker(ILogger<CentralServerExchangeWorker> logger,
         IParametersService parametersService,
         ICentralServerExchangeActions exchangeActions)
@@ -36,7 +36,7 @@ public class CentralServerExchangeWorker : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var tryCounts = 0;
-        
+
         while (!stoppingToken.IsCancellationRequested)
         {
             if (stoppingToken.IsCancellationRequested)
@@ -47,14 +47,15 @@ public class CentralServerExchangeWorker : BackgroundService
                 await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken).ConfigureAwait(false);
                 continue;
             }
-            
+
             var configuration = await _parametersService.CurrentAsync().ConfigureAwait(false);
 
             if (configuration.FmuApiCentralServer.Enabled)
             {
                 var result = await _exchangeActions.StartExchange().ConfigureAwait(false);
 
-                if (!result && tryCounts <= TryAfterErrorLimit) { 
+                if (!result && tryCounts <= TryAfterErrorLimit)
+                {
                     _nextExchangeTime = DateTime.Now.AddMinutes(DelayAfterErrorMinutes);
                     tryCounts++;
                     continue;

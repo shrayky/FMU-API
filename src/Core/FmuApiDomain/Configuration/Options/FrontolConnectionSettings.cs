@@ -3,12 +3,12 @@
 public class FrontolConnectionSettings
 {
     public string Path { get; set; } = "";
-    
+
     public string UserName { get; set; } = "SYSDBA";
-    
+
     public string Password { get; set; } = "masterkey";
 
-    public int Id { get; set; } 
+    public int Id { get; set; }
 
     public string Name { get; set; } = string.Empty;
 

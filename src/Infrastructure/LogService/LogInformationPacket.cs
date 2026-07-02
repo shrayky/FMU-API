@@ -18,7 +18,7 @@ namespace LogService
             var files = Directory.EnumerateFiles(logFolderPath, "fmu-api*.log");
 
             var enumerable = files.ToList();
-            
+
             if (enumerable.Count == 0)
                 return defaultAnswer;
 
@@ -59,10 +59,10 @@ namespace LogService
                 return string.Empty;
 
             var directoryName = Path.GetDirectoryName(uploadLogFileName);
-            
+
             if (directoryName == null)
                 return string.Empty;
-            
+
             var tempLog = Path.GetTempFileName();
 
             try

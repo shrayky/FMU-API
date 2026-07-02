@@ -1,5 +1,4 @@
-﻿using Microsoft.VisualBasic;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace FmuApiDomain.Fmu.Token
 {

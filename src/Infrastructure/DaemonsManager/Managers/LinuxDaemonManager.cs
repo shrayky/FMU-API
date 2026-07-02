@@ -1,5 +1,5 @@
-using System.Diagnostics;
 using FmuApiDomain.DaemonsManager;
+using System.Diagnostics;
 
 namespace ServicesAndDaemonsManager.Managers;
 
@@ -48,10 +48,10 @@ public class LinuxDaemonManager : IDaemonManager
         try
         {
             using var process = Process.Start(startInfo);
-            
+
             if (process is null)
                 return false;
-            
+
             process.WaitForExit(ProcessWaitTimeout);
             return process.ExitCode == 0;
         }
@@ -77,7 +77,7 @@ public class LinuxDaemonManager : IDaemonManager
 
             if (process is null)
                 return "Не найдена";
-            
+
             var output = process.StandardOutput.ReadToEnd();
             process.WaitForExit(ProcessWaitTimeout);
             return output.Trim();

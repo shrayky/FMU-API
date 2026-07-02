@@ -6,7 +6,7 @@ public class OnlineCheckResult
 {
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string? Inn { get; set; }
-    
+
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string? Kpp { get; set; }
 

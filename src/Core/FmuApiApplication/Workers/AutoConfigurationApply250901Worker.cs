@@ -21,7 +21,7 @@ public class AutoConfigurationApply250901Worker : BackgroundService
 
     protected async override Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        
+
         await Task.Delay(_startDelay, stoppingToken);
 
         while (!stoppingToken.IsCancellationRequested)

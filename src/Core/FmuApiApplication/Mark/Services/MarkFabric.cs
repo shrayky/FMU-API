@@ -14,8 +14,8 @@ public class MarkFabric : IMarkFabric
     private readonly ILoggerFactory _loggerFactory;
     private readonly IMarkParser _markParser;
     private readonly IMarkChecker _markChecker;
-    private readonly IMarkStateManager  _markStateManager;
-    private readonly IParametersService  _parametersService;
+    private readonly IMarkStateManager _markStateManager;
+    private readonly IParametersService _parametersService;
     private readonly IFrontolSprTService _frontolSprTService;
 
     public MarkFabric(ILoggerFactory loggerFactory, IMarkParser markParser, IMarkChecker markChecker, IMarkStateManager markStateManager, IParametersService parametersService, IFrontolSprTService frontolSprTService)
@@ -31,16 +31,16 @@ public class MarkFabric : IMarkFabric
     public async Task<IMark> Create(Position position, string mark)
     {
         var logger = _loggerFactory.CreateLogger<Mark>();
-        
+
         var markInstance = new Mark(mark, _markParser, _markChecker, _markStateManager, _parametersService, logger);
 
         var appSettings = await _parametersService.CurrentAsync();
-        
+
         var inn = position.Organisation?.Inn ?? string.Empty;
         var printGroupCode = await SetOrganizationId(markInstance, appSettings.OrganisationConfig.PrintGroups, inn);
 
         SetTsPiotSettings(markInstance, position, appSettings, printGroupCode);
-        
+
         return markInstance;
     }
 
@@ -48,7 +48,7 @@ public class MarkFabric : IMarkFabric
     {
         if (!appSettings.ServerConfig.TsPiotEnabled)
             return;
-        
+
         if (!string.IsNullOrEmpty(position.TsPiot.Host) && !string.IsNullOrEmpty(position.TsPiot.Port))
         {
             markInstance.SetTsPiotSettings(position.TsPiot);
@@ -57,16 +57,16 @@ public class MarkFabric : IMarkFabric
 
         var printGroups = appSettings.OrganisationConfig.PrintGroups;
         var printGroup = printGroups.FirstOrDefault(f => f.Id == printGroupCode);
-        
+
         if (printGroup == null)
             return;
-        
+
         var tsPiotSettings = printGroup.TsPiot;
-        
+
         if (!string.IsNullOrEmpty(tsPiotSettings?.Host) && !string.IsNullOrEmpty(tsPiotSettings.Port))
         {
             markInstance.SetTsPiotSettings(tsPiotSettings);
-        } 
+        }
     }
 
     private async Task<int> SetOrganizationId(IMark mark, List<PrintGroupData> printGroups, string inn)
@@ -86,7 +86,7 @@ public class MarkFabric : IMarkFabric
             if (organisation != null)
                 pgCode = organisation.Id;
         }
-        
+
         if (pgCode == 0)
         {
             var result = await _frontolSprTService.PrintGroupCodeByBarcodeAsync(mark.Barcode);
@@ -99,7 +99,7 @@ public class MarkFabric : IMarkFabric
             return 0;
 
         mark.SetPrintGroupCode(pgCode);
-        
+
         return pgCode;
     }
 }

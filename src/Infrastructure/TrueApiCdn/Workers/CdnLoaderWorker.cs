@@ -28,7 +28,7 @@ public class CdnLoaderWorker : BackgroundService
 
     private Parameters _configuration;
 
-    public CdnLoaderWorker(IParametersService parametersService, 
+    public CdnLoaderWorker(IParametersService parametersService,
         ICdnService cdnService,
         IHttpClientFactory httpClientFactory,
         IApplicationState applicationState,

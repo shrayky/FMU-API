@@ -10,7 +10,7 @@ public class MigrationTo11_10
     {
         if (settings.FrontolConnectionSettings != null)
             settings = MoveFrontolConnectionSettingsToConnectedFrontolSettings(settings);
-       
+
         settings.AppVersion = ApplicationInformation.AppVersion;
         settings.Assembly = ApplicationInformation.Assembly;
 
@@ -31,12 +31,12 @@ public class MigrationTo11_10
         var conn = new FrontolConnectionSettings()
         {
             Id = 1,
-            Name = "Default", 
+            Name = "Default",
             Path = settings.FrontolConnectionSettings.Path,
             UserName = settings.FrontolConnectionSettings.UserName,
             Password = settings.FrontolConnectionSettings.Password
         };
-        
+
         settings.ConnectedFrontolSettings.ConnectionSettings.Add(conn);
         settings.ConnectedFrontolSettings.PrintGroupSourseId = 1;
         settings.FrontolConnectionSettings = new();

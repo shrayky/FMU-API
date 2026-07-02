@@ -1,4 +1,3 @@
-using System.Text.Json;
 using FmuApiApplication.CentralServiceExchange.Models;
 using FmuApiApplication.StateCollectors;
 using FmuApiDomain.Attributes;
@@ -11,6 +10,7 @@ using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Shared.Strings;
+using System.Text.Json;
 using TrueApiCdn.Interface;
 
 namespace FmuApiApplication.CentralServiceExchange.Service;
@@ -33,7 +33,7 @@ public class NodeInformationService : INodeInformationService
 
     public async Task<DataPacket> Create()
     {
-        var settings = await _parametersService.CurrentAsync();        
+        var settings = await _parametersService.CurrentAsync();
 
         Payload packetPayload = new()
         {
@@ -96,7 +96,7 @@ public class NodeInformationService : INodeInformationService
                 Name = printGroup.Name,
                 XApiKey = printGroup.XAPIKEY
             };
-            
+
             fmuApiOrganizations.Add(organization);
         }
 
@@ -164,7 +164,7 @@ public class NodeInformationService : INodeInformationService
                 Offline = cdn.Offline,
                 OfflineFrom = cdn.OfflineFrom,
             };
-            
+
             cdnToUpload.Add(cdnData);
         }
 

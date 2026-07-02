@@ -8,17 +8,17 @@ public record LocalModuleStateInformation
     public string Address { get; init; } = string.Empty;
 
     [JsonPropertyName("version")]
-    public string Version { get; init; }  = string.Empty;
+    public string Version { get; init; } = string.Empty;
 
     [JsonPropertyName("lastSyncTime")]
     public DateTime LastSyncTime { get; init; }
 
     [JsonPropertyName("state")]
-    public string State { get; init; }   = string.Empty;
+    public string State { get; init; } = string.Empty;
 
     [JsonPropertyName("isReady")]
     public bool IsReady { get; init; }
-    
+
     [JsonPropertyName("id")]
     public int Id { get; init; }
 

@@ -48,7 +48,7 @@ namespace TrueApi.Services
             var content = JsonContent.Create(marksRequestData);
 
             var cdn = await _cdnService.GetActiveCdnAsync(0);
-            
+
             if (cdn is null)
                 return Result.Failure<CheckMarksDataTrueApi>("Нет активных CDN");
 
@@ -58,7 +58,7 @@ namespace TrueApi.Services
             httpClient.DefaultRequestHeaders.Add(HeaderNames.Accept, "application/json");
             httpClient.DefaultRequestHeaders.Add("X-API-KEY", xApiKey);
             httpClient.Timeout = timeoutInSeconds;
-            
+
             var markCheckResult = await httpClient.SendRequestSafelyAsync(
                     client => client.PostAsync($"{cdn.Host}{_address}/codes/check", content),
                     _logger,

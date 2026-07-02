@@ -1,5 +1,5 @@
-using System.Text.Json.Serialization;
 using FmuApiDomain.Configuration.Options;
+using System.Text.Json.Serialization;
 
 namespace FmuApiDomain.DTO.FmuApiExchangeData;
 
@@ -7,7 +7,7 @@ public record FmuApiSetting
 {
     [JsonPropertyName("version")]
     public int Version { get; init; } = 0;
-    
+
     [JsonPropertyName("assembly")]
     public int Assembly { get; init; } = 0;
 
@@ -16,22 +16,22 @@ public record FmuApiSetting
 
     [JsonPropertyName("hostsToPing")]
     public List<StringValue> HostsToPing { get; init; } = [];
-    
+
     [JsonPropertyName("minimalPrices")]
     public MinimalPrices MinimalPrices { get; init; } = new();
-    
+
     [JsonPropertyName("SalesControl")]
-    public SaleControl  SaleControl { get; init; } = new();
-    
+    public SaleControl SaleControl { get; init; } = new();
+
     [JsonPropertyName("Organizations")]
     public List<Organization> Organizations { get; init; } = [];
-    
+
     [JsonPropertyName("Database")]
     public Database Database { get; init; } = new();
-    
+
     [JsonPropertyName("timeOut")]
     public TimeOutConfiguration TimeOut { get; init; } = new();
-    
+
     [JsonPropertyName("logging")]
     public Logging Logging { get; init; } = new();
 
@@ -59,13 +59,13 @@ public record Organization
 {
     [JsonPropertyName("id")]
     public int Id { get; init; } = 0;
-    
+
     [JsonPropertyName("INN")]
     public string Inn { get; init; } = string.Empty;
-    
+
     [JsonPropertyName("name")]
     public string Name { get; init; } = string.Empty;
-    
+
     [JsonPropertyName("xApiKey")]
     public string XApiKey { get; init; } = string.Empty;
 }
@@ -80,7 +80,7 @@ public record TokenService
 {
     [JsonPropertyName("enabled")]
     public bool Enabled { get; init; } = false;
-    
+
     [JsonPropertyName("address")]
     public string Address { get; init; } = string.Empty;
 }
@@ -89,10 +89,10 @@ public record TimeOutConfiguration
 {
     [JsonPropertyName("cdnRequest")]
     public int CdnRequest { get; init; } = 15;
-    
+
     [JsonPropertyName("trueSignCheckRequest")]
-    public int  TrueSignCheckRequest { get; init; } = 2;
-    
+    public int TrueSignCheckRequest { get; init; } = 2;
+
     [JsonPropertyName("internetConnectionCheck")]
     public int InternetConnectionCheck { get; init; } = 15;
 }

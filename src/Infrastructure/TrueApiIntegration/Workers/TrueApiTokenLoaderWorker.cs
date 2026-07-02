@@ -6,6 +6,7 @@ using Microsoft.VisualBasic;
 using TrueApiIntegration.Interfaces;
 
 namespace TrueApiIntegration.Workers;
+
 public class TrueApiTokenLoaderWorker : BackgroundService
 {
     private readonly ILogger<TrueApiTokenLoaderWorker> _logger;

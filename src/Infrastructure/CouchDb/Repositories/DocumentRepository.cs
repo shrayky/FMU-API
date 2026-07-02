@@ -13,7 +13,7 @@ namespace CouchDb.Repositories
         public DocumentRepository(ILogger<DocumentRepository> logger, CouchDbContext context, IParametersService appConfiguration, IApplicationState applicationState) : base(logger, context, context.Documents, appConfiguration, applicationState)
         {
         }
-        
+
         public async Task<Result<DocumentEntity>> Add(RequestDocument document)
         {
             if (_context == null)

@@ -1,5 +1,4 @@
 ﻿using CSharpFunctionalExtensions;
-using FmuApiDomain.DTO.BeerTaps;
 using FmuApiDomain.Frontol.DTO;
 
 namespace FmuApiDomain.Frontol.Interfaces;

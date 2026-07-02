@@ -1,5 +1,3 @@
-using System.Net.Http.Json;
-using System.Text.Json;
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.TrueApi.MarkData.Check;
@@ -7,6 +5,8 @@ using FmuApiDomain.TsPiot.Interfaces;
 using FmuApiDomain.TsPiot.Models;
 using Microsoft.Extensions.Logging;
 using Shared.Json;
+using System.Net.Http.Json;
+using System.Text.Json;
 using TsPiotClinet.Models;
 
 namespace TsPiotClinet.Services;
@@ -15,7 +15,7 @@ public class TsPiotService : ITsPiotService
 {
     private readonly ILogger<TsPiotService> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
-    
+
     private const string CheckAddress = @"/api/v1/codes/check";
 
     public TsPiotService(ILogger<TsPiotService> logger, IHttpClientFactory httpClientFactory)
@@ -25,13 +25,13 @@ public class TsPiotService : ITsPiotService
     }
 
     public async Task<Result<CheckMarksDataTrueApi>> Check(string mark, TsPiotConnectionSettings connectionSettings)
-    {        
+    {
         using var httpClient = _httpClientFactory.CreateClient("TsPiot");
 
         httpClient.BaseAddress = new Uri($"{connectionSettings.Host}:{connectionSettings.Port}");
 
         var markBase64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(mark));
-        
+
         var requestData = new TsPiotCheckMarkRequest()
         {
             ClientInfo = new(),
@@ -53,11 +53,11 @@ public class TsPiotService : ITsPiotService
             var content = await response.Content.ReadAsStringAsync();
 
             _logger.LogDebug("Ответ ТСПИоТ: {content}", content);
-            
+
             var tsPiotOptions = new JsonSerializerOptions(JsonSerializeOptionsProvider.Default())
             {
-                Converters = 
-                { 
+                Converters =
+                {
                     new JsonStringOrLongConverter(),
                     new JsonDateTimeStringConverter()
                 }

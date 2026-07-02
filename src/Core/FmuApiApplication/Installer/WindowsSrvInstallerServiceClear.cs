@@ -21,7 +21,7 @@ public class WindowsSrvInstallerServiceClear
     private readonly string _serviceName = ApplicationInformation.AppName.ToLower();
     private readonly string _serviceDisplayName = ApplicationInformation.ServiceName;
     private readonly string _installDirectory;
-    private  string _logDirectory;
+    private string _logDirectory;
     private string? _logFilePath;
     private readonly string _exeName = string.Empty;
     private readonly string _wwwroot = "wwwroot";
@@ -29,12 +29,12 @@ public class WindowsSrvInstallerServiceClear
     public WindowsSrvInstallerServiceClear(IParametersService parametersService)
     {
         _parametersService = parametersService;
-        
+
         _installDirectory = Path.Combine(Path.GetPathRoot(Environment.SystemDirectory) ?? "",
                                         "Program Files",
                                         ApplicationInformation.Manufacture,
                                         ApplicationInformation.AppName);
-        
+
         _configuration = _parametersService.Current();
         _logDirectory = Folders.CommonApplicationDataFolder(ApplicationInformation.Manufacture, ApplicationInformation.AppName);
 

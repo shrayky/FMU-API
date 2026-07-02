@@ -38,71 +38,71 @@ public class CodeDataTrueApi
     [JsonPropertyName("groupIds")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public List<int>? GroupIds { get; set; }
-    
+
     [JsonPropertyName("message")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string? Message { get; set; }
-    
+
     [JsonPropertyName("isOwner")]
     public bool IsOwner { get; set; } = false;
-        
+
     [JsonPropertyName("productionDate")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public DateTime ProductionDate { get; set; } = DateTime.MinValue;
-    
+
     [JsonPropertyName("prVetDocument")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? PrVetDocument { get; set; }
-    
+
     [JsonPropertyName("errorCode")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public int ErrorCode { get; set; } = 0;
-    
+
     [JsonPropertyName("isTracking")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool IsTracking { get; set; } = false;
-            
+
     [JsonPropertyName("packageType")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string? PackageType { get; set; }
-    
+
     [JsonPropertyName("producerInn")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string? ProducerInn { get; set; }
-    
+
     [JsonPropertyName("grayZone")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool GrayZone { get; set; } = false;
-    
+
     [JsonPropertyName("mrp")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public int? Mrp { get; set; }
-    
+
     [JsonPropertyName("smp")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public int? Smp { get; set; }
-    
+
     [JsonPropertyName("expireDate")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public DateTime? ExpireDate { get; set; }
-    
+
     [JsonPropertyName("innerUnitCount")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public int? InnerUnitCount { get; set; }
-    
+
     [JsonPropertyName("soldUnitCount")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public int? SoldUnitCount { get; set; }
-    
+
     [JsonIgnore]
     public bool IsExpired { get => ExpireDate < DateTime.Now; }
-    
+
     [JsonIgnore]
     public bool CodeFounded { get => ErrorCode != 10; }
-    
+
     [JsonIgnore]
     public int DaysExpired { get => ExpireDate is null ? 999 : Convert.ToInt32((DateTime.Now - ExpireDate).Value.TotalDays); }
-    
+
     [JsonIgnore]
     public bool Empty { get => Cis == string.Empty; }
 

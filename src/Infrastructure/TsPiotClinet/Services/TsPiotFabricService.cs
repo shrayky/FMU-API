@@ -18,9 +18,9 @@ public class TsPiotFabricService : ITsPiotService
         _applicationState = applicationState;
     }
 
-    public Task<Result<CheckMarksDataTrueApi>> Check(string mark, TsPiotConnectionSettings connectionSettings) 
+    public Task<Result<CheckMarksDataTrueApi>> Check(string mark, TsPiotConnectionSettings connectionSettings)
         => Service($"{connectionSettings.Host}:{connectionSettings.Port}").Check(mark, connectionSettings);
 
-    private ITsPiotService Service(string connection) 
+    private ITsPiotService Service(string connection)
         => _services.GetRequiredKeyedService<ITsPiotService>(_applicationState.TsPiotApiVersion(connection));
 }

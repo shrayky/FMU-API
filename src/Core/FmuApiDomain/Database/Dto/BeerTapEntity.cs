@@ -17,5 +17,5 @@ public class BeerTapEntity : IHaveStringId
 
     public string TapName { get; set; } = string.Empty;
 
-    public int Sales {  get; set; } = 0;
+    public int Sales { get; set; } = 0;
 }

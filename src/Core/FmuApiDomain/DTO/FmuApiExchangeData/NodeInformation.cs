@@ -5,8 +5,8 @@ namespace FmuApiDomain.DTO.FmuApiExchangeData;
 public record NodeInformation
 {
     [JsonPropertyName("architecture")]
-    public string Architecture {get; init;} = Environment.Is64BitOperatingSystem ? "x64" : "x86";
-    
+    public string Architecture { get; init; } = Environment.Is64BitOperatingSystem ? "x64" : "x86";
+
     [JsonPropertyName("os")]
-    public string Os {get; init;} = OperatingSystem.IsWindows() ? "windows" : "linux";
+    public string Os { get; init; } = OperatingSystem.IsWindows() ? "windows" : "linux";
 }

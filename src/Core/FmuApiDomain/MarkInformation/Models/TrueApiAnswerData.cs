@@ -1,6 +1,4 @@
-﻿using System.Text.Json.Serialization;
-
-namespace FmuApiDomain.MarkInformation.Models
+﻿namespace FmuApiDomain.MarkInformation.Models
 {
     public class TrueApiAnswerData
     {

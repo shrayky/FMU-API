@@ -23,6 +23,6 @@ namespace FmuApiDomain.Configuration.Options
         public static AutoUpdateOptions Create() => new();
 
         public int CanUpdateUntil() => UntilHour == 0 ? 24 : UntilHour;
-        
+
     }
 }

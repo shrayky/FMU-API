@@ -13,7 +13,7 @@ namespace CouchDb
     {
         public CouchDatabase<CouchDoc<MarkEntity>> Marks { get; set; }
         public CouchDatabase<CouchDoc<DocumentEntity>> Documents { get; set; }
-        public CouchDatabase<CouchDoc<StatisticEntity>> MarkCheckingStatistic {  get; set; }
+        public CouchDatabase<CouchDoc<StatisticEntity>> MarkCheckingStatistic { get; set; }
         public CouchDatabase<CouchDoc<BeerTapEntity>> BeerOnTap { get; set; }
 
         // устаревшие:
@@ -21,7 +21,7 @@ namespace CouchDb
         public CouchDatabase<MarkStateDocument> MarksState { get; set; }
         [Obsolete]
         public CouchDatabase<FrontolDocumentData> FrontolDocuments { get; set; }
-        
+
         public CouchDbContext(CouchOptions<CouchDbContext> options) : base(options)
         {
         }
@@ -43,7 +43,7 @@ namespace CouchDb
             // устаревшие базы, для совместимости:
             Сompatibility9_102(databaseBuilder);
         }
-        
+
         [Obsolete]
         private void Сompatibility9_102(CouchDatabaseBuilder databaseBuilder)
         {

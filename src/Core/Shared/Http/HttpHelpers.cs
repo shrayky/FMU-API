@@ -1,5 +1,4 @@
 ﻿using Shared.Json;
-using System.Net.Http;
 
 namespace Shared.Http
 {

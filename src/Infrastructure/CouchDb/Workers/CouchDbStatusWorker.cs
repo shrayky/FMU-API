@@ -83,7 +83,7 @@ namespace CouchDb.Workers
                 return false;
 
             await _statusDbService.EnsureIndexesExist(databaseConfig, stoppingToken);
-            
+
             return true;
         }
 

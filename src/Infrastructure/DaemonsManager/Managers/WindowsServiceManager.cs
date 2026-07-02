@@ -1,7 +1,6 @@
-﻿using System.Diagnostics;
+﻿using FmuApiDomain.DaemonsManager;
 using System.Runtime.InteropServices;
 using System.ServiceProcess;
-using FmuApiDomain.DaemonsManager;
 
 namespace ServicesAndDaemonsManager.Managers
 {
@@ -11,7 +10,7 @@ namespace ServicesAndDaemonsManager.Managers
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 return false;
-            
+
             try
             {
                 using var service = new ServiceController(serviceName);
@@ -30,7 +29,7 @@ namespace ServicesAndDaemonsManager.Managers
             try
             {
                 using var service = new ServiceController(serviceName);
-                
+
                 return service.Status.ToString();
             }
             catch (Exception)
@@ -43,7 +42,7 @@ namespace ServicesAndDaemonsManager.Managers
         {
             Environment.Exit(0);
             return true;
-            
+
             // var startInfo = new ProcessStartInfo
             // {
             //     FileName = "cmd.exe",
@@ -58,7 +57,7 @@ namespace ServicesAndDaemonsManager.Managers
 
             //     if (process is null)
             //         return false;
-                
+
             //     process.WaitForExit();
             //     return process.ExitCode == 0;
             // }

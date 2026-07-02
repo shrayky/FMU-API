@@ -40,7 +40,8 @@ public class ItidaImarkController : ControllerBase
     [HttpGet("/scripts")]
     public IActionResult FmuApiState()
     {
-        return Ok(new { 
+        return Ok(new
+        {
             version = $"{ApplicationInformation.AppVersion}.{ApplicationInformation.Assembly}",
             skipcischeck = false,
             cdninterval = 8,
@@ -61,6 +62,6 @@ public class ItidaImarkController : ControllerBase
             backupdate = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
         };
 
-        return Ok(new { data = data});
+        return Ok(new { data = data });
     }
 }

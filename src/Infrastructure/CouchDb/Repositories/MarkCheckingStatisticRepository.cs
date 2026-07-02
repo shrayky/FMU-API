@@ -1,5 +1,5 @@
-﻿using CouchDB.Driver.Extensions;
-using CouchDb.Documents;
+﻿using CouchDb.Documents;
+using CouchDB.Driver.Extensions;
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Database.Dto;
@@ -43,7 +43,7 @@ public class MarkCheckingStatisticRepository : BaseCouchDbRepository<StatisticEn
             CheckDate = checkDate,
             SGtin = mark,
             OnLineCheck = false,
-            OffLineCheck= true,
+            OffLineCheck = true,
             SuccessCheck = true,
             WarningMessage = "",
             CheckDay = ToCheckDay(checkDate)
@@ -195,7 +195,7 @@ public class MarkCheckingStatisticRepository : BaseCouchDbRepository<StatisticEn
     {
         if (_context == null)
             return Result.Failure(DatabaseUnavailable);
-        
+
         _logger.LogInformation("Начинаю удаление устаревших данных статистики марок до {date}.", dateToCutStorage);
 
         var data = await ExecuteSafetyDbOperation(

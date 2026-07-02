@@ -3,10 +3,10 @@ using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.Fmu.Document.Interface;
-using FmuApiDomain.State.Interfaces;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.DependencyInjection;
 using FmuApiDomain.Repositories;
+using FmuApiDomain.State.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace FmuApiApplication.Documents
 {
@@ -18,7 +18,7 @@ namespace FmuApiApplication.Documents
         private Lazy<IDocumentRepository> _temporaryDocumentsService { get; set; }
 
         private IParametersService _parametersService { get; set; }
-        private IApplicationState  _appState { get; set; }
+        private IApplicationState _appState { get; set; }
 
         private Parameters _configuration;
 
@@ -28,7 +28,7 @@ namespace FmuApiApplication.Documents
 
             _temporaryDocumentsService = new Lazy<IDocumentRepository>(() => provider.GetRequiredService<IDocumentRepository>());
             _logger = new Lazy<ILogger<CancelDocument>>(() => provider.GetRequiredService<ILogger<CancelDocument>>());
-            
+
             _parametersService = provider.GetRequiredService<IParametersService>();
             _appState = provider.GetRequiredService<IApplicationState>();
             _configuration = _parametersService.Current();

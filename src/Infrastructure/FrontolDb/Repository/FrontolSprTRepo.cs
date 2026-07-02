@@ -18,7 +18,7 @@ public class FrontolSprTRepo : IFrontolSprTService
     public FrontolSprTRepo(string connectionString, IMemoryCache cacheService, IParametersService parametersService)
     {
         _connectionString = connectionString;
-        
+
         _db = new FrontolDbContext(connectionString);
 
         _cacheService = cacheService;

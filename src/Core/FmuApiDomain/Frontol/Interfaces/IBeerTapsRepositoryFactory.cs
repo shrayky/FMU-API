@@ -1,6 +1,4 @@
-﻿using FmuApiDomain.Configuration.Interfaces;
-
-namespace FmuApiDomain.Frontol.Interfaces;
+﻿namespace FmuApiDomain.Frontol.Interfaces;
 
 public interface IBeerTapsRepositoryFactory
 {
