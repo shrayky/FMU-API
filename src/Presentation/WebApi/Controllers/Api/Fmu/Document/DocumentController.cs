@@ -1,6 +1,7 @@
 ﻿using FmuApiApplication.Documents;
 using FmuApiDomain.Fmu.Document;
 using Microsoft.AspNetCore.Mvc;
+using WebApi.Services;
 
 namespace WebApi.Controllers.Api.Fmu.Document
 {
@@ -12,13 +13,16 @@ namespace WebApi.Controllers.Api.Fmu.Document
     {
         private readonly ILogger<DocumentController> _logger;
         private readonly FrontolDocumentServiceFactory _factory;
+        private readonly FmuDocumentResponseService _responseService;
         
         public DocumentController(
             ILogger<DocumentController> logger, 
-            FrontolDocumentServiceFactory factory)
+            FrontolDocumentServiceFactory factory,
+            FmuDocumentResponseService responseService)
         {
             _logger = logger;
             _factory = factory;
+            _responseService = responseService;
         }
 
         [HttpPost]
@@ -34,9 +38,9 @@ namespace WebApi.Controllers.Api.Fmu.Document
             var result = await service.ActionAsync();
 
             if (result.IsFailure)
-                return BadRequest(result.Error);
+                return _responseService.BadRequest(result.Error);
 
-            return Ok(result.Value);
+            return _responseService.Ok(result.Value);
         }
     }
 }

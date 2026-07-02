@@ -9,12 +9,18 @@ class ServerConfigurationElement {
             ipPortApi: "IP-порт API сервиса",
             tsPiotUse: "Для проверки маркировки использовать ТС ПиОТ",
             localModuleVersion: "Версия локального модуля",
+            responseEncoding: "Кодировка ответа проверки марки",
         };
 
         this.LOCAL_MODULE_VERSIONS = [
-            { value: 0, label: "Не указана (по умолчанию используется версия 1)" },
-            { value: 1, label: "Версия 1" },
-            { value: 2, label: "Версия 2" },
+            { id: 0, value: "Не указана (по умолчанию используется версия 1)" },
+            { id: 1, value: "Версия 1" },
+            { id: 2, value: "Версия 2" },
+        ];
+
+        this.RESPONSE_ENCODINGS = [
+            { id: 0, value: "UTF-8 (Frontol и др.)" },
+            { id: 1, value: "Windows-1251 (1С)" },
         ];
     }
 
@@ -23,6 +29,7 @@ class ServerConfigurationElement {
             this.apiIpPort = config.serverConfig.apiIpPort ?? 2578;
             this.tsPiotEnabled = config.serverConfig.tsPiotEnabled ?? false;
             this.localModuleVersion = config.serverConfig.localModuleVersion ?? 0;
+            this.responseEncoding = config.serverConfig.responseEncoding ?? 0;
         }
 
         if (config?.nodeName) {
@@ -58,7 +65,7 @@ class ServerConfigurationElement {
                                 view: "select",
                                 label: this.LABELS.localModuleVersion,
                                 labelPosition: "left",
-                                labelWidth: 200,
+                                labelWidth: 250,
                                 id: "localModuleVersion",
                                 name: "serverConfig.localModuleVersion",
                                 options: this.LOCAL_MODULE_VERSIONS,
@@ -75,6 +82,16 @@ class ServerConfigurationElement {
                                 }
                             }        
                         ]
+                    },
+
+                    {
+                        view: "select",
+                        label: this.LABELS.responseEncoding,
+                        labelPosition: "left",
+                        labelWidth: 250,
+                        name: "serverConfig.responseEncoding",
+                        options: this.RESPONSE_ENCODINGS,
+                        value: this.responseEncoding,
                     }
                     
                 ]

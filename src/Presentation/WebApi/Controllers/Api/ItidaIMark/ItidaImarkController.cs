@@ -1,6 +1,8 @@
 ﻿using FmuApiApplication.Documents;
+using FmuApiDomain.Constants;
 using FmuApiDomain.Fmu.Token;
 using Microsoft.AspNetCore.Mvc;
+using System.Data;
 
 namespace WebApi.Controllers.Api.ItidaIMark;
 
@@ -27,12 +29,39 @@ public class ItidaImarkController : ControllerBase
 
         AuthorizationAnswer authorizationAnswer = new()
         {
-            Id = "Pos",
+            Id = "itida-i-mark",
             Name = "",
             Expired = (int)expired.Subtract(DateTime.UnixEpoch).TotalSeconds,
             Signature = "fmu-api-sign"
         };
 
         return Ok(authorizationAnswer);
+    }
+
+    [HttpGet("/scripts")]
+    public IActionResult FmuApiState()
+    {
+        return Ok(new { 
+            version = $"{ApplicationInformation.AppVersion}.{ApplicationInformation.Assembly}",
+            skipcischeck = false,
+            cdninterval = 8,
+            dbtype = "couchdb",
+            backupdate = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        });
+    }
+
+    [HttpGet("/settings")]
+    public IActionResult FmuApiSettings()
+    {
+        var data = new
+        {
+            version = $"{ApplicationInformation.AppVersion}.{ApplicationInformation.Assembly}",
+            skipcischeck = false,
+            cdninterval = 8,
+            dbtype = "couchdb",
+            backupdate = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        };
+
+        return Ok(new { data = data});
     }
 }

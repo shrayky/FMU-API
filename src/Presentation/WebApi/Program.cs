@@ -24,6 +24,7 @@ using TsPiotClinet;
 using WebApi;
 using WebApi.Extensions;
 using WebApi.Services;
+using System.Text;
 
 var slConsole = new LoggerConfiguration()
     .MinimumLevel.Debug().WriteTo
@@ -62,12 +63,15 @@ return;
 
 bool RunHttpApiService()
 {
+    Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
     var dataFolder = StringHelpers.ArgumentValue(args, "--dataFolder", "");
     
     var builder = WebApplication.CreateBuilder();
     var services = builder.Services;
 
     services.AddControllers();
+    services.AddScoped<FmuDocumentResponseService>();
     services.AddRazorPages();
     services.AddEndpointsApiExplorer();
     services.AddSwaggerGen();

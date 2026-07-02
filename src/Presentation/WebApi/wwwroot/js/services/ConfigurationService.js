@@ -28,6 +28,12 @@ function normalizeFormValues(values) {
 
     frontol.printGroupSourseId = parseInt(frontol.printGroupSourseId, 10) || 0;
 
+    const serverConfig = values?.serverConfig;
+    if (serverConfig) {
+        serverConfig.localModuleVersion = parseInt(serverConfig.localModuleVersion, 10) || 0;
+        serverConfig.responseEncoding = parseInt(serverConfig.responseEncoding, 10) || 0;
+    }
+
     if (frontol.syncBeerTapsSettings) {
         frontol.syncBeerTapsSettings.syncBeerTapsPeriodSeconds =
             parseInt(frontol.syncBeerTapsSettings.syncBeerTapsPeriodSeconds, 10) || 30;
