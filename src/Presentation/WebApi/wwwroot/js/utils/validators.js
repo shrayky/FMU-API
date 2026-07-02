@@ -67,6 +67,27 @@ export const httpAddressValidator = createValidator(
     "Адрес должен быть в формате http(s)://hostname[:port]"
 );
 
+// Валидатор списка HTTP адресов через ";"
+export const httpAddressListValidator = createValidator(
+    ValidationType.HTTP_ADDRESS,
+    (value) => {
+        if (value == "")
+            return true;
+
+        if (!value)
+            return false;
+
+        const addresses = value.split(";").map((address) => address.trim());
+
+        if (addresses.length === 0)
+            return false;
+
+        const urlRegex = /^https?:\/\/[a-zA-Z0-9.-]+(?::\d+)?(?:\/[^?#]*)?(?:\?[^#]*)?(?:#.*)?$/;
+        return addresses.every((address) => address !== "" && address.length <= 2083 && urlRegex.test(address));
+    },
+    "Каждый адрес должен быть в формате http(s)://hostname[:port] и разделен ';'"
+);
+
 // Валидатор пути к базе данных фронтола
 export const frontolDbPathValidator = createValidator(
     ValidationType.FRONTOL_DB,  
@@ -152,6 +173,7 @@ export const hostNameValidator = createValidator(
 
 export const windowsPathValidation = windowsPathValidator.toWebix();
 export const httpAddressValidation = httpAddressValidator.toWebix();
+export const httpAddressListValidation = httpAddressListValidator.toWebix();
 export const frontolDbValidation = frontolDbPathValidator.toWebix();
 export const couchDbNameValidation = couchDbServerValidator.toWebix();
 export const hostnameValidation = hostNameValidator.toWebix();

@@ -1,5 +1,5 @@
 import { Number, Label, padding, CheckBox, Text, TableToolbar } from "../../../utils/ui.js";
-import { httpAddressValidation } from "../../../utils/validators.js";
+import { httpAddressListValidation } from "../../../utils/validators.js";
 
 const ITALIC_SMALL_STYLE = { "font-style": "italic", "font-size": "smaller" };
 const TIME_FORMAT_24H = "%H:%i";
@@ -134,7 +134,7 @@ class CentralServerConnectionElement {
                             Text(this.LABELS.address,
                                 "fmuApiCentralServer.address",
                                 this.address,
-                                httpAddressValidation),
+                                httpAddressListValidation),
 
                             Label("lAddressTip", this.LABELS.addressTip),
 
