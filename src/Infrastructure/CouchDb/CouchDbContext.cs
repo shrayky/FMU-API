@@ -1,5 +1,6 @@
 ﻿// Ignore Spelling: Frontol
 
+using CouchDb.DatabaseScheme;
 using CouchDb.DocumentModels;
 using CouchDb.Documents;
 using CouchDB.Driver;
@@ -15,12 +16,6 @@ namespace CouchDb
         public CouchDatabase<CouchDoc<DocumentEntity>> Documents { get; set; }
         public CouchDatabase<CouchDoc<StatisticEntity>> MarkCheckingStatistic { get; set; }
         public CouchDatabase<CouchDoc<BeerTapEntity>> BeerOnTap { get; set; }
-
-        // устаревшие:
-        [Obsolete]
-        public CouchDatabase<MarkStateDocument> MarksState { get; set; }
-        [Obsolete]
-        public CouchDatabase<FrontolDocumentData> FrontolDocuments { get; set; }
 
         public CouchDbContext(CouchOptions<CouchDbContext> options) : base(options)
         {
@@ -39,22 +34,6 @@ namespace CouchDb
             databaseBuilder.Document<CouchDoc<StatisticEntity>>().ToDatabase(DatabaseNames.MarkCheckingStatistic);
 
             databaseBuilder.Document<CouchDoc<BeerTapEntity>>().ToDatabase(DatabaseNames.BeerOnTaps);
-
-            // устаревшие базы, для совместимости:
-            Сompatibility9_102(databaseBuilder);
-        }
-
-        [Obsolete]
-        private void Сompatibility9_102(CouchDatabaseBuilder databaseBuilder)
-        {
-            var _markStateDbName = DatabaseNames.MarksStateDb;
-            var _frontolDocumentsDbName = DatabaseNames.FrontolDocumentsDb;
-
-            if (!string.IsNullOrEmpty(_markStateDbName))
-                databaseBuilder.Document<MarkStateDocument>().ToDatabase(_markStateDbName);
-
-            if (!string.IsNullOrEmpty(_frontolDocumentsDbName))
-                databaseBuilder.Document<FrontolDocumentData>().ToDatabase(_frontolDocumentsDbName);
         }
     }
 }

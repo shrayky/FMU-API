@@ -39,9 +39,6 @@ public static class CouchDbServicesRegistration
 
         services.AddAutoRegisteredServices([Assembly.GetExecutingAssembly()]);
 
-        // TODO удалить в 11 релизе
-        DatabaseNames.Initialize(settings.Database);
-
         services.AddScoped<IMarkInformationRepository, MarkInformationRepository>();
         services.AddScoped<IDocumentRepository, DocumentRepository>();
         services.AddScoped<ICheckStatisticRepository, MarkCheckingStatisticRepository>();
@@ -50,7 +47,7 @@ public static class CouchDbServicesRegistration
 
         services.AddHttpClient("CouchDbState", client =>
         {
-            client.Timeout = TimeSpan.FromSeconds(5);
+            client.Timeout = TimeSpan.FromSeconds(settings.Database.QueryTimeoutSeconds);
             client.DefaultRequestHeaders.Accept.Add(
                 new MediaTypeWithQualityHeaderValue("application/json"));
         })

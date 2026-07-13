@@ -75,48 +75,48 @@ namespace CouchDb.Workers.DatabaseMigrationWorkers
 
         private async Task<bool> MigrateMarkDataAsync(int batchSize, Parameters parametersService)
         {
-            if (string.IsNullOrEmpty(parametersService.Database.MarksStateDbName))
-                return true;
+            //if (string.IsNullOrEmpty(parametersService.Database.MarksStateDbName))
+            //    return true;
 
-            var marks = await _dbContext.MarksState.Take(batchSize)
-                                                   .ToListAsync();
+            //var marks = await _dbContext.MarksState.Take(batchSize)
+            //                                       .ToListAsync();
 
-            if (marks.Count == 0)
-            {
-                return true;
-            }
+            //if (marks.Count == 0)
+            //{
+            //    return true;
+            //}
 
-            _logger.LogWarning("Начинаю перенос {markCount} в новую базу", marks.Count);
-            var startTime = DateTime.Now;
+            //_logger.LogWarning("Начинаю перенос {markCount} в новую базу", marks.Count);
+            //var startTime = DateTime.Now;
 
-            using var scope = _serviceScopeFactory.CreateScope();
-            var markInformationRepository = scope.ServiceProvider.GetRequiredService<IMarkInformationRepository>();
+            //using var scope = _serviceScopeFactory.CreateScope();
+            //var markInformationRepository = scope.ServiceProvider.GetRequiredService<IMarkInformationRepository>();
 
-            var markEntities = marks.Select(markData => new MarkEntity
-            {
-                Id = markData.Id,
-                MarkId = markData.Id,
-                State = markData.State,
-                TrueApiCisData = markData.TrueApiInformation,
-                TrueApiAnswerProperties = markData.TrueApiAnswerProperties,
-                SaleData = markData.SaleInforamtion
-            }).ToList();
+            //var markEntities = marks.Select(markData => new MarkEntity
+            //{
+            //    Id = markData.Id,
+            //    MarkId = markData.Id,
+            //    State = markData.State,
+            //    TrueApiCisData = markData.TrueApiInformation,
+            //    TrueApiAnswerProperties = markData.TrueApiAnswerProperties,
+            //    SaleData = markData.SaleInforamtion
+            //}).ToList();
 
-            bool successAdd = await markInformationRepository.AddRangeAsync(markEntities);
+            //bool successAdd = await markInformationRepository.AddRangeAsync(markEntities);
 
-            _logger.LogWarning("Удаляю {markCount} марок из старой базы", marks.Count);
+            //_logger.LogWarning("Удаляю {markCount} марок из старой базы", marks.Count);
 
-            if (successAdd)
-                await _dbContext.MarksState.DeleteRangeAsync(marks);
+            //if (successAdd)
+            //    await _dbContext.MarksState.DeleteRangeAsync(marks);
 
-            var endTime = DateTime.Now;
-            var duration = endTime - startTime;
+            //var endTime = DateTime.Now;
+            //var duration = endTime - startTime;
 
-            _logger.LogWarning("Перенос и удаление {markCount} марок выполнены за {duration}",
-                marks.Count,
-                duration.ToString(@"hh\:mm\:ss\.fff"));
+            //_logger.LogWarning("Перенос и удаление {markCount} марок выполнены за {duration}",
+            //    marks.Count,
+            //    duration.ToString(@"hh\:mm\:ss\.fff"));
 
-            scope.Dispose();
+            //scope.Dispose();
 
             return false;
         }
