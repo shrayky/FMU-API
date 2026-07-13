@@ -1,4 +1,5 @@
 import { ApiServerAddress } from '../../utils/net.js';
+import { ScannerWedge } from '../../utils/scannerWedge.js';
 
 class MarksView {
     constructor(id) {
@@ -30,6 +31,11 @@ class MarksView {
             prevButton: "prevButton",
             nextButton: "nextButton"
         }
+
+        this.scanner = new ScannerWedge({
+            timeoutMs: 50,
+            onScan: (code, meta) => this._onScan(code, meta)
+        });
     }
 
     loadConfig() {
@@ -96,6 +102,20 @@ class MarksView {
             name: this.formName,
             disabled: true,
             elements: formElements,
+            on: {
+                onAfterRender: () => {
+                    this.scanner.start();
+                    setTimeout(() => {
+                        const searchInput = $$(this.NAMES.searchInput);
+                        if (searchInput) {
+                            searchInput.focus();
+                        }
+                    }, 50);
+                },
+                onDestruct: () => {
+                    this.scanner.stop();
+                }
+            }
         }
 
         return form;
@@ -105,6 +125,8 @@ class MarksView {
         setTimeout(() => {
             this._loadMarks();
         }, 500);
+
+        this.scanner.start();
 
         return this;
     }
@@ -270,6 +292,55 @@ class MarksView {
                 `${data.currentPage} из ${data.totalPages}`
             );
         }
+    }
+
+    _toSgtin(markCode) {
+        let code = (markCode || "").trim().replace(/\\u001d/gi, "\x1d");
+
+        if (code.startsWith("01")) {
+            const gsPos = code.indexOf("\x1d");
+            if (gsPos > 0) {
+                const gtin = code.substring(2, 16);
+                const serial = code.substring(18, gsPos);
+                return gtin + serial;
+            }
+        }
+
+        if (code.length === 29) {
+            return code.substring(0, 21);
+        }
+
+        return code;
+    }
+
+    _onScan(code, meta = {}) {
+        const sgtin = this._toSgtin(code);
+        const searchInput = $$(this.NAMES.searchInput);
+
+        if (searchInput) {
+            searchInput.setValue(sgtin);
+            searchInput.focus();
+        }
+
+        const warnings = [];
+        if (meta.capsLock) {
+            warnings.push("Включён Caps Lock — раскладка сканера может исказить код");
+        }
+        if (meta.cyrillic) {
+            warnings.push("В штрихкоде есть русские символы — проверьте раскладку клавиатуры");
+        }
+
+        if (warnings.length > 0) {
+            webix.message({
+                text: warnings.join(". "),
+                type: "error",
+                expire: 5000
+            });
+        }
+
+        this.searchTerm = sgtin;
+        this.currentPage = 1;
+        this._loadMarks();
     }
 
     _onSearch() {
