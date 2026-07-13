@@ -1,5 +1,6 @@
 
 import { ServerAdres } from '../../utils/net.js';
+import { ScannerWedge } from '../../utils/scannerWedge.js';
 
 class MarkCheckView {
     constructor(id) {
@@ -29,6 +30,11 @@ class MarkCheckView {
 
         this.lastResponse = null;
         this.defaultInn = "";
+
+        this.scanner = new ScannerWedge({
+            timeoutMs: 50,
+            onScan: (code, meta) => this._onScan(code, meta)
+        });
     }
 
     async _loadInnFromConfig() {
@@ -142,6 +148,20 @@ class MarkCheckView {
             id: this.id,
             name: this.formName,
             elements: formElements,
+            on: {
+                onAfterRender: () => {
+                    this.scanner.start();
+                    setTimeout(() => {
+                        const markInput = $$(this.NAMES.markInput);
+                        if (markInput) {
+                            markInput.focus();
+                        }
+                    }, 50);
+                },
+                onDestruct: () => {
+                    this.scanner.stop();
+                }
+            }
         }
 
         this._formConfig = form;
@@ -153,7 +173,33 @@ class MarkCheckView {
             this._loadInnFromConfig();
         }, 10);
 
+        this.scanner.start();
+
         return this;
+    }
+
+    _onScan(code, meta = {}) {
+        const markInput = $$(this.NAMES.markInput);
+        if (markInput) {
+            markInput.setValue(code);
+            markInput.focus();
+        }
+
+        const warnings = [];
+        if (meta.capsLock) {
+            warnings.push("Включён Caps Lock — раскладка сканера может исказить код");
+        }
+        if (meta.cyrillic) {
+            warnings.push("В штрихкоде есть русские символы — проверьте раскладку клавиатуры");
+        }
+
+        if (warnings.length > 0) {
+            webix.message({
+                text: warnings.join(". "),
+                type: "error",
+                expire: 5000
+            });
+        }
     }
 
     _encodeToBase64(str) {
