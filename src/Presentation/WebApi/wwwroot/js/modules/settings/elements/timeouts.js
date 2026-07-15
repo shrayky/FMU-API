@@ -1,4 +1,5 @@
 import { Label, TextBox, Number, padding, CheckBox } from "../../../utils/ui.js";
+import { timeoutSecondsValidation, TIMEOUT_SECONDS_MAX } from "../../../utils/validators.js";
 
 class TimeoutsConfigurationElement {
     constructor(id) {
@@ -6,8 +7,8 @@ class TimeoutsConfigurationElement {
         this.SETTINGS_ID = "timeoutsSettings";
         this.LABELS = {
             title: "Таймауты",
-            cdnLoadTimeout: "Загрузка списка cdn, сек",
-            checkRequestTimeout: "Проверка марки в ЧЗ, сек",
+            cdnLoadTimeout: `Загрузка списка cdn, сек (макс. ${TIMEOUT_SECONDS_MAX})`,
+            checkRequestTimeout: `Проверка марки в ЧЗ, сек (макс. ${TIMEOUT_SECONDS_MAX})`,
             checkInternetConnectionTimeout: "Проверка доступа в интернет, сек",
 
         };
@@ -34,8 +35,8 @@ class TimeoutsConfigurationElement {
             {
                 padding: padding,
                 rows: [
-                    Number(this.LABELS.cdnLoadTimeout, "httpRequestTimeouts.cdnRequestTimeout", this.cdnLoadTimeout, "1111"),
-                    Number(this.LABELS.checkRequestTimeout, "httpRequestTimeouts.checkMarkRequestTimeout", this.checkRequestTimeout, "1111"),
+                    Number(this.LABELS.cdnLoadTimeout, "httpRequestTimeouts.cdnRequestTimeout", this.cdnLoadTimeout, "11", timeoutSecondsValidation),
+                    Number(this.LABELS.checkRequestTimeout, "httpRequestTimeouts.checkMarkRequestTimeout", this.checkRequestTimeout, "11", timeoutSecondsValidation),
                     Number(this.LABELS.checkInternetConnectionTimeout, "httpRequestTimeouts.checkInternetConnectionTimeout", this.checkInternetConnectionTimeout, "1111"),
                 ]
             }

@@ -177,3 +177,21 @@ export const httpAddressListValidation = httpAddressListValidator.toWebix();
 export const frontolDbValidation = frontolDbPathValidator.toWebix();
 export const couchDbNameValidation = couchDbServerValidator.toWebix();
 export const hostnameValidation = hostNameValidator.toWebix();
+
+export const TIMEOUT_SECONDS_MIN = 1;
+export const TIMEOUT_SECONDS_MAX = 30;
+
+// Валидатор таймаута HTTP-запросов в секундах
+export const timeoutSecondsValidator = createValidator(
+    "timeoutSeconds",
+    (value) => {
+        if (value == null || value === "")
+            return false;
+
+        const num = parseInt(value, 10);
+        return !isNaN(num) && num >= TIMEOUT_SECONDS_MIN && num <= TIMEOUT_SECONDS_MAX;
+    },
+    `Значение должно быть от ${TIMEOUT_SECONDS_MIN} до ${TIMEOUT_SECONDS_MAX} секунд`
+);
+
+export const timeoutSecondsValidation = timeoutSecondsValidator.toWebix();
