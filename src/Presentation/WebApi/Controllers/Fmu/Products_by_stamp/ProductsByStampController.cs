@@ -4,6 +4,9 @@ using FmuApiApplication.Services.AcoUnit;
 namespace WebApi.Controllers.Fmu.Products_by_stamp;
 
 [Route("api/fmu/[controller]")]
+[Route("api/fmu/{inn}[controller]")]
+[Route("[controller]")]
+[Route("{inn}/[controller]")]
 [ApiController]
 [ApiExplorerSettings(GroupName = "Frontol mark unit API")]
 public class ProductsByStampController : ControllerBase

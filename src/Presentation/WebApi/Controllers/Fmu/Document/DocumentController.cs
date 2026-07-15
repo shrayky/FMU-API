@@ -6,7 +6,9 @@ using WebApi.Services;
 namespace WebApi.Controllers.Fmu.Document;
 
 [Route("api/fmu/[controller]")]
+[Route("api/fmu/{inn}/[controller]")]
 [Route("[controller]")]
+[Route("{inn}/[controller]")]
 [ApiController]
 [ApiExplorerSettings(GroupName = "Frontol mark unit API")]
 public class DocumentController : ControllerBase

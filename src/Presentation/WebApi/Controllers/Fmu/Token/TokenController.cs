@@ -7,8 +7,9 @@ using System.Text.Json;
 
 namespace WebApi.Controllers.Fmu.Token;
 
-[Route("api/fmu/[controller]")]
+[Route("{inn}/api/fmu/[controller]")]
 [Route("[controller]")]
+[Route("{inn}/[controller]")]
 [ApiController]
 [ApiExplorerSettings(GroupName = "Frontol mark unit API")]
 public class TokenController : ControllerBase

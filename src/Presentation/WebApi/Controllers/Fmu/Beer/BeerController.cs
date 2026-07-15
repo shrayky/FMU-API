@@ -6,7 +6,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace WebApi.Controllers.Fmu.Beer;
 
 [Route("api/fmu/[controller]")]
+[Route("api/fmu/{inn}/[controller]")]
 [Route("[controller]")]
+[Route("{inn}/[controller]")]
 [ApiController]
 [ApiExplorerSettings(GroupName = "Frontol mark unit API")]
 public class BeerController : ControllerBase
@@ -22,7 +24,6 @@ public class BeerController : ControllerBase
     [HttpPost("/api/fmu/beer/connect_keg")]
     public async Task<IActionResult> ConnectKeg(TapBeerOperation document)
     {
-
         var result = await _beerOnTapManager.TapOperation(document);
 
         FmuAnswer answer = new();
