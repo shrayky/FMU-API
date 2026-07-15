@@ -76,9 +76,7 @@ class ConnectedFrontolConfigurationElement {
                             ]
                         },
                     ]
-                },
-
-                {}
+                }
             ]
         };
     }
@@ -87,6 +85,7 @@ class ConnectedFrontolConfigurationElement {
     _createHiddenFields() {
         return {
             hidden: true,
+            height: 0,
             rows: [
                 CheckBox(
                     this.LABELS.syncBeerTaps,
@@ -109,6 +108,8 @@ class ConnectedFrontolConfigurationElement {
                     view: "formtable",
                     id: this.hiddenTableId,
                     name: "connectedFrontolSettings.connectionSettings",
+                    hidden: true,
+                    height: 0,
                     data: this.settings.connectionSettings,
                     columns: [
                         { id: "id", header: "id" },
