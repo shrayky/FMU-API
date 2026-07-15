@@ -381,3 +381,4 @@ FmuApi.API/wwwroot/bundle/index.js
 /src/Presentation/WebApi/Properties/PublishProfiles/x64 linux.pubxml.user
 /src/Presentation/WebApi/Properties/PublishProfiles/x86 full.pubxml.user
 *.json
+/src/Presentation/WebApi/Properties/PublishProfiles/x86 full.pubxml
