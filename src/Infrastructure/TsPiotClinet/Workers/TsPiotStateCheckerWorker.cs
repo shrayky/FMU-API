@@ -8,26 +8,25 @@ using Microsoft.Extensions.Logging;
 using Shared.Json;
 using System.Globalization;
 using TsPiotClinet.Models;
+using TsPiotClinet.Services;
 
 namespace TsPiotClinet.Workers
 {
-    public class TsPiotStateCheckerWorker : BackgroundService
+    public class TsPiotStateCheckerWorker(
+        ILogger<TsPiotStateCheckerWorker> logger,
+        IParametersService parametersService,
+        IApplicationState applicationState,
+        IHttpClientFactory httpClientFactory,
+        TsPiotEspApiService tsPiotEspApiService) : BackgroundService
     {
-        private readonly ILogger<TsPiotStateCheckerWorker> _logger;
-        private readonly IParametersService _parametersService;
-        private readonly IApplicationState _applicationState;
-        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly ILogger<TsPiotStateCheckerWorker> _logger = logger;
+        private readonly IParametersService _parametersService = parametersService;
+        private readonly IApplicationState _applicationState = applicationState;
+        private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
+        private readonly TsPiotEspApiService _tsPiotEspApiService = tsPiotEspApiService;
 
         private const int StartDelayInSeconds = 10;
         private const int CheckIntervalInMinutes = 10;
-
-        public TsPiotStateCheckerWorker(ILogger<TsPiotStateCheckerWorker> logger, IParametersService parametersService, IApplicationState applicationState, IHttpClientFactory httpClientFactory)
-        {
-            _logger = logger;
-            _parametersService = parametersService;
-            _applicationState = applicationState;
-            _httpClientFactory = httpClientFactory;
-        }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -71,65 +70,24 @@ namespace TsPiotClinet.Workers
                 if (checkProtocolResult.IsFailure)
                     _applicationState.TsPiotOffline(address);
 
-                await FetchLicenseInfo(printGroups, printGroup.TsPiot);
+                var instancesResult = await _tsPiotEspApiService.Instances(printGroup.TsPiot);
+                if (instancesResult.IsFailure)
+                    continue;
+
+                await SyncLicenses(printGroups, printGroup.TsPiot, instancesResult.Value.Instances);
+                await SyncInstanceSettings(printGroup.TsPiot, instancesResult.Value.Instances);
             }
         }
 
         private async Task<Result<string>> AskModuleVersion(TsPiotConnectionSettings tsPiot)
         {
-            if (string.IsNullOrEmpty(tsPiot.InformationEndpoint) || tsPiot.InformationPort <= 0)
+            var moduleInfoResult = await _tsPiotEspApiService.ModuleInfo(tsPiot);
+
+            if (moduleInfoResult.IsFailure)
                 return Result.Failure<string>("-");
 
-            var address = $"{tsPiot.Host}:{tsPiot.InformationPort}";
-
-            if (address.Contains("https://"))
-            {
-                address = address.Replace("https://", "http://");
-            }
-
-            if (!address.Contains("http://"))
-            {
-                address = $"http://{address}";
-            }
-
-            using var httpClient = _httpClientFactory.CreateClient("TsPiotVerisonChecker");
-            var url = address;
-            httpClient.BaseAddress = new Uri(url);
-
-            try
-            {
-                var response = await httpClient.GetAsync(tsPiot.InformationEndpoint);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-
-                    _logger.LogDebug("Ошибка в ответе проверки версии модуля ТСПИоТ: {StatusCode}, {Error}", response.StatusCode,
-                        errorContent);
-
-                    return Result.Failure<string>("-");
-                }
-
-                var content = await response.Content.ReadAsStringAsync();
-
-                _logger.LogDebug("Ответ ТСПИоТ версии модуля: {content}", content);
-
-                var status = await JsonHelpers.DeserializeAsync<TsPiotModuleInfo>(content);
-
-                if (status != null)
-                {
-                    _logger.LogInformation("Используется ТСПиОТ версии {v}", status.Version);
-                    return Result.Success(status.Version);
-                }
-
-            }
-            catch (Exception ex)
-            {
-                _logger.LogDebug("Ошибка проверки версии модуля ТСПИоТ: {ex}", ex);
-                return Result.Failure<string>("-");
-            }
-
-            return Result.Failure<string>("-");
+            _logger.LogInformation("Используется ТСПиОТ версии {Version}", moduleInfoResult.Value.Version);
+            return Result.Success(moduleInfoResult.Value.Version);
         }
 
         private async Task<Result<int>> AskProtocolVersion(TsPiotConnectionSettings tsPiot)
@@ -185,84 +143,80 @@ namespace TsPiotClinet.Workers
             return Result.Failure<int>($"Не удалось подключится к экземпляру ТСПиОТ {tsPiot.Host}:{tsPiot.Port}");
         }
 
-        private async Task FetchLicenseInfo(List<PrintGroupData> printGroups, TsPiotConnectionSettings tsPiot)
+        private async Task SyncLicenses(List<PrintGroupData> printGroups, TsPiotConnectionSettings tsPiot, List<TsPiotInstanceListItem> instances)
         {
-            if (tsPiot.InformationPort <= 0)
-                return;
-
-            var baseAddress = BuildInformationBaseAddress(tsPiot);
-
-            if (baseAddress == null)
-                return;
-
-            using var httpClient = _httpClientFactory.CreateClient("TsPiotVerisonChecker");
-            httpClient.BaseAddress = baseAddress;
-
-            try
+            foreach (var instance in instances)
             {
-                var listResponse = await httpClient.GetAsync("/api/v1/instances/info");
-                if (!listResponse.IsSuccessStatusCode)
-                    return;
+                if (string.IsNullOrEmpty(instance.Id))
+                    continue;
 
-                var listContent = await listResponse.Content.ReadAsStringAsync();
-                var instancesInfo = await JsonHelpers.DeserializeAsync<TsPiotInstancesInfoResponse>(listContent);
-                if (instancesInfo?.Instances == null)
-                    return;
+                var instanceDetailResult = await _tsPiotEspApiService.InstanceDetail(tsPiot, instance.Id);
+                if (instanceDetailResult.IsFailure)
+                    continue;
 
-                foreach (var instance in instancesInfo.Instances)
-                {
-                    if (string.IsNullOrEmpty(instance.Id))
-                        continue;
+                var instanceDetail = instanceDetailResult.Value;
+                var kktInn = instanceDetail.RegData.KktInn;
 
-                    var detailResponse = await httpClient.GetAsync($"/api/v1/instances/info/{instance.Id}");
+                if (string.IsNullOrEmpty(kktInn))
+                    continue;
 
-                    if (!detailResponse.IsSuccessStatusCode)
-                        continue;
+                var activeLicense = instanceDetail.Licenses.FirstOrDefault(l => l.IsActive);
 
-                    var detailContent = await detailResponse.Content.ReadAsStringAsync();
+                if (activeLicense == null || string.IsNullOrEmpty(activeLicense.ActiveTill))
+                    continue;
 
-                    var instanceDetail = await JsonHelpers.DeserializeAsync<TsPiotInstanceDetailResponse>(detailContent);
-                    if (instanceDetail == null)
-                        continue;
+                if (!DateTime.TryParse(activeLicense.ActiveTill, CultureInfo.InvariantCulture, DateTimeStyles.None, out var licenseActiveTill))
+                    continue;
 
-                    var kktInn = instanceDetail.RegData.KktInn;
-                    if (string.IsNullOrEmpty(kktInn))
-                        continue;
+                var organization = printGroups.FirstOrDefault(p => p.INN == kktInn);
 
-                    var activeLicense = instanceDetail.Licenses.FirstOrDefault(l => l.IsActive);
+                if (organization == null || string.IsNullOrEmpty(organization.TsPiot.Host) || string.IsNullOrEmpty(organization.TsPiot.Port))
+                    continue;
 
-                    if (activeLicense == null || string.IsNullOrEmpty(activeLicense.ActiveTill))
-                        continue;
-
-                    if (!DateTime.TryParse(activeLicense.ActiveTill, CultureInfo.InvariantCulture, DateTimeStyles.None, out var licenseActiveTill))
-                        continue;
-
-                    var organization = printGroups.FirstOrDefault(p => p.INN == kktInn);
-
-                    if (organization == null || string.IsNullOrEmpty(organization.TsPiot.Host) || string.IsNullOrEmpty(organization.TsPiot.Port))
-                        continue;
-
-                    var address = $"{organization.TsPiot.Host}:{organization.TsPiot.Port}";
-                    _applicationState.UpdateTsPiotLicense(address, organization.Id, licenseActiveTill);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogDebug("Ошибка получения срока лицензии ТСПИоТ: {ex}", ex);
+                var address = $"{organization.TsPiot.Host}:{organization.TsPiot.Port}";
+                _applicationState.UpdateTsPiotLicense(address, organization.Id, licenseActiveTill);
             }
         }
 
-        private static Uri? BuildInformationBaseAddress(TsPiotConnectionSettings tsPiot)
+        private async Task SyncInstanceSettings(TsPiotConnectionSettings tsPiot, List<TsPiotInstanceListItem> instances)
         {
-            var address = $"{tsPiot.Host}:{tsPiot.InformationPort}";
+            var appSettings = await _parametersService.CurrentAsync();
 
-            if (address.Contains("https://"))
-                address = address.Replace("https://", "http://");
+            foreach (var instance in instances)
+            {
+                if (string.IsNullOrEmpty(instance.Id))
+                    continue;
 
-            if (!address.Contains("http://"))
-                address = $"http://{address}";
+                var settingsResult = await _tsPiotEspApiService.InstanceSettings(tsPiot, instance.Id);
+                if (settingsResult.IsFailure)
+                    continue;
 
-            return Uri.TryCreate(address, UriKind.Absolute, out var uri) ? uri : null;
+                var settings = settingsResult.Value;
+                var needUpdateSettings = false;
+
+                if (settings.CdnCodesCheckTimeout != appSettings.HttpRequestTimeouts.CheckMarkRequestTimeout * 1000)
+                {
+                    settings.CdnCodesCheckTimeout = appSettings.HttpRequestTimeouts.CheckMarkRequestTimeout * 1000;
+                    needUpdateSettings = true;
+                }
+
+                if (settings.CdnHealthCheckTimeout != appSettings.HttpRequestTimeouts.CdnRequestTimeout * 1000)
+                {
+                    settings.CdnHealthCheckTimeout = appSettings.HttpRequestTimeouts.CdnRequestTimeout * 1000;
+                    needUpdateSettings = true;
+                }
+
+                if (!settings.AllowRemoteConnection)
+                {
+                    settings.AllowRemoteConnection = true;
+                    needUpdateSettings = true;
+                }
+
+                if (!needUpdateSettings)
+                    continue;
+
+                await _tsPiotEspApiService.UpdateInstanceSettings(tsPiot, instance.Id, settings);
+            }
         }
     }
 }
