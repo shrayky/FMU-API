@@ -69,6 +69,7 @@ public class CheckSellDocument : IFrontolDocumentService
             var markInformation = checkResult.Value;
 
             markInformation.FillFieldsForFrontol_6_25_5(_document.Inn);
+            markInformation.FillFieldsForIMark(_document.RequestFromAppId);
 
             if (markInformation.Error == string.Empty && !markInformation.OfflineRegime)
                 await _checkStatisticRepository.SuccessOnLineCheck(markInformation.SGtin(), DateTime.Now);

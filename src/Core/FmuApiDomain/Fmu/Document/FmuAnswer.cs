@@ -1,5 +1,6 @@
 ﻿using FmuApiDomain.Constants;
 using FmuApiDomain.Fmu.MarkCheckData;
+using FmuApiDomain.MarkInformation.Interfaces;
 using FmuApiDomain.TrueApi.MarkData.Check;
 using FmuApiDomain.TsPiot.Models;
 using System.Text.Json.Serialization;
@@ -31,6 +32,10 @@ public class FmuAnswer
 
     [JsonPropertyName("dmdk_responses")]
     public List<CheckMarksDataTrueApi> DmdkResponses { get; set; } = [];
+
+    [JsonPropertyName("lmodule_response")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<CheckInformation>? LocalModuleResponse { get; set; }
 
     [JsonPropertyName("fmu-api-offline")]
     public bool Offline { get; set; } = false;
@@ -92,6 +97,31 @@ public class FmuAnswer
             TrueMarkResponses.Add(onlineCheckResult);
         else
             OffLineTrueMarkResponses.Add(offlineCheckResult);
+    }
+
+    public void FillFieldsForIMark(string requestFromAppId)
+    {
+        if (requestFromAppId != "itida-i-mark")
+            return;
+
+        if (OfflineRegime)
+        {
+            CheckInformation checkInformation = new();
+
+            var clearedReqId = Truemark_response.ReqId.Split("&")[0];
+
+            checkInformation.Description = Truemark_response.Description;
+            checkInformation.ReqId = clearedReqId;
+            checkInformation.ReqTimestamp = Truemark_response.ReqTimestamp;
+            checkInformation.Version = Truemark_response.Version;
+            checkInformation.Inst = Truemark_response.Inst;
+            checkInformation.Codes = Truemark_response.Codes;
+
+            LocalModuleResponse = [checkInformation];
+
+            TrueMarkResponses = new();
+            Truemark_response = new();
+        }
     }
 
     public FmuAnswer()

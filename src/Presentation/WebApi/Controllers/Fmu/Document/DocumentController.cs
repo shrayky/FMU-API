@@ -1,6 +1,9 @@
 ﻿using FmuApiApplication.Documents;
 using FmuApiDomain.Fmu.Document;
+using FmuApiDomain.Fmu.Token;
 using Microsoft.AspNetCore.Mvc;
+using System.Text;
+using System.Text.Json;
 using WebApi.Services;
 
 namespace WebApi.Controllers.Fmu.Document;
@@ -30,6 +33,8 @@ public class DocumentController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> DocumentPostAsync(RequestDocument document)
     {
+        document.RequestFromAppId = AppIdFromToken(Request.Headers.Authorization.ToString());
+
         var service = _factory.GetInstance(document);
 
         if (service == null)
@@ -48,6 +53,7 @@ public class DocumentController : ControllerBase
     [HttpPost("inn")]
     public async Task<IActionResult> DocumentPostAsync(RequestDocument document, string inn)
     {
+        document.RequestFromAppId = AppIdFromToken(Request.Headers.Authorization.ToString());
 
         foreach (var position in document.Positions)
         {
@@ -67,5 +73,34 @@ public class DocumentController : ControllerBase
             return _responseService.BadRequest(result.Error);
 
         return _responseService.Ok(result.Value);
+    }
+
+    private string AppIdFromToken(string authHeader)
+    {
+        var token = authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+            ? authHeader["Bearer ".Length..]
+            : authHeader;
+
+        if (string.IsNullOrEmpty(token))
+            return "fmu";
+
+        AuthorizationAnswer? authorizationData;
+        try
+        {
+            var json = Encoding.UTF8.GetString(Convert.FromBase64String(token));
+            authorizationData = JsonSerializer.Deserialize<AuthorizationAnswer>(json);
+        }
+        catch (FormatException)
+        {
+            return "fmu";
+        }
+
+        if (authorizationData == null)
+            return "fmu";
+
+        if (authorizationData.Id != "pos")
+            return authorizationData.Id;
+
+        return "fmu";
     }
 }

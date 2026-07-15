@@ -27,6 +27,8 @@ public class RequestDocument
 
     public List<Position> Positions { get; set; } = new();
 
+    public string RequestFromAppId { get; set; } = "fmu";
+
     [JsonIgnore]
     public string Inn => Positions.Count != 1 ? "" : Positions[0].Organisation.Inn;
 
