@@ -35,6 +35,11 @@ public class BeerTapsManager : IBeerOnTapManager
 
     public async Task<Result> TapOperation(TapBeerOperation document)
     {
+        var settings = await _parametersService.CurrentAsync();
+
+        if (!settings.Database.Enable)
+            return Result.Success();
+
         Result operationResult;
         var info = document.Position;
 
@@ -54,8 +59,6 @@ public class BeerTapsManager : IBeerOnTapManager
         }
         else
             return Result.Failure($"Неизвестный тип операции постановки/снятия на кран {document.Type}");
-
-        var settings = await _parametersService.CurrentAsync();
 
         var syncResult = await SyncFrontolBeerTaps(settings.ConnectedFrontolSettings.ConnectionSettings);
 
