@@ -10,7 +10,7 @@ class TimeoutsConfigurationElement {
             cdnLoadTimeout: `Загрузка списка cdn, сек (макс. ${TIMEOUT_SECONDS_MAX})`,
             checkRequestTimeout: `Проверка марки в ЧЗ, сек (макс. ${TIMEOUT_SECONDS_MAX})`,
             checkInternetConnectionTimeout: "Проверка доступа в интернет, сек",
-
+            syncWithTsPiot: "Синхронизировать таймауты с ТС ПИОТ",
         };
     }
 
@@ -19,6 +19,7 @@ class TimeoutsConfigurationElement {
             this.cdnLoadTimeout = config.httpRequestTimeouts.cdnRequestTimeout;
             this.checkRequestTimeout = config.httpRequestTimeouts.checkMarkRequestTimeout;
             this.checkInternetConnectionTimeout = config.httpRequestTimeouts.checkInternetConnectionTimeout;
+            this.syncWithTsPiot = config.httpRequestTimeouts.syncWithTsPiot ?? true;
         }
 
         return this;
@@ -38,6 +39,7 @@ class TimeoutsConfigurationElement {
                     Number(this.LABELS.cdnLoadTimeout, "httpRequestTimeouts.cdnRequestTimeout", this.cdnLoadTimeout, "11", timeoutSecondsValidation),
                     Number(this.LABELS.checkRequestTimeout, "httpRequestTimeouts.checkMarkRequestTimeout", this.checkRequestTimeout, "11", timeoutSecondsValidation),
                     Number(this.LABELS.checkInternetConnectionTimeout, "httpRequestTimeouts.checkInternetConnectionTimeout", this.checkInternetConnectionTimeout, "1111"),
+                    CheckBox(this.LABELS.syncWithTsPiot, "httpRequestTimeouts.syncWithTsPiot", { value: this.syncWithTsPiot }),
                 ]
             }
         );

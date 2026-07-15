@@ -194,13 +194,15 @@ namespace TsPiotClinet.Workers
                 var settings = settingsResult.Value;
                 var needUpdateSettings = false;
 
-                if (settings.CdnCodesCheckTimeout != appSettings.HttpRequestTimeouts.CheckMarkRequestTimeout * 1000)
+                if (settings.CdnCodesCheckTimeout != appSettings.HttpRequestTimeouts.CheckMarkRequestTimeout * 1000 
+                    && appSettings.HttpRequestTimeouts.SyncWithTsPiot)
                 {
                     settings.CdnCodesCheckTimeout = appSettings.HttpRequestTimeouts.CheckMarkRequestTimeout * 1000;
                     needUpdateSettings = true;
                 }
 
-                if (settings.CdnHealthCheckTimeout != appSettings.HttpRequestTimeouts.CdnRequestTimeout * 1000)
+                if (settings.CdnHealthCheckTimeout != appSettings.HttpRequestTimeouts.CdnRequestTimeout * 1000
+                    && appSettings.HttpRequestTimeouts.SyncWithTsPiot)
                 {
                     settings.CdnHealthCheckTimeout = appSettings.HttpRequestTimeouts.CdnRequestTimeout * 1000;
                     needUpdateSettings = true;

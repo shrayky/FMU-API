@@ -126,7 +126,7 @@ public class NodeInformationService : INodeInformationService
                 SendLocalModuleInformationalInRequestId = settings.SaleControlConfig.SendLocalModuleInformationalInRequestId,
                 RejectSalesWithoutCheckInformationFrom = settings.SaleControlConfig.RejectSalesWithoutCheckInformationFrom,
                 ResetSoldStatusForReturn = settings.SaleControlConfig.ResetSoldStatusForReturn,
-                UseBeUseBeerTapse = settings.SaleControlConfig.UseBeerTaps,
+                UseBeUseBeerTaps = settings.SaleControlConfig.UseBeerTaps,
 
             },
             Organizations = fmuApiOrganizations,
@@ -138,7 +138,8 @@ public class NodeInformationService : INodeInformationService
             {
                 CdnRequest = settings.HttpRequestTimeouts.CdnRequestTimeout,
                 InternetConnectionCheck = settings.HttpRequestTimeouts.CheckInternetConnectionTimeout,
-                TrueSignCheckRequest = settings.HttpRequestTimeouts.CheckMarkRequestTimeout
+                TrueSignCheckRequest = settings.HttpRequestTimeouts.CheckMarkRequestTimeout,
+                SyncWithTsPiot = settings.HttpRequestTimeouts.SyncWithTsPiot
             },
             Logging = new Logging()
             {
