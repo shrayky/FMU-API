@@ -21,7 +21,7 @@ public class CouchDbConnection
 
     public int QueryTimeoutSeconds { get; set; } = 300;
 
-    public bool ClearStorageOfStatistics { get; set; } = false;
+    public bool ClearStorageOfStatistics { get; set; } = true;
 
     public int DepthOfStorageOfStatisticsInDays { get; set; } = 30;
 
