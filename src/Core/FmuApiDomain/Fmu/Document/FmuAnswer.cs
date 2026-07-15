@@ -124,6 +124,21 @@ public class FmuAnswer
         }
     }
 
+    public bool IsCheckedTsPiotOffline()
+    {
+        var answer = false;
+
+        foreach (var check in TrueMarkResponses)
+        {
+            if (check.Response == null)
+                continue;
+
+            answer = check.Response.IsCheckedOffline;
+        }
+
+        return answer;
+    }
+
     public FmuAnswer()
     {
     }

@@ -135,7 +135,30 @@ public class Mark : IMark
         }
 
         if (checkErrors.Count == 0)
+        {
+            var answer = _lastCheckResult.FmuAnswer;
+
+            if (answer.OfflineRegime)
+                _logger.LogInformation("Проверка марки {mark} выполнена через локальный модуль честного знака.", Code);
+            
+            if (answer.Offline)
+                _logger.LogInformation("Проверка марки {mark} выполнена через базу данных fmu-api.", Code);
+
+            if (!answer.OfflineRegime && !answer.Offline)
+            {
+                if (!_useTsPiot)
+                    _logger.LogInformation("Проверка марки {mark} выполнена в онлайне через xapikey.", Code);
+                else
+                {
+                    if (answer.IsCheckedTsPiotOffline())
+                        _logger.LogInformation("Проверка марки {mark} выполнена через ТС ПИоТ в локальном модуле честного знака.", Code);
+                    else
+                        _logger.LogInformation("Проверка марки {mark} выполнена в онлайне через ТС ПИоТ.", Code);
+                }
+            }
+
             return Result.Success(_lastCheckResult.FmuAnswer);
+        }
             
         return Result.Failure<FmuAnswer>($"Проверка марки {Code} не удалась по причине: {string.Join(", ", checkErrors)}");
     }
