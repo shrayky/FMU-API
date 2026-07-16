@@ -53,7 +53,8 @@ public class CentralServerExchangeService : IExchangeService
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Обмен с центральным сервером закончился неудачно");
+            Logger.LogWarning("Обмен с центральным сервером закончился неудачно: {Message}", ex.Message);
+            Logger.LogDebug(ex, "Детали ошибки обмена с центральным сервером");
             return Result.Failure<FmuApiCentralResponse>($"Обмен с центральным сервером закончился с ошибкой: {ex.Message}");
         }
     }

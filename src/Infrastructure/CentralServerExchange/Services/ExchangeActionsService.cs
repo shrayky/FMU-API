@@ -69,7 +69,8 @@ public class ExchangeActionsService : ICentralServerExchangeActions
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Обмен с центральным сервером прерван из-за необработанной ошибки.");
+            _logger.LogError("Обмен с центральным сервером прерван из-за необработанной ошибки: {Message}", ex.Message);
+            _logger.LogDebug(ex, "Детали необработанной ошибки обмена с центральным сервером");
             return false;
         }
     }

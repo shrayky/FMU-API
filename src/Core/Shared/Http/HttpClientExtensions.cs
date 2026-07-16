@@ -40,17 +40,20 @@ namespace Shared.Http
             }
             catch (HttpRequestException ex)
             {
-                logger.LogError(ex, "Сетевая ошибка при выполнении {OperationName}", operationName);
+                logger.LogWarning("Сетевая ошибка при выполнении {OperationName}: {Message}", operationName, ex.Message);
+                logger.LogDebug(ex, "Детали сетевой ошибки при выполнении {OperationName}", operationName);
                 return Result.Failure<HttpResponseMessage, string>($"Сетевая ошибка: {ex.Message}");
             }
             catch (TaskCanceledException ex)
             {
-                logger.LogError(ex, "Таймаут при выполнении {OperationName}", operationName);
+                logger.LogWarning("Таймаут при выполнении {OperationName}: {Message}", operationName, ex.Message);
+                logger.LogDebug(ex, "Детали таймаута при выполнении {OperationName}", operationName);
                 return Result.Failure<HttpResponseMessage, string>("Превышено время ожидания");
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Неожиданная ошибка при выполнении {OperationName}", operationName);
+                logger.LogError("Неожиданная ошибка при выполнении {OperationName}: {Message}", operationName, ex.Message);
+                logger.LogDebug(ex, "Детали неожиданной ошибки при выполнении {OperationName}", operationName);
                 return Result.Failure<HttpResponseMessage, string>($"Ошибка запроса: {ex.Message}");
             }
         }
