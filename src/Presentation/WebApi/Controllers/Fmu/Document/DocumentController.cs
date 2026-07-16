@@ -31,33 +31,16 @@ public class DocumentController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> DocumentPostAsync(RequestDocument document)
+    public async Task<IActionResult> DocumentPostAsync(RequestDocument document, string? inn)
     {
         document.RequestFromAppId = AppIdFromToken(Request.Headers.Authorization.ToString());
 
-        var service = _factory.GetInstance(document);
-
-        if (service == null)
+        if (inn != null)
         {
-            return BadRequest();
-        }
-
-        var result = await service.ActionAsync();
-
-        if (result.IsFailure)
-            return _responseService.BadRequest(result.Error);
-
-        return _responseService.Ok(result.Value);
-    }
-
-    [HttpPost("inn")]
-    public async Task<IActionResult> DocumentPostAsync(RequestDocument document, string inn)
-    {
-        document.RequestFromAppId = AppIdFromToken(Request.Headers.Authorization.ToString());
-
-        foreach (var position in document.Positions)
-        {
-            position.Organisation.Inn = inn;
+            foreach (var position in document.Positions)
+            {
+                position.Organisation.Inn = inn;
+            }
         }
 
         var service = _factory.GetInstance(document);
