@@ -27,7 +27,9 @@ public class Mark : IMark
     public string Barcode { get; }
     public int PrintGroupCode { get; private set; }
     public string ErrorDescription { get; private set; } = string.Empty;
+    
     private TsPiotConnectionSettings _tsPiotConnectionSettings = new();
+    
     private bool _useTsPiot = false; 
 
     private MarkCheckResult _lastCheckResult = MarkCheckResult.Empty();
