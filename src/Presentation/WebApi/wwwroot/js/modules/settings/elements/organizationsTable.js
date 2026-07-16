@@ -472,13 +472,16 @@ class OrganizationsConfigurationElement {
             return;
         }
 
+        const informationPortRaw = $$("TsPiotInformationPort").getValue();
+        const informationPort = parseInt(informationPortRaw, 10);
+
         const newData = {
             id: organizationId,
             xapikey: $$("XAPIKEY").getValue(),
             tsPiot: {
                 host: $$("TsPiotHost").getValue(),
                 port: $$("TsPiotPort").getValue(),
-                informationPort: $$("TsPiotInformationPort").getValue(),
+                informationPort: isNaN(informationPort) ? 51077 : informationPort,
                 informationEndpoint: $$("TsPiotinformationEndpoint").getValue(),
             },
             inn: $$("OrganizationInn").getValue(),
@@ -525,6 +528,7 @@ class OrganizationsConfigurationElement {
             let lastId = table.getLastId();
 
             $$("OrganizationId").setValue(lastId == undefined ? 1 : +lastId + 1);
+            $$("TsPiotInformationPort").setValue(51077);
             return
         }
 
@@ -536,7 +540,7 @@ class OrganizationsConfigurationElement {
         $$("OrganizationName").setValue(item.name);
         $$("TsPiotHost").setValue(item.tsPiot.host ?? "");
         $$("TsPiotPort").setValue(item.tsPiot.port ?? "");
-        $$("TsPiotInformationPort").setValue(item.tsPiot.informationPort ?? "");
+        $$("TsPiotInformationPort").setValue(item.tsPiot.informationPort ?? 51077);
         $$("TsPiotinformationEndpoint").setValue(item.tsPiot.informationEndpoint ?? "");
         $$("LocalModuleEnable").setValue(item.localModuleConnection.enable);
         $$("LocalModuleConnectionAddress").setValue(item.localModuleConnection.connectionAddress ?? "");
