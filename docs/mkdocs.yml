@@ -1,0 +1,9 @@
+   site_name: FMU-API Documentation
+   site_url: https://shrayky.github.io/FMU-API/
+   theme:
+     name: material
+     features:
+       - navigation.tabs
+       - search.highlight
+   plugins:
+     - search
