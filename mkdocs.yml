@@ -21,13 +21,15 @@ theme:
       accent: indigo
       toggle:
         icon: material/brightness-4
-        name: Переключить на светлую тему
+        name: Переключить на светную тему
   features:
-    - navigation.tabs
-    - navigation.sections
+    - navigation.tabs        # Вкладки сверху
+    - navigation.tabs.sticky # Закрепить вкладки при прокрутке
+    - navigation.sections    # Секции в навигации
     - search.highlight
     - content.code.copy
-    - navigation.top  # Кнопка "наверх"
+    - navigation.top         # Кнопка "наверх"
+    - header.autohide        # Скрывать шапку при прокрутке
 
 plugins:
   - search:
@@ -36,16 +38,24 @@ plugins:
 markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
-  - pymdownx.superfences:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.superfences
   - admonition
   - pymdownx.details
   - pymdownx.tabbed:
       alternate_style: true
+  - toc:
+      permalink: true
 
-# Явная навигация - убирает дублирование названия
+# Структура навигации - только верхние вкладки
 nav:
   - Главная: index.md
+  - Документация:
+    - Быстрый старт: docs/quickstart.md
+    - Установка: docs/installation.md
+    - Настройка Frontol: docs/frontol-integration.md
+    - API Reference: docs/api.md
+  - Релизы:
+    - История версий: releases/changelog.md
+    - Версия 1.0.0: releases/v1.0.0.md
+    - Версия 0.9.0: releases/v0.9.0.md
+  - GitHub: https://github.com/shrayky/FMU-API
