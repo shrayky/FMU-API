@@ -8,7 +8,6 @@ theme:
   name: material
   language: ru
   palette:
-    # Переключатель светлой/темной темы
     - media: "(prefers-color-scheme: light)"
       scheme: default
       primary: indigo
@@ -24,10 +23,11 @@ theme:
         icon: material/brightness-4
         name: Переключить на светлую тему
   features:
-    - navigation.tabs        # Вкладки верхнего уровня
-    - navigation.sections    # Секции в боковой панели
-    - search.highlight       # Подсветка результатов поиска
-    - content.code.copy      # Кнопка копирования для блоков кода
+    - navigation.tabs
+    - navigation.sections
+    - search.highlight
+    - content.code.copy
+    - navigation.top  # Кнопка "наверх"
 
 plugins:
   - search:
@@ -41,7 +41,11 @@ markdown_extensions:
         - name: mermaid
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
-  - admonition               # Для блоков "Внимание", "Совет"
-  - pymdownx.details         # Для сворачиваемых блоков
+  - admonition
+  - pymdownx.details
   - pymdownx.tabbed:
       alternate_style: true
+
+# Явная навигация - убирает дублирование названия
+nav:
+  - Главная: index.md
