@@ -1,0 +1,47 @@
+site_name: FMU-API
+site_description: Бесплатная реализация Frontol Mark Unit для работы с маркировкой
+site_url: https://shrayky.github.io/FMU-API/
+repo_url: https://github.com/shrayky/FMU-API
+repo_name: shrayky/FMU-API
+
+theme:
+  name: material
+  language: ru
+  palette:
+    # Переключатель светлой/темной темы
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Переключить на темную тему
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Переключить на светлую тему
+  features:
+    - navigation.tabs        # Вкладки верхнего уровня
+    - navigation.sections    # Секции в боковой панели
+    - search.highlight       # Подсветка результатов поиска
+    - content.code.copy      # Кнопка копирования для блоков кода
+
+plugins:
+  - search:
+      lang: ru
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - admonition               # Для блоков "Внимание", "Совет"
+  - pymdownx.details         # Для сворачиваемых блоков
+  - pymdownx.tabbed:
+      alternate_style: true
