@@ -3,7 +3,7 @@ site_description: Бесплатная реализация Frontol Mark Unit д
 site_url: https://shrayky.github.io/FMU-API/
 repo_url: https://github.com/shrayky/FMU-API
 repo_name: shrayky/FMU-API
-docs_dir: . docs/mkdocs.yml
+docs_dir: docs/mkdocs.yml
 
 theme:
   name: material
