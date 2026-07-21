@@ -50,10 +50,10 @@ markdown_extensions:
 nav:
   - Главная: index.md
   - Документация:
-    - Быстрый старт: docs/quickstart.md
-    - Установка: docs/installation.md
-    - Настройка Frontol: docs/frontol-integration.md
-    - API Reference: docs/api.md
+    #- Быстрый старт: docs/quickstart.md
+    #- Установка: docs/installation.md
+    #- Настройка Frontol: docs/frontol-integration.md
+    #- API Reference: docs/api.md
   - Релизы:
     - История версий: releases/changelog.md
     - Версия 1.0.0: releases/v1.0.0.md
