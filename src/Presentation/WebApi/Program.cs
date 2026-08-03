@@ -93,7 +93,6 @@ bool RunHttpApiService()
 
     services.AddScoped<IOnLineMarkCheckService, MarksCheckService>();
     services.AddScoped<IMarkStatisticsService, MarkStatisticsService>();
-    services.AddScoped<ProductInfo>();
     services.AddScoped<AlcoUnitGateway>();
     
     CouchDbServicesRegistration.AddService(services);

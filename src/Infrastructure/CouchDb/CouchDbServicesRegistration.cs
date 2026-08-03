@@ -43,6 +43,8 @@ public static class CouchDbServicesRegistration
         services.AddScoped<IDocumentRepository, DocumentRepository>();
         services.AddScoped<ICheckStatisticRepository, MarkCheckingStatisticRepository>();
         services.AddScoped<IBeerOnTapsRepository, BeerOnTapRepository>();
+        services.AddScoped<IGisMtDocumentRepository, GisMtDocumentRepository>();
+        services.AddScoped<IGisMtMarkRepository, GisMtMarkRepository>();
         services.AddSingleton<DataBaseMaintenanceService>();
 
         services.AddHttpClient("CouchDbState", client =>

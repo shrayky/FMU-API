@@ -11,6 +11,8 @@ public class DatabaseIndexes
                 { DatabaseNames.MarksDbName, MarksDbIndexes() },
                 { DatabaseNames.MarkCheckingStatistic, MarkCheckStatisticsDbIndexes() },
                 { DatabaseNames.BeerOnTaps, BeerOnTapsDbIndexes() },
+                { DatabaseNames.GisMtDocumentsDbName, GisMtDocumentsDbIndexes() },
+                { DatabaseNames.GisMtMarksDbName, GisMtMarksDbIndexes() },
             };
     }
 
@@ -32,5 +34,21 @@ public class DatabaseIndexes
         [
             new("markingCode-idx", new(["data.markingCode"])),
             new("markId-idx", new(["data.markId"])),
+        ];
+
+    private static CouchDbIndexDefinition[] GisMtDocumentsDbIndexes() =>
+        [
+            new("gis-mt-doc-number-idx", new(["data.number"])),
+            new("gis-mt-doc-loaded-at-idx", new(["data.loadedAt"])),
+        ];
+
+    private static CouchDbIndexDefinition[] GisMtMarksDbIndexes() =>
+        [
+            new("gis-mt-mark-cis-idx", new(["data.cis"])),
+            new("gis-mt-mark-sgtin-idx", new(["data.sGtin"])),
+            new("gis-mt-mark-product-group-idx", new(["data.productGroup"])),
+            new("gis-mt-mark-product-group-loaded-at-idx", new(["data.productGroup", "data.infoLoadedAt"])),
+            new("gis-mt-mark-info-loaded-at-idx", new(["data.infoLoadedAt"])),
+            new("gis-mt-mark-cleanup-idx", new(["data.infoLoadedAt", "data.sold"])),
         ];
 }

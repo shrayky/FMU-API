@@ -1,4 +1,4 @@
-﻿using FmuApiApplication.Services.TrueSign;
+﻿using FmuApiDomain.GisMt.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,12 +9,12 @@ namespace WebApi.Controllers.TrueSign;
 [ApiExplorerSettings(GroupName = "True API")]
 public class ProductInfoController : ControllerBase
 {
-    private readonly ProductInfo _productInfo;
+    private readonly IGisMtCisesClient _cisesClient;
     private readonly IApplicationState _applicationState;
 
-    public ProductInfoController(ProductInfo productInfo, IApplicationState applicationState)
+    public ProductInfoController(IGisMtCisesClient cisesClient, IApplicationState applicationState)
     {
-        _productInfo = productInfo;
+        _cisesClient = cisesClient;
         _applicationState = applicationState;
     }
 
@@ -30,7 +30,8 @@ public class ProductInfoController : ControllerBase
         if (_applicationState.TrueApiToken().Expired < DateTime.Now)
             return BadRequest("Токен УКЭП истек, необходимо получить новый.");
 
-        var info = await _productInfo.Load(gtins);
+        var token = _applicationState.TrueApiToken().Token;
+        var info = await _cisesClient.ProductInfo(token, gtins);
 
         if (info.IsSuccess)
             return Ok(info.Value);

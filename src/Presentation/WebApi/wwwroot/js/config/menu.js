@@ -20,6 +20,10 @@ export const MENU_ITEMS = {
         id: "marksView",
         value: "Марки"
     },
+    GIS_MT_MARKS: {
+        id: "gisMtMarksView",
+        value: "Остатки марок ГИС МТ"
+    },
     MARK_CHECK: {
         id: "markCheckView",
         value: "Проверка маркировки"
@@ -53,6 +57,7 @@ export function buildMenuItems(config) {
 
     items.push(
         MENU_ITEMS.MARKS,
+        MENU_ITEMS.GIS_MT_MARKS,
         MENU_ITEMS.MARK_CHECK,
         MENU_ITEMS.LOGS,
         MENU_ITEMS.INFO,

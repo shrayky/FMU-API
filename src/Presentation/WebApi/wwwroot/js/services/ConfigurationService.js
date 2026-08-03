@@ -39,6 +39,15 @@ function normalizeFormValues(values) {
             parseInt(frontol.syncBeerTapsSettings.syncBeerTapsPeriodSeconds, 10) || 30;
     }
 
+    const gisMtSettings = values?.gisMtSettings;
+    if (gisMtSettings?.stockLoadTime instanceof Date) {
+        const date = gisMtSettings.stockLoadTime;
+        const hours = date.getHours().toString().padStart(2, "0");
+        const minutes = date.getMinutes().toString().padStart(2, "0");
+        const seconds = date.getSeconds().toString().padStart(2, "0");
+        gisMtSettings.stockLoadTime = `${hours}:${minutes}:${seconds}`;
+    }
+
     return values;
 }
 

@@ -8,6 +8,16 @@ namespace CouchDb.DatabaseScheme
         public const string DocumentsDbName = "fmu-api-documents";
         public const string MarkCheckingStatistic = "fmu-api-mark-checking-statistic";
         public const string BeerOnTaps = "fmu-api-beer-on-taps";
-        public static string[] Names() => [MarksDbName, DocumentsDbName, MarkCheckingStatistic, BeerOnTaps];
+        public const string GisMtDocumentsDbName = "fmu-api-gis-mt-documents";
+        public const string GisMtMarksDbName = "fmu-api-gis-mt-marks";
+        public static string[] Names() =>
+        [
+            MarksDbName,
+            DocumentsDbName,
+            MarkCheckingStatistic,
+            BeerOnTaps,
+            GisMtDocumentsDbName,
+            GisMtMarksDbName
+        ];
     }
 }

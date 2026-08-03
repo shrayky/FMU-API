@@ -35,6 +35,8 @@ public class Parameters
 
     public SaleControlConfig SaleControlConfig { get; set; } = new();
 
+    public GisMtSettings GisMtSettings { get; set; } = new();
+
     public CentralServerConnectionProperties FmuApiCentralServer { get; set; } = new();
 
     [JsonInclude]
