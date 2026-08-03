@@ -20,7 +20,7 @@ class CentralServerConnectionElement {
             interval: "Интервал обмена (минут)",
             downloadNewVersion: "Загружать и устанавливать новую версию",
             schedulerTitle: "Расписание установки обновлений",
-            schedulerTip: "если список пуст, обновление устанавливается в любое время",
+            schedulerTip: "⚠️если список пуст, обновление устанавливается в любое время",
             newInterval: "Новый интервал",
             editInterval: "Интервал",
             beginTime: "Начало",
@@ -30,7 +30,7 @@ class CentralServerConnectionElement {
             timeRequired: "Укажите время начала и окончания интервала",
             invalidInterval: "Время начала должно быть меньше времени окончания",
             doExchangeWithServer: "Выполнить обмен",
-            addressTip: "⚠️ можно указать несколько адресов через точку с запятой",
+            addressTip: "⚠️можно указать несколько адресов через точку с запятой",
         };
     }
 
@@ -85,6 +85,30 @@ class CentralServerConnectionElement {
         return `${hours}:${minutes}:${seconds}`;
     }
 
+    _labelWithTip(id, title, tip) {
+        const safeTitle = webix.template.escape(title);
+        const safeTip = webix.template.escape(tip);
+
+        return {
+            cols: [
+                {
+                    view: "label",
+                    id: id,
+                    label: title,
+                    width: 0,
+                    autowidth: true,
+                },
+                {
+                    view: "template",
+                    id: `${id}Tip`,
+                    borderless: true,
+                    css: "webix_el_label",
+                    template: `<div style="display:flex;align-items:center;height:100%"><span style="font-style:italic;font-size:smaller">${safeTip}</span></div>`
+                }
+            ]
+        };
+    }
+
     loadConfig(config) {
         if (config?.fmuApiCentralServer) {
             const settings = config.fmuApiCentralServer;
@@ -131,12 +155,12 @@ class CentralServerConnectionElement {
                         id: this.SETTINGS_ID,
                         disabled: !this.enabled,
                         rows: [
-                            Text(this.LABELS.address,
+                            this._labelWithTip("lCentralServerAddress", this.LABELS.address, this.LABELS.addressTip),
+
+                            Text("",
                                 "fmuApiCentralServer.address",
                                 this.address,
                                 httpAddressListValidation),
-
-                            Label("lAddressTip", this.LABELS.addressTip),
 
                             Text(this.LABELS.token,
                                 "fmuApiCentralServer.token",
@@ -168,10 +192,7 @@ class CentralServerConnectionElement {
                                 id: this.SCHEDULER_SETTINGS_ID,
                                 disabled: !this.downloadNewVersion,
                                 rows: [
-                                    Label("lSchedulerUpdateInstall", this.LABELS.schedulerTitle),
-                                    Label("lSchedulerUpdateInstallTip", this.LABELS.schedulerTip, {
-                                        css: ITALIC_SMALL_STYLE
-                                    }),
+                                    this._labelWithTip("shedulerUpdateLable", this.LABELS.schedulerTitle, this.LABELS.schedulerTip),
                                     TableToolbar(this.SCHEDULER_TABLE_ID),
                                     this._createSchedulerTable()
                                 ]
