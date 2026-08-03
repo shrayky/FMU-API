@@ -7,6 +7,9 @@ public record CentralServerProperties
     [JsonPropertyName("exchangeServerAddresses")]
     public string ExchangeServerAddresses { get; init; } = string.Empty;
 
+    [JsonPropertyName("exchangeRequestInterval")]
+    public int ExchangeRequestInterval { get; init; }
+
     [JsonPropertyName("schedulerUpdateDownload")]
     public List<ScheduleTimeDto> SchedulerUpdateDownload { get; init; } = [];
 }

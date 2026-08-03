@@ -47,6 +47,18 @@ public class CentralServerPropertiesApplyService
                 changed = true;
             }
 
+            if (properties.ExchangeRequestInterval > 0
+                && central.ExchangeRequestInterval != properties.ExchangeRequestInterval)
+            {
+                _logger.LogInformation(
+                    "Обновляю интервал обмена с Central: {Old} -> {New} мин.",
+                    central.ExchangeRequestInterval,
+                    properties.ExchangeRequestInterval);
+
+                central.ExchangeRequestInterval = properties.ExchangeRequestInterval;
+                changed = true;
+            }
+
             if (properties.SchedulerUpdateDownload.Count > 0
                 && !SchedulesEqual(central.SchedulerUpdateInstall, properties.SchedulerUpdateDownload))
             {
