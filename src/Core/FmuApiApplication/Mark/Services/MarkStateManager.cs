@@ -4,6 +4,7 @@ using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Fmu.BeerTaps.Interfaces;
+using FmuApiDomain.GisMt;
 using FmuApiDomain.MarkInformation.Entities;
 using FmuApiDomain.MarkInformation.Enums;
 using FmuApiDomain.MarkInformation.Interfaces;
@@ -20,6 +21,7 @@ public class MarkStateManager : IMarkStateManager
 {
     private readonly ILogger<MarkStateManager> _logger;
     private readonly IMarkInformationRepository _markCrud;
+    private readonly IGisMtMarkRepository _gisMtMarkRepository;
     private readonly IParametersService _parametersService;
     private readonly IApplicationState _appState;
     private readonly IBeerOnTapManager _beerOnTapManager;
@@ -29,6 +31,7 @@ public class MarkStateManager : IMarkStateManager
     public MarkStateManager(IServiceProvider services, IBeerOnTapManager beerOnTapManager)
     {
         _markCrud = services.GetRequiredService<IMarkInformationRepository>();
+        _gisMtMarkRepository = services.GetRequiredService<IGisMtMarkRepository>();
         _parametersService = services.GetRequiredService<IParametersService>();
         _logger = services.GetRequiredService<ILogger<MarkStateManager>>();
         _appState = services.GetRequiredService<IApplicationState>();
@@ -56,6 +59,13 @@ public class MarkStateManager : IMarkStateManager
         {
             _logger.LogInformation("Получена информация о марке {Sgtin}", sGtin);
             return markInfo;
+        }
+
+        var gisMtMark = await _gisMtMarkRepository.Get(sGtin);
+        if (gisMtMark != null)
+        {
+            _logger.LogInformation("Получена информация о марке {Sgtin} из остатков ГИС МТ", sGtin);
+            return GisMtMarkMapper.ToMarkEntity(gisMtMark);
         }
 
         _logger.LogInformation("Нет информации в БД о марке {Sgtin}", sGtin);
@@ -182,7 +192,21 @@ public class MarkStateManager : IMarkStateManager
             await _beerOnTapManager.AddSale(sGtin, (int)saleData.Quantity);
         }
 
-        return await _markCrud.AddAsync(markEntity);
+        var savedMark = await _markCrud.AddAsync(markEntity);
+
+        await SyncGisMtSoldState(sGtin, isSold);
+
+        return savedMark;
+    }
+
+    /// <summary>
+    /// Синхронизирует признак продажи в остатках ГИС МТ, если марка там есть.
+    /// </summary>
+    private async Task SyncGisMtSoldState(string sGtin, bool sold)
+    {
+        var result = await _gisMtMarkRepository.ChangeState(sGtin, sold);
+        if (result.IsFailure)
+            _logger.LogDebug("Остатки ГИС МТ для {Sgtin} не обновлены: {Error}", sGtin, result.Error);
     }
 
     public async Task<bool> MarkIsSold(string sgtin)
@@ -194,6 +218,10 @@ public class MarkStateManager : IMarkStateManager
             return false;
 
         var markInfo = await _markCrud.GetAsync(sgtin);
-        return markInfo.State == MarkState.Sold;
+        if (markInfo.State == MarkState.Sold)
+            return true;
+
+        var gisMtMark = await _gisMtMarkRepository.Get(sgtin);
+        return gisMtMark?.Sold == true;
     }
 }

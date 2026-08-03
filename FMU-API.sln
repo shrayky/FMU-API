@@ -51,6 +51,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "packages-local", "packages-
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FmuPacketTrapper", "src\Infrastructure\PacketTrapper\PacketTrapper\FmuPacketTrapper.csproj", "{4E7AAEFD-9EA3-4508-B9F9-5EB1E0BD64FB}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{4CFBEE11-B6CC-49C1-88D0-327A674A2F89}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{DD672ADA-1C05-480E-9ABA-9752A73EC98C}"
+	ProjectSection(SolutionItems) = preProject
+		deploy.yml = deploy.yml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -145,6 +152,7 @@ Global
 		{56A95E80-1431-4A7F-9AA5-81E16779BF21} = {A2FC2158-423C-4F0A-909F-C65382DC2599}
 		{214C5B0E-C6B0-EC82-C6FA-BA28991CD3D5} = {A2FC2158-423C-4F0A-909F-C65382DC2599}
 		{4E7AAEFD-9EA3-4508-B9F9-5EB1E0BD64FB} = {A2FC2158-423C-4F0A-909F-C65382DC2599}
+		{DD672ADA-1C05-480E-9ABA-9752A73EC98C} = {4CFBEE11-B6CC-49C1-88D0-327A674A2F89}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {853898A9-1472-4293-B761-F8E8DFA48C1F}

@@ -6,6 +6,7 @@ using CouchDb.Documents;
 using CouchDB.Driver;
 using CouchDB.Driver.Options;
 using FmuApiDomain.Database.Dto;
+using FmuApiDomain.GisMt.Entities;
 using FmuApiDomain.MarkInformation.Entities;
 
 namespace CouchDb
@@ -16,6 +17,8 @@ namespace CouchDb
         public CouchDatabase<CouchDoc<DocumentEntity>> Documents { get; set; }
         public CouchDatabase<CouchDoc<StatisticEntity>> MarkCheckingStatistic { get; set; }
         public CouchDatabase<CouchDoc<BeerTapEntity>> BeerOnTap { get; set; }
+        public CouchDatabase<CouchDoc<GisMtDocumentEntity>> GisMtDocuments { get; set; }
+        public CouchDatabase<CouchDoc<GisMtMarkEntity>> GisMtMarks { get; set; }
 
         public CouchDbContext(CouchOptions<CouchDbContext> options) : base(options)
         {
@@ -34,6 +37,10 @@ namespace CouchDb
             databaseBuilder.Document<CouchDoc<StatisticEntity>>().ToDatabase(DatabaseNames.MarkCheckingStatistic);
 
             databaseBuilder.Document<CouchDoc<BeerTapEntity>>().ToDatabase(DatabaseNames.BeerOnTaps);
+
+            databaseBuilder.Document<CouchDoc<GisMtDocumentEntity>>().ToDatabase(DatabaseNames.GisMtDocumentsDbName);
+
+            databaseBuilder.Document<CouchDoc<GisMtMarkEntity>>().ToDatabase(DatabaseNames.GisMtMarksDbName);
         }
     }
 }

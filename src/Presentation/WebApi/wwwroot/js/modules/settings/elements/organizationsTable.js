@@ -1,7 +1,8 @@
-import { Label, TableToolbar, Text, Number, padding, PasswordBox, CheckBox } from "../../../utils/ui.js";
+import { Label, TableToolbar, padding } from "../../../utils/ui.js";
 import { saveConfiguration } from '../../../services/ConfigurationService.js';
 import { pollingManager } from '../../../services/PollingManager.js';
-
+import { showOrganizationForm, collectOrganizationFormData } from "./organizationForm.js";
+import { openGisMtWindow } from "./gisMtWindow.js";
 
 class OrganizationsConfigurationElement {
     constructor(id) {
@@ -31,6 +32,13 @@ class OrganizationsConfigurationElement {
             signPassword: "Пароль от ЭЦП",
             LoadToken: "Получить токен",
             DigitalSignature: "Сертификат ЭЦП",
+            gisMt: "ГИС МТ",
+            gisMtWindowTitle: "ГИС МТ",
+            productGroupsTab: "Группы",
+            operationsTab: "Операции",
+            loadProductGroups: "Загрузить группы",
+            syncDocuments: "Загрузить документы",
+            loadStock: "Загрузить остатки",
             tsPiotInformationPort: "Порт",
             tsPiotinformationEndpoint: "Эндпоинт запроса"
         };
@@ -45,56 +53,37 @@ class OrganizationsConfigurationElement {
         };
 
         this.LOCAL_MODULE_STATUS_DISPLAY = {
-            [this.LOCAL_MODULE_STATUS.NOT_CONFIGURED]: {
-                text: "Не настроен",
-                color: "#FFA500" // Orange
-            },
-            [this.LOCAL_MODULE_STATUS.INITIALIZATION]: {
-                text: "Инициализация",
-                color: "#3498DB" // Blue
-            },
-            [this.LOCAL_MODULE_STATUS.READY]: {
-                text: "Готов к работе",
-                color: "#2ECC71" // Green
-            },
-            [this.LOCAL_MODULE_STATUS.SYNC_ERROR]: {
-                text: "Ошибка синхронизации",
-                color: "#E74C3C" // Red
-            },
-            [this.LOCAL_MODULE_STATUS.ENISEY_OFF_LINE]: {
-                text: "Енисей off-line",
-                color: "#E74C3C" // Red
-            },
-            [this.LOCAL_MODULE_STATUS.UNKNOWN]: {
-                text: "Неизвестный статус",
-                color: "#E74C3C" // Gray
-            }
+            [this.LOCAL_MODULE_STATUS.NOT_CONFIGURED]: { text: "Не настроен", color: "#FFA500" },
+            [this.LOCAL_MODULE_STATUS.INITIALIZATION]: { text: "Инициализация", color: "#3498DB" },
+            [this.LOCAL_MODULE_STATUS.READY]: { text: "Готов к работе", color: "#2ECC71" },
+            [this.LOCAL_MODULE_STATUS.SYNC_ERROR]: { text: "Ошибка синхронизации", color: "#E74C3C" },
+            [this.LOCAL_MODULE_STATUS.ENISEY_OFF_LINE]: { text: "Енисей off-line", color: "#E74C3C" },
+            [this.LOCAL_MODULE_STATUS.UNKNOWN]: { text: "Неизвестный статус", color: "#E74C3C" }
         };
 
         this.POLL_INTERVAL = 10000;
-
         this._startLocalModuleStatusPolling();
     }
 
     _getStatusDisplay(organisationConfig) {
-
-        if (!organisationConfig.localModuleConnection.enable) {
-            return {
-                text: "Не подключен",
-                color: "#FFA500" // Orange
-            };
+        if (!organisationConfig.localModuleConnection?.enable) {
+            return { text: "Не подключен", color: "#FFA500" };
         }
 
         return this.LOCAL_MODULE_STATUS_DISPLAY[organisationConfig.localModuleStatus] || {
             text: "Неизвестный статус",
             color: "#95A5A6"
         };
-    };
+    }
 
     loadConfig(config) {
         if (config && config.organisationConfig && config.organisationConfig.printGroups) {
             this.printGroups = config.organisationConfig.printGroups.map(group => ({
                 ...group,
+                trueApiIntegrationSettings: {
+                    ...(group.trueApiIntegrationSettings ?? {}),
+                    enable: !!(group.trueApiIntegrationSettings?.enable)
+                },
                 localModuleStatus: this.LOCAL_MODULE_STATUS.NOT_CONFIGURED
             }));
         }
@@ -103,21 +92,26 @@ class OrganizationsConfigurationElement {
     }
 
     render() {
-        var elements = [];
-
-        elements.push(
-            Label("lOrganizations", this.LABELS.title)
-        );
+        const elements = [];
+        elements.push(Label("lOrganizations", this.LABELS.title));
 
         const toolbar = TableToolbar("PrintGroups");
+
+        toolbar.cols.splice(toolbar.cols.length - 1, 0, {
+            view: "button",
+            value: this.LABELS.gisMt,
+            id: "gisMt_PrintGroups",
+            disabled: true,
+            width: 120,
+            tooltip: "Работа с ГИС МТ",
+            click: () => this._openGisMtWindow()
+        });
 
         toolbar.cols.splice(toolbar.cols.length - 1, 0, {
             view: "button",
             value: this.LABELS.localModuleInit,
             id: "initLm_PrintGroups",
             disabled: true,
-            tableId: "PrintGroups",
-            autowidth: false,
             width: 200,
             tooltip: "Инициализация локального модуля",
             click: () => this._initializeLocalModule()
@@ -152,32 +146,30 @@ class OrganizationsConfigurationElement {
                 {
                     id: "localModuleStatus",
                     header: this.LABELS.localModuleStatusTitle,
-
                     fillspace: true,
                     template: (obj) => {
                         const status = this._getStatusDisplay(obj);
                         return `<div style="
-                            color: ${status.color}; 
-                            font-weight: bold; 
+                            color: ${status.color};
+                            font-weight: bold;
                             text-align: center;
                             padding: 2px 5px;
                             border-radius: 3px;
                             background: ${status.color}15;
-                        ">
-                            ${status.text}
-                        </div>`;
+                        ">${status.text}</div>`;
                     }
                 }
             ],
             on: {
-                onAfterSelect: (selection) => {
+                onAfterSelect: () => {
                     $$("delete_PrintGroups").enable();
                     this._updateInitButtonState();
                 },
-                onAfterDelete: (id) => {
+                onAfterDelete: () => {
                     $$("delete_PrintGroups").disable();
                     if ($$("PrintGroups").count() == 0)
                         $$("deleteAll_PrintGroups").disable();
+                    this._updateInitButtonState();
                 },
                 onBeforeAdd: (id, obj) => {
                     if (obj.xapikey == undefined) {
@@ -193,277 +185,23 @@ class OrganizationsConfigurationElement {
     }
 
     showForm(label, tableId, id) {
-        const windowInnerWidth = window.innerWidth;
-
-        webix.ui({
-            view: "window",
-            id: this.formName,
-            position: "center",
-            modal: true,
-            move: false,
-            resize: false,
-            width: windowInnerWidth * 0.8,
-            head: this._createFormHeader(label),
-            body: this._createFormBody(tableId, id)
-        }).show();
-
-        this._initFormValues(tableId, id);
-    }
-
-    _createFormHeader(label) {
-        return {
-            view: "toolbar",
-            elements: [
-                {
-                    view: "label",
-                    label: label,
-                },
-                {
-                    view: "icon",
-                    icon: "wxi-close",
-                    click: () => $$(this.formName).close()
-                }
-            ]
-        };
-    }
-
-    _createFormBody(tableId, id) {
-        return {
-            padding: 10,
-            rows: [
-                Number(this.LABELS.code, "OrganizationId", "1111"),
-                {
-                    cols: [
-                        Text(this.LABELS.name, "OrganizationName"),
-                        Text(this.LABELS.inn, "OrganizationInn"),
-                    ]
-                },
-                {
-                    view: "tabview",
-                    height: 300,
-                    cells: [
-                        {
-                            header: "ТСПИоТ",
-                            body: {
-                                padding: 10,
-                                rows: [
-                                    {
-                                        cols: [
-                                            Text(this.LABELS.tsPiotHost, "TsPiotHost", "", { placeholder: "localhost" }),
-                                            Text(this.LABELS.tsPiotPort, "TsPiotPort", "", { placeholder: "51401" }),
-                                        ],
-                                    },
-                                    {
-                                        view: "label",
-                                        label: "Адрес получения информации о модуле ТСПИоТ",
-
-                                    },
-                                    {
-                                        cols: [
-                                            Text(this.LABELS.tsPiotinformationEndpoint, "TsPiotinformationEndpoint", "", { placeholder: "/api/v1/info" }),
-                                            Text(this.LABELS.tsPiotInformationPort, "TsPiotInformationPort", "", { placeholder: "51077" }),
-                                        ]
-                                    },
-                                    {},
-                                    {
-                                        view: "template",
-                                        id: "TsPiotUbder",
-                                        template: "Для актуальных версий фронтола (больше 6.28.0) адрес подключения настраивается в ККМ и передается в запросе проверки марки.",
-                                        css: {
-                                            "white-space": "normal",
-                                            "word-wrap": "break-word",
-                                            "line-height": "1.4",
-                                            "padding": "5px 0"
-                                        },
-                                        autoheight: true
-                                    },
-                                ]
-                            }
-                        },
-                        {
-                            header: "Локальный модуль",
-                            body: {
-                                padding: 10,
-                                rows: [
-                                    CheckBox(this.LABELS.enable, "LocalModuleEnable"),
-                                    Text(this.LABELS.connectionAddress,
-                                        "LocalModuleConnectionAddress", "", {
-                                        placeholder: "http://hostname:5995"
-                                    }),
-
-                                    {
-                                        cols: [
-                                            Text(this.LABELS.userName, "LocalModuleUserName"),
-                                            PasswordBox(this.LABELS.password, "LocalModulePassword"),
-                                        ]
-                                    },
-
-                                    Text(this.LABELS.eniseyConnectionAddress,
-                                        "EniseyConnectionAddress", "", {
-                                        placeholder: "http://hostname:5984"
-                                    })
-                                ]
-                            }
-                        },
-                        {
-                            header: "Разрешительный режим (до 01.07.2026)",
-                            body: {
-                                padding: 10,
-                                rows: [
-                                    Text(this.LABELS.xapikey, "XAPIKEY"),
-                                ]
-                            }
-                        },
-                        {
-                            header: "True api интеграция",
-                            body: {
-                                padding: 10,
-                                rows: [
-                                    CheckBox(this.LABELS.enable, "TrueApiIntegrationEnable"),
-
-                                    {
-                                        view: "richselect",
-                                        id: "TrueApiIntegrationDigitalSignature",
-                                        label: this.LABELS.DigitalSignature,
-                                        labelPosition: "top",
-                                        placeholder: "Выберите сертификат",
-                                        options: [],
-                                        on: {
-                                            onBeforeRender: async function () {
-                                                const control = this;
-
-                                                if (control.config._loaded)
-                                                    return;
-
-                                                try {
-                                                    const response = await fetch("/api/digitalsignature");
-
-                                                    if (!response.ok) {
-                                                        webix.message({ text: "Не удалось загрузить сертификаты", type: "error" });
-                                                        return;
-                                                    }
-
-                                                    const certificates = await response.json();
-                                                    const options = certificates.map(c => ({
-                                                        id: c.number,
-                                                        value: `${c.presentation} RU")}`
-                                                    }));
-
-                                                    const popup = control.getPopup();
-                                                    popup.getList().clearAll();
-                                                    popup.getList().parse(options);
-                                                    control.config._loaded = true;
-
-                                                } catch (e) {
-                                                    webix.message({ text: e?.message || "Ошибка загрузки сертификатов", type: "error" });
-                                                }
-                                            }
-                                        }
-                                    },
-
-                                    Text(this.LABELS.signPassword, "TrueApiIntegrationPassword"),
-
-                                    {
-                                        cols: [
-                                            {
-                                                view: "button",
-                                                value: this.LABELS.LoadToken,
-                                                id: "loadTrueApiToken",
-                                                width: 200,
-                                                autowidth: false,
-                                                click: async () => {
-                                                    const inn = $$("OrganizationInn").getValue();
-                                                    if (!inn || !String(inn).trim()) {
-                                                        webix.message({ text: "Укажите ИНН организации", type: "error" });
-                                                        return;
-                                                    }
-                                                    try {
-                                                        const response = await fetch(`/api/ts/token/inn?inn=${encodeURIComponent(inn)}`);
-                                                        if (response.status === 404) {
-                                                            webix.message({
-                                                                text: "Токен ещё не готов. Он получается через 2 минуты после старта службы, а потом обновляется каждые 10 минут.",
-                                                                type: "info"
-                                                            });
-                                                            return;
-                                                        }
-                                                        if (!response.ok) {
-                                                            webix.message({ text: "Ошибка при получении токена", type: "error" });
-                                                            return;
-                                                        }
-                                                        const data = await response.json();
-                                                        const token = data.token ?? data.Token ?? "";
-                                                        if (!token) {
-                                                            webix.message({ text: "Токен не получен", type: "error" });
-                                                            return;
-                                                        }
-                                                        await navigator.clipboard.writeText(token);
-                                                        webix.message("Токен получен и скопирован в буфер обмена");
-
-                                                    } catch (e) {
-                                                        webix.message({ text: e?.message || "Ошибка при получении токена", type: "error" });
-                                                    }
-                                                }
-                                            },
-                                            {}
-                                        ]
-                                    },
-                                    {},
-
-                                    {
-                                        view: "template",
-                                        id: "TrueApiIntegrationInfo",
-                                        template: "Для работы необходимо что бы на одном ПК с fmu-api был установлен КриптоПро, а так же у пользователя от которого запущена fmu-api был установлен сертификат ЭЦП.",
-                                        css: {
-                                            "white-space": "normal",
-                                            "word-wrap": "break-word",
-                                            "line-height": "1.4",
-                                            "padding": "5px 0"
-                                        },
-                                        autoheight: true
-                                    },
-
-                                ]
-                            }
-                        }
-                    ]
-                },
-
-                {
-                    padding: {
-                        top: 10
-                    },
-                    cols: [
-                        {
-                            view: "button",
-                            value: this.LABELS.add,
-                            id: "addButton",
-                            autowidth: "false",
-                            width: 400,
-                            click: () => this._handleAddButton(tableId, id)
-                        },
-                        {
-                            view: "button",
-                            value: this.LABELS.close,
-                            id: "closeBtn",
-                            autowidth: "false",
-                            width: 400,
-                            click: () => $$(this.formName).close()
-                        },
-                        {}
-                    ]
-                }
-            ]
-        };
+        showOrganizationForm({
+            labels: this.LABELS,
+            formName: this.formName,
+            tableId,
+            id,
+            onSave: (tid, rowId) => this._handleAddButton(tid, rowId)
+        });
     }
 
     _handleAddButton(tableId, id) {
-        let organizationId = $$("OrganizationId").getValue();
+        const organizationId = $$("OrganizationId").getValue();
         if (organizationId == "") return;
 
-        let table = $$(tableId);
+        const table = $$(tableId);
         if (table == undefined) return;
 
-        let existRows = table.find(obj => obj.id == organizationId && organizationId != id);
+        const existRows = table.find(obj => obj.id == organizationId && organizationId != id);
         if (existRows.length > 0) {
             webix.message({
                 text: "Организация с таким кодом уже есть в списке!",
@@ -472,47 +210,17 @@ class OrganizationsConfigurationElement {
             return;
         }
 
-        const informationPortRaw = $$("TsPiotInformationPort").getValue();
-        const informationPort = parseInt(informationPortRaw, 10);
+        const newData = collectOrganizationFormData(table, id);
 
-        const newData = {
-            id: organizationId,
-            xapikey: $$("XAPIKEY").getValue(),
-            tsPiot: {
-                host: $$("TsPiotHost").getValue(),
-                port: $$("TsPiotPort").getValue(),
-                informationPort: isNaN(informationPort) ? 51077 : informationPort,
-                informationEndpoint: $$("TsPiotinformationEndpoint").getValue(),
-            },
-            inn: $$("OrganizationInn").getValue(),
-            name: $$("OrganizationName").getValue(),
-            localModuleConnection: {
-                enable: $$("LocalModuleEnable").getValue(),
-                connectionAddress: $$("LocalModuleConnectionAddress").getValue(),
-                userName: $$("LocalModuleUserName").getValue(),
-                password: $$("LocalModulePassword").getValue(),
-                eniseyConnectionAddress: $$("EniseyConnectionAddress").getValue()
-            },
-            trueApiIntegrationSettings: {
-                enable: $$("TrueApiIntegrationEnable").getValue(),
-                password: $$("TrueApiIntegrationPassword").getValue(),
-                digitalSignature: $$("TrueApiIntegrationDigitalSignature").getValue(),
-
-            }
-        };
-
-        if (id == undefined) {
+        if (id == undefined)
             table.add(newData);
-
-        } else {
+        else
             table.updateItem(id, newData);
-        }
 
         if (table.count() > 0)
             $$("deleteAll_PrintGroups").enable();
 
         $$(this.formName).close();
-
         this._saveConfiguration();
         this._updateInitButtonState();
     }
@@ -521,116 +229,88 @@ class OrganizationsConfigurationElement {
         saveConfiguration("body");
     }
 
-    _initFormValues(tableId, id) {
-        let table = $$(tableId);
-
-        if (id == undefined) {
-            let lastId = table.getLastId();
-
-            $$("OrganizationId").setValue(lastId == undefined ? 1 : +lastId + 1);
-            $$("TsPiotInformationPort").setValue(51077);
-            return
-        }
-
-        let item = table.getItem(id);
-
-        $$("OrganizationId").setValue(item.id);
-        $$("OrganizationId").disable();
-        $$("OrganizationInn").setValue(item.inn);
-        $$("OrganizationName").setValue(item.name);
-        $$("TsPiotHost").setValue(item.tsPiot.host ?? "");
-        $$("TsPiotPort").setValue(item.tsPiot.port ?? "");
-        $$("TsPiotInformationPort").setValue(item.tsPiot.informationPort ?? 51077);
-        $$("TsPiotinformationEndpoint").setValue(item.tsPiot.informationEndpoint ?? "");
-        $$("LocalModuleEnable").setValue(item.localModuleConnection.enable);
-        $$("LocalModuleConnectionAddress").setValue(item.localModuleConnection.connectionAddress ?? "");
-        $$("LocalModuleUserName").setValue(item.localModuleConnection.userName ?? "");
-        $$("LocalModulePassword").setValue(item.localModuleConnection.password ?? "");
-        $$("EniseyConnectionAddress").setValue(item.localModuleConnection.eniseyConnectionAddress);
-        $$("XAPIKEY").setValue(item.xapikey ?? "");
-        $$("TrueApiIntegrationEnable").setValue(item.trueApiIntegrationSettings.enable);
-        $$("TrueApiIntegrationPassword").setValue(item.trueApiIntegrationSettings.password);
-        $$("TrueApiIntegrationDigitalSignature").setValue(item.trueApiIntegrationSettings.digitalSignature);
-    }
-
-    _startLocalModuleStatusPolling() {
-        const POLL_INTERVAL = this.POLL_INTERVAL;
-
-        const pollStatus = async () => {
-
-            try {
-                const response = await fetch('/api/lm/state');
-                if (!response.ok)
-                    throw new Error('Ошибка получения статусов');
-
-                const states = await response.json();
-
-                const table = $$("PrintGroups");
-
-                if (!table)
-                    return;
-
-                states.forEach(state => {
-                    const item = table.getItem(state.organization);
-
-                    if (item) {
-                        if (item.localModuleStatus == state.status)
-                            return;
-
-                        const updatedItem = {
-                            ...item,
-                            localModuleStatus: state.status,
-                        };
-
-                        table.updateItem(state.organization, updatedItem);
-                        this._updateInitButtonState();
-                    }
-                });
-
-            } catch (error) {
-                if (error.name === 'TypeError' ||
-                    error.message.includes('fetch') ||
-                    error.message.includes('Failed to fetch') ||
-                    error.message.includes('NetworkError') ||
-                    error.message.includes('ERR_CONNECTION_REFUSED')) {
-                    return;
-                }
-                console.error("Ошибка при получении статусов ЛМ:", error);
-            }
-        };
-
-        pollingManager.register(
-            'localmodules-state-polling',
-            pollStatus,
-            this.POLL_INTERVAL,
-            {
-                initialDelay: 1000,
-                autoStart: true
-            }
-        );
-
-    }
-
     _updateInitButtonState() {
         const selectedId = $$("PrintGroups").getSelectedId();
         const initButton = $$("initLm_PrintGroups");
+        const gisMtButton = $$("gisMt_PrintGroups");
 
-        if (!selectedId || !initButton) return;
+        if (!selectedId) {
+            if (initButton) initButton.disable();
+            if (gisMtButton) gisMtButton.disable();
+            return;
+        }
 
         const item = $$("PrintGroups").getItem(selectedId);
-        const connection = item.localModuleConnection;
 
-        // Проверяем все условия для активации кнопки
-        const isEnabled = connection.enable &&
-            connection.connectionAddress &&
-            connection.userName &&
-            connection.password;
-
-        if (isEnabled) {
-            initButton.enable();
-        } else {
-            initButton.disable();
+        if (initButton) {
+            const connection = item.localModuleConnection ?? {};
+            const isEnabled = connection.enable &&
+                connection.connectionAddress &&
+                connection.userName &&
+                connection.password;
+            if (isEnabled) initButton.enable();
+            else initButton.disable();
         }
+
+        if (gisMtButton) {
+            if (!!item.trueApiIntegrationSettings?.enable)
+                gisMtButton.enable();
+            else
+                gisMtButton.disable();
+        }
+    }
+
+    _openGisMtWindow() {
+        const selectedId = $$("PrintGroups").getSelectedId();
+        if (!selectedId) {
+            webix.message({ text: "Выберите организацию", type: "warning" });
+            return;
+        }
+
+        const item = $$("PrintGroups").getItem(selectedId);
+        if (!item.trueApiIntegrationSettings?.enable) {
+            webix.message({ text: "Включите True API интеграцию для организации", type: "warning" });
+            return;
+        }
+
+        openGisMtWindow({
+            item,
+            selectedId,
+            labels: this.LABELS,
+            onSaveConfiguration: () => this._saveConfiguration()
+        });
+    }
+
+    _startLocalModuleStatusPolling() {
+        pollingManager.register(
+            "localModuleStatus",
+            async () => {
+                try {
+                    const response = await fetch('/api/lm/state');
+                    if (!response.ok)
+                        throw new Error('Ошибка получения статусов');
+
+                    const states = await response.json();
+                    const table = $$("PrintGroups");
+                    if (!table) return;
+
+                    // API: [{ organization, status }, ...]
+                    states.forEach(({ organization, status }) => {
+                        if (!table.exists(organization)) return;
+
+                        const item = table.getItem(organization);
+                        table.updateItem(organization, {
+                            ...item,
+                            localModuleStatus: status
+                        });
+                    });
+                } catch (error) {
+                    console.error("Ошибка при получении статусов ЛМ:", error);
+                }
+            },
+            this.POLL_INTERVAL,
+            { autoStart: true }
+        );
     }
 
     _initializeLocalModule() {
@@ -646,7 +326,7 @@ class OrganizationsConfigurationElement {
         const table = $$("PrintGroups");
         const item = table.getItem(selectedId);
 
-        if (!item.localModuleConnection.enable)
+        if (!item.localModuleConnection?.enable)
             return;
 
         if (item.localModuleStatus === this.LOCAL_MODULE_STATUS.NOT_CONFIGURED) {
@@ -668,20 +348,18 @@ class OrganizationsConfigurationElement {
             ok: "Да",
             cancel: "Отмена",
             callback: (result) => {
-                if (result) {
+                if (result)
                     this._startInitialization(selectedId, item);
-                }
             }
         });
     }
 
     _startInitialization(selectedId, item) {
         const table = $$("PrintGroups");
-        const updatedItem = {
+        table.updateItem(selectedId, {
             ...item,
             localModuleStatus: this.LOCAL_MODULE_STATUS.INITIALIZATION
-        };
-        table.updateItem(selectedId, updatedItem);
+        });
 
         fetch(`/api/lm/init/${selectedId}`, { method: 'POST' })
             .catch(error => {
