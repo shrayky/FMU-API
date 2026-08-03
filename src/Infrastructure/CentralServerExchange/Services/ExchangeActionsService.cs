@@ -19,17 +19,26 @@ public class ExchangeActionsService : ICentralServerExchangeActions
     private readonly IExchangeService _exchangeService;
     private readonly ConfigurationDownloadService _configurationDownloadService;
     private readonly SoftwareUpdateDownloadService _softwareUpdateDownloadService;
+    private readonly CentralServerPropertiesApplyService _centralServerPropertiesApplyService;
     private readonly IServiceScopeFactory _scopeFactory;
 
     private const string EndppintAddress = "api/FmuApiInstanceMonitoring";
 
-    public ExchangeActionsService(ILogger<ExchangeActionsService> logger, IParametersService parametersService, IExchangeService exchangeService, ConfigurationDownloadService configurationDownloadService, SoftwareUpdateDownloadService softwareUpdateDownloadService, IServiceScopeFactory scopeFactory)
+    public ExchangeActionsService(
+        ILogger<ExchangeActionsService> logger,
+        IParametersService parametersService,
+        IExchangeService exchangeService,
+        ConfigurationDownloadService configurationDownloadService,
+        SoftwareUpdateDownloadService softwareUpdateDownloadService,
+        CentralServerPropertiesApplyService centralServerPropertiesApplyService,
+        IServiceScopeFactory scopeFactory)
     {
         _logger = logger;
         _parametersService = parametersService;
         _exchangeService = exchangeService;
         _configurationDownloadService = configurationDownloadService;
         _softwareUpdateDownloadService = softwareUpdateDownloadService;
+        _centralServerPropertiesApplyService = centralServerPropertiesApplyService;
         _scopeFactory = scopeFactory;
     }
 
@@ -59,6 +68,10 @@ public class ExchangeActionsService : ICentralServerExchangeActions
                 }
 
                 success = true;
+
+                await _centralServerPropertiesApplyService
+                    .ApplyIfChanged(exchangeResult.Value.CentralServerProperties)
+                    .ConfigureAwait(false);
 
                 await _softwareUpdateDownloadService.DownloadAndInstall(exchangeResult.Value, baseAddress).ConfigureAwait(false);
 

@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace FmuApiDomNewDirectory1ain.Configuration;
+namespace FmuApiDomain.Configuration.Options;
 
 public class CentralServerConnectionProperties
 {
@@ -19,7 +19,6 @@ public record ScheduleTime
     public int Id { get; set; }
 
     [JsonPropertyName("beginTime")]
-
     public TimeOnly BeginTime { get; set; }
 
     [JsonPropertyName("endTime")]

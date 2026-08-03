@@ -18,4 +18,7 @@ public record FmuApiCentralResponse
 
     [JsonPropertyName("errorMessage")]
     public string? ErrorMessage { get; init; }
+
+    [JsonPropertyName("centralServerProperties")]
+    public CentralServerProperties? CentralServerProperties { get; init; }
 }
