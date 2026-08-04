@@ -18,7 +18,7 @@ public class CentralServerExchangeWorker : BackgroundService
 #if DEBUG
     private const int StartDelayMinutes = 1;
 #else
-    private const int StartDelayMinutes = 5;        
+    private const int StartDelayMinutes = 5;
 #endif
     private const int DelayAfterErrorMinutes = 1;
 
@@ -39,9 +39,6 @@ public class CentralServerExchangeWorker : BackgroundService
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            if (stoppingToken.IsCancellationRequested)
-                break;
-
             if (DateTime.Now < _nextExchangeTime)
             {
                 await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken).ConfigureAwait(false);

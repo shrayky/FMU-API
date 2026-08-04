@@ -14,25 +14,32 @@ namespace CentralServerExchange.Services;
 [AutoRegisterService(ServiceLifetime.Singleton)]
 public class CentralServerExchangeService : IExchangeService
 {
-    private HttpClient HttpClient { get; init; }
-    private ILogger<CentralServerExchangeService> Logger { get; init; }
+    public const string HttpClientName = "CentralServerExchange";
 
-    public CentralServerExchangeService(ILogger<CentralServerExchangeService> logger, HttpClient httpClient)
+    private const long MaxUpdateSizeBytes = 100L * 1024 * 1024;
+
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ILogger<CentralServerExchangeService> _logger;
+
+    public CentralServerExchangeService(ILogger<CentralServerExchangeService> logger, IHttpClientFactory httpClientFactory)
     {
-        HttpClient = httpClient;
-        Logger = logger;
+        _logger = logger;
+        _httpClientFactory = httpClientFactory;
     }
 
     public async Task<Result<FmuApiCentralResponse>> ActExchange(DataPacket request, string url)
         => await SafeActExchange(request, url).ConfigureAwait(false);
 
+    private HttpClient CreateClient() => _httpClientFactory.CreateClient(HttpClientName);
+
     private async Task<Result<FmuApiCentralResponse>> SafeActExchange(DataPacket request, string url)
     {
-        Logger.LogInformation("Готовлю к отправке пакет информации на сервер: {Url}", url);
+        _logger.LogInformation("Готовлю к отправке пакет информации на сервер: {Url}", url);
 
         try
         {
-            var response = await HttpClient.PostAsJsonAsync(url, request).ConfigureAwait(false);
+            var httpClient = CreateClient();
+            using var response = await httpClient.PostAsJsonAsync(url, request).ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -45,65 +52,101 @@ public class CentralServerExchangeService : IExchangeService
             var result = await response.Content.ReadFromJsonAsync<FmuApiCentralResponse>().ConfigureAwait(false);
 
             if (result is null)
-            {
                 return Result.Failure<FmuApiCentralResponse>("Пустой ответ от сервера");
+
+            if (!result.Success)
+            {
+                var message = string.IsNullOrWhiteSpace(result.ErrorMessage)
+                    ? "Центральный сервер вернул Success=false"
+                    : result.ErrorMessage;
+
+                return Result.Failure<FmuApiCentralResponse>(message);
             }
 
             return Result.Success(result);
         }
         catch (Exception ex)
         {
-            Logger.LogWarning("Обмен с центральным сервером закончился неудачно: {Message}", ex.Message);
-            Logger.LogDebug(ex, "Детали ошибки обмена с центральным сервером");
+            _logger.LogWarning("Обмен с центральным сервером закончился неудачно: {Message}", ex.Message);
+            _logger.LogDebug(ex, "Детали ошибки обмена с центральным сервером");
             return Result.Failure<FmuApiCentralResponse>($"Обмен с центральным сервером закончился с ошибкой: {ex.Message}");
         }
     }
 
     public async Task<Result<string>> DownloadNewConfiguration(string url)
     {
-        var operationResult = await HttpClient.SendRequestSafelyAsync(
+        var httpClient = CreateClient();
+        var operationResult = await httpClient.SendRequestSafelyAsync(
             client => client.GetAsync(url),
-            Logger,
+            _logger,
             "загрузка настроек из центрального сервера").ConfigureAwait(false);
 
         if (operationResult.IsFailure)
             return Result.Failure<string>(operationResult.Error);
 
-        var content = await operationResult.Value.Content.ReadAsStringAsync().ConfigureAwait(false);
+        using var response = operationResult.Value;
 
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            return Result.Failure<string>($"Сервер вернул ошибку {response.StatusCode}: {error}");
+        }
+
+        var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
         return Result.Success(content);
     }
+
     public async Task<Result> ConfirmDownloadConfiguration(string url)
     {
-        var operationResult = await HttpClient.SendRequestSafelyAsync(
+        var httpClient = CreateClient();
+        var operationResult = await httpClient.SendRequestSafelyAsync(
             client => client.PutAsJsonAsync(url, new { }),
-            Logger,
+            _logger,
             "уведомление о загрузке настроек").ConfigureAwait(false);
 
-        return operationResult.IsSuccess ? Result.Success() : Result.Failure(operationResult.Error);
+        if (operationResult.IsFailure)
+            return Result.Failure(operationResult.Error);
+
+        using var response = operationResult.Value;
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            return Result.Failure($"Сервер вернул ошибку {response.StatusCode}: {error}");
+        }
+
+        return Result.Success();
     }
 
     public async Task<Result<string>> DownloadSoftwareUpdateToTemp(string requestAddress)
     {
-        var operationResult = await HttpClient.SendRequestSafelyAsync(
-            client => client.GetAsync(requestAddress),
-            Logger,
+        var httpClient = CreateClient();
+        var operationResult = await httpClient.SendRequestSafelyAsync(
+            client => client.GetAsync(requestAddress, HttpCompletionOption.ResponseHeadersRead),
+            _logger,
             "загрузка обновления программного обеспечения").ConfigureAwait(false);
 
         if (operationResult.IsFailure)
             return Result.Failure<string>(operationResult.Error);
 
-        var response = operationResult.Value;
+        using var response = operationResult.Value;
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            return Result.Failure<string>($"Сервер вернул ошибку {response.StatusCode}: {error}");
+        }
 
         var contentLength = response.Content.Headers.ContentLength;
-        if (contentLength.HasValue && contentLength.Value > 100 * 1024 * 1024) // 100MB
+        if (contentLength.HasValue && contentLength.Value > MaxUpdateSizeBytes)
         {
-            Logger.LogWarning("Файл обновления очень большой: {Size} байт", contentLength.Value);
+            return Result.Failure<string>(
+                $"Файл обновления превышает лимит {MaxUpdateSizeBytes} байт (Content-Length={contentLength.Value})");
         }
 
         var contentType = response.Content.Headers.ContentType?.MediaType;
 
-        Logger.LogInformation("Загружаем файл обновления. Content-Type: {ContentType}, Size: {Size}",
+        _logger.LogInformation("Загружаем файл обновления. Content-Type: {ContentType}, Size: {Size}",
             contentType, contentLength);
 
         var tmpFolder = Path.Combine(Path.GetTempPath(), ApplicationInformation.AppName, "updates");
@@ -112,33 +155,59 @@ public class CentralServerExchangeService : IExchangeService
 
         try
         {
-            if (!Directory.Exists(tmpFolder))
-                Directory.CreateDirectory(tmpFolder);
+            Directory.CreateDirectory(tmpFolder);
 
-            await using var fileStream = File.Create(tmpPath);
-            await response.Content.CopyToAsync(fileStream).ConfigureAwait(false);
+            await using var contentStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
 
-            Logger.LogInformation("Обновление загружено в: {FilePath}", tmpPath);
+            var sizeExceeded = false;
+            await using (var fileStream = File.Create(tmpPath))
+            {
+                var buffer = new byte[81920];
+                long total = 0;
+                int read;
 
+                while ((read = await contentStream.ReadAsync(buffer.AsMemory(0, buffer.Length)).ConfigureAwait(false)) > 0)
+                {
+                    total += read;
+                    if (total > MaxUpdateSizeBytes)
+                    {
+                        sizeExceeded = true;
+                        break;
+                    }
+
+                    await fileStream.WriteAsync(buffer.AsMemory(0, read)).ConfigureAwait(false);
+                }
+            }
+
+            if (sizeExceeded)
+            {
+                TryDeleteFile(tmpPath);
+                return Result.Failure<string>(
+                    $"Файл обновления превышает лимит {MaxUpdateSizeBytes} байт");
+            }
+
+            _logger.LogInformation("Обновление загружено в: {FilePath}", tmpPath);
             return Result.Success(tmpPath);
         }
         catch (Exception e)
         {
-            try
-            {
-                if (File.Exists(tmpPath))
-                    File.Delete(tmpPath);
-            }
-            catch
-            { }
+            TryDeleteFile(tmpPath);
 
             var errMsg = $"Ошибка загрузки обновления в temp-файл {tmpPath}: {e.Message}";
-            Logger.LogError(errMsg);
+            _logger.LogError(errMsg);
             return Result.Failure<string>(errMsg);
         }
-        finally
+    }
+
+    private static void TryDeleteFile(string path)
+    {
+        try
         {
-            response.Dispose();
+            if (File.Exists(path))
+                File.Delete(path);
+        }
+        catch
+        {
         }
     }
 }

@@ -38,8 +38,8 @@ public class ConfigurationDownloadService
         return await DownloadSettingsData(requestAddress)
             .Bind(async rawData => await DecryptSettingsData(rawData).ConfigureAwait(false))
             .Bind(async settingsRaw => await DeserializeSettings(settingsRaw).ConfigureAwait(false))
-            .Map(async loadedSettings => await ApplySettings(loadedSettings).ConfigureAwait(false))
-            .Bind(async _ => await ConfirmDownload(baseAddress, confirmAddress).ConfigureAwait(false))
+            .Bind(async loadedSettings => await ApplySettings(loadedSettings).ConfigureAwait(false))
+            .Bind(async () => await ConfirmDownload(confirmAddress).ConfigureAwait(false))
             .ConfigureAwait(false);
     }
 
@@ -48,12 +48,20 @@ public class ConfigurationDownloadService
 
     private async Task<Result<string>> DecryptSettingsData(string rawData)
     {
-        var appSettings = await _parametersService.CurrentAsync().ConfigureAwait(false);
+        try
+        {
+            var appSettings = await _parametersService.CurrentAsync().ConfigureAwait(false);
 
-        var newSettingsRaw = !string.IsNullOrEmpty(appSettings.FmuApiCentralServer.Secret) ?
-            SecretString.DecryptData(rawData, appSettings.FmuApiCentralServer.Secret) : rawData;
+            var newSettingsRaw = !string.IsNullOrEmpty(appSettings.FmuApiCentralServer.Secret)
+                ? SecretString.DecryptData(rawData, appSettings.FmuApiCentralServer.Secret)
+                : rawData;
 
-        return Result.Success(newSettingsRaw);
+            return Result.Success(newSettingsRaw);
+        }
+        catch (Exception ex)
+        {
+            return Result.Failure<string>($"Ошибка расшифровки настроек: {ex.Message}");
+        }
     }
 
     private async Task<Result<FmuApiSetting>> DeserializeSettings(string settingsRaw)
@@ -75,6 +83,6 @@ public class ConfigurationDownloadService
     private async Task<Result> ApplySettings(FmuApiSetting newSettings)
         => await _parametersService.ApplyFromCentral(newSettings).ConfigureAwait(false);
 
-    private async Task<Result> ConfirmDownload(string baseAddress, string confirmAddress)
+    private async Task<Result> ConfirmDownload(string confirmAddress)
         => await _exchangeService.ConfirmDownloadConfiguration(confirmAddress).ConfigureAwait(false);
 }

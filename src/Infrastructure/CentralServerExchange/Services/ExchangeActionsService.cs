@@ -22,7 +22,7 @@ public class ExchangeActionsService : ICentralServerExchangeActions
     private readonly CentralServerPropertiesApplyService _centralServerPropertiesApplyService;
     private readonly IServiceScopeFactory _scopeFactory;
 
-    private const string EndppintAddress = "api/FmuApiInstanceMonitoring";
+    private const string EndpointAddress = "api/FmuApiInstanceMonitoring";
 
     public ExchangeActionsService(
         ILogger<ExchangeActionsService> logger,
@@ -50,20 +50,21 @@ public class ExchangeActionsService : ICentralServerExchangeActions
 
             var configuration = await _parametersService.CurrentAsync().ConfigureAwait(false);
             var serverAddress = configuration.FmuApiCentralServer.Address;
-            var adresess = serverAddress.Split(';');
+            var addresses = serverAddress.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-            _logger.LogDebug("Пакет для отправки в fmu-api-central: {data}", data);
+            _logger.LogDebug("Пакет для отправки в fmu-api-central подготовлен");
 
             var success = false;
 
-            foreach (var centralAddress in adresess)
+            foreach (var centralAddress in addresses)
             {
-                var baseAddress = $"{centralAddress}/{EndppintAddress}";
+                var normalizedAddress = centralAddress.TrimEnd('/');
+                var baseAddress = $"{normalizedAddress}/{EndpointAddress}";
                 var exchangeResult = await SendPacket(data, baseAddress);
 
                 if (exchangeResult.IsFailure)
                 {
-                    _logger.LogError("Не удалось отрпавить данные в центр по адресу {baseAddress}!", baseAddress);
+                    _logger.LogError("Не удалось отправить данные в центр по адресу {BaseAddress}!", baseAddress);
                     continue;
                 }
 
@@ -75,7 +76,12 @@ public class ExchangeActionsService : ICentralServerExchangeActions
 
                 await _softwareUpdateDownloadService.DownloadAndInstall(exchangeResult.Value, baseAddress).ConfigureAwait(false);
 
-                await _configurationDownloadService.DownloadAndApply(exchangeResult.Value, baseAddress, configuration.FmuApiCentralServer.Token).ConfigureAwait(false);
+                await _configurationDownloadService.DownloadAndApply(
+                    exchangeResult.Value,
+                    baseAddress,
+                    configuration.FmuApiCentralServer.Token).ConfigureAwait(false);
+
+                break;
             }
 
             return success;

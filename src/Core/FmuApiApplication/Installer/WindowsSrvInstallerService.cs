@@ -24,7 +24,6 @@ public class WindowsSrvInstallerService
     private string _logFilePath;
     private string _exeName = "fmu-api.exe";
 
-
     public WindowsSrvInstallerService(IParametersService parametersService)
     {
         _parametersService = parametersService;

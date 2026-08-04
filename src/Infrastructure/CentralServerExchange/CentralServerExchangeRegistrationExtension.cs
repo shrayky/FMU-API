@@ -15,7 +15,7 @@ public static class CentralServerExchangeRegistrationExtension
 
         services.AddHostedService<CentralServerExchangeWorker>();
 
-        services.AddHttpClient<CentralServerExchangeService>(client =>
+        services.AddHttpClient(CentralServerExchangeService.HttpClientName, client =>
         {
             client.Timeout = TimeSpan.FromMinutes(10);
             client.DefaultRequestHeaders.Accept.Add(

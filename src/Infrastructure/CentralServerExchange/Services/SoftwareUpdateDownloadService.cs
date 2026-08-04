@@ -2,6 +2,7 @@ using CentralServerExchange.Interfaces;
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Attributes;
 using FmuApiDomain.Configuration.Interfaces;
+using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.Constants;
 using FmuApiDomain.DTO.FmuApiExchangeData.Answer;
 using FmuApiDomain.State.Interfaces;
@@ -16,6 +17,9 @@ namespace CentralServerExchange.Services;
 [AutoRegisterService(ServiceLifetime.Singleton)]
 public class SoftwareUpdateDownloadService
 {
+    private const string HostExeName = "fmu-api.exe";
+    private static readonly TimeSpan LinuxInstallTimeout = TimeSpan.FromMinutes(15);
+
     private readonly ILogger<SoftwareUpdateDownloadService> _logger;
     private readonly IParametersService _parametersService;
     private readonly IExchangeService _exchangeService;
@@ -23,7 +27,11 @@ public class SoftwareUpdateDownloadService
 
     private static readonly SemaphoreSlim UpdateLock = new(1, 1);
 
-    public SoftwareUpdateDownloadService(ILogger<SoftwareUpdateDownloadService> logger, IParametersService parametersService, IExchangeService exchangeService, IApplicationState appState)
+    public SoftwareUpdateDownloadService(
+        ILogger<SoftwareUpdateDownloadService> logger,
+        IParametersService parametersService,
+        IExchangeService exchangeService,
+        IApplicationState appState)
     {
         _logger = logger;
         _parametersService = parametersService;
@@ -43,7 +51,8 @@ public class SoftwareUpdateDownloadService
         if (parameters.FmuApiCentralServer.SchedulerUpdateInstall.Count > 0)
         {
             var now = TimeOnly.FromDateTime(DateTime.Now);
-            var isInSchedule = parameters.FmuApiCentralServer.SchedulerUpdateInstall.Any(interval => now >= interval.BeginTime && now <= interval.EndTime);
+            var isInSchedule = parameters.FmuApiCentralServer.SchedulerUpdateInstall
+                .Any(interval => IsWithinSchedule(now, interval));
 
             if (!isInSchedule)
             {
@@ -84,20 +93,14 @@ public class SoftwareUpdateDownloadService
 
             if (checkResult.IsFailure)
             {
-                try
-                {
-                    File.Delete(fileName);
-                }
-                catch
-                { }
-
+                TryDeleteFile(fileName);
                 _logger.LogError(checkResult.Error);
                 return Result.Failure(checkResult.Error);
             }
 
-            var installResult = InstallUpdate(fileName, sha256);
+            var installResult = await InstallUpdate(fileName, sha256).ConfigureAwait(false);
 
-            if (!installResult.IsFailure)
+            if (installResult.IsSuccess)
                 return Result.Success();
 
             _logger.LogError(installResult.Error);
@@ -109,14 +112,22 @@ public class SoftwareUpdateDownloadService
         }
     }
 
+    /// <summary>
+    /// Проверяет попадание текущего времени в интервал, включая окна через полночь.
+    /// </summary>
+    private static bool IsWithinSchedule(TimeOnly now, ScheduleTime interval)
+    {
+        if (interval.BeginTime <= interval.EndTime)
+            return now >= interval.BeginTime && now <= interval.EndTime;
+
+        return now >= interval.BeginTime || now <= interval.EndTime;
+    }
+
     private async Task<Result> CheckShaHash(string filePath, string expectedSha256)
     {
-        using var fileStream = File.OpenRead(filePath);
-        using var downloadedSha256 = SHA256.Create();
-        var hashBytes = await downloadedSha256.ComputeHashAsync(fileStream).ConfigureAwait(false);
+        await using var fileStream = File.OpenRead(filePath);
+        var hashBytes = await SHA256.HashDataAsync(fileStream).ConfigureAwait(false);
         var actualHash = Convert.ToHexString(hashBytes).ToLowerInvariant();
-
-        fileStream.Position = 0;
 
         if (string.Equals(actualHash, expectedSha256, StringComparison.OrdinalIgnoreCase))
             return Result.Success();
@@ -127,112 +138,341 @@ public class SoftwareUpdateDownloadService
         return Result.Failure(errorMessage);
     }
 
-    private Result InstallUpdate(string updateFileName, string sha256)
+    private async Task<Result> InstallUpdate(string updateFileName, string sha256)
     {
         if (OperatingSystem.IsWindows())
             return UpdateWindowsApp(updateFileName, sha256);
-        else if (OperatingSystem.IsLinux())
-            return UpdateLinuxApp(updateFileName);
-        else
-            return Result.Failure("Не поддерживаемая ОС");
+
+        if (OperatingSystem.IsLinux())
+            return await UpdateLinuxApp(updateFileName).ConfigureAwait(false);
+
+        return Result.Failure("Не поддерживаемая ОС");
     }
 
     private Result UpdateWindowsApp(string updateFileName, string sha256)
     {
-        var installerPath = Path.Combine(Path.GetTempPath(), ApplicationInformation.AppName);
+        var stagingPath = Path.Combine(Path.GetTempPath(), ApplicationInformation.AppName, "updates", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(stagingPath);
 
-        if (!Directory.Exists(installerPath))
-            Directory.CreateDirectory(installerPath);
-
-        try
+        var validateResult = ValidateZipEntries(updateFileName, stagingPath);
+        if (validateResult.IsFailure)
         {
-            ZipFile.ExtractToDirectory(updateFileName, installerPath, true);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning("Не удалось распаковать обновление!");
-
-            return Result.Failure(ex.Message);
+            TryDeleteDirectory(stagingPath);
+            return validateResult;
         }
 
         try
         {
-            File.Delete(updateFileName);
+            ZipFile.ExtractToDirectory(updateFileName, stagingPath, true);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning("Не удалось удалить zip-архив с обновлением!");
-
+            _logger.LogWarning(ex, "Не удалось распаковать обновление");
+            TryDeleteDirectory(stagingPath);
             return Result.Failure(ex.Message);
         }
 
+        TryDeleteFile(updateFileName);
 
-        Process process = new();
-        ProcessStartInfo startInfo = new()
+        var hostExe = Path.Combine(stagingPath, HostExeName);
+
+        // Host в пакете: --install. Staging не удаляем — из него работает установщик.
+        // Текущий процесс завершаем, чтобы сработал --waitForPid.
+        if (File.Exists(hostExe))
+        {
+            _logger.LogInformation("В пакете найден {Host} — запускаю --install", HostExeName);
+            return RunHostInstallAndExit(hostExe, sha256);
+        }
+
+        _logger.LogInformation("Host в пакете нет — копирую версии продуктов без переустановки службы");
+
+        try
+        {
+            var applyResult = CopyProductVersionsFromStaging(stagingPath);
+            if (applyResult.IsSuccess)
+                WriteChecksum(sha256);
+
+            return applyResult;
+        }
+        finally
+        {
+            TryDeleteDirectory(stagingPath);
+        }
+    }
+
+    /// <summary>
+    /// Запускает host --install и завершает текущий процесс (для --waitForPid).
+    /// </summary>
+    private Result RunHostInstallAndExit(string hostExePath, string sha256)
+    {
+        var startInfo = new ProcessStartInfo
         {
             WindowStyle = ProcessWindowStyle.Hidden,
-            FileName = "cmd.exe",
+            FileName = hostExePath,
+            WorkingDirectory = Path.GetDirectoryName(hostExePath) ?? AppContext.BaseDirectory,
             CreateNoWindow = true,
-            Arguments = $"/c \"{installerPath}\\{ApplicationInformation.AppName}.exe\" --install --checksum {sha256}",
+            UseShellExecute = false
         };
 
-        _logger.LogWarning("Найдено обновление, запускаю установку {arguments}.", startInfo.Arguments);
+        startInfo.ArgumentList.Add("--install");
+        startInfo.ArgumentList.Add("--checksum");
+        startInfo.ArgumentList.Add(sha256);
+        startInfo.ArgumentList.Add("--waitForPid");
+        startInfo.ArgumentList.Add(Environment.ProcessId.ToString());
 
-        process.StartInfo = startInfo;
-        process.Start();
-        process.WaitForExit();
+        _logger.LogWarning("Запускаю установку host: {File} --install --checksum ...", hostExePath);
 
-        try
-        {
-            Directory.Delete(installerPath, true);
-        }
-        catch
-        {
-            _logger.LogWarning("Не удалось удалить временные файлы после установки обновления!");
-        }
+        using var process = Process.Start(startInfo);
+        if (process is null)
+            return Result.Failure("Не удалось запустить host --install");
+
+        _logger.LogInformation(
+            "Установщик запущен (PID={InstallerPid}). Завершаю текущий процесс (PID={Pid}) для --waitForPid.",
+            process.Id,
+            Environment.ProcessId);
+
+        Thread.Sleep(500);
+        Environment.Exit(0);
 
         return Result.Success();
     }
 
-    private Result UpdateLinuxApp(string updateFileName)
+    /// <summary>
+    /// Копирует из staging каталоги вида {product}\{ver}\{product}.exe в каталог установки.
+    /// Host сам подхватит старшую версию при следующем скане.
+    /// </summary>
+    private Result CopyProductVersionsFromStaging(string stagingPath)
+    {
+        var installRoot = GetInstallDirectory();
+        if (!Directory.Exists(installRoot))
+            return Result.Failure($"Каталог установки не найден: {installRoot}");
+
+        var copied = 0;
+
+        foreach (var productDir in Directory.EnumerateDirectories(stagingPath))
+        {
+            var productName = Path.GetFileName(productDir);
+            if (string.IsNullOrWhiteSpace(productName))
+                continue;
+
+            foreach (var versionDir in Directory.EnumerateDirectories(productDir))
+            {
+                var versionName = Path.GetFileName(versionDir);
+                if (!Version.TryParse(versionName, out var version))
+                {
+                    _logger.LogDebug("Пропуск {Dir}: имя не является версией", versionDir);
+                    continue;
+                }
+
+                var expectedExe = Path.Combine(versionDir, $"{productName}.exe");
+                if (!File.Exists(expectedExe))
+                {
+                    _logger.LogWarning(
+                        "Пропуск {Product} {Version}: нет файла {Exe}",
+                        productName,
+                        versionName,
+                        $"{productName}.exe");
+                    continue;
+                }
+
+                var versionFolder = $"{version.Major}.{version.Minor}";
+                var targetDir = Path.Combine(installRoot, productName, versionFolder);
+                var partialDir = targetDir + ".partial";
+
+                try
+                {
+                    if (Directory.Exists(partialDir))
+                        Directory.Delete(partialDir, true);
+
+                    CopyDirectory(versionDir, partialDir);
+
+                    if (Directory.Exists(targetDir))
+                        Directory.Delete(targetDir, true);
+
+                    Directory.Move(partialDir, targetDir);
+                    copied++;
+
+                    _logger.LogInformation(
+                        "Установлена версия продукта {Product} {Version} → {Target}",
+                        productName,
+                        versionFolder,
+                        targetDir);
+                }
+                catch (Exception ex)
+                {
+                    TryDeleteDirectory(partialDir);
+                    return Result.Failure($"Ошибка копирования {productName} {versionFolder}: {ex.Message}");
+                }
+            }
+        }
+
+        if (copied == 0)
+            return Result.Failure("В пакете обновления не найдено ни одной версии продукта для копирования");
+
+        return Result.Success();
+    }
+
+    private void WriteChecksum(string sha256)
+    {
+        var dataFolder = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+            ApplicationInformation.Manufacture,
+            ApplicationInformation.AppName);
+
+        Directory.CreateDirectory(dataFolder);
+        File.WriteAllText(Path.Combine(dataFolder, "checksum.txt"), sha256);
+        _logger.LogInformation("Записан checksum обновления");
+    }
+
+    private static string GetInstallDirectory() =>
+        Path.Combine(
+            Path.GetPathRoot(Environment.SystemDirectory) ?? @"C:\",
+            "Program Files",
+            ApplicationInformation.Manufacture,
+            ApplicationInformation.AppName);
+
+    private static void CopyDirectory(string sourceDir, string targetDir)
+    {
+        Directory.CreateDirectory(targetDir);
+
+        foreach (var file in Directory.GetFiles(sourceDir))
+            File.Copy(file, Path.Combine(targetDir, Path.GetFileName(file)), overwrite: true);
+
+        foreach (var dir in Directory.GetDirectories(sourceDir))
+            CopyDirectory(dir, Path.Combine(targetDir, Path.GetFileName(dir)));
+    }
+
+    /// <summary>
+    /// Устанавливает обновление на Linux и ждёт завершения установщика.
+    /// </summary>
+    private async Task<Result> UpdateLinuxApp(string updateFileName)
     {
         _logger.LogWarning("Начинаю установку обновления");
 
-        //const string appDirectory = $"/opt/{ApplicationInformation.Manufacture}/{ApplicationInformation.AppName}";
-        //const string appFileName = $"{appDirectory}/fmu-api";
-        //const string oldAppFileName = $"{appFileName}.old";
-        //const string backUpFileName = $"{appFileName}.bkp";
-
         var installerPath = Path.Combine(Path.GetTempPath(), ApplicationInformation.AppName);
+
+        var validateResult = ValidateZipEntries(updateFileName, installerPath);
+        if (validateResult.IsFailure)
+            return validateResult;
 
         try
         {
+            Directory.CreateDirectory(installerPath);
             ZipFile.ExtractToDirectory(updateFileName, installerPath, true);
-            File.Delete(updateFileName);
+            TryDeleteFile(updateFileName);
         }
         catch (Exception e)
         {
             return Result.Failure($"Ошибка распаковки обновления в {installerPath}: {e.Message}");
         }
 
-        Process process = new();
-        ProcessStartInfo startInfo = new()
+        var installerFile = Path.Combine(
+            Path.GetTempPath(),
+            ApplicationInformation.AppName,
+            ApplicationInformation.AppName.ToLowerInvariant());
+
+        if (!File.Exists(installerFile))
+            return Result.Failure($"Файл установщика не найден: {installerFile}");
+
+        using var process = new Process();
+        process.StartInfo = new ProcessStartInfo
         {
             WindowStyle = ProcessWindowStyle.Hidden,
-            FileName = $"{Path.GetTempPath()}{ApplicationInformation.AppName}/{ApplicationInformation.AppName.ToLowerInvariant()}",
+            FileName = installerFile,
             CreateNoWindow = true,
             Arguments = "--install",
             RedirectStandardOutput = true,
         };
 
-        process.StartInfo = startInfo;
-        //var info = process.Start();
-        //var outI = process.StandardOutput.ReadToEnd();
-        process.Start();
+        try
+        {
+            if (!process.Start())
+                return Result.Failure("Не удалось запустить установщик обновления");
 
-        Task.Delay(TimeSpan.FromMinutes(15));
+            using var timeoutCts = new CancellationTokenSource(LinuxInstallTimeout);
+            await process.WaitForExitAsync(timeoutCts.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            try
+            {
+                if (!process.HasExited)
+                    process.Kill(entireProcessTree: true);
+            }
+            catch
+            {
+            }
 
+            return Result.Failure($"Таймаут установки обновления ({LinuxInstallTimeout.TotalMinutes} мин)");
+        }
+        catch (Exception ex)
+        {
+            return Result.Failure($"Ошибка запуска установщика: {ex.Message}");
+        }
+
+        if (process.ExitCode != 0)
+            return Result.Failure($"Установщик завершился с кодом {process.ExitCode}");
+
+        _logger.LogInformation("Установка обновления на Linux завершена успешно");
         return Result.Success();
     }
-}
 
+    /// <summary>
+    /// Проверяет zip на path traversal (zip-slip) перед распаковкой.
+    /// </summary>
+    private static Result ValidateZipEntries(string zipPath, string destinationDir)
+    {
+        try
+        {
+            var fullDest = Path.GetFullPath(destinationDir);
+            if (!fullDest.EndsWith(Path.DirectorySeparatorChar)
+                && !fullDest.EndsWith(Path.AltDirectorySeparatorChar))
+            {
+                fullDest += Path.DirectorySeparatorChar;
+            }
+
+            using var archive = ZipFile.OpenRead(zipPath);
+
+            foreach (var entry in archive.Entries)
+            {
+                if (string.IsNullOrEmpty(entry.FullName))
+                    continue;
+
+                var destinationPath = Path.GetFullPath(Path.Combine(destinationDir, entry.FullName));
+                if (!destinationPath.StartsWith(fullDest, StringComparison.OrdinalIgnoreCase))
+                    return Result.Failure($"Небезопасный путь в архиве обновления: {entry.FullName}");
+            }
+
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            return Result.Failure($"Не удалось проверить архив обновления: {ex.Message}");
+        }
+    }
+
+    private void TryDeleteDirectory(string path)
+    {
+        try
+        {
+            if (Directory.Exists(path))
+                Directory.Delete(path, true);
+        }
+        catch
+        {
+            _logger.LogWarning("Не удалось удалить временные файлы: {Path}", path);
+        }
+    }
+
+    private static void TryDeleteFile(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+                File.Delete(path);
+        }
+        catch
+        {
+        }
+    }
+}
