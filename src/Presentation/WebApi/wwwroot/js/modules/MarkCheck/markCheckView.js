@@ -7,6 +7,7 @@ class MarkCheckView {
         this.formName = "MarkCheckView";
         this.id = id;
         this.apiAddress = "/api/fmu/document";
+        this.trueApiAddress = "/api/ts/cises/info";
 
         this.LABELS = {
             formTitle: "FMU-API: Проверка маркировки",
@@ -17,7 +18,10 @@ class MarkCheckView {
             checkButton: "Проверить",
             jsonResponseLabel: "JSON ответ",
             decodedResponseLabel: "Расшифровка ответа",
-            noResponse: "Нет данных"
+            noResponse: "Нет данных",
+            permissiveBlockTitle: "=== Разрешительный режим / ТСПИоТ ===",
+            trueApiBlockTitle: "=== True API (cises/info) ===",
+            trueApiNoData: "Нет данных True API"
         };
 
         this.NAMES = {
@@ -262,35 +266,74 @@ class MarkCheckView {
         form.showProgress({ type: "icon" });
 
         try {
-            const requestData = this._buildRequest(inn, markingCode);
-            const apiUrl = ServerAdres(this.apiAddress);
+            const documentUrl = ServerAdres(this.apiAddress);
+            const trueApiUrl = ServerAdres(this.trueApiAddress);
 
-            if (!apiUrl) {
+            if (!documentUrl || !trueApiUrl) {
                 throw new Error("Не настроен адрес сервера API");
             }
 
-            const response = await fetch(apiUrl, {
+            const requestData = this._buildRequest(inn, markingCode);
+
+            const documentPromise = fetch(documentUrl, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(requestData)
+            }).then(async (response) => {
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Ошибка сервера ${response.status}: ${errorText}`);
+                }
+                return response.json();
             });
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Ошибка сервера ${response.status}: ${errorText}`);
+            const trueApiPromise = fetch(trueApiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ inn: inn, cises: [markingCode] })
+            }).then(async (response) => {
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Ошибка сервера ${response.status}: ${errorText}`);
+                }
+                return response.json();
+            });
+
+            const [documentResult, trueApiResult] = await Promise.allSettled([
+                documentPromise,
+                trueApiPromise
+            ]);
+
+            const combined = {
+                permissive: documentResult.status === "fulfilled"
+                    ? documentResult.value
+                    : { error: documentResult.reason?.message || String(documentResult.reason) },
+                trueApi: trueApiResult.status === "fulfilled"
+                    ? trueApiResult.value
+                    : { status: "error", reason: trueApiResult.reason?.message || String(trueApiResult.reason) }
+            };
+
+            this.lastResponse = combined;
+
+            if (documentResult.status === "rejected" && trueApiResult.status === "rejected") {
+                webix.message({
+                    text: `Ошибка при проверке маркировки: ${documentResult.reason?.message || "оба источника недоступны"}`,
+                    type: "error"
+                });
+            } else if (documentResult.status === "rejected") {
+                webix.message({
+                    text: `Ошибка разрешительного режима: ${documentResult.reason?.message || ""}`,
+                    type: "error"
+                });
             }
 
-            const responseData = await response.json();
-            this.lastResponse = responseData;
-            this._displayResponse(responseData);
+            this._displayCombinedResponse(combined);
 
         } catch (error) {
             console.error("Ошибка при проверке маркировки:", error);
-            webix.message({ 
-                text: `Ошибка при проверке маркировки: ${error.message}`, 
-                type: "error" 
+            webix.message({
+                text: `Ошибка при проверке маркировки: ${error.message}`,
+                type: "error"
             });
             this._clearResponse();
         } finally {
@@ -309,6 +352,87 @@ class MarkCheckView {
         if (decodedResponse) {
             decodedResponse.setValue(this._decodeResponse(responseData));
         }
+    }
+
+    _displayCombinedResponse(combined) {
+        const jsonResponse = $$(this.NAMES.jsonResponse);
+        if (jsonResponse) {
+            jsonResponse.setValue(JSON.stringify(combined, null, 2));
+        }
+
+        const decodedResponse = $$(this.NAMES.decodedResponse);
+        if (decodedResponse) {
+            decodedResponse.setValue(this._decodeCombinedResponse(combined));
+        }
+    }
+
+    _decodeCombinedResponse(combined) {
+        let result = "";
+
+        result += `${this.LABELS.permissiveBlockTitle}\n`;
+        if (combined.permissive && !combined.permissive.error) {
+            result += this._decodeResponse(combined.permissive);
+        } else {
+            result += `Ошибка: ${combined.permissive?.error || this.LABELS.noResponse}\n`;
+        }
+
+        result += "\n";
+        result += `${this.LABELS.trueApiBlockTitle}\n`;
+        result += this._decodeTrueApiResponse(combined.trueApi);
+
+        return result || this.LABELS.noResponse;
+    }
+
+    _decodeTrueApiResponse(trueApi) {
+        if (!trueApi) {
+            return `${this.LABELS.trueApiNoData}\n`;
+        }
+
+        let result = "";
+        result += `Статус: ${trueApi.status || "error"}\n`;
+
+        if (trueApi.status !== "ok") {
+            if (trueApi.reason) {
+                result += `Причина: ${trueApi.reason}\n`;
+            }
+            return result;
+        }
+
+        if (!trueApi.data || trueApi.data.length === 0) {
+            result += `${this.LABELS.trueApiNoData}\n`;
+            return result;
+        }
+
+        trueApi.data.forEach((item, index) => {
+            result += `Элемент ${index + 1}:\n`;
+            if (item.errorMessage) result += `  ErrorMessage: ${item.errorMessage}\n`;
+            if (item.errorCode) result += `  ErrorCode: ${item.errorCode}\n`;
+
+            const info = item.cisInfo;
+            if (!info) {
+                result += "  CisInfo: нет данных\n";
+                return;
+            }
+
+            if (info.requestedCis) result += `  RequestedCis: ${info.requestedCis}\n`;
+            if (info.cis) result += `  CIS: ${info.cis}\n`;
+            if (info.gtin) result += `  GTIN: ${info.gtin}\n`;
+            if (info.printView) result += `  PrintView: ${info.printView}\n`;
+            if (info.status) result += `  Status: ${info.status}\n`;
+            if (info.ownerInn) result += `  OwnerInn: ${info.ownerInn}\n`;
+            if (info.ownerName) result += `  OwnerName: ${info.ownerName}\n`;
+            if (info.producerInn) result += `  ProducerInn: ${info.producerInn}\n`;
+            if (info.productGroup) result += `  ProductGroup: ${info.productGroup}\n`;
+            if (info.productGroupId !== undefined && info.productGroupId !== null) {
+                result += `  ProductGroupId: ${info.productGroupId}\n`;
+            }
+            if (info.expirationDate) result += `  ExpirationDate: ${info.expirationDate}\n`;
+            if (info.expireDate) result += `  ExpireDate: ${info.expireDate}\n`;
+            if (info.markWithdraw !== undefined) result += `  MarkWithdraw: ${info.markWithdraw}\n`;
+            if (info.packageType) result += `  PackageType: ${info.packageType}\n`;
+        });
+
+        return result;
     }
 
     _decodeResponse(response) {
