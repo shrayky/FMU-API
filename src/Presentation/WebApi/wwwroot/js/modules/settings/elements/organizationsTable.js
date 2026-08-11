@@ -329,8 +329,8 @@ class OrganizationsConfigurationElement {
         if (!item.localModuleConnection?.enable)
             return;
 
-        if (item.localModuleStatus === this.LOCAL_MODULE_STATUS.NOT_CONFIGURED)
-            || (item.localModuleStatus === this.LOCAL_MODULE_STATUS.SYNC_ERROR) {
+        if (item.localModuleStatus === this.LOCAL_MODULE_STATUS.NOT_CONFIGURED
+            || item.localModuleStatus === this.LOCAL_MODULE_STATUS.SYNC_ERROR) {
             this._startInitialization(selectedId, item);
             return;
         }
