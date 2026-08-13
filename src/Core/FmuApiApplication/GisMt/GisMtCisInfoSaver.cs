@@ -89,6 +89,11 @@ public class GisMtCisInfoSaver(
                 loadedAt));
         }
 
+        entities = entities
+            .GroupBy(e => e.Id)
+            .Select(g => g.Last())
+            .ToList();
+
         if (entities.Count == 0)
             return Result.Success(0);
 

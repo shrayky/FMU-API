@@ -92,14 +92,17 @@ namespace CouchDb.Repositories
             return await ExecuteSafetyDbOperation(
                 async () =>
                 {
-                    var entityList = entities.ToList();
-                    var ids = entityList.Select(e => e.Id).ToList();
-                    var existingDocs = await _database.ReadItemsAsync(ids);
-                    var existingById = existingDocs.ToDictionary(doc => doc.Id, doc => doc);
-
-                    var documentBatches = entityList
+                    var entityList = entities
                         .GroupBy(e => e.Id)
                         .Select(g => g.Last())
+                        .ToList();
+                    var ids = entityList.Select(e => e.Id).ToList();
+                    var existingDocs = await _database.ReadItemsAsync(ids);
+                    var existingById = existingDocs
+                        .GroupBy(doc => doc.Id)
+                        .ToDictionary(g => g.Key, g => g.Last());
+
+                    var documentBatches = entityList
                         .Select(entity =>
                         {
                             var doc = CouchDoc<T>.FromDomain(entity, entity.Id);
