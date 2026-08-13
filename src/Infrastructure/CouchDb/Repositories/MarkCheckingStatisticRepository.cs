@@ -1,5 +1,4 @@
 ﻿using CouchDb.Documents;
-using CouchDB.Driver.Extensions;
 using CouchDB.Driver.Types;
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration.Interfaces;
@@ -111,56 +110,29 @@ public class MarkCheckingStatisticRepository(
         if (!_appState.CouchDbOnline())
             return new();
 
-        var appConfig = await _appConfiguration.CurrentAsync();
-        var queryLimit = appConfig.Database.QueryLimit == 0 ? 1000000 : appConfig.Database.QueryLimit;
-
-        var filteredMarks = await ExecuteSafetyDbOperation(
-            async () => (await _database
-                .Where(p => p.Data.CheckDate >= fromDate && p.Data.CheckDate <= toDate)
-                .Take(queryLimit)
-                .ToListAsync()).ToList(),
-            "CheckStatisticsByDays",
-            new List<CouchDoc<StatisticEntity>>());
-
-        var statistics = new MarkCheckStatistics
+        var mangoQuery = new
         {
-            Total = filteredMarks.Count,
-            SuccessfulOnlineChecks = filteredMarks.Count(m => m.Data.SuccessCheck && m.Data.OnLineCheck),
-            SuccessfulOfflineChecks = filteredMarks.Count(m => m.Data.SuccessCheck && m.Data.OffLineCheck)
+            selector = new Dictionary<string, object>
+            {
+                ["data.checkDate"] = new Dictionary<string, object>
+                {
+                    ["$gte"] = fromDate,
+                    ["$lte"] = toDate
+                }
+            },
+            limit = await QueryLimitAsync()
         };
 
-        return statistics;
+        var queryResult = await ExecuteMangoQueryAsync(mangoQuery);
+        if (queryResult.IsFailure)
+            return new();
+
+        return ToStatistics(queryResult.Value);
     }
 
     public async Task<MarkCheckStatistics> CheckStatisticsByDay(DateTime checkDate)
     {
-        if (_context == null)
-            return new();
-
-        if (!_appState.CouchDbOnline())
-            return new();
-
-        var appConfig = await _appConfiguration.CurrentAsync();
-        var queryLimit = appConfig.Database.QueryLimit == 0 ? 1000000 : appConfig.Database.QueryLimit;
-
-        var checkDay = ToCheckDay(checkDate);
-
-        var filteredMarks = await ExecuteSafetyDbOperation(
-            async () => (await _database
-                .Where(p => p.Data.CheckDay == checkDay)
-                .Take(queryLimit)
-                .ToListAsync()).ToList(),
-            "CheckStatisticsByDayDateTime",
-            new List<CouchDoc<StatisticEntity>>());
-
-        var statistics = new MarkCheckStatistics
-        {
-            Total = filteredMarks.Count,
-            SuccessfulOnlineChecks = filteredMarks.Count(m => m.Data.SuccessCheck && m.Data.OnLineCheck),
-            SuccessfulOfflineChecks = filteredMarks.Count(m => m.Data.SuccessCheck && m.Data.OffLineCheck)
-        };
-
-        return statistics;
+        return await CheckStatisticsByDay(ToCheckDay(checkDate));
     }
 
     public async Task<MarkCheckStatistics> CheckStatisticsByDay(long day)
@@ -171,25 +143,20 @@ public class MarkCheckingStatisticRepository(
         if (!_appState.CouchDbOnline())
             return new();
 
-        var appConfig = await _appConfiguration.CurrentAsync();
-        var queryLimit = appConfig.Database.QueryLimit == 0 ? 1000000 : appConfig.Database.QueryLimit;
-
-        var filteredMarks = await ExecuteSafetyDbOperation(
-            async () => (await _database
-                .Where(p => p.Data.CheckDay == day)
-                .Take(queryLimit)
-                .ToListAsync()).ToList(),
-                "CheckStatisticsByDayUnix",
-                []);
-
-        var statistics = new MarkCheckStatistics
+        var mangoQuery = new
         {
-            Total = filteredMarks.Count,
-            SuccessfulOnlineChecks = filteredMarks.Count(m => m.Data.SuccessCheck && m.Data.OnLineCheck),
-            SuccessfulOfflineChecks = filteredMarks.Count(m => m.Data.SuccessCheck && m.Data.OffLineCheck)
+            selector = new Dictionary<string, object>
+            {
+                ["data.checkDay"] = day
+            },
+            limit = await QueryLimitAsync()
         };
 
-        return statistics;
+        var queryResult = await ExecuteMangoQueryAsync(mangoQuery);
+        if (queryResult.IsFailure)
+            return new();
+
+        return ToStatistics(queryResult.Value);
     }
 
     public async Task<CSharpFunctionalExtensions.Result> ClearStorageToDay(DateTime dateToCutStorage, CancellationToken stoppingToken)
@@ -199,41 +166,77 @@ public class MarkCheckingStatisticRepository(
 
         _logger.LogInformation("Начинаю удаление устаревших данных статистики марок до {date}.", dateToCutStorage);
 
+        var mangoQuery = new
+        {
+            selector = new Dictionary<string, object>
+            {
+                ["data.checkDate"] = new Dictionary<string, object>
+                {
+                    ["$lte"] = dateToCutStorage
+                }
+            },
+            limit = 1000
+        };
+
         var data = await ExecuteSafetyDbOperation(
-            async () => (await _database
-                .Where(p => p.Data.CheckDate <= dateToCutStorage)
-                .Take(1000)
-                .ToListAsync(stoppingToken)).ToList(),
+            async () => await _database.QueryAsync(mangoQuery, throwExceptionOnWarning: false, stoppingToken),
             "ClearStorageToDaySelect",
             (List<CouchDoc<StatisticEntity>>?)null);
 
         if (data == null)
             return Result.Failure(DatabaseUnavailable);
 
-        if (data.Count > 0)
-        {
-            _logger.LogInformation("Удаляю {rows} записей из статистики.", data.Count);
-
-            var deleted = await ExecuteSafetyDbOperation(
-                async () =>
-                {
-                    var operations = data
-                        .Select(doc => BulkItemOperation.Delete(doc.Id, doc.Rev))
-                        .ToList();
-                    await _database.ExecuteBulkItemOperationsAsync(operations, stoppingToken);
-                },
-                "ClearStorageToDayDelete");
-
-            if (!deleted)
-                return Result.Failure(DatabaseUnavailable);
-
-            _logger.LogInformation("Удаление устаревших данных статистики марок завершено.");
-        }
-        else
+        if (data.Count == 0)
         {
             _logger.LogInformation("Удаление устаревших данных статистики марок завершено - удалять нечего.");
+            return Result.Success();
         }
 
+        var operations = new List<BulkItemOperation>();
+        foreach (var doc in data)
+        {
+            var id = !string.IsNullOrWhiteSpace(doc.Id) ? doc.Id : doc.Data?.Id;
+            if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(doc.Rev))
+                continue;
+
+            operations.Add(BulkItemOperation.Delete(id, doc.Rev));
+        }
+
+        if (operations.Count == 0)
+        {
+            _logger.LogWarning("Найдено {rows} записей статистики, но ни у одной нет Id и Rev для удаления.", data.Count);
+            return Result.Failure(DatabaseUnavailable);
+        }
+
+        _logger.LogInformation("Удаляю {rows} записей из статистики.", operations.Count);
+
+        var deleted = await ExecuteSafetyDbOperation(
+            async () => await _database.ExecuteBulkItemOperationsAsync(operations, stoppingToken),
+            "ClearStorageToDayDelete");
+
+        if (!deleted)
+            return Result.Failure(DatabaseUnavailable);
+
+        _logger.LogInformation("Удаление устаревших данных статистики марок завершено.");
         return Result.Success();
+    }
+
+    /// <summary>
+    /// Собирает агрегаты по списку записей статистики.
+    /// </summary>
+    private static MarkCheckStatistics ToStatistics(List<StatisticEntity> marks) => new()
+    {
+        Total = marks.Count,
+        SuccessfulOnlineChecks = marks.Count(m => m.SuccessCheck && m.OnLineCheck),
+        SuccessfulOfflineChecks = marks.Count(m => m.SuccessCheck && m.OffLineCheck)
+    };
+
+    /// <summary>
+    /// Возвращает лимит выборки из настроек БД.
+    /// </summary>
+    private async Task<int> QueryLimitAsync()
+    {
+        var appConfig = await _appConfiguration.CurrentAsync();
+        return appConfig.Database.QueryLimit == 0 ? 1000000 : appConfig.Database.QueryLimit;
     }
 }
