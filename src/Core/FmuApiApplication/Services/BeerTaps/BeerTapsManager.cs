@@ -40,6 +40,9 @@ public class BeerTapsManager : IBeerOnTapManager
         if (!settings.Database.Enable)
             return Result.Success();
 
+        if (!settings.SaleControlConfig.UseBeerTaps)
+            return Result.Success();
+
         Result operationResult;
         var info = document.Position;
 
