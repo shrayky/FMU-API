@@ -8,7 +8,6 @@ class AutoUpdateElement {
         this.id = id;
         this.SETTINGS_ID = "autoUpdateSettings";
         this.LABELS = {
-            title: "Автоматическое обновление",
             enabled: "Автообновление включено",
             catalog: "Каталог с файлами обновления",
             hours: "Часы для автоматического обновления",
@@ -62,10 +61,6 @@ class AutoUpdateElement {
 
     render() {
         var elements = [];
-
-        elements.push(
-            Label("lAutoUpdateLabel", this.LABELS.title),
-        );
 
         elements.push(
             {

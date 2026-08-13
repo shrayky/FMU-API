@@ -11,8 +11,7 @@ const SETTINGS_MODULES = {
     markUnit: () => import("./elements/markUnit.js"),
     timeoutConfig: () => import("./elements/timeouts.js"),
     loggingConfigData: () => import("./elements/loggingConfiguration.js"),
-    autoUpdateData: () => import("./elements/autoUpdate.js"),
-    fmuApiCentralServer: () => import("./elements/centralServerConnection.js"),
+    centralServerAutoUpdateSettings: () => import("./elements/centralServerAutoUpdateSettings.js"),
 };
 
 export default function SettingsView(id) {

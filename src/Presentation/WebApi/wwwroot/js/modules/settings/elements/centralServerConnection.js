@@ -1,4 +1,4 @@
-import { Number, Label, padding, CheckBox, Text, TableToolbar } from "../../../utils/ui.js";
+import { Number, padding, CheckBox, Text, TableToolbar } from "../../../utils/ui.js";
 import { httpAddressListValidation } from "../../../utils/validators.js";
 
 const ITALIC_SMALL_STYLE = { "font-style": "italic", "font-size": "smaller" };
@@ -12,7 +12,6 @@ class CentralServerConnectionElement {
         this.SCHEDULER_TABLE_ID = "SchedulerUpdateInstall";
         this.SCHEDULER_FORM_NAME = "SchedulerUpdateInstallForm";
         this.LABELS = {
-            title: "Настройка подключения к сервису мониторинга",
             enabled: "Использовать",
             address: "Веб-адрес сервиса",
             token: "Токен",
@@ -131,10 +130,6 @@ class CentralServerConnectionElement {
         var elements = [];
 
         elements.push(
-            Label("lCentralServerConnection", this.LABELS.title)
-        );
-
-        elements.push(
             {
                 padding: padding,
                 rows: [
@@ -151,6 +146,36 @@ class CentralServerConnectionElement {
                             }
                         }
                     }),
+
+                    {
+                        cols: [
+                                {
+                                view: "button",
+                                value: this.LABELS.doExchangeWithServer,
+                                css: "webix_primary",
+                                width: 300,
+                                click: function () {
+                                    webix.ajax()
+                                        .get("/api/centralServer/centralServerExchange")
+                                        .then(function (response) {
+                                            webix.message({
+                                                text: "Обмен с центральным сервером выполнен успешно",
+                                                type: "success"
+                                            });
+                                        })
+                                        .fail(function (xhr) {
+                                            webix.message({
+                                                text: "Ошибка обмена с центральным сервером: " + xhr.responseText,
+                                                type: "error"
+                                            });
+                                        });
+                                }
+                            },
+
+                            {}
+                        ]
+                    },
+                    
                     {
                         id: this.SETTINGS_ID,
                         disabled: !this.enabled,
@@ -198,27 +223,6 @@ class CentralServerConnectionElement {
                                 ]
                             },
 
-                            {
-                                view: "button",
-                                value: this.LABELS.doExchangeWithServer,
-                                css: "webix_primary",
-                                click: function () {
-                                    webix.ajax()
-                                        .get("/api/centralServer/centralServerExchange")
-                                        .then(function (response) {
-                                            webix.message({
-                                                text: "Обмен с центральным сервером выполнен успешно",
-                                                type: "success"
-                                            });
-                                        })
-                                        .fail(function (xhr) {
-                                            webix.message({
-                                                text: "Ошибка обмена с центральным сервером: " + xhr.responseText,
-                                                type: "error"
-                                            });
-                                        });
-                                }
-                            }
                         ],
                     }
                 ]
