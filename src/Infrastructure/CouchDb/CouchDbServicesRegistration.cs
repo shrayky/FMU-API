@@ -2,13 +2,15 @@
 using CouchDb.Services;
 using CouchDb.Workers;
 using CouchDb.Workers.DatabaseMigrationWorkers;
-using CouchDB.Driver.DependencyInjection;
+using CouchDB.Driver;
+using CouchDB.Driver.Options;
 using FmuApiDomain.Attributes;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Headers;
 using System.Reflection;
+using System.Text.Json;
 
 namespace CouchDb;
 
@@ -20,22 +22,42 @@ public static class CouchDbServicesRegistration
         var configService = scope.ServiceProvider.GetRequiredService<IParametersService>();
         var settings = configService.Current();
 
-        services.AddCouchContext<CouchDbContext>(options =>
-        {
-            if (!settings.Database.ConfigurationIsEnabled)
-            {
-                options.UseEndpoint("http://localhost:59841");
-                options.UseBasicAuthentication("no", "no");
-            }
-            else
-            {
-                options.UseEndpoint(settings.Database.NetAddress);
-                options.UseBasicAuthentication(settings.Database.UserName, settings.Database.Password);
-            }
+        var endpoint = settings.Database.ConfigurationIsEnabled
+            ? settings.Database.NetAddress
+            : "http://localhost:59841";
 
-            options.ConfigureFlurlClient(clientFlurlHttpSettings =>
-                clientFlurlHttpSettings.Timeout = TimeSpan.FromSeconds(settings.Database.QueryTimeoutSeconds));
-        });
+        var userName = settings.Database.ConfigurationIsEnabled
+            ? settings.Database.UserName
+            : "no";
+
+        var password = settings.Database.ConfigurationIsEnabled
+            ? settings.Database.Password
+            : "no";
+
+        // HttpClient с таймаутом и отключенной проверкой сертификата — вместо ConfigureFlurlClient из 3.x
+        var httpClient = new HttpClient(new HttpClientHandler
+        {
+            ServerCertificateCustomValidationCallback =
+                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+        })
+        {
+            Timeout = TimeSpan.FromSeconds(settings.Database.QueryTimeoutSeconds)
+        };
+
+        var clientOptions = new CouchClientOptions
+        {
+            HttpClient = httpClient,
+            ThrowOnQueryWarning = false,
+            JsonSerializerOptions = JsonSerializerOptions.Web
+        };
+
+        services.AddSingleton(_ => new CouchClient(
+            endpoint,
+            new BasicCredentials(userName, password),
+            clientOptions));
+
+        services.AddSingleton(provider =>
+            new CouchDbContext(provider.GetRequiredService<CouchClient>()));
 
         services.AddAutoRegisteredServices([Assembly.GetExecutingAssembly()]);
 

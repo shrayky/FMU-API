@@ -1,6 +1,4 @@
-﻿using CouchDb.Models;
-
-namespace CouchDb.DatabaseScheme;
+﻿namespace CouchDb.DatabaseScheme;
 
 public class DatabaseIndexes
 {

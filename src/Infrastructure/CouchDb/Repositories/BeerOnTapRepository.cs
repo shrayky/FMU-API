@@ -9,13 +9,8 @@ using Microsoft.Extensions.Logging;
 
 namespace CouchDb.Repositories;
 
-public class BeerOnTapRepository : BaseCouchDbRepository<BeerTapEntity>, IBeerOnTapsRepository
+public class BeerOnTapRepository(ILogger<BeerOnTapRepository> logger, CouchDbContext context, IParametersService appConfiguration, IApplicationState applicationState) : BaseCouchDbRepository<BeerTapEntity>(logger, context, context.BeerOnTap, appConfiguration, applicationState), IBeerOnTapsRepository
 {
-    public BeerOnTapRepository(ILogger<BeerOnTapRepository> logger, CouchDbContext context, IParametersService appConfiguration, IApplicationState applicationState) : base(logger, context, context.BeerOnTap, appConfiguration, applicationState)
-    {
-
-    }
-
     public async Task<Result> FreeTap(string id)
     {
         if (_context == null)
@@ -78,7 +73,7 @@ public class BeerOnTapRepository : BaseCouchDbRepository<BeerTapEntity>, IBeerOn
         var queryLimit = _configuration.QueryLimit;
 
         var entities = await ExecuteSafetyDbOperation(
-            async () => await _database.Take(queryLimit).ToListAsync(),
+            async () => (await _database.Take(queryLimit).ToListAsync()).ToList(),
             "All",
             (List<CouchDoc<BeerTapEntity>>?)null);
 

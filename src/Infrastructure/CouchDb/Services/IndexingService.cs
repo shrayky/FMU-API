@@ -1,6 +1,5 @@
 using CouchDb.DatabaseScheme;
 using CouchDb.Interfaces;
-using CouchDb.Models;
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Attributes;
 using FmuApiDomain.Configuration.Options;

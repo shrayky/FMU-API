@@ -8,16 +8,12 @@ using Microsoft.Extensions.Logging;
 
 namespace CouchDb.Repositories;
 
-public class GisMtMarkRepository : BaseCouchDbRepository<GisMtMarkEntity>, IGisMtMarkRepository
+public class GisMtMarkRepository(
+    ILogger<GisMtMarkRepository> logger,
+    CouchDbContext context,
+    IParametersService appConfiguration,
+    IApplicationState applicationState) : BaseCouchDbRepository<GisMtMarkEntity>(logger, context, context.GisMtMarks, appConfiguration, applicationState), IGisMtMarkRepository
 {
-    public GisMtMarkRepository(
-        ILogger<GisMtMarkRepository> logger,
-        CouchDbContext context,
-        IParametersService appConfiguration,
-        IApplicationState applicationState)
-        : base(logger, context, context.GisMtMarks, appConfiguration, applicationState)
-    {
-    }
 
     /// <summary>
     /// Возвращает марку остатка по sGTIN (id документа).
@@ -152,7 +148,7 @@ public class GisMtMarkRepository : BaseCouchDbRepository<GisMtMarkEntity>, IGisM
     /// <summary>
     /// Удаляет марку остатка по идентификатору.
     /// </summary>
-    public new async Task<bool> Delete(string id)
+    public async Task<bool> Delete(string id)
     {
         if (_context == null)
             return false;
