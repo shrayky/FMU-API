@@ -51,7 +51,8 @@ public class CheckSellDocument : IFrontolDocumentService
     {
         var checkResult = await MarkInformation();
 
-        await _packetTrapper.SaveCheckResultForCashRegister(_document, checkResult.Value);
+        if (checkResult.IsSuccess)
+            await _packetTrapper.SaveCheckResultForCashRegister(_document, checkResult.Value);
 
         return checkResult;
     }
