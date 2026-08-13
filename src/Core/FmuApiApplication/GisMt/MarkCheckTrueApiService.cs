@@ -1,5 +1,6 @@
 using FmuApiDomain.Attributes;
 using FmuApiDomain.Configuration.Interfaces;
+using FmuApiDomain.GisMt;
 using FmuApiDomain.GisMt.Interfaces;
 using FmuApiDomain.GisMt.Models;
 using FmuApiDomain.State.Interfaces;
@@ -20,7 +21,7 @@ public class MarkCheckTrueApiService(
     private readonly IApplicationState _applicationState = applicationState;
     private readonly IGisMtCisesClient _cisesClient = cisesClient;
 
-    public async Task<MarkCheckTrueApiResult> GetCisesInfo(
+    public async Task<MarkCheckTrueApiResult> CisesInfo(
         string inn,
         IReadOnlyList<string> cises,
         CancellationToken cancellationToken = default)
@@ -59,9 +60,14 @@ public class MarkCheckTrueApiService(
                     $"Токен True API не получен для ИНН {organisation.INN}");
             }
 
+            var cisList = cises
+                .Select(GisMtCisNormalizer.ToCis)
+                .Where(x => x.Length > 0)
+                .ToList();
+
             var cisInfo = await _cisesClient.CisesInfo(
                 token,
-                cises,
+                cisList,
                 productGroup: null,
                 cancellationToken);
 

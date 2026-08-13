@@ -4,7 +4,7 @@ namespace FmuApiDomain.GisMt.Interfaces;
 
 public interface IMarkCheckTrueApiService
 {
-    Task<MarkCheckTrueApiResult> GetCisesInfo(
+    Task<MarkCheckTrueApiResult> CisesInfo(
         string inn,
         IReadOnlyList<string> cises,
         CancellationToken cancellationToken = default);

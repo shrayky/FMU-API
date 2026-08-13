@@ -35,7 +35,7 @@ public class CisesInfoController : ControllerBase
         if (cises.Count == 0)
             return BadRequest(new { error = "Список cises обязателен" });
 
-        var result = await _markCheckTrueApiService.GetCisesInfo(
+        var result = await _markCheckTrueApiService.CisesInfo(
             request.Inn.Trim(),
             cises,
             cancellationToken);

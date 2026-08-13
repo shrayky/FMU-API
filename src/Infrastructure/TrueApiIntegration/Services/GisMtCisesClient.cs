@@ -16,7 +16,7 @@ namespace TrueApiIntegration.Services;
 public class GisMtCisesClient : IGisMtCisesClient
 {
     private const string CisesInfoPath = "/api/v3/true-api/cises/info";
-    private const string CisesSearchPath = "/api/v4/true-api/cises/search";
+    private const string CisesSearchPath = "/api/v4/true-api/cises/search"; 
     private const string ProductInfoPath = "/api/v4/true-api/product/info";
 
     private static readonly JsonSerializerOptions JsonOptions = new()
