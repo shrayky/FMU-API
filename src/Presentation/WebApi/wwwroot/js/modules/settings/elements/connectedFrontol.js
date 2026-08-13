@@ -5,7 +5,6 @@ import { frontolDbValidation } from "../../../utils/validators.js";
 
 const INT32_MAX = 2147483647;
 
-/// Приводит значение к id подключения (1…Int32). Иначе возвращает fallback.
 function toConnectionId(value, fallback) {
     const id = parseInt(value, 10);
     if (!Number.isInteger(id) || id < 1 || id > INT32_MAX)
@@ -67,12 +66,12 @@ class ConnectedFrontolConfigurationElement {
             rows: [
                 this._createHiddenFields(),
 
+                Label("lConnectedFrontol", this.LABELS.title),
+
                 {
                     padding: padding,
 
                     rows: [
-
-                        Label("lConnectedFrontol", this.LABELS.title),
 
                         {
                             cols: [
