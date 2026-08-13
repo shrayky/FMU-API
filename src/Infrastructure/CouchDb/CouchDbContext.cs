@@ -1,46 +1,28 @@
-﻿// Ignore Spelling: Frontol
-
-using CouchDb.DatabaseScheme;
-using CouchDb.DocumentModels;
+﻿using CouchDb.DatabaseScheme;
 using CouchDb.Documents;
 using CouchDB.Driver;
-using CouchDB.Driver.Options;
 using FmuApiDomain.Database.Dto;
 using FmuApiDomain.GisMt.Entities;
 using FmuApiDomain.MarkInformation.Entities;
 
-namespace CouchDb
+namespace CouchDb;
+
+public class CouchDbContext
 {
-    public class CouchDbContext : CouchContext
+    public ICouchDatabase<CouchDoc<MarkEntity>> Marks { get; }
+    public ICouchDatabase<CouchDoc<DocumentEntity>> Documents { get; }
+    public ICouchDatabase<CouchDoc<StatisticEntity>> MarkCheckingStatistic { get; }
+    public ICouchDatabase<CouchDoc<BeerTapEntity>> BeerOnTap { get; }
+    public ICouchDatabase<CouchDoc<GisMtDocumentEntity>> GisMtDocuments { get; }
+    public ICouchDatabase<CouchDoc<GisMtMarkEntity>> GisMtMarks { get; }
+
+    public CouchDbContext(CouchClient client)
     {
-        public CouchDatabase<CouchDoc<MarkEntity>> Marks { get; set; }
-        public CouchDatabase<CouchDoc<DocumentEntity>> Documents { get; set; }
-        public CouchDatabase<CouchDoc<StatisticEntity>> MarkCheckingStatistic { get; set; }
-        public CouchDatabase<CouchDoc<BeerTapEntity>> BeerOnTap { get; set; }
-        public CouchDatabase<CouchDoc<GisMtDocumentEntity>> GisMtDocuments { get; set; }
-        public CouchDatabase<CouchDoc<GisMtMarkEntity>> GisMtMarks { get; set; }
-
-        public CouchDbContext(CouchOptions<CouchDbContext> options) : base(options)
-        {
-        }
-
-        protected override void OnConfiguring(CouchOptionsBuilder optionsBuilder)
-        {
-        }
-
-        protected override void OnDatabaseCreating(CouchDatabaseBuilder databaseBuilder)
-        {
-            databaseBuilder.Document<CouchDoc<MarkEntity>>().ToDatabase(DatabaseNames.MarksDbName);
-
-            databaseBuilder.Document<CouchDoc<DocumentEntity>>().ToDatabase(DatabaseNames.DocumentsDbName);
-
-            databaseBuilder.Document<CouchDoc<StatisticEntity>>().ToDatabase(DatabaseNames.MarkCheckingStatistic);
-
-            databaseBuilder.Document<CouchDoc<BeerTapEntity>>().ToDatabase(DatabaseNames.BeerOnTaps);
-
-            databaseBuilder.Document<CouchDoc<GisMtDocumentEntity>>().ToDatabase(DatabaseNames.GisMtDocumentsDbName);
-
-            databaseBuilder.Document<CouchDoc<GisMtMarkEntity>>().ToDatabase(DatabaseNames.GisMtMarksDbName);
-        }
+        Marks = client.GetDatabase<CouchDoc<MarkEntity>>(DatabaseNames.MarksDbName);
+        Documents = client.GetDatabase<CouchDoc<DocumentEntity>>(DatabaseNames.DocumentsDbName);
+        MarkCheckingStatistic = client.GetDatabase<CouchDoc<StatisticEntity>>(DatabaseNames.MarkCheckingStatistic);
+        BeerOnTap = client.GetDatabase<CouchDoc<BeerTapEntity>>(DatabaseNames.BeerOnTaps);
+        GisMtDocuments = client.GetDatabase<CouchDoc<GisMtDocumentEntity>>(DatabaseNames.GisMtDocumentsDbName);
+        GisMtMarks = client.GetDatabase<CouchDoc<GisMtMarkEntity>>(DatabaseNames.GisMtMarksDbName);
     }
 }

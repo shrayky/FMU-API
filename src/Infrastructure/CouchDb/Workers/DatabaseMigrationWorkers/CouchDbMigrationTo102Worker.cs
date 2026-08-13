@@ -1,5 +1,4 @@
-﻿using CouchDB.Driver.Extensions;
-using FmuApiDomain.Configuration;
+﻿using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.MarkInformation.Entities;
 using FmuApiDomain.Repositories;

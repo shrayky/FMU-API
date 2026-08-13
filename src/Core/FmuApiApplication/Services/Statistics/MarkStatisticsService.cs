@@ -6,64 +6,63 @@ using FmuApiDomain.MarkInformation.Models;
 using FmuApiDomain.Repositories;
 using Microsoft.Extensions.Logging;
 
-namespace FmuApiApplication.Services.Statistics
+namespace FmuApiApplication.Services.Statistics;
+
+[AutoRegisterService(Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped)]
+public class MarkStatisticsService : IMarkStatisticsService
 {
-    [AutoRegisterService(Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped)]
-    public class MarkStatisticsService : IMarkStatisticsService
+    private readonly ILogger<MarkStatisticsService> _logger;
+    private readonly ICheckStatisticRepository _repository;
+    private readonly IParametersService _parametersService;
+
+    private readonly Parameters _parameters;
+
+    public MarkStatisticsService(ILogger<MarkStatisticsService> logger, ICheckStatisticRepository repository, IParametersService parametersService)
     {
-        private readonly ILogger<MarkStatisticsService> _logger;
-        private readonly ICheckStatisticRepository _repository;
-        private readonly IParametersService _parametersService;
+        _logger = logger;
+        _repository = repository;
+        _parametersService = parametersService;
 
-        private readonly Parameters _parameters;
+        _parameters = parametersService.Current();
+    }
 
-        public MarkStatisticsService(ILogger<MarkStatisticsService> logger, ICheckStatisticRepository repository, IParametersService parametersService)
-        {
-            _logger = logger;
-            _repository = repository;
-            _parametersService = parametersService;
+    public async Task<MarkCheckStatistics> ByDays(DateTime fromDate, DateTime toDate)
+    {
+        if (!_parameters.Database.Enable)
+            return new MarkCheckStatistics();
 
-            _parameters = parametersService.Current();
-        }
+        var statistics = await _repository.CheckStatisticsByDays(fromDate, toDate);
 
-        public async Task<MarkCheckStatistics> ByDays(DateTime fromDate, DateTime toDate)
-        {
-            if (!_parameters.Database.Enable)
-                return new MarkCheckStatistics();
+        return statistics;
+    }
 
-            var statistics = await _repository.CheckStatisticsByDays(fromDate, toDate);
+    public async Task<MarkCheckStatistics> LastWeek()
+    {
+        var toDate = DateTime.Now.Date.AddDays(-1);
+        var fromDate = DateTime.Now.AddDays(-8).Date;
 
-            return statistics;
-        }
+        return await ByDays(fromDate, toDate);
+    }
 
-        public async Task<MarkCheckStatistics> LastWeek()
-        {
-            var toDate = DateTime.Now.Date.AddDays(-1);
-            var fromDate = DateTime.Now.AddDays(-8).Date;
+    public async Task<MarkCheckStatistics> LastMonth()
+    {
+        var toDate = DateTime.Now.Date.AddDays(-1);
+        var fromDate = DateTime.Now.AddDays(-31).Date;
 
-            return await ByDays(fromDate, toDate);
-        }
+        return await ByDays(fromDate, toDate);
+    }
 
-        public async Task<MarkCheckStatistics> LastMonth()
-        {
-            var toDate = DateTime.Now.Date.AddDays(-1);
-            var fromDate = DateTime.Now.AddDays(-31).Date;
+    public async Task<MarkCheckStatistics> Today()
+    {
+        var toDate = DateTime.Now.Date.AddDays(1);
+        var fromDate = DateTime.Today;
 
-            return await ByDays(fromDate, toDate);
-        }
+        return await ByDays(fromDate, toDate);
+    }
 
-        public async Task<MarkCheckStatistics> Today()
-        {
-            var toDate = DateTime.Now.Date.AddDays(1);
-            var fromDate = DateTime.Today;
-
-            return await ByDays(fromDate, toDate);
-        }
-
-        public async Task<MarkCheckStatistics> ByDay(DateTime day)
-        {
-            var dayInUnixTime = new DateTimeOffset(DateTime.SpecifyKind(day.Date, DateTimeKind.Utc)).ToUnixTimeSeconds();
-            return await _repository.CheckStatisticsByDay(dayInUnixTime);
-        }
+    public async Task<MarkCheckStatistics> ByDay(DateTime day)
+    {
+        var dayInUnixTime = new DateTimeOffset(DateTime.SpecifyKind(day.Date, DateTimeKind.Utc)).ToUnixTimeSeconds();
+        return await _repository.CheckStatisticsByDay(dayInUnixTime);
     }
 }
