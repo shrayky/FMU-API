@@ -1,13 +1,11 @@
-﻿using FmuApiDomain.Fmu.Document;
+﻿using CouchDB.Driver.Types;
+using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.Fmu.Document.Interface;
 
 namespace CouchDb.DocumentModels
 {
-    public class FrontolDocumentData : IFrontolDocumentData
+    public class FrontolDocumentData : CouchDocument, IFrontolDocumentData
     {
-        public string Id { get; set; } = string.Empty;
-        public string Rev { get; set; } = string.Empty;
-        public bool Deleted { get; set; }
         public RequestDocument Document { get; set; } = new();
     }
 }

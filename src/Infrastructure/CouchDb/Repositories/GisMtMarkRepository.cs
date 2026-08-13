@@ -152,7 +152,7 @@ public class GisMtMarkRepository : BaseCouchDbRepository<GisMtMarkEntity>, IGisM
     /// <summary>
     /// Удаляет марку остатка по идентификатору.
     /// </summary>
-    public async Task<bool> Delete(string id)
+    public new async Task<bool> Delete(string id)
     {
         if (_context == null)
             return false;

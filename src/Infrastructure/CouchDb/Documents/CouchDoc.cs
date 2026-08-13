@@ -1,22 +1,12 @@
-﻿using System.Text.Json.Serialization;
+﻿using CouchDB.Driver.Types;
+using Newtonsoft.Json;
 
 namespace CouchDb.Documents
 {
-    /// <summary>
-    /// Обёртка документа CouchDB: доменная сущность в поле data + метаданные Id/Rev.
-    /// </summary>
-    public class CouchDoc<T> where T : class
+    public class CouchDoc<T> : CouchDocument where T : class
     {
-        public string Id { get; set; } = string.Empty;
-
-        public string Rev { get; set; } = string.Empty;
-
-        [JsonPropertyName("data")]
+        [JsonProperty("data")]
         public required T Data { get; set; }
-
-        /// <summary>
-        /// Создаёт документ из доменной сущности.
-        /// </summary>
         public static CouchDoc<T> FromDomain(T entity, string? id)
         {
             return new CouchDoc<T>
@@ -26,9 +16,6 @@ namespace CouchDb.Documents
             };
         }
 
-        /// <summary>
-        /// Возвращает доменную сущность из документа.
-        /// </summary>
         public T ToDomain()
         {
             return Data;

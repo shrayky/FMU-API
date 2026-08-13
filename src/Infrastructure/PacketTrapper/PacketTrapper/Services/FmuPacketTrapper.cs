@@ -34,7 +34,7 @@ public class FmuPacketTrapper : IFmuPacketTrapper
 
         if (fmuAnswer.Truemark_response.Codes.Count == 0)
         {
-            var err = "FmuPacketTrapper - нечего сохранять для ккт - пустой ответ от fmu-api";
+            var err = "FmuPacketTrapper - нечего сохранять для ккт - пустой ответ от fmuapi";
             _logger.LogError(err);
             return Result.Failure(err);
         }

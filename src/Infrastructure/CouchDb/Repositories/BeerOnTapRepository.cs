@@ -78,7 +78,7 @@ public class BeerOnTapRepository : BaseCouchDbRepository<BeerTapEntity>, IBeerOn
         var queryLimit = _configuration.QueryLimit;
 
         var entities = await ExecuteSafetyDbOperation(
-            async () => (await _database.Take(queryLimit).ToListAsync()).ToList(),
+            async () => await _database.Take(queryLimit).ToListAsync(),
             "All",
             (List<CouchDoc<BeerTapEntity>>?)null);
 

@@ -1,12 +1,11 @@
-﻿using FmuApiDomain.MarkInformation.Models;
+﻿using CouchDB.Driver.Types;
+using FmuApiDomain.MarkInformation.Models;
 using FmuApiDomain.TrueApi.MarkData;
 
 namespace CouchDb.DocumentModels
 {
-    public class MarkStateDocument
+    public class MarkStateDocument : CouchDocument
     {
-        public string Id { get; set; } = string.Empty;
-        public string Rev { get; set; } = string.Empty;
         public string State { get; set; } = string.Empty;
         public CodeDataTrueApi TrueApiInformation { get; set; } = new();
         public TrueApiAnswerData TrueApiAnswerProperties { get; set; } = new();
