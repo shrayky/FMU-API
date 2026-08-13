@@ -6,7 +6,6 @@ class DatabaseConnectionConfigurationElement {
         this.id = id;
         this.SETTINGS_ID = "databaseConnection";
         this.LABELS = {
-            title: "База данных",
             enable: "Использовать",
             serverDbAddress: "Адрес сервера CouchDb",
             user: "Пользователь",
@@ -46,10 +45,6 @@ class DatabaseConnectionConfigurationElement {
 
     render() {
         let elements = [];
-
-        elements.push(
-            Label("lDatabaseConfig", this.LABELS.title),
-        );
 
         elements.push(
             {

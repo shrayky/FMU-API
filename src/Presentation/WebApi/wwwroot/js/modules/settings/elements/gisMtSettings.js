@@ -1,4 +1,4 @@
-import { Label, Number, padding, CheckBox } from "../../../utils/ui.js";
+import { Number, padding, CheckBox } from "../../../utils/ui.js";
 
 const TIME_FORMAT_24H = "%H:%i";
 
@@ -6,7 +6,6 @@ class GisMtSettingsElement {
     constructor(id) {
         this.id = id;
         this.LABELS = {
-            title: "Интеграция ГИС МТ",
             pollInterval: "Интервал опроса документов (минуты)",
             markRetentionDays: "Срок хранения невалидных марок (дни)",
             documentsSyncDays: "Период загрузки документов (дней, включая текущий)",
@@ -64,7 +63,6 @@ class GisMtSettingsElement {
         return {
             id: this.id,
             rows: [
-                Label("lGisMtSettings", this.LABELS.title),
                 {
                     padding: padding,
                     rows: [

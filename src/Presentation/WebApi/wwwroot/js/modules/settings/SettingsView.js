@@ -3,11 +3,10 @@ import { loadParameters, saveConfiguration } from '../../services/ConfigurationS
 const SETTINGS_MODULES = {
     serverConfigData: () => import("./elements/serverConfiguration.js"),
     organizationsTable: () => import("./elements/organizationsTable.js"),
-    gisMtSettings: () => import("./elements/gisMtSettings.js"),
     salesControl: () => import("./elements/salesControl.js"),
     minimalPrices: () => import("./elements/minimalPrices.js"),
     pingHosts: () => import("./elements/pingHostsTable.js"),
-    databaseConnection: () => import("./elements/databaseConnection.js"),
+    databaseGisMtSettings: () => import("./elements/databaseGisMtSettings.js"),
     connectedFrontol: () => import("./elements/connectedFrontol.js"),
     markUnit: () => import("./elements/markUnit.js"),
     timeoutConfig: () => import("./elements/timeouts.js"),
