@@ -62,7 +62,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "winget", "winget", "{9A4B96
 	ProjectSection(SolutionItems) = preProject
 		Automation.fmu-api.installer.yaml = Automation.fmu-api.installer.yaml
 		Automation.fmu-api.locale.en-US.yaml = Automation.fmu-api.locale.en-US.yaml
-		Automation.fmu-api.locale.ru-RU = Automation.fmu-api.locale.ru-RU
+		Automation.fmu-api.locale.ru-RU.yaml = Automation.fmu-api.locale.ru-RU.yaml
 		Automation.fmu-api.yaml = Automation.fmu-api.yaml
 	EndProjectSection
 EndProject
