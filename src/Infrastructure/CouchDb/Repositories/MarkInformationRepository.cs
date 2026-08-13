@@ -122,6 +122,7 @@ namespace CouchDb.Repositories
             var paginatedResults = allResults.Value
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .Select(MarkListItem.FromEntity)
                 .ToList();
 
             var answer = new MarkSearchResult
@@ -154,7 +155,7 @@ namespace CouchDb.Repositories
 
             var answer = new MarkSearchResult
             {
-                Marks = paginatedResults.Value,
+                Marks = paginatedResults.Value.Select(MarkListItem.FromEntity).ToList(),
                 Count = totalCount,
                 CurrentPage = page,
                 PageSize = pageSize,

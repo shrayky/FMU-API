@@ -1,5 +1,6 @@
 import { ApiServerAddress } from '../../utils/net.js';
 import { ScannerWedge } from '../../utils/scannerWedge.js';
+import { openMarkCheckDetailWindow } from './markCheckDetailWindow.js';
 
 class MarksView {
     constructor(id) {
@@ -159,8 +160,11 @@ class MarksView {
             ],
             autoheight: true,
             scroll: false,
-            select: false,
+            select: "row",
             data: [],
+            on: {
+                onItemDblClick: (id) => this._onMarkClick(id)
+            }
         }
     }
 
@@ -260,7 +264,8 @@ class MarksView {
             markId: mark.markId,
             state: mark.state,
             checkDate: new Date(mark.trueApiAnswerProperties.reqTimestamp).toLocaleString(),
-            haveTrueApiAnswer: mark.haveTrueApiAnswer
+            haveTrueApiAnswer: mark.haveTrueApiAnswer,
+            checkId: mark.checkId || mark.CheckId || ""
         }));
 
         table.clearAll();
@@ -357,6 +362,46 @@ class MarksView {
         if (page >= 1) {
             this.currentPage = page;
             this._loadMarks();
+        }
+    }
+
+    /// Открывает запрос и ответ проверки по двойному клику на строку.
+    async _onMarkClick(id) {
+        const table = $$(this.NAMES.marksTable);
+        if (!table)
+            return;
+
+        const rowId = (id && typeof id === "object") ? id.row : id;
+        const item = table.getItem(rowId);
+        if (!item)
+            return;
+
+        const checkId = item.checkId || item.CheckId;
+        if (!checkId) {
+            webix.message({ text: "Нет сохранённой проверки для этой марки", type: "info" });
+            return;
+        }
+
+        const url = new URL(`${this.marksApiAddress}/checks`, window.location.origin);
+        url.searchParams.set("id", checkId);
+
+        try {
+            const response = await fetch(url);
+
+            if (response.status === 404) {
+                webix.message({ text: "Нет сохранённой проверки для этой марки", type: "info" });
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error(`Ошибка получения данных ${response.status} ${response.statusText}`);
+            }
+
+            const check = await response.json();
+            openMarkCheckDetailWindow({ sgtin: item.markId, check });
+        } catch (error) {
+            console.error("Ошибка при загрузке проверки марки:", error);
+            webix.message({ text: "Ошибка при загрузке проверки марки", type: "error" });
         }
     }
 }

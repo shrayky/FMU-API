@@ -12,6 +12,7 @@ namespace FmuApiApplication.Mark
             services.AddScoped<IMarkParser, MarkParser>();
             services.AddScoped<IMarkChecker, MarkChecker>();
             services.AddScoped<IMarkStateManager, MarkStateManager>();
+            services.AddScoped<IMarksListService, MarksListService>();
             services.AddScoped<IMarkFabric, MarkFabric>();
 
             return services;

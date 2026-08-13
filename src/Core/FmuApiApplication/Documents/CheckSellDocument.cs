@@ -2,6 +2,7 @@
 using FmuApiApplication.Mark.Interfaces;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
+using FmuApiDomain.Database.Dto;
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.Fmu.Document.Enums;
 using FmuApiDomain.Fmu.Document.Interface;
@@ -72,25 +73,39 @@ public class CheckSellDocument : IFrontolDocumentService
             markInformation.FillFieldsForFrontol_6_25_5(_document.Inn);
             markInformation.FillFieldsForIMark(_document.RequestFromAppId);
 
-            if (markInformation.Error == string.Empty && !markInformation.OfflineRegime)
-                await _checkStatisticRepository.SuccessOnLineCheck(markInformation.SGtin(), DateTime.Now);
-            else if (markInformation.Error == string.Empty && markInformation.OfflineRegime)
-                await _checkStatisticRepository.SuccessOffLineCheck(markInformation.SGtin(), DateTime.Now);
-            else if (markInformation.Error != string.Empty && !markInformation.OfflineRegime)
-                await _checkStatisticRepository.OnLineCheckWithWarnings(markInformation.SGtin(), DateTime.Now, markInformation.Error);
-            else if (markInformation.Error != string.Empty && markInformation.OfflineRegime)
-                await _checkStatisticRepository.OffLineCheckWithWarnings(markInformation.SGtin(), DateTime.Now, markInformation.Error);
+            await SaveCheckStatistic(mark.SGtin, markInformation, failed: false);
 
             return Result.Success(markInformation);
         }
         else
         {
-            await _checkStatisticRepository.FailureCheck(mark.SGtin, DateTime.Now);
+            await SaveCheckStatistic(mark.SGtin, answer: null, failed: true);
         }
 
         _logger.LogError(checkResult.Error);
 
         return checkResult;
+    }
+
+    private async Task SaveCheckStatistic(string sgtin, FmuAnswer? answer, bool failed)
+    {
+        var online = !failed && answer is { OfflineRegime: false };
+        var offline = !failed && answer is { OfflineRegime: true };
+        var success = !failed && string.IsNullOrEmpty(answer?.Error);
+
+        var entity = new StatisticEntity
+        {
+            SGtin = sgtin,
+            CheckDate = DateTime.Now,
+            SuccessCheck = success,
+            OnLineCheck = online,
+            OffLineCheck = offline,
+            WarningMessage = failed ? string.Empty : (answer?.Error ?? string.Empty),
+            CheckRequest = _document,
+            CheckResponse = answer
+        };
+
+        await _checkStatisticRepository.Add(entity);
     }
 
     private FmuAnswer CreateFakeAnswer(IMark mark, string error)

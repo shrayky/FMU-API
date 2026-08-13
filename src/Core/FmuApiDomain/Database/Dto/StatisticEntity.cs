@@ -1,4 +1,5 @@
-﻿using FmuApiDomain.Templates.Tables;
+﻿using FmuApiDomain.Fmu.Document;
+using FmuApiDomain.Templates.Tables;
 
 namespace FmuApiDomain.Database.Dto;
 
@@ -12,4 +13,6 @@ public class StatisticEntity : IHaveStringId
     public bool OnLineCheck { get; set; } = false;
     public bool OffLineCheck { get; set; } = false;
     public string WarningMessage { get; set; } = string.Empty;
+    public RequestDocument? CheckRequest { get; set; }
+    public FmuAnswer? CheckResponse { get; set; }
 }

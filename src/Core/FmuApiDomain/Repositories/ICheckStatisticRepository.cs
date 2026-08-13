@@ -1,15 +1,14 @@
 ﻿using CSharpFunctionalExtensions;
+using FmuApiDomain.Database.Dto;
 using FmuApiDomain.MarkInformation.Models;
 
 namespace FmuApiDomain.Repositories;
 
 public interface ICheckStatisticRepository
 {
-    Task SuccessOnLineCheck(string mark, DateTime checkDate);
-    Task OnLineCheckWithWarnings(string mark, DateTime checkDate, string warningMessage);
-    Task SuccessOffLineCheck(string mark, DateTime checkDate);
-    Task OffLineCheckWithWarnings(string mark, DateTime checkDate, string warningMessage);
-    Task FailureCheck(string mark, DateTime checkDate);
+    Task Add(StatisticEntity entity);
+    Task<StatisticEntity?> ById(string id);
+    Task<Dictionary<string, string>> GetLastCheckIds(IReadOnlyList<string> sgtins);
     Task<MarkCheckStatistics> CheckStatisticsByDays(DateTime fromDate, DateTime toDate);
     Task<MarkCheckStatistics> CheckStatisticsByDay(long day);
     Task<Result> ClearStorageToDay(DateTime day, CancellationToken stoppingToken);

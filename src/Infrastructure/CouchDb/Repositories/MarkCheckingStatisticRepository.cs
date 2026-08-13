@@ -19,88 +19,74 @@ public class MarkCheckingStatisticRepository(
     private static long ToCheckDay(DateTime checkDate) =>
         new DateTimeOffset(DateTime.SpecifyKind(checkDate.Date, DateTimeKind.Utc)).ToUnixTimeSeconds();
 
-    public async Task FailureCheck(string mark, DateTime checkDate)
+    public async Task Add(StatisticEntity entity)
     {
-        StatisticEntity entity = new()
-        {
-            Id = $"{mark}_{checkDate}",
-            CheckDate = checkDate,
-            SGtin = mark,
-            OnLineCheck = false,
-            OffLineCheck = false,
-            SuccessCheck = false,
-            CheckDay = ToCheckDay(checkDate)
-        };
+        if (entity.CheckDay == 0)
+            entity.CheckDay = ToCheckDay(entity.CheckDate);
+
+        if (string.IsNullOrEmpty(entity.Id))
+            entity.Id = $"{entity.SGtin}_{entity.CheckDate}";
 
         await CreateAsync(entity);
     }
 
-    public async Task SuccessOffLineCheck(string mark, DateTime checkDate)
+    public async Task<StatisticEntity?> ById(string id)
     {
-        StatisticEntity entity = new()
-        {
-            Id = $"{mark}_{checkDate}",
-            CheckDate = checkDate,
-            SGtin = mark,
-            OnLineCheck = false,
-            OffLineCheck = true,
-            SuccessCheck = true,
-            WarningMessage = "",
-            CheckDay = ToCheckDay(checkDate)
-        };
+        if (string.IsNullOrWhiteSpace(id))
+            return null;
 
-        await CreateAsync(entity);
+        if (_context == null)
+            return null;
+
+        if (!_appState.CouchDbOnline())
+            return null;
+
+        return await GetByIdAsync(id);
     }
 
-    public async Task OffLineCheckWithWarnings(string mark, DateTime checkDate, string warningMessage)
+    public async Task<Dictionary<string, string>> GetLastCheckIds(IReadOnlyList<string> sgtins)
     {
-        StatisticEntity entity = new()
+        var result = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (sgtins.Count == 0)
+            return result;
+
+        if (_context == null || !_appState.CouchDbOnline())
+            return result;
+
+        var mangoQuery = new
         {
-            Id = $"{mark}_{checkDate}",
-            CheckDate = checkDate,
-            SGtin = mark,
-            OnLineCheck = false,
-            OffLineCheck = true,
-            SuccessCheck = false,
-            WarningMessage = warningMessage,
-            CheckDay = ToCheckDay(checkDate)
+            selector = new Dictionary<string, object>
+            {
+                ["data.sGtin"] = new Dictionary<string, object>
+                {
+                    ["$in"] = sgtins.ToList()
+                }
+            },
+            limit = await QueryLimitAsync()
         };
 
-        await CreateAsync(entity);
-    }
+        var queryResult = await ExecuteMangoQueryAsync(mangoQuery);
+        if (queryResult.IsFailure)
+            return result;
 
-    public async Task SuccessOnLineCheck(string mark, DateTime checkDate)
-    {
-        StatisticEntity entity = new()
+        foreach (var group in queryResult.Value.GroupBy(x => x.SGtin))
         {
-            Id = $"{mark}_{checkDate}",
-            CheckDate = checkDate,
-            SGtin = mark,
-            OnLineCheck = true,
-            OffLineCheck = false,
-            SuccessCheck = true,
-            CheckDay = ToCheckDay(checkDate)
-        };
+            var last = group
+                .Where(HasCheckPayload)
+                .OrderByDescending(x => x.CheckDate)
+                .FirstOrDefault();
 
-        await CreateAsync(entity);
+            if (last == null || string.IsNullOrEmpty(last.Id))
+                continue;
+
+            result[group.Key] = last.Id;
+        }
+
+        return result;
     }
 
-    public async Task OnLineCheckWithWarnings(string mark, DateTime checkDate, string warningMessage)
-    {
-        StatisticEntity entity = new()
-        {
-            Id = $"{mark}_{checkDate}",
-            CheckDate = checkDate,
-            SGtin = mark,
-            OnLineCheck = true,
-            OffLineCheck = false,
-            SuccessCheck = false,
-            WarningMessage = warningMessage,
-            CheckDay = ToCheckDay(checkDate)
-        };
-
-        await CreateAsync(entity);
-    }
+    private static bool HasCheckPayload(StatisticEntity entity) =>
+        entity.CheckRequest != null || entity.CheckResponse != null;
 
     public async Task<MarkCheckStatistics> CheckStatisticsByDays(DateTime fromDate, DateTime toDate)
     {
@@ -221,9 +207,6 @@ public class MarkCheckingStatisticRepository(
         return Result.Success();
     }
 
-    /// <summary>
-    /// Собирает агрегаты по списку записей статистики.
-    /// </summary>
     private static MarkCheckStatistics ToStatistics(List<StatisticEntity> marks) => new()
     {
         Total = marks.Count,
@@ -231,9 +214,6 @@ public class MarkCheckingStatisticRepository(
         SuccessfulOfflineChecks = marks.Count(m => m.SuccessCheck && m.OffLineCheck)
     };
 
-    /// <summary>
-    /// Возвращает лимит выборки из настроек БД.
-    /// </summary>
     private async Task<int> QueryLimitAsync()
     {
         var appConfig = await _appConfiguration.CurrentAsync();
