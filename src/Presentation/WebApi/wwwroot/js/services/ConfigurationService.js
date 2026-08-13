@@ -14,19 +14,29 @@ export function saveParameters(data) {
         .then(answer => answer.json());
 }
 
+const INT32_MAX = 2147483647;
+
+/// Приводит значение к Int32 в диапазоне min…Int32. Иначе возвращает fallback.
+function toInt32(value, fallback, min = 0) {
+    const id = parseInt(value, 10);
+    if (!Number.isInteger(id) || id < min || id > INT32_MAX)
+        return fallback;
+    return id;
+}
+
 function normalizeFormValues(values) {
     const frontol = values?.connectedFrontolSettings;
     if (!frontol)
         return values;
 
     if (Array.isArray(frontol.connectionSettings)) {
-        frontol.connectionSettings = frontol.connectionSettings.map(item => ({
+        frontol.connectionSettings = frontol.connectionSettings.map((item, index) => ({
             ...item,
-            id: parseInt(item.id, 10) || 0
+            id: toInt32(item.id, index + 1, 1)
         }));
     }
 
-    frontol.printGroupSourseId = parseInt(frontol.printGroupSourseId, 10) || 0;
+    frontol.printGroupSourseId = toInt32(frontol.printGroupSourseId, 0);
 
     const serverConfig = values?.serverConfig;
     if (serverConfig) {

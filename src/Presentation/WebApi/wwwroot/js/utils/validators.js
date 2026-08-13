@@ -32,6 +32,8 @@ class Validator {
             invalidMessage: this.message,
             on: {
                 onBlur: function() {
+                    if (!this.getFormView())
+                        return;
                     this.validate();
                 }
             }

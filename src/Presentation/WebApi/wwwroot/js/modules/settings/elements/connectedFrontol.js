@@ -3,12 +3,23 @@ import { saveConfiguration } from "../../../services/ConfigurationService.js";
 import { importFromFrontolAdmin } from "../../../services/FrontolConnectionService.js";
 import { frontolDbValidation } from "../../../utils/validators.js";
 
+const INT32_MAX = 2147483647;
+
+/// Приводит значение к id подключения (1…Int32). Иначе возвращает fallback.
+function toConnectionId(value, fallback) {
+    const id = parseInt(value, 10);
+    if (!Number.isInteger(id) || id < 1 || id > INT32_MAX)
+        return fallback;
+    return id;
+}
+
 class ConnectedFrontolConfigurationElement {
     constructor(id) {
         this.id = id;
         this.mainFormId = "body";
         this.modalId = "FrontolConnectionsModal";
         this.editFormId = "FrontolConnectionEditForm";
+        this.editFormBodyId = "FrontolConnectionEditFormBody";
         this.tableId = "FrontolConnections";
         this.hiddenTableId = "FrontolConnectionsHidden";
         this.printGroupSelectId = "FrontolPrintGroupSourceId";
@@ -318,8 +329,10 @@ class ConnectedFrontolConfigurationElement {
                 ]
             },
             body: {
+                view: "form",
+                id: this.editFormBodyId,
                 padding: 10,
-                rows: [
+                elements: [
                     Text(this.LABELS.name, "FrontolConnectionName"),
                     Text(this.LABELS.path, "FrontolConnectionPath", "", frontolDbValidation),
                     Text(this.LABELS.user, "FrontolConnectionUserName", "SYSDBA", { placeholder: "SYSDBA" }),
@@ -367,6 +380,10 @@ class ConnectedFrontolConfigurationElement {
     }
 
     _saveConnection(rowId) {
+        const form = $$(this.editFormBodyId);
+        if (!form.validate())
+            return;
+
         const path = $$("FrontolConnectionPath").getValue()?.trim();
         if (!path)
             return;
@@ -382,9 +399,12 @@ class ConnectedFrontolConfigurationElement {
             return;
         }
 
+        const nextId = this._nextConnectionId(table);
         const existingItem = rowId !== undefined ? table.getItem(rowId) : null;
         const connection = {
-            id: parseInt(existingItem?.id ?? this._nextConnectionId(table), 10) || 0,
+            id: rowId === undefined
+                ? nextId
+                : toConnectionId(existingItem?.id, nextId),
             name: $$("FrontolConnectionName").getValue()?.trim() ?? "",
             path,
             userName: $$("FrontolConnectionUserName").getValue()?.trim() || "SYSDBA",
@@ -424,7 +444,7 @@ class ConnectedFrontolConfigurationElement {
                 }
 
                 table.add({
-                    id: item.id ?? this._nextConnectionId(table),
+                    id: toConnectionId(item.id, this._nextConnectionId(table)),
                     name: item.name ?? "",
                     path: item.path ?? "",
                     userName: item.userName ?? "SYSDBA",
@@ -470,8 +490,13 @@ class ConnectedFrontolConfigurationElement {
         const connectionSettings = [];
 
         table.data.each(item => {
+            const fallback = connectionSettings.reduce(
+                (max, row) => row.id > max ? row.id : max,
+                0
+            ) + 1;
+
             connectionSettings.push({
-                id: parseInt(item.id, 10) || 0,
+                id: toConnectionId(item.id, fallback),
                 name: item.name ?? "",
                 path: item.path ?? "",
                 userName: item.userName ?? "",
@@ -558,11 +583,13 @@ class ConnectedFrontolConfigurationElement {
             select.setValue("");
     }
 
+    /// Следующий свободный id подключения, начиная с 1. uid Webix и значения вне Int32 игнорируются.
     _nextConnectionId(table) {
-        let maxId = -1;
+        let maxId = 0;
         table.data.each(item => {
-            if (+item.id > maxId)
-                maxId = +item.id;
+            const id = toConnectionId(item.id, 0);
+            if (id > maxId)
+                maxId = id;
         });
         return maxId + 1;
     }
