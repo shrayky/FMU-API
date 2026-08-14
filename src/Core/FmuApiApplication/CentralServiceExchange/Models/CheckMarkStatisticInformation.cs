@@ -1,4 +1,4 @@
-﻿using FmuApiDomain.MarkInformation.Models;
+using FmuApiDomain.Mark.Models;
 
 namespace FmuApiApplication.CentralServiceExchange.Models;
 

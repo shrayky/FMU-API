@@ -1,5 +1,5 @@
-﻿using FmuApiDomain.Constants;
-using FmuApiDomain.Fmu.FmuState;
+using FmuApiDomain.Constants;
+using FmuApiDomain.State;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers.Fmu.Status;

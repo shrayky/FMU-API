@@ -1,8 +1,8 @@
-﻿using CSharpFunctionalExtensions;
+using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.Database.Dto;
-using FmuApiDomain.Fmu.Document;
-using FmuApiDomain.Repositories;
+using FmuApiDomain.Documents.Entities;
+using FmuApiDomain.Documents;
+using FmuApiDomain.Documents.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.Logging;
 

@@ -1,4 +1,4 @@
-﻿using FmuApiDomain.Cdn;
+using FmuApiDomain.TrueApi.Cdn;
 
 namespace TrueApiCdn.Interface
 {

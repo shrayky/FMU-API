@@ -1,5 +1,5 @@
-using FmuApiDomain.Fmu.Document;
-using FmuApiDomain.MarkInformation.Interfaces;
+using FmuApiDomain.Documents;
+using FmuApiDomain.Mark.Interfaces;
 
 namespace FmuApiApplication.Mark.Interfaces;
 

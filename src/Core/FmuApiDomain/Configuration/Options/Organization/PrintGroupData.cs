@@ -1,4 +1,4 @@
-﻿using FmuApiDomain.Fmu.Document;
+using FmuApiDomain.TsPiot.Models;
 
 namespace FmuApiDomain.Configuration.Options.Organization;
 

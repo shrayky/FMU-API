@@ -1,4 +1,4 @@
-﻿using FmuApiDomain.Cdn;
+using FmuApiDomain.TrueApi.Cdn;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.State.Interfaces;

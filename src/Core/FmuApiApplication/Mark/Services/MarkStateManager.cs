@@ -1,15 +1,16 @@
-﻿// Ignore Spelling: Fmu Gtin
+// Ignore Spelling: Fmu Gtin
 
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.Fmu.BeerTaps.Interfaces;
+using FmuApiDomain.BeerTaps.Interfaces;
 using FmuApiDomain.GisMt;
-using FmuApiDomain.MarkInformation.Entities;
-using FmuApiDomain.MarkInformation.Enums;
-using FmuApiDomain.MarkInformation.Interfaces;
-using FmuApiDomain.MarkInformation.Models;
-using FmuApiDomain.Repositories;
+using FmuApiDomain.GisMt.Interfaces;
+using FmuApiDomain.Mark.Entities;
+using FmuApiDomain.Mark.Enums;
+using FmuApiDomain.Mark.Interfaces;
+using FmuApiDomain.Mark.Models;
+using FmuApiDomain.Mark.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.TrueApi.MarkData.Check;
 using Microsoft.Extensions.DependencyInjection;

@@ -1,8 +1,8 @@
-﻿using CSharpFunctionalExtensions;
+using CSharpFunctionalExtensions;
 using FmuApiDomain.Attributes;
 using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.Fmu.Document;
-using FmuApiDomain.Fmu.PacketTrapper.Interfaces;
+using FmuApiDomain.Documents;
+using FmuApiDomain.PacketTrapper.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 

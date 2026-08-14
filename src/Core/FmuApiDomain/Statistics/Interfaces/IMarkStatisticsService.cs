@@ -1,0 +1,20 @@
+using CSharpFunctionalExtensions;
+using FmuApiDomain.Mark.Models;
+
+namespace FmuApiDomain.Statistics.Interfaces
+{
+    public interface IMarkStatisticsService
+    {
+        Task<MarkCheckStatistics> Today();
+        
+        Task<MarkCheckStatistics> LastWeek();
+        
+        Task<MarkCheckStatistics> LastMonth();
+        
+        Task<MarkCheckStatistics> ByDays(DateTime fromDate, DateTime toDate);
+        
+        Task<MarkCheckStatistics> ByDay(DateTime date);
+
+        Task<Result> ClearAll(CancellationToken cancellationToken);
+    }
+}

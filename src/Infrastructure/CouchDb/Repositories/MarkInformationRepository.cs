@@ -1,9 +1,9 @@
-﻿using CSharpFunctionalExtensions;
+using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.MarkInformation.Entities;
-using FmuApiDomain.MarkInformation.Enums;
-using FmuApiDomain.MarkInformation.Models;
-using FmuApiDomain.Repositories;
+using FmuApiDomain.Mark.Entities;
+using FmuApiDomain.Mark.Enums;
+using FmuApiDomain.Mark.Models;
+using FmuApiDomain.Mark.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.Logging;
 

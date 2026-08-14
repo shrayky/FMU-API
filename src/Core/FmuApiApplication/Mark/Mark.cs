@@ -1,13 +1,14 @@
-﻿using CSharpFunctionalExtensions;
+using CSharpFunctionalExtensions;
 using FmuApiApplication.Mark.Interfaces;
 using FmuApiApplication.Mark.Models;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.Fmu.Document;
-using FmuApiDomain.Fmu.Document.Enums;
-using FmuApiDomain.MarkInformation.Enums;
-using FmuApiDomain.MarkInformation.Interfaces;
+using FmuApiDomain.Documents;
+using FmuApiDomain.Documents.Enums;
+using FmuApiDomain.Mark.Enums;
+using FmuApiDomain.Mark.Interfaces;
 using FmuApiDomain.TrueApi.MarkData.Check;
+using FmuApiDomain.TsPiot.Models;
 using Microsoft.Extensions.Logging;
 using Shared.Strings;
 
@@ -267,7 +268,7 @@ public class Mark : IMark
 
     }
 
-    public FmuApiDomain.MarkInformation.Entities.MarkEntity DatabaseState()
+    public FmuApiDomain.Mark.Entities.MarkEntity DatabaseState()
     {
         return _lastCheckResult.MarkInformation;
     }

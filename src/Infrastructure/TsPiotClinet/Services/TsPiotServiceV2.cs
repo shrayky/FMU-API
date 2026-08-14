@@ -1,5 +1,5 @@
 using CSharpFunctionalExtensions;
-using FmuApiDomain.Fmu.Document;
+using FmuApiDomain.Documents;
 using FmuApiDomain.TrueApi.MarkData.Check;
 using FmuApiDomain.TsPiot.Interfaces;
 using FmuApiDomain.TsPiot.Models;

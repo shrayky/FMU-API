@@ -1,9 +1,11 @@
-﻿using CouchDb.DatabaseScheme;
+using CouchDb.DatabaseScheme;
 using CouchDb.Documents;
 using CouchDB.Driver;
-using FmuApiDomain.Database.Dto;
+using FmuApiDomain.BeerTaps.Entities;
+using FmuApiDomain.Documents.Entities;
+using FmuApiDomain.Statistics.Entities;
 using FmuApiDomain.GisMt.Entities;
-using FmuApiDomain.MarkInformation.Entities;
+using FmuApiDomain.Mark.Entities;
 
 namespace CouchDb;
 

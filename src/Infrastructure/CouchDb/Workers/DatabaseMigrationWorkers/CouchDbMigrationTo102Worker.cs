@@ -1,8 +1,8 @@
-﻿using CouchDB.Driver.Extensions;
+using CouchDB.Driver.Extensions;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.MarkInformation.Entities;
-using FmuApiDomain.Repositories;
+using FmuApiDomain.Mark.Entities;
+using FmuApiDomain.Mark.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

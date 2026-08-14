@@ -1,7 +1,7 @@
-﻿using CSharpFunctionalExtensions;
+using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.Frontol.DTO;
-using FmuApiDomain.Frontol.Interfaces;
+using FmuApiDomain.BeerTaps.Models;
+using FmuApiDomain.BeerTaps.Interfaces;
 using FrontolDb.Models;
 using Microsoft.EntityFrameworkCore;
 

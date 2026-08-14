@@ -1,4 +1,5 @@
-﻿using FmuApiDomain.Frontol.Interfaces;
+﻿using FmuApiDomain.BeerTaps.Interfaces;
+using FmuApiDomain.Frontol.Interfaces;
 using FrontolDb.Repository;
 using FrontolDb.Services;
 using Microsoft.Extensions.DependencyInjection;

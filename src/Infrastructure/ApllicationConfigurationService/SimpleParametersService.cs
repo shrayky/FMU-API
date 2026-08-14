@@ -1,10 +1,10 @@
-﻿using ApplicationConfigurationService.Migrations;
+using ApplicationConfigurationService.Migrations;
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Configuration.Options.Organization;
 using FmuApiDomain.Constants;
-using FmuApiDomain.DTO.FmuApiExchangeData;
+using FmuApiDomain.CentralServiceExchange.Models;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;

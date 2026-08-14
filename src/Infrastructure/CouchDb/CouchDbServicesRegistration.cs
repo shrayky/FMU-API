@@ -1,4 +1,4 @@
-﻿using CouchDb.Repositories;
+using CouchDb.Repositories;
 using CouchDb.Services;
 using CouchDb.Workers;
 using CouchDb.Workers.DatabaseMigrationWorkers;
@@ -6,7 +6,11 @@ using CouchDB.Driver;
 using CouchDB.Driver.Options;
 using FmuApiDomain.Attributes;
 using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.Repositories;
+using FmuApiDomain.BeerTaps.Interfaces;
+using FmuApiDomain.Documents.Interfaces;
+using FmuApiDomain.GisMt.Interfaces;
+using FmuApiDomain.Mark.Interfaces;
+using FmuApiDomain.Statistics.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Headers;
 using System.Reflection;
@@ -64,7 +68,7 @@ public static class CouchDbServicesRegistration
         services.AddScoped<IMarkInformationRepository, MarkInformationRepository>();
         services.AddScoped<IDocumentRepository, DocumentRepository>();
         services.AddScoped<ICheckStatisticRepository, MarkCheckingStatisticRepository>();
-        services.AddScoped<IBeerOnTapsRepository, BeerOnTapRepository>();
+        services.AddScoped<IBeerOnTapRepository, BeerOnTapRepository>();
         services.AddScoped<IGisMtDocumentRepository, GisMtDocumentRepository>();
         services.AddScoped<IGisMtMarkRepository, GisMtMarkRepository>();
         services.AddSingleton<DataBaseMaintenanceService>();

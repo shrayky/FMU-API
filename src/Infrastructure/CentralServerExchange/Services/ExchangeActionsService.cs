@@ -3,8 +3,8 @@ using CSharpFunctionalExtensions;
 using FmuApiDomain.Attributes;
 using FmuApiDomain.CentralServiceExchange.Interfaces;
 using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.DTO.FmuApiExchangeData.Answer;
-using FmuApiDomain.DTO.FmuApiExchangeData.DataPacket;
+using FmuApiDomain.CentralServiceExchange.Models.Answer;
+using FmuApiDomain.CentralServiceExchange.Models.DataPacket;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 

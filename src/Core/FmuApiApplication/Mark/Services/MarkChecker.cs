@@ -1,18 +1,18 @@
-﻿using CSharpFunctionalExtensions;
+using CSharpFunctionalExtensions;
 using FmuApiApplication.Mark.Interfaces;
 using FmuApiApplication.Mark.Models;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.Fmu.Document;
+using FmuApiDomain.Documents;
 using FmuApiDomain.LocalModule.Enums;
-using FmuApiDomain.MarkInformation.Entities;
-using FmuApiDomain.MarkInformation.Enums;
-using FmuApiDomain.MarkInformation.Interfaces;
+using FmuApiDomain.Mark.Entities;
+using FmuApiDomain.Mark.Enums;
+using FmuApiDomain.Mark.Interfaces;
 using FmuApiDomain.State.Interfaces;
-using FmuApiDomain.TrueApi.Interfaces;
 using FmuApiDomain.TrueApi.MarkData;
 using FmuApiDomain.TrueApi.MarkData.Check;
 using FmuApiDomain.TsPiot.Interfaces;
+using FmuApiDomain.TsPiot.Models;
 using LocalModuleIntegration.Interfaces;
 using Microsoft.Extensions.Logging;
 
@@ -132,7 +132,7 @@ namespace FmuApiApplication.Mark.Services
             return !codeIsSgtin || _applicationState.IsOnline();
         }
 
-        private static CheckMarksDataTrueApi CreateTrueMarkDataFromInfo(FmuApiDomain.MarkInformation.Entities.MarkEntity markInfo)
+        private static CheckMarksDataTrueApi CreateTrueMarkDataFromInfo(FmuApiDomain.Mark.Entities.MarkEntity markInfo)
         {
             markInfo.TrueApiCisData.Sold = markInfo.IsSold;
 

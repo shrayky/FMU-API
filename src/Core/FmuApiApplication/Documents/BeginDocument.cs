@@ -1,10 +1,10 @@
-﻿using CSharpFunctionalExtensions;
+using CSharpFunctionalExtensions;
 using FmuApiApplication.Mark.Interfaces;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.Fmu.Document;
-using FmuApiDomain.Fmu.Document.Interface;
-using FmuApiDomain.Repositories;
+using FmuApiDomain.Documents;
+using FmuApiDomain.Documents.Interfaces;
+using FmuApiDomain.Documents.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.TrueApi.MarkData;
 using Microsoft.Extensions.Caching.Memory;

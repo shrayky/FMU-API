@@ -1,8 +1,9 @@
 using FmuApiApplication.Monitoring.Dto;
 using FmuApiApplication.Statistics.Interfaces;
 using FmuApiDomain.Attributes;
-using FmuApiDomain.MarkInformation.Interfaces;
-using FmuApiDomain.MarkInformation.Models;
+using FmuApiDomain.Mark.Interfaces;
+using FmuApiDomain.Mark.Models;
+using FmuApiDomain.Statistics.Interfaces;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

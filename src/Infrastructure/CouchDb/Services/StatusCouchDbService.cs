@@ -1,6 +1,6 @@
 using FmuApiDomain.Attributes;
 using FmuApiDomain.Configuration.Options;
-using FmuApiDomain.Database.Interface;
+using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shared.Http;

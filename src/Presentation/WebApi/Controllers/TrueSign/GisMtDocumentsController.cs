@@ -1,6 +1,6 @@
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.GisMt.Interfaces;
-using FmuApiDomain.Repositories;
+using FmuApiDomain.GisMt.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 

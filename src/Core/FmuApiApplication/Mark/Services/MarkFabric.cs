@@ -2,9 +2,9 @@ using FmuApiApplication.Mark.Interfaces;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Configuration.Options.Organization;
-using FmuApiDomain.Fmu.Document;
+using FmuApiDomain.Documents;
 using FmuApiDomain.Frontol.Interfaces;
-using FmuApiDomain.MarkInformation.Interfaces;
+using FmuApiDomain.Mark.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace FmuApiApplication.Mark.Services;

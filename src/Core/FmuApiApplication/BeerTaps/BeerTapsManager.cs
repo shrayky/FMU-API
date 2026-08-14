@@ -1,15 +1,11 @@
-﻿using CSharpFunctionalExtensions;
+using CSharpFunctionalExtensions;
 using FmuApiApplication.Mark.Interfaces;
 using FmuApiDomain.Attributes;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Configuration.Options;
-using FmuApiDomain.Database.Dto;
-using FmuApiDomain.DTO.BeerTaps;
-using FmuApiDomain.Fmu.BeerTaps.Interfaces;
-using FmuApiDomain.Fmu.BeerTaps.Models;
-using FmuApiDomain.Frontol.DTO;
-using FmuApiDomain.Frontol.Interfaces;
-using FmuApiDomain.Repositories;
+using FmuApiDomain.BeerTaps.Entities;
+using FmuApiDomain.BeerTaps.Interfaces;
+using FmuApiDomain.BeerTaps.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -19,12 +15,12 @@ namespace FmuApiApplication.BeerTaps;
 public class BeerTapsManager : IBeerOnTapManager
 {
     private readonly ILogger<BeerTapsManager> _logger;
-    private readonly IBeerOnTapsRepository _tapsRepository;
+    private readonly IBeerOnTapRepository _tapsRepository;
     private readonly IMarkParser _markParser;
     private readonly IBeerTapsRepositoryFactory _frontolBeerTapsFactory;
     private readonly IParametersService _parametersService;
 
-    public BeerTapsManager(ILogger<BeerTapsManager> logger, IBeerOnTapsRepository tapsRepository, IMarkParser markParser, IBeerTapsRepositoryFactory frontolBeerTapsFactory, IParametersService parametersService)
+    public BeerTapsManager(ILogger<BeerTapsManager> logger, IBeerOnTapRepository tapsRepository, IMarkParser markParser, IBeerTapsRepositoryFactory frontolBeerTapsFactory, IParametersService parametersService)
     {
         _logger = logger;
         _tapsRepository = tapsRepository;

@@ -1,6 +1,6 @@
-﻿using FmuApiApplication.Documents;
+using FmuApiApplication.Documents;
 using FmuApiDomain.Constants;
-using FmuApiDomain.Fmu.Token;
+using FmuApiDomain.Authentication.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers.ItidaIMark;

@@ -1,5 +1,5 @@
-﻿using FmuApiApplication.Mark.Services;
-using FmuApiDomain.MarkInformation.Interfaces;
+using FmuApiApplication.Mark.Services;
+using FmuApiDomain.Mark.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers.MarkState;

@@ -1,6 +1,6 @@
-﻿using FmuApiApplication.Documents;
-using FmuApiDomain.Fmu.Document;
-using FmuApiDomain.Fmu.Token;
+using FmuApiApplication.Documents;
+using FmuApiDomain.Documents;
+using FmuApiDomain.Authentication.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
 using System.Text.Json;

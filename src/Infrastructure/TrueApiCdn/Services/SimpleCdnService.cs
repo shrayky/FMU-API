@@ -1,5 +1,5 @@
-﻿using FmuApiDomain.Attributes;
-using FmuApiDomain.Cdn;
+using FmuApiDomain.Attributes;
+using FmuApiDomain.TrueApi.Cdn;
 using FmuApiDomain.Constants;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;

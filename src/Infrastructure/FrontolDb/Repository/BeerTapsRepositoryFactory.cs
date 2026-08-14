@@ -1,5 +1,5 @@
 ﻿using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.Frontol.Interfaces;
+using FmuApiDomain.BeerTaps.Interfaces;
 
 namespace FrontolDb.Repository;
 

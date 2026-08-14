@@ -1,6 +1,6 @@
 using FmuApiApplication.LocalModule.Models;
 using FmuApiApplication.TsPiot.Models;
-using FmuApiDomain.DTO.FmuApiExchangeData;
+using FmuApiDomain.CentralServiceExchange.Models;
 using System.Text.Json.Serialization;
 
 namespace FmuApiApplication.CentralServiceExchange.Models;

@@ -1,13 +1,13 @@
-﻿using CSharpFunctionalExtensions;
+using CSharpFunctionalExtensions;
 using FmuApiApplication.Mark.Interfaces;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.Fmu.Document;
-using FmuApiDomain.Fmu.Document.Interface;
-using FmuApiDomain.MarkInformation.Enums;
-using FmuApiDomain.MarkInformation.Interfaces;
-using FmuApiDomain.MarkInformation.Models;
-using FmuApiDomain.Repositories;
+using FmuApiDomain.Documents;
+using FmuApiDomain.Documents.Interfaces;
+using FmuApiDomain.Mark.Enums;
+using FmuApiDomain.Mark.Interfaces;
+using FmuApiDomain.Mark.Models;
+using FmuApiDomain.Documents.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 

@@ -1,15 +1,15 @@
-﻿using CouchDb.Documents;
+using CouchDb.Documents;
 using CouchDB.Driver.Extensions;
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.Database.Dto;
-using FmuApiDomain.Repositories;
+using FmuApiDomain.BeerTaps.Entities;
+using FmuApiDomain.BeerTaps.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace CouchDb.Repositories;
 
-public class BeerOnTapRepository(ILogger<BeerOnTapRepository> logger, CouchDbContext context, IParametersService appConfiguration, IApplicationState applicationState) : BaseCouchDbRepository<BeerTapEntity>(logger, context, context.BeerOnTap, appConfiguration, applicationState), IBeerOnTapsRepository
+public class BeerOnTapRepository(ILogger<BeerOnTapRepository> logger, CouchDbContext context, IParametersService appConfiguration, IApplicationState applicationState) : BaseCouchDbRepository<BeerTapEntity>(logger, context, context.BeerOnTap, appConfiguration, applicationState), IBeerOnTapRepository
 {
     public async Task<Result> FreeTap(string id)
     {

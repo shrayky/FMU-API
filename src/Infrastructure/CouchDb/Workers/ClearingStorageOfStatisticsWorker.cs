@@ -1,5 +1,5 @@
 ﻿using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.Repositories;
+using FmuApiDomain.Statistics.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

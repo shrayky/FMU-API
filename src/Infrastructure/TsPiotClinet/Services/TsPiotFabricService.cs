@@ -1,8 +1,9 @@
-﻿using CSharpFunctionalExtensions;
-using FmuApiDomain.Fmu.Document;
+using CSharpFunctionalExtensions;
+using FmuApiDomain.Documents;
 using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.TrueApi.MarkData.Check;
 using FmuApiDomain.TsPiot.Interfaces;
+using FmuApiDomain.TsPiot.Models;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace TsPiotClinet.Services;

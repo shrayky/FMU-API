@@ -1,7 +1,7 @@
 using FmuApiDomain.Attributes;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Configuration.Options;
-using FmuApiDomain.DTO.FmuApiExchangeData.Answer;
+using FmuApiDomain.CentralServiceExchange.Models.Answer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 

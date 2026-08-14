@@ -1,5 +1,5 @@
 using FmuApiApplication.Statistics;
-using FmuApiDomain.MarkInformation.Interfaces;
+using FmuApiDomain.Statistics.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers.Statistics;

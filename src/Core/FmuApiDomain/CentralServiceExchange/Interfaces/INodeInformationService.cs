@@ -1,4 +1,4 @@
-using FmuApiDomain.DTO.FmuApiExchangeData.DataPacket;
+using FmuApiDomain.CentralServiceExchange.Models.DataPacket;
 
 namespace FmuApiDomain.CentralServiceExchange.Interfaces;
 

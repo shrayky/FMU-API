@@ -1,10 +1,10 @@
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.Database.Dto;
-using FmuApiDomain.MarkInformation.Interfaces;
-using FmuApiDomain.MarkInformation.Models;
-using FmuApiDomain.Repositories;
+using FmuApiDomain.Statistics.Entities;
+using FmuApiDomain.Mark.Interfaces;
+using FmuApiDomain.Mark.Models;
 using FmuApiDomain.State.Interfaces;
+using FmuApiDomain.Statistics.Interfaces;
 
 namespace FmuApiApplication.Mark.Services;
 

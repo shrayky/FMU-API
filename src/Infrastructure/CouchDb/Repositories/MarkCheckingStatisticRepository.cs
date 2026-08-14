@@ -1,10 +1,10 @@
-﻿using CouchDb.Documents;
+using CouchDb.Documents;
 using CouchDB.Driver.Types;
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.Database.Dto;
-using FmuApiDomain.MarkInformation.Models;
-using FmuApiDomain.Repositories;
+using FmuApiDomain.Statistics.Entities;
+using FmuApiDomain.Mark.Models;
+using FmuApiDomain.Statistics.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.Logging;
 

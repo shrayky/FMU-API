@@ -1,5 +1,5 @@
-﻿using FmuApiDomain.Authentication.Models;
-using FmuApiDomain.Fmu.Token;
+using FmuApiDomain.Authentication.Models;
+using FmuApiDomain.Authentication.Models;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;

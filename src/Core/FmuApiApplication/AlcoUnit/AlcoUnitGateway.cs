@@ -1,7 +1,7 @@
-﻿using FmuApiDomain.Configuration.Interfaces;
+using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Configuration.Options;
-using FmuApiDomain.Fmu.Document;
-using FmuApiDomain.Fmu.Token;
+using FmuApiDomain.Documents;
+using FmuApiDomain.Authentication.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
 using System.Net.Http.Json;

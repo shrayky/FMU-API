@@ -1,7 +1,7 @@
-﻿using CSharpFunctionalExtensions;
-using FmuApiDomain.Fmu.Document;
-using FmuApiDomain.MarkInformation.Entities;
-using FmuApiDomain.MarkInformation.Enums;
+using CSharpFunctionalExtensions;
+using FmuApiDomain.Documents;
+using FmuApiDomain.Mark.Entities;
+using FmuApiDomain.Mark.Enums;
 using FmuApiDomain.TrueApi.MarkData.Check;
 
 namespace FmuApiApplication.Mark.Models

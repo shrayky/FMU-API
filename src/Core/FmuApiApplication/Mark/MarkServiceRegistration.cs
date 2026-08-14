@@ -1,6 +1,6 @@
-﻿using FmuApiApplication.Mark.Interfaces;
+using FmuApiApplication.Mark.Interfaces;
 using FmuApiApplication.Mark.Services;
-using FmuApiDomain.MarkInformation.Interfaces;
+using FmuApiDomain.Mark.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace FmuApiApplication.Mark

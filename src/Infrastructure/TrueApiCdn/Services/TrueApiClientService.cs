@@ -1,6 +1,6 @@
-﻿using CSharpFunctionalExtensions;
+using CSharpFunctionalExtensions;
 using FmuApiDomain.Attributes;
-using FmuApiDomain.Cdn;
+using FmuApiDomain.TrueApi.Cdn;
 using FmuApiDomain.TrueApi.MarkData.Check;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

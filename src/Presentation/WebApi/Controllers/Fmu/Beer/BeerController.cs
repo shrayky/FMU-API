@@ -1,6 +1,6 @@
-﻿using FmuApiDomain.Fmu.BeerTaps.Interfaces;
-using FmuApiDomain.Fmu.BeerTaps.Models;
-using FmuApiDomain.Fmu.Document;
+using FmuApiDomain.BeerTaps.Interfaces;
+using FmuApiDomain.BeerTaps.Models;
+using FmuApiDomain.Documents;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers.Fmu.Beer;

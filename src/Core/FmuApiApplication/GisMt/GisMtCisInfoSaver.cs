@@ -5,7 +5,7 @@ using FmuApiDomain.GisMt;
 using FmuApiDomain.GisMt.Entities;
 using FmuApiDomain.GisMt.Interfaces;
 using FmuApiDomain.GisMt.Models;
-using FmuApiDomain.Repositories;
+using FmuApiDomain.GisMt.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace FmuApiApplication.GisMt;

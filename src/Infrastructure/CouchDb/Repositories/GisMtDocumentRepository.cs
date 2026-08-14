@@ -1,6 +1,6 @@
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.GisMt.Entities;
-using FmuApiDomain.Repositories;
+using FmuApiDomain.GisMt.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.Logging;
 

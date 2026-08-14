@@ -1,5 +1,5 @@
-﻿using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.Fmu.BeerTaps.Interfaces;
+using FmuApiDomain.Configuration.Interfaces;
+using FmuApiDomain.BeerTaps.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;

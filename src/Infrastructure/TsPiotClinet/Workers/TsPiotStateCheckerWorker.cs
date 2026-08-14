@@ -1,8 +1,8 @@
-﻿using CSharpFunctionalExtensions;
+using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.Configuration.Options.Organization;
-using FmuApiDomain.Fmu.Document;
+using FmuApiDomain.Documents;
 using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.TsPiot.Interfaces;
 using FmuApiDomain.TsPiot.Models;

@@ -1,6 +1,7 @@
-﻿using FmuApiApplication.Mark.Models;
-using FmuApiDomain.Fmu.Document;
-using FmuApiDomain.MarkInformation.Interfaces;
+using FmuApiApplication.Mark.Models;
+using FmuApiDomain.Documents;
+using FmuApiDomain.Mark.Interfaces;
+using FmuApiDomain.TsPiot.Models;
 
 namespace FmuApiApplication.Mark.Interfaces
 {

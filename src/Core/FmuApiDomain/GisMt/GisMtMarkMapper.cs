@@ -1,8 +1,8 @@
 using FmuApiDomain.GisMt.Entities;
 using FmuApiDomain.GisMt.Models;
-using FmuApiDomain.MarkInformation.Entities;
-using FmuApiDomain.MarkInformation.Enums;
-using FmuApiDomain.MarkInformation.Models;
+using FmuApiDomain.Mark.Entities;
+using FmuApiDomain.Mark.Enums;
+using FmuApiDomain.Mark.Models;
 using FmuApiDomain.TrueApi.MarkData;
 using FmuApiDomain.TrueApi.MarkData.Check;
 

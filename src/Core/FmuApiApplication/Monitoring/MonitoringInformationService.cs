@@ -7,8 +7,9 @@ using FmuApiApplication.TsPiot;
 using FmuApiDomain.Attributes;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.MarkInformation.Interfaces;
+using FmuApiDomain.Mark.Interfaces;
 using FmuApiDomain.State.Interfaces;
+using FmuApiDomain.Statistics.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace FmuApiApplication.Monitoring;

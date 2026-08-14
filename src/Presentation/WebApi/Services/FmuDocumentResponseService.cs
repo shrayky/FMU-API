@@ -2,7 +2,7 @@ using System.Text;
 using System.Text.Json;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Configuration.Options;
-using FmuApiDomain.Fmu.Document;
+using FmuApiDomain.Documents;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
