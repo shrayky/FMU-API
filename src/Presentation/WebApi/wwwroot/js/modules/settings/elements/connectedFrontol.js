@@ -7,7 +7,7 @@ const INT32_MAX = 2147483647;
 
 function toConnectionId(value, fallback) {
     const id = parseInt(value, 10);
-    if (!Number.isInteger(id) || id < 1 || id > INT32_MAX)
+    if (isNaN(id) || id < 1 || id > INT32_MAX)
         return fallback;
     return id;
 }
