@@ -21,12 +21,16 @@ public class CouchDbConnection
 
     public int QueryTimeoutSeconds { get; set; } = 300;
 
-    public bool ClearStorageOfStatistics { get; set; } = true;
-
-    public int DepthOfStorageOfStatisticsInDays { get; set; } = 30;
-
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? NetAdres { get; set; } = string.Empty;
+
+    [Obsolete]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? ClearStorageOfStatistics { get; set; }
+
+    [Obsolete]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? DepthOfStorageOfStatisticsInDays { get; set; }
 
     //Эти поля сохранены для совместимости со старыми версиями, сейчас имена баз жестко прописаны в коде
     [Obsolete]

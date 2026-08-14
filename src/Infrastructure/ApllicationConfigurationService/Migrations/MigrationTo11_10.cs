@@ -1,6 +1,5 @@
 ﻿using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Options;
-using FmuApiDomain.Constants;
 
 namespace ApplicationConfigurationService.Migrations;
 
@@ -11,8 +10,8 @@ public class MigrationTo11_10
         if (settings.FrontolConnectionSettings != null)
             settings = MoveFrontolConnectionSettingsToConnectedFrontolSettings(settings);
 
-        settings.AppVersion = ApplicationInformation.AppVersion;
-        settings.Assembly = ApplicationInformation.Assembly;
+        settings.AppVersion = 11;
+        settings.Assembly = 10;
 
         return settings;
     }

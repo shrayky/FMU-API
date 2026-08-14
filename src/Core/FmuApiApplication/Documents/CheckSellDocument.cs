@@ -89,6 +89,9 @@ public class CheckSellDocument : IFrontolDocumentService
 
     private async Task SaveCheckStatistic(string sgtin, FmuAnswer? answer, bool failed)
     {
+        if (!_configuration.Statistics.SaveToDb)
+            return;
+
         var online = !failed && answer is { OfflineRegime: false };
         var offline = !failed && answer is { OfflineRegime: true };
         var success = !failed && string.IsNullOrEmpty(answer?.Error);

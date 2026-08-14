@@ -6,6 +6,6 @@ public static class ApplicationInformation
     public const string Manufacture = "Automation";
     public const string Description = "Служба для проверки марок по протоколу Атол MarkUnit";
     public const string ServiceName = "DS:FMU-API";
-    public const int AppVersion = 11;
-    public const int Assembly = 12;
+    public const int AppVersion = 12;
+    public const int Assembly = 0;
 }

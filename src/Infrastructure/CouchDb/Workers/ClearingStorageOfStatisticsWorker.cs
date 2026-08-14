@@ -33,12 +33,13 @@ public class ClearingStorageOfStatisticsWorker : BackgroundService
         {
             var appConfig = await _parametersService.CurrentAsync();
             var databaseConfig = appConfig.Database;
+            var statisticsConfig = appConfig.Statistics;
 
             var dbOnline = _applicationState.CouchDbOnline();
 
-            if (databaseConfig.Enable && dbOnline && databaseConfig.ClearStorageOfStatistics)
+            if (databaseConfig.Enable && dbOnline && statisticsConfig.ClearStorageOfStatistics)
             {
-                var dateToCutStorage = DateTime.Now.AddDays(-1 * databaseConfig.DepthOfStorageOfStatisticsInDays);
+                var dateToCutStorage = DateTime.Now.AddDays(-1 * statisticsConfig.DepthOfStorageOfStatisticsInDays);
 
                 using var scope = _scopeFactory.CreateScope();
                 var repo = scope.ServiceProvider.GetRequiredService<ICheckStatisticRepository>();

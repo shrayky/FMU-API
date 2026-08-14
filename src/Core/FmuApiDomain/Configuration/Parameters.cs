@@ -28,6 +28,8 @@ public class Parameters
 
     public CouchDbConnection Database { get; set; } = new();
 
+    public StatisticsSettings Statistics { get; set; } = new();
+
     public HttpRequestTimeouts HttpRequestTimeouts { get; set; } = new();
 
     public LogSettings Logging { get; set; } = new();
