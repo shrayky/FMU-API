@@ -62,7 +62,7 @@ public class MarksListService(
         if (sgtins.Count == 0)
             return;
 
-        var lastCheckIds = await checkStatisticRepository.GetLastCheckIds(sgtins);
+        var lastCheckIds = await checkStatisticRepository.LastCheckIds(sgtins);
         foreach (var mark in marks)
         {
             if (lastCheckIds.TryGetValue(mark.MarkId, out var checkId))
