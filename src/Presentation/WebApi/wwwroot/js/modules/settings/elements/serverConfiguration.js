@@ -56,7 +56,19 @@ class ServerConfigurationElement {
                     
                     CheckBox(this.LABELS.tsPiotUse, "serverConfig.tsPiotEnabled", {
                         value: this.tsPiotEnabled,
-                        Label: this.LABELS.tsPiotUse
+                        Label: this.LABELS.tsPiotUse,
+                        on: {
+                            onChange: (enabled) => {
+                                const button = $$("pushPiotSettingsButton");
+                                if (!button)
+                                    return;
+
+                                if (enabled)
+                                    button.enable();
+                                else
+                                    button.disable();
+                            }
+                        }
                     }),
 
                     {

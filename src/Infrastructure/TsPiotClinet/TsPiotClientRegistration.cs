@@ -47,6 +47,7 @@ public static class TsPiotClientRegistration
         services.AddScoped<ITsPiotService, TsPiotFabricService>();
 
         services.AddSingleton<TsPiotEspApiService>();
+        services.AddSingleton<IPiotSettingsService, TsPiotSettingsService>();
 
         services.AddHostedService<TsPiotStateCheckerWorker>();
     }

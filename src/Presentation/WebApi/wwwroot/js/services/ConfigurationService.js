@@ -68,11 +68,11 @@ export function saveConfiguration(formId) {
 
     form.disable();
 
-    saveParameters(data)
+    return saveParameters(data)
         .then(packet => {
             if (!packet.isSuccess) {
                 webix.message(packet);
-                return;
+                return packet;
             }
 
             if (packet.needToRestart) {
@@ -82,6 +82,8 @@ export function saveConfiguration(formId) {
             window.dispatchEvent(new CustomEvent(SETTINGS_SAVED_EVENT, {
                 detail: values
             }));
+
+            return packet;
         })
         .finally(() => {
             form.enable();

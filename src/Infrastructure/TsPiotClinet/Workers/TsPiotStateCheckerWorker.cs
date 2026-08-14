@@ -1,8 +1,11 @@
 ﻿using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration.Interfaces;
+using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.Configuration.Options.Organization;
 using FmuApiDomain.Fmu.Document;
 using FmuApiDomain.State.Interfaces;
+using FmuApiDomain.TsPiot.Interfaces;
+using FmuApiDomain.TsPiot.Models;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Shared.Json;
@@ -17,13 +20,15 @@ namespace TsPiotClinet.Workers
         IParametersService parametersService,
         IApplicationState applicationState,
         IHttpClientFactory httpClientFactory,
-        TsPiotEspApiService tsPiotEspApiService) : BackgroundService
+        TsPiotEspApiService tsPiotEspApiService,
+        IPiotSettingsService piotSettingsService) : BackgroundService
     {
         private readonly ILogger<TsPiotStateCheckerWorker> _logger = logger;
         private readonly IParametersService _parametersService = parametersService;
         private readonly IApplicationState _applicationState = applicationState;
         private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
         private readonly TsPiotEspApiService _tsPiotEspApiService = tsPiotEspApiService;
+        private readonly IPiotSettingsService _piotSettingsService = piotSettingsService;
 
         private const int StartDelayInSeconds = 10;
         private const int CheckIntervalInMinutes = 10;
@@ -40,6 +45,7 @@ namespace TsPiotClinet.Workers
                 if (appSettings.ServerConfig.TsPiotEnabled)
                 {
                     await CheckTsPiotState(appSettings.OrganisationConfig.PrintGroups);
+                    await PushDeviceSettings(appSettings.HttpRequestTimeouts, stoppingToken);
                 }
 
                 await Task.Delay(TimeSpan.FromMinutes(CheckIntervalInMinutes), stoppingToken).ConfigureAwait(false);
@@ -75,7 +81,6 @@ namespace TsPiotClinet.Workers
                     continue;
 
                 await SyncLicenses(printGroups, printGroup.TsPiot, instancesResult.Value.Instances);
-                await SyncInstanceSettings(printGroup.TsPiot, instancesResult.Value.Instances);
             }
         }
 
@@ -178,47 +183,18 @@ namespace TsPiotClinet.Workers
             }
         }
 
-        private async Task SyncInstanceSettings(TsPiotConnectionSettings tsPiot, List<TsPiotInstanceListItem> instances)
+        private async Task PushDeviceSettings(HttpRequestTimeouts timeouts, CancellationToken cancellationToken)
         {
-            var appSettings = await _parametersService.CurrentAsync();
-
-            foreach (var instance in instances)
+            var deviceSettings = new PiotDeviceSettings
             {
-                if (string.IsNullOrEmpty(instance.Id))
-                    continue;
+                AllowRemoteConnection = true,
+                CdnCodesCheckTimeoutMs = timeouts.SyncWithTsPiot ? timeouts.CheckMarkRequestTimeout * 1000 : null,
+                CdnHealthCheckTimeoutMs = timeouts.SyncWithTsPiot ? timeouts.CdnRequestTimeout * 1000 : null
+            };
 
-                var settingsResult = await _tsPiotEspApiService.InstanceSettings(tsPiot, instance.Id);
-                if (settingsResult.IsFailure)
-                    continue;
-
-                var settings = settingsResult.Value;
-                var needUpdateSettings = false;
-
-                if (settings.CdnCodesCheckTimeout != appSettings.HttpRequestTimeouts.CheckMarkRequestTimeout * 1000 
-                    && appSettings.HttpRequestTimeouts.SyncWithTsPiot)
-                {
-                    settings.CdnCodesCheckTimeout = appSettings.HttpRequestTimeouts.CheckMarkRequestTimeout * 1000;
-                    needUpdateSettings = true;
-                }
-
-                if (settings.CdnHealthCheckTimeout != appSettings.HttpRequestTimeouts.CdnRequestTimeout * 1000
-                    && appSettings.HttpRequestTimeouts.SyncWithTsPiot)
-                {
-                    settings.CdnHealthCheckTimeout = appSettings.HttpRequestTimeouts.CdnRequestTimeout * 1000;
-                    needUpdateSettings = true;
-                }
-
-                if (!settings.AllowRemoteConnection)
-                {
-                    settings.AllowRemoteConnection = true;
-                    needUpdateSettings = true;
-                }
-
-                if (!needUpdateSettings)
-                    continue;
-
-                await _tsPiotEspApiService.UpdateInstanceSettings(tsPiot, instance.Id, settings);
-            }
+            var pushResult = await _piotSettingsService.PushSettings(deviceSettings, cancellationToken);
+            if (pushResult.IsFailure)
+                _logger.LogWarning("Не удалось отправить настройки в ТС ПИоТ: {Error}", pushResult.Error);
         }
     }
 }
