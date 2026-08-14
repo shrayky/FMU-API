@@ -1,4 +1,4 @@
-using FmuApiApplication.Services.Piot;
+using FmuApiApplication.TsPiot;
 using FmuApiDomain.TsPiot.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 

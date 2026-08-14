@@ -1,6 +1,6 @@
 ﻿using ApplicationConfigurationService;
 using FmuApiApplication.Installer;
-using FmuApiApplication.Services.State;
+using FmuApiApplication.State;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using System.Runtime.Versioning;

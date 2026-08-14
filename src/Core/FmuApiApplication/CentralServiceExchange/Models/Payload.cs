@@ -1,4 +1,5 @@
-using FmuApiApplication.StateCollectors.Models;
+using FmuApiApplication.LocalModule.Models;
+using FmuApiApplication.TsPiot.Models;
 using FmuApiDomain.DTO.FmuApiExchangeData;
 using System.Text.Json.Serialization;
 
@@ -19,7 +20,7 @@ public record Payload
     public List<LocalModuleStateInformation> LocalModuleInformation { get; init; } = [];
 
     [JsonPropertyName("tsPiots")]
-    public List<TsPiotStateInfotmation> TsPiotsInforamtion { get; init; } = [];
+    public List<TsPiotStateInformation> TsPiotsInforamtion { get; init; } = [];
 
     [JsonPropertyName("statistics")]
     public List<CheckMarkStatisticInformation> CheckMarkStatisticInformation { get; init; } = [];

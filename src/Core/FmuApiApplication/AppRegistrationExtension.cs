@@ -1,5 +1,5 @@
 using FmuApiApplication.BeerTaps.Workers;
-using FmuApiApplication.ViewData.ApplicationMonitoring.Workers;
+using FmuApiApplication.Statistics.Workers;
 using FmuApiDomain.Attributes;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;

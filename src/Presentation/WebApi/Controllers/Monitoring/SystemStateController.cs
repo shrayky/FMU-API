@@ -1,4 +1,4 @@
-﻿using FmuApiApplication.ViewData.ApplicationMonitoring.Interfaces;
+﻿using FmuApiApplication.Monitoring.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers.Monitoring;

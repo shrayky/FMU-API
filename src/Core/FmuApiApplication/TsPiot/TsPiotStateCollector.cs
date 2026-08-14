@@ -1,0 +1,41 @@
+﻿using FmuApiApplication.TsPiot.Models;
+using FmuApiDomain.Configuration;
+using FmuApiDomain.State.Interfaces;
+
+namespace FmuApiApplication.TsPiot;
+
+public static class TsPiotStateCollector
+{
+    public static List<TsPiotStateInformation> Collect(Parameters settings, IApplicationState appState)
+    {
+        if (!settings.ServerConfig.TsPiotEnabled)
+            return [];
+
+        List<TsPiotStateInformation> modules = [];
+
+        var printGroups = settings.OrganisationConfig.PrintGroups;
+
+        foreach (var pg in printGroups)
+        {
+            if (string.IsNullOrEmpty(pg.TsPiot.Host) || string.IsNullOrEmpty(pg.TsPiot.Port))
+                continue;
+
+            var address = $"{pg.TsPiot.Host}:{pg.TsPiot.Port}";
+
+            var state = new TsPiotStateInformation()
+            {
+                Address = address,
+                Name = pg.Name,
+                ProtocolVersion = appState.TsPiotApiVersion(address),
+                Online = appState.TsPiotIsOnline(address),
+                LastCheckTime = appState.TsPiotLastSee(address),
+                Version = appState.TsPiotModuleVersion(address),
+                LicenseActiveTill = appState.TsPiotLicenseActiveTill(address),
+            };
+
+            modules.Add(state);
+        }
+
+        return modules;
+    }
+}

@@ -1,4 +1,4 @@
-using FmuApiApplication.Services.Statistics;
+using FmuApiApplication.Statistics;
 using FmuApiDomain.MarkInformation.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
