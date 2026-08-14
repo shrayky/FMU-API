@@ -16,6 +16,8 @@ public class MarkCheckingStatisticRepository(
     IParametersService appConfiguration,
     IApplicationState applicationState) : BaseCouchDbRepository<StatisticEntity>(logger, context, context.MarkCheckingStatistic, appConfiguration, applicationState), ICheckStatisticRepository
 {
+    private const int DeleteBatchSize = 1000;
+
     private static long ToCheckDay(DateTime checkDate) =>
         new DateTimeOffset(DateTime.SpecifyKind(checkDate.Date, DateTimeKind.Utc)).ToUnixTimeSeconds();
 
@@ -152,31 +154,91 @@ public class MarkCheckingStatisticRepository(
 
         _logger.LogInformation("Начинаю удаление устаревших данных статистики марок до {date}.", dateToCutStorage);
 
-        var mangoQuery = new
+        var mangoQuery = DocumentsByCheckDateQuery(new Dictionary<string, object>
         {
-            selector = new Dictionary<string, object>
+            ["$lte"] = dateToCutStorage
+        });
+
+        var deleted = await DeleteDocumentsBatch(mangoQuery, "ClearStorageToDay", stoppingToken);
+        if (deleted.IsFailure)
+            return Result.Failure(deleted.Error);
+
+        if (deleted.Value == 0)
+            _logger.LogInformation("Удаление устаревших данных статистики марок завершено - удалять нечего.");
+        else
+            _logger.LogInformation("Удаление устаревших данных статистики марок завершено. Удалено {rows} записей.", deleted.Value);
+
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Удаляет все документы статистики пачками, пока база не опустеет.
+    /// </summary>
+    public async Task<Result> ClearAll(CancellationToken cancellationToken)
+    {
+        if (_context == null)
+            return Result.Failure(DatabaseUnavailable);
+
+        _logger.LogInformation("Начинаю полную очистку базы статистики марок.");
+
+        var totalDeleted = 0;
+
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            var mangoQuery = new
             {
-                ["data.checkDate"] = new Dictionary<string, object>
+                selector = new Dictionary<string, object>
                 {
-                    ["$lte"] = dateToCutStorage
-                }
-            },
-            limit = 1000
-        };
+                    ["_id"] = new Dictionary<string, object>
+                    {
+                        ["$exists"] = true
+                    }
+                },
+                limit = DeleteBatchSize
+            };
+
+            var deleted = await DeleteDocumentsBatch(mangoQuery, "ClearAll", cancellationToken);
+            if (deleted.IsFailure)
+                return Result.Failure(deleted.Error);
+
+            if (deleted.Value == 0)
+                break;
+
+            totalDeleted += deleted.Value;
+            _logger.LogInformation("Удаляю {rows} записей из статистики.", deleted.Value);
+        }
+
+        _logger.LogInformation("Полная очистка базы статистики марок завершена. Удалено {total} записей.", totalDeleted);
+        return Result.Success();
+    }
+
+    private static object DocumentsByCheckDateQuery(Dictionary<string, object> checkDateFilter) => new
+    {
+        selector = new Dictionary<string, object>
+        {
+            ["data.checkDate"] = checkDateFilter
+        },
+        limit = DeleteBatchSize
+    };
+
+    /// <summary>
+    /// Выбирает пачку документов по mango-запросу и удаляет их bulk-операцией.
+    /// </summary>
+    private async Task<Result<int>> DeleteDocumentsBatch(object mangoQuery, string operationName, CancellationToken stoppingToken)
+    {
+        if (_context == null)
+            return Result.Failure<int>(DatabaseUnavailable);
 
         var data = await ExecuteSafetyDbOperation(
             async () => await _database.QueryAsync(mangoQuery, throwExceptionOnWarning: false, stoppingToken),
-            "ClearStorageToDaySelect",
+            $"{operationName}Select",
             (List<CouchDoc<StatisticEntity>>?)null);
 
         if (data == null)
-            return Result.Failure(DatabaseUnavailable);
+            return Result.Failure<int>(DatabaseUnavailable);
 
         if (data.Count == 0)
-        {
-            _logger.LogInformation("Удаление устаревших данных статистики марок завершено - удалять нечего.");
-            return Result.Success();
-        }
+            return Result.Success(0);
 
         var operations = new List<BulkItemOperation>();
         foreach (var doc in data)
@@ -191,20 +253,17 @@ public class MarkCheckingStatisticRepository(
         if (operations.Count == 0)
         {
             _logger.LogWarning("Найдено {rows} записей статистики, но ни у одной нет Id и Rev для удаления.", data.Count);
-            return Result.Failure(DatabaseUnavailable);
+            return Result.Failure<int>(DatabaseUnavailable);
         }
-
-        _logger.LogInformation("Удаляю {rows} записей из статистики.", operations.Count);
 
         var deleted = await ExecuteSafetyDbOperation(
             async () => await _database.ExecuteBulkItemOperationsAsync(operations, stoppingToken),
-            "ClearStorageToDayDelete");
+            $"{operationName}Delete");
 
         if (!deleted)
-            return Result.Failure(DatabaseUnavailable);
+            return Result.Failure<int>(DatabaseUnavailable);
 
-        _logger.LogInformation("Удаление устаревших данных статистики марок завершено.");
-        return Result.Success();
+        return Result.Success(operations.Count);
     }
 
     private static MarkCheckStatistics ToStatistics(List<StatisticEntity> marks) => new()

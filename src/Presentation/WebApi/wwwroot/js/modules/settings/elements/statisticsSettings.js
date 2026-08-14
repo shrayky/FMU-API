@@ -7,6 +7,10 @@ class StatisticsSettingsElement {
             saveToDb: "Сохранять статистику",
             clearStorageOfStatistics: "Очищать хранилище статистики",
             depthOfStorageOfStatisticsInDays: "Глубина хранения статистики (дней)",
+            clearDatabase: "Очистить базу статистики",
+            clearDatabaseConfirm: "Все записи статистики будут удалены. Продолжить?",
+            clearDatabaseSuccess: "База статистики очищена",
+            clearDatabaseError: "Ошибка очистки базы статистики",
         };
     }
 
@@ -54,10 +58,62 @@ class StatisticsSettingsElement {
                                 ),
                             ]
                         },
+                        {
+                            view: "button",
+                            id: "clearStatisticsDb",
+                            type: "icon",
+                            icon: "wxi-trash",
+                            css: "webix_danger",
+                            label: this.LABELS.clearDatabase,
+                            value: this.LABELS.clearDatabase,
+                            inputWidth: 250,
+                            inputHeight: 40,
+                            click: () => this.clearDatabase()
+                        },
                     ]
                 }
             ]
         };
+    }
+
+    clearDatabase() {
+        webix.confirm({
+            title: "Подтверждение",
+            text: this.LABELS.clearDatabaseConfirm,
+            ok: "Да",
+            cancel: "Нет",
+        }).then(async () => {
+            const button = $$("clearStatisticsDb");
+
+            if (button)
+                button.disable();
+
+            try {
+                const response = await fetch("/api/statistics/clear", { method: "POST" });
+                const data = await response.json().catch(() => ({}));
+
+                if (response.ok) {
+                    webix.message({
+                        text: this.LABELS.clearDatabaseSuccess,
+                        type: "success"
+                    });
+                    return;
+                }
+
+                webix.message({
+                    text: data.error || this.LABELS.clearDatabaseError,
+                    type: "error"
+                });
+            } catch (error) {
+                webix.message({
+                    text: error.message || this.LABELS.clearDatabaseError,
+                    type: "error"
+                });
+            } finally {
+                if (button)
+                    button.enable();
+            }
+        });
     }
 }
 
