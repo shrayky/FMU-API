@@ -113,6 +113,9 @@ public class Mark : IMark
                 _lastCheckResult.FmuAnswer.OfflineRegime = true;
             }
 
+            if (_lastCheckResult.FmuAnswer.OfflineRegime)
+                await ApplyGisMtExpireDateIfMissing();
+
             var validationResult = ValidateMarkData(operation);
 
             if (validationResult.IsFailure)
@@ -272,6 +275,26 @@ public class Mark : IMark
     public FmuAnswer MarkDataAfterCheck()
     {
         return _lastCheckResult.FmuAnswer;
+    }
+
+    /// <summary>
+    /// Подставляет срок годности из остатков ГИС МТ, если локальный модуль его не вернул.
+    /// </summary>
+    private async Task ApplyGisMtExpireDateIfMissing()
+    {
+        var markData = _lastCheckResult.TrueMarkData.MarkData();
+        if (markData.ExpireDate.HasValue)
+            return;
+
+        var expireDate = await _markStateManager.ExpireDateFromGisMtStock(SGtin);
+        if (!expireDate.HasValue)
+            return;
+
+        markData.ExpireDate = expireDate;
+        _logger.LogInformation(
+            "Срок годности марки {Code} подставлен из остатков ГИС МТ: {ExpireDate}",
+            Code,
+            expireDate);
     }
 
     private bool ResetErrorFields()

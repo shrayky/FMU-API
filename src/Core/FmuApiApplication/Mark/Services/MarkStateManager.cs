@@ -72,6 +72,18 @@ public class MarkStateManager : IMarkStateManager
         return new MarkEntity();
     }
 
+    public async Task<DateTime?> ExpireDateFromGisMtStock(string sGtin)
+    {
+        if (!_configuration.Database.DatabaseCheckIsEnabled)
+            return null;
+
+        if (!_appState.CouchDbOnline())
+            return null;
+
+        var gisMtMark = await _gisMtMarkRepository.Get(sGtin);
+        return gisMtMark?.ExpireDate;
+    }
+
     public async Task<List<MarkEntity>> InformationBulk(List<string> sGtins)
     {
         if (!_configuration.Database.DatabaseCheckIsEnabled)
