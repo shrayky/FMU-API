@@ -37,8 +37,12 @@ public class DatabaseCompactWorker : BackgroundService
 
             try
             {
-                await _maintenanceService.CompactDatabase();
-                _logger.LogWarning("Закончено обслуживание базы данных");
+                var compacted = await _maintenanceService.CompactDatabase();
+
+                if (compacted)
+                    _logger.LogWarning("Закончено обслуживание базы данных");
+                else
+                    _logger.LogError("Обслуживание БД завершено с ошибкой");
             }
             catch (Exception e)
             {
