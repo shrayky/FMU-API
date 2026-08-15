@@ -18,7 +18,9 @@ namespace CentralServerExchange.Services;
 public class SoftwareUpdateDownloadService
 {
     private const string HostExeName = "fmu-api.exe";
+    private const int DownloadRetryCount = 3;
     private static readonly TimeSpan LinuxInstallTimeout = TimeSpan.FromMinutes(15);
+    private static readonly TimeSpan DownloadRetryDelay = TimeSpan.FromSeconds(5);
 
     private readonly ILogger<SoftwareUpdateDownloadService> _logger;
     private readonly IParametersService _parametersService;
@@ -79,7 +81,7 @@ public class SoftwareUpdateDownloadService
 
             var requestAddress = $"{baseAddress}/fmuApiUpdate/{token}";
 
-            var downloadResult = await _exchangeService.DownloadSoftwareUpdateToTemp(requestAddress).ConfigureAwait(false);
+            var downloadResult = await DownloadAndVerifyAsync(requestAddress, sha256).ConfigureAwait(false);
 
             if (downloadResult.IsFailure)
             {
@@ -87,18 +89,7 @@ public class SoftwareUpdateDownloadService
                 return Result.Failure(downloadResult.Error);
             }
 
-            var fileName = downloadResult.Value;
-
-            var checkResult = await CheckShaHash(fileName, sha256);
-
-            if (checkResult.IsFailure)
-            {
-                TryDeleteFile(fileName);
-                _logger.LogError(checkResult.Error);
-                return Result.Failure(checkResult.Error);
-            }
-
-            var installResult = await InstallUpdate(fileName, sha256).ConfigureAwait(false);
+            var installResult = await InstallUpdate(downloadResult.Value, sha256).ConfigureAwait(false);
 
             if (installResult.IsSuccess)
                 return Result.Success();
@@ -110,6 +101,69 @@ public class SoftwareUpdateDownloadService
         {
             UpdateLock.Release();
         }
+    }
+
+    /// <summary>
+    /// Скачивает обновление с повторами и проверяет SHA-256. При несовпадении хэша частичный файл удаляется.
+    /// </summary>
+    private async Task<Result<string>> DownloadAndVerifyAsync(string requestAddress, string sha256)
+    {
+        var lastError = "Загрузка обновления не выполнялась";
+
+        for (var attempt = 1; attempt <= DownloadRetryCount; attempt++)
+        {
+            var downloadResult = await _exchangeService
+                .DownloadSoftwareUpdateToTemp(requestAddress, sha256)
+                .ConfigureAwait(false);
+
+            if (downloadResult.IsFailure)
+            {
+                lastError = downloadResult.Error;
+                LogDownloadAttempt(attempt, lastError);
+
+                if (attempt < DownloadRetryCount)
+                    await Task.Delay(DownloadRetryDelay).ConfigureAwait(false);
+
+                continue;
+            }
+
+            var fileName = downloadResult.Value;
+            var checkResult = await CheckShaHash(fileName, sha256).ConfigureAwait(false);
+
+            if (checkResult.IsSuccess)
+                return Result.Success(PromotePartialToZip(fileName));
+
+            TryDeleteFile(fileName);
+            lastError = checkResult.Error;
+            LogDownloadAttempt(attempt, lastError);
+
+            if (attempt < DownloadRetryCount)
+                await Task.Delay(DownloadRetryDelay).ConfigureAwait(false);
+        }
+
+        return Result.Failure<string>(lastError);
+    }
+
+    private void LogDownloadAttempt(int attempt, string error)
+    {
+        _logger.LogWarning(
+            "Попытка {Attempt}/{Max} загрузки обновления не удалась: {Error}",
+            attempt,
+            DownloadRetryCount,
+            error);
+    }
+
+    /// <summary>
+    /// Переименовывает докачанный .partial в .zip перед установкой.
+    /// </summary>
+    private static string PromotePartialToZip(string fileName)
+    {
+        if (!fileName.EndsWith(".partial", StringComparison.OrdinalIgnoreCase))
+            return fileName;
+
+        var zipPath = Path.ChangeExtension(fileName, ".zip");
+        File.Move(fileName, zipPath, overwrite: true);
+        return zipPath;
     }
 
     /// <summary>

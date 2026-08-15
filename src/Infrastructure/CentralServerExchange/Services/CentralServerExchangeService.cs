@@ -7,6 +7,8 @@ using FmuApiDomain.CentralServiceExchange.Models.DataPacket;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shared.Http;
+using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
 namespace CentralServerExchange.Services;
@@ -15,8 +17,10 @@ namespace CentralServerExchange.Services;
 public class CentralServerExchangeService : IExchangeService
 {
     public const string HttpClientName = "CentralServerExchange";
+    public const string DownloadHttpClientName = "CentralServerExchangeDownload";
 
-    private const long MaxUpdateSizeBytes = 100L * 1024 * 1024;
+    private const long MaxUpdateSizeBytes = 200L * 1024 * 1024;
+    private static readonly TimeSpan DownloadInactivityTimeout = TimeSpan.FromMinutes(2);
 
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<CentralServerExchangeService> _logger;
@@ -118,85 +122,194 @@ public class CentralServerExchangeService : IExchangeService
         return Result.Success();
     }
 
-    public async Task<Result<string>> DownloadSoftwareUpdateToTemp(string requestAddress)
+    public async Task<Result<string>> DownloadSoftwareUpdateToTemp(string requestAddress, string sha256)
     {
-        var httpClient = CreateClient();
-        var operationResult = await httpClient.SendRequestSafelyAsync(
-            client => client.GetAsync(requestAddress, HttpCompletionOption.ResponseHeadersRead),
-            _logger,
-            "загрузка обновления программного обеспечения").ConfigureAwait(false);
-
-        if (operationResult.IsFailure)
-            return Result.Failure<string>(operationResult.Error);
-
-        using var response = operationResult.Value;
-
-        if (!response.IsSuccessStatusCode)
-        {
-            var error = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-            return Result.Failure<string>($"Сервер вернул ошибку {response.StatusCode}: {error}");
-        }
-
-        var contentLength = response.Content.Headers.ContentLength;
-        if (contentLength.HasValue && contentLength.Value > MaxUpdateSizeBytes)
-        {
-            return Result.Failure<string>(
-                $"Файл обновления превышает лимит {MaxUpdateSizeBytes} байт (Content-Length={contentLength.Value})");
-        }
-
-        var contentType = response.Content.Headers.ContentType?.MediaType;
-
-        _logger.LogInformation("Загружаем файл обновления. Content-Type: {ContentType}, Size: {Size}",
-            contentType, contentLength);
-
         var tmpFolder = Path.Combine(Path.GetTempPath(), ApplicationInformation.AppName, "updates");
-        var tmpFile = $"update_{Guid.NewGuid():N}.zip";
-        var tmpPath = Path.Combine(tmpFolder, tmpFile);
+        var tmpPath = Path.Combine(tmpFolder, $"update_{sha256}.partial");
 
         try
         {
             Directory.CreateDirectory(tmpFolder);
 
-            await using var contentStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-
-            var sizeExceeded = false;
-            await using (var fileStream = File.Create(tmpPath))
+            var existingLength = GetExistingFileLength(tmpPath);
+            if (existingLength > MaxUpdateSizeBytes)
             {
-                var buffer = new byte[81920];
-                long total = 0;
-                int read;
-
-                while ((read = await contentStream.ReadAsync(buffer.AsMemory(0, buffer.Length)).ConfigureAwait(false)) > 0)
-                {
-                    total += read;
-                    if (total > MaxUpdateSizeBytes)
-                    {
-                        sizeExceeded = true;
-                        break;
-                    }
-
-                    await fileStream.WriteAsync(buffer.AsMemory(0, read)).ConfigureAwait(false);
-                }
+                TryDeleteFile(tmpPath);
+                existingLength = 0;
             }
 
-            if (sizeExceeded)
+            using var inactivityCts = new CancellationTokenSource();
+            inactivityCts.CancelAfter(DownloadInactivityTimeout);
+
+            var httpClient = _httpClientFactory.CreateClient(DownloadHttpClientName);
+            using var request = new HttpRequestMessage(HttpMethod.Get, requestAddress);
+            if (existingLength > 0)
+            {
+                request.Headers.Range = new RangeHeaderValue(existingLength, null);
+                _logger.LogInformation("Докачка обновления с позиции {Offset} байт", existingLength);
+            }
+
+            using var response = await httpClient
+                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, inactivityCts.Token)
+                .ConfigureAwait(false);
+
+            if (response.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable)
+            {
+                if (existingLength > 0)
+                {
+                    _logger.LogInformation("Сервер вернул 416, используем уже скачанный файл {FilePath}", tmpPath);
+                    return Result.Success(tmpPath);
+                }
+
+                return Result.Failure<string>("Сервер вернул 416 Requested Range Not Satisfiable");
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync(inactivityCts.Token).ConfigureAwait(false);
+                return Result.Failure<string>($"Сервер вернул ошибку {response.StatusCode}: {error}");
+            }
+
+            var append = response.StatusCode == HttpStatusCode.PartialContent && existingLength > 0;
+            if (append && !CanAppendPartialContent(response, existingLength))
+            {
+                TryDeleteFile(tmpPath);
+                return Result.Failure<string>("Некорректный Content-Range, файл удалён для повторной загрузки");
+            }
+
+            if (append && !File.Exists(tmpPath))
+            {
+                return Result.Failure<string>("Частичный файл исчез до докачки, повторная загрузка начнётся с начала");
+            }
+
+            if (!append && existingLength > 0)
+            {
+                _logger.LogInformation("Сервер не поддерживает Range, скачиваем файл заново");
+                existingLength = 0;
+            }
+
+            var expectedTotal = GetExpectedTotalBytes(response, existingLength, append);
+            if (expectedTotal.HasValue && expectedTotal.Value > MaxUpdateSizeBytes)
+            {
+                TryDeleteFile(tmpPath);
+                return Result.Failure<string>(
+                    $"Файл обновления превышает лимит {MaxUpdateSizeBytes} байт (ожидается {expectedTotal.Value})");
+            }
+
+            _logger.LogInformation(
+                "Загружаем файл обновления. Content-Type: {ContentType}, Size: {Size}, Append: {Append}",
+                response.Content.Headers.ContentType?.MediaType,
+                expectedTotal,
+                append);
+
+            inactivityCts.CancelAfter(DownloadInactivityTimeout);
+
+            await using var contentStream = await response.Content
+                .ReadAsStreamAsync(inactivityCts.Token)
+                .ConfigureAwait(false);
+
+            var copyResult = await CopyStreamToFileAsync(
+                    contentStream,
+                    tmpPath,
+                    append,
+                    existingLength,
+                    inactivityCts)
+                .ConfigureAwait(false);
+
+            if (copyResult.SizeExceeded)
             {
                 TryDeleteFile(tmpPath);
                 return Result.Failure<string>(
                     $"Файл обновления превышает лимит {MaxUpdateSizeBytes} байт");
             }
 
-            _logger.LogInformation("Обновление загружено в: {FilePath}", tmpPath);
+            if (expectedTotal.HasValue && copyResult.Total < expectedTotal.Value)
+            {
+                _logger.LogWarning(
+                    "Загрузка прервана: получено {Actual} из {Expected} байт, файл сохранён для докачки",
+                    copyResult.Total,
+                    expectedTotal.Value);
+                return Result.Failure<string>(
+                    $"Загрузка не завершена: {copyResult.Total} из {expectedTotal.Value} байт");
+            }
+
+            _logger.LogInformation("Обновление загружено в: {FilePath}, размер {Size}", tmpPath, copyResult.Total);
             return Result.Success(tmpPath);
+        }
+        catch (OperationCanceledException)
+        {
+            var errMsg = "Загрузка обновления прервана по таймауту простоя, файл сохранён для докачки";
+            _logger.LogWarning(errMsg);
+            return Result.Failure<string>(errMsg);
         }
         catch (Exception e)
         {
-            TryDeleteFile(tmpPath);
-
-            var errMsg = $"Ошибка загрузки обновления в temp-файл {tmpPath}: {e.Message}";
+            var errMsg = $"Ошибка загрузки обновления в temp-файл {tmpPath}: {e.Message}. Файл сохранён для докачки";
             _logger.LogError(errMsg);
             return Result.Failure<string>(errMsg);
         }
+    }
+
+    private static bool CanAppendPartialContent(HttpResponseMessage response, long existingLength)
+    {
+        var from = response.Content.Headers.ContentRange?.From;
+        return from.HasValue && from.Value == existingLength;
+    }
+
+    private static long? GetExpectedTotalBytes(HttpResponseMessage response, long existingLength, bool append)
+    {
+        if (append)
+        {
+            if (response.Content.Headers.ContentRange?.Length is long total)
+                return total;
+
+            if (response.Content.Headers.ContentLength is long remaining)
+                return existingLength + remaining;
+
+            return null;
+        }
+
+        return response.Content.Headers.ContentLength;
+    }
+
+    private static async Task<(bool SizeExceeded, long Total)> CopyStreamToFileAsync(
+        Stream contentStream,
+        string tmpPath,
+        bool append,
+        long existingLength,
+        CancellationTokenSource inactivityCts)
+    {
+        var fileMode = append ? FileMode.Append : FileMode.Create;
+        await using var fileStream = new FileStream(tmpPath, fileMode, FileAccess.Write, FileShare.None);
+
+        var buffer = new byte[81920];
+        long total = append ? existingLength : 0;
+        int read;
+
+        while ((read = await contentStream
+                   .ReadAsync(buffer.AsMemory(0, buffer.Length), inactivityCts.Token)
+                   .ConfigureAwait(false)) > 0)
+        {
+            inactivityCts.CancelAfter(DownloadInactivityTimeout);
+
+            total += read;
+            if (total > MaxUpdateSizeBytes)
+                return (true, total);
+
+            await fileStream
+                .WriteAsync(buffer.AsMemory(0, read), inactivityCts.Token)
+                .ConfigureAwait(false);
+        }
+
+        return (false, total);
+    }
+
+    private static long GetExistingFileLength(string path)
+    {
+        if (!File.Exists(path))
+            return 0;
+
+        return new FileInfo(path).Length;
     }
 
     private static void TryDeleteFile(string path)

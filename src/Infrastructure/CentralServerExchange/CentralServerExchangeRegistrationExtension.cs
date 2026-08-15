@@ -22,6 +22,12 @@ public static class CentralServerExchangeRegistrationExtension
                 new MediaTypeWithQualityHeaderValue("application/json"));
         });
 
+        // Без общего таймаута: обрыв ловим по простою чтения, чтобы можно было докачать файл.
+        services.AddHttpClient(CentralServerExchangeService.DownloadHttpClientName, client =>
+        {
+            client.Timeout = Timeout.InfiniteTimeSpan;
+        });
+
         return services;
     }
 }
