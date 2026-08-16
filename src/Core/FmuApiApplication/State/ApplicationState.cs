@@ -196,6 +196,7 @@ public class ApplicationState : IApplicationState
         {
             newState.Organization = state.Organization;
             newState.LicenseActiveTill = state.LicenseActiveTill;
+            newState.LastCheckStatusCode = state.LastCheckStatusCode;
             _tsPiotStates.Remove(state);
         }
 
@@ -220,6 +221,7 @@ public class ApplicationState : IApplicationState
             newState.Version = state.Version;
             newState.Organization = state.Organization;
             newState.LicenseActiveTill = state.LicenseActiveTill;
+            newState.LastCheckStatusCode = state.LastCheckStatusCode;
 
             _tsPiotStates.Remove(state);
         }
@@ -275,5 +277,38 @@ public class ApplicationState : IApplicationState
         var state = _tsPiotStates.FirstOrDefault(p => p.Connection == address);
 
         return state?.LicenseActiveTill;
+    }
+
+    /// <summary>
+    /// Сохраняет HTTP-код последнего обращения к модулю ТС ПИоТ.
+    /// </summary>
+    public void UpdateTsPiotLastCheckStatusCode(string address, int statusCode)
+    {
+        var state = _tsPiotStates.FirstOrDefault(p => p.Connection == address);
+
+        if (state != null)
+        {
+            _tsPiotStates.Remove(state);
+            state.LastCheckStatusCode = statusCode;
+            _tsPiotStates.Add(state);
+            return;
+        }
+
+        _tsPiotStates.Add(new TsModulePiotState
+        {
+            Connection = address,
+            LastCheckStatusCode = statusCode,
+            LastCheck = DateTime.Now
+        });
+    }
+
+    /// <summary>
+    /// Возвращает HTTP-код последней проверки модуля ТС ПИоТ.
+    /// </summary>
+    public int? TsPiotLastCheckStatusCode(string address)
+    {
+        var state = _tsPiotStates.FirstOrDefault(p => p.Connection == address);
+
+        return state?.LastCheckStatusCode;
     }
 }

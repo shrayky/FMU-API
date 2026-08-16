@@ -9,4 +9,5 @@ public record TsModulePiotState
     public DateTime LastCheck { get; set; } = DateTime.MinValue;
     public string Version { get; set; } = string.Empty;
     public DateTime? LicenseActiveTill { get; set; }
+    public int? LastCheckStatusCode { get; set; }
 }

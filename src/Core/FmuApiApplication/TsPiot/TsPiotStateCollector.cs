@@ -31,6 +31,7 @@ public static class TsPiotStateCollector
                 LastCheckTime = appState.TsPiotLastSee(address),
                 Version = appState.TsPiotModuleVersion(address),
                 LicenseActiveTill = appState.TsPiotLicenseActiveTill(address),
+                LastCheckStatusCode = appState.TsPiotLastCheckStatusCode(address),
             };
 
             modules.Add(state);

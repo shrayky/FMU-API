@@ -9,4 +9,5 @@ public record TsPiotStateInformation
     public DateTime LastCheckTime { get; set; }
     public string Version { get; set; } = string.Empty;
     public DateTime? LicenseActiveTill { get; set; }
+    public int? LastCheckStatusCode { get; set; }
 }

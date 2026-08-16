@@ -32,4 +32,6 @@ public interface IApplicationState
     string TsPiotModuleVersion(string address);
     void UpdateTsPiotLicense(string address, int organizationId, DateTime licenseActiveTill);
     DateTime? TsPiotLicenseActiveTill(string address);
+    void UpdateTsPiotLastCheckStatusCode(string address, int statusCode);
+    int? TsPiotLastCheckStatusCode(string address);
 }

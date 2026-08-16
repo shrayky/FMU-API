@@ -38,6 +38,7 @@ class MonitorView {
             tspiotProtocolVersion: "Протокол",
             tspiotOnline: "Онлайн",
             tspiotLastCheck: "Последняя проверка",
+            tspiotLastCheckStatus: "Ответ",
             tspiotLicenseActiveTill: "Срок лицензии"
         }
         this.NAMES = {
@@ -197,6 +198,19 @@ class MonitorView {
                             if (date.getFullYear() <= 1970) return "Нет данных";
                             return date.toLocaleString();
                         }
+                    },
+
+                    {
+                        id: "lastCheckStatusCode",
+                        header:
+                        {
+                            text: this.LABELS.tspiotLastCheckStatus,
+                            css: { "text-align": "center" }
+                        },
+                        width: 80,
+                        sort: "int",
+                        css: { "text-align": "center" },
+                        template: (obj) => this._formatLastCheckStatusCode(obj.lastCheckStatusCode)
                     },
 
                 ],
@@ -500,6 +514,7 @@ class MonitorView {
                 version: row.version || "Нет данных",
                 online: !!row.online,
                 lastCheckTime: row.lastCheckTime,
+                lastCheckStatusCode: row.lastCheckStatusCode,
                 licenseActiveTill: row.licenseActiveTill
             };
         });
@@ -519,6 +534,22 @@ class MonitorView {
         tableLabel.show();
 
         table.parse(tableData);
+    }
+
+    /**
+     * Иконка HTTP-кода последней проверки ТС ПИоТ: 200 — галочка, ≥500 — восклицательный знак.
+     */
+    _formatLastCheckStatusCode(statusCode) {
+        if (statusCode == null || statusCode === 0)
+            return "—";
+
+        if (statusCode === 200)
+            return `<span class="webix_icon wxi-check" style="color: #28a745;" title="${statusCode}"></span>`;
+
+        if (statusCode >= 500)
+            return `<span class="webix_icon wxi-alert" style="color: #dc3545;" title="${statusCode}"></span>`;
+
+        return String(statusCode);
     }
 }
 

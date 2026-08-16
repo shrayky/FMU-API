@@ -67,14 +67,17 @@ namespace TsPiotClinet.Workers
 
                 var checkProtocolResult = await AskProtocolVersion(printGroup.TsPiot);
                 var protocol = 1;
+                var lastStatusCode = checkProtocolResult.StatusCode;
 
-                if (checkProtocolResult.IsSuccess)
-                    protocol = checkProtocolResult.Value;
+                if (checkProtocolResult.Protocol.IsSuccess)
+                    protocol = checkProtocolResult.Protocol.Value;
 
                 _applicationState.TsPiotApiVersion(address, protocol, version);
 
-                if (checkProtocolResult.IsFailure)
+                if (checkProtocolResult.Protocol.IsFailure)
                     _applicationState.TsPiotOffline(address);
+
+                _applicationState.UpdateTsPiotLastCheckStatusCode(address, lastStatusCode);
 
                 var instancesResult = await _tsPiotEspApiService.Instances(printGroup.TsPiot);
                 if (instancesResult.IsFailure)
@@ -95,7 +98,10 @@ namespace TsPiotClinet.Workers
             return Result.Success(moduleInfoResult.Value.Version);
         }
 
-        private async Task<Result<int>> AskProtocolVersion(TsPiotConnectionSettings tsPiot)
+        /// <summary>
+        /// Определяет версию протокола ТС ПИоТ и фиксирует HTTP-код последнего ответа.
+        /// </summary>
+        private async Task<(Result<int> Protocol, int StatusCode)> AskProtocolVersion(TsPiotConnectionSettings tsPiot)
         {
             using var httpClient = _httpClientFactory.CreateClient("TsPiotStateChecker");
 
@@ -107,6 +113,8 @@ namespace TsPiotClinet.Workers
             var url = $"{addressPrefix}{tsPiot.Host}:{tsPiot.Port}";
             httpClient.BaseAddress = new Uri(url);
 
+            var lastStatusCode = 0;
+
             for (var protocolVersion = 3; protocolVersion > 0; protocolVersion--)
             {
                 var requestPath = $"/api/v{protocolVersion}/info";
@@ -114,6 +122,7 @@ namespace TsPiotClinet.Workers
                 try
                 {
                     var response = await httpClient.GetAsync(requestPath);
+                    lastStatusCode = (int)response.StatusCode;
 
                     if (!response.IsSuccessStatusCode)
                     {
@@ -121,6 +130,9 @@ namespace TsPiotClinet.Workers
 
                         _logger.LogDebug("Ошибка в ответе проверки версии протокола от ТСПИоТ: {StatusCode}, {Error}", response.StatusCode,
                             errorContent);
+
+                        if (lastStatusCode >= 500)
+                            break;
 
                         continue;
                     }
@@ -134,18 +146,19 @@ namespace TsPiotClinet.Workers
                     if (status != null)
                     {
                         _logger.LogInformation("Используется ТСПиОТ с {v} версией протокола.", protocolVersion);
-                        return Result.Success(protocolVersion);
+                        return (Result.Success(protocolVersion), lastStatusCode);
                     }
 
                 }
                 catch (Exception ex)
                 {
+                    lastStatusCode = 0;
                     _logger.LogDebug("Ошибка проверки версии протокола от ТСПИоТ: {ex}", ex);
                     continue;
                 }
             }
 
-            return Result.Failure<int>($"Не удалось подключится к экземпляру ТСПиОТ {tsPiot.Host}:{tsPiot.Port}");
+            return (Result.Failure<int>($"Не удалось подключится к экземпляру ТСПиОТ {tsPiot.Host}:{tsPiot.Port}"), lastStatusCode);
         }
 
         private async Task SyncLicenses(List<PrintGroupData> printGroups, TsPiotConnectionSettings tsPiot, List<TsPiotInstanceListItem> instances)

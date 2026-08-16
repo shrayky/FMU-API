@@ -1,5 +1,6 @@
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Documents;
+using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.TrueApi.MarkData.Check;
 using FmuApiDomain.TsPiot.Interfaces;
 using FmuApiDomain.TsPiot.Models;
@@ -15,13 +16,18 @@ public class TsPiotServiceV3 : ITsPiotService
 {
     private readonly ILogger<TsPiotServiceV3> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IApplicationState _applicationState;
 
     private const string CheckAddress = @"/api/v3/codes/check";
 
-    public TsPiotServiceV3(ILogger<TsPiotServiceV3> logger, IHttpClientFactory httpClientFactory)
+    public TsPiotServiceV3(
+        ILogger<TsPiotServiceV3> logger,
+        IHttpClientFactory httpClientFactory,
+        IApplicationState applicationState)
     {
         _logger = logger;
         _httpClientFactory = httpClientFactory;
+        _applicationState = applicationState;
     }
 
     public async Task<Result<CheckMarksDataTrueApi>> Check(string mark, TsPiotConnectionSettings connectionSettings)
@@ -41,6 +47,7 @@ public class TsPiotServiceV3 : ITsPiotService
         try
         {
             var response = await httpClient.PostAsJsonAsync(CheckAddress, requestData);
+            TsPiotLastCheckStatusWriter.Save(_applicationState, connectionSettings, (int)response.StatusCode);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -96,6 +103,7 @@ public class TsPiotServiceV3 : ITsPiotService
         }
         catch (Exception ex)
         {
+            TsPiotLastCheckStatusWriter.Save(_applicationState, connectionSettings, 0);
             _logger.LogError("Ошибка запроса в ТСПиОТ: {Exception}", ex);
             return Result.Failure<CheckMarksDataTrueApi>(ex.Message);
         }
