@@ -118,9 +118,23 @@ class LogsView {
             id: this.NAMES.log,
             readonly: true,
             on: {
-                //"onKeyPress": (code, event) => this._handleKeyPress(code, event), 
+                onAfterRender: () => this._bindLogPageKeys()
             }
         }
+    }
+
+    /** Подписывает textarea лога на Page Up/Page Down один раз, чтобы браузер не трактовал их как Home/End. */
+    _bindLogPageKeys() {
+        const textarea = $$(this.NAMES.log);
+        if (!textarea)
+            return;
+
+        const dom = textarea.getInputNode();
+        if (!dom || dom.dataset.pageNavBound === "1")
+            return;
+
+        dom.dataset.pageNavBound = "1";
+        dom.addEventListener("keydown", (e) => this._handleLogKeyDown(e));
     }
 
     _loadLogs(fileName = "") {
@@ -150,6 +164,7 @@ class LogsView {
                 logText.setValue(lines);
 
                 $$(this.id).enable();
+                this._bindLogPageKeys();
             });
     }
 
@@ -176,24 +191,30 @@ class LogsView {
         await writableStream.close();
     }
 
-    _handleKeyPress(code, e) {
-        //console.log(code);
-        // Page Up (33), Page Down (34)
-        if (!(code === 33 || code === 34))
+    /** Прокручивает лог на высоту видимой области; preventDefault отключает прыжок каретки в начало/конец. */
+    _handleLogKeyDown(e) {
+        const isPageUp = e.key === "PageUp" || e.keyCode === 33;
+        const isPageDown = e.key === "PageDown" || e.keyCode === 34;
+
+        if (!isPageUp && !isPageDown)
             return;
-            
-        var textarea = $$(this.NAMES.log);
-        
+
+        const textarea = $$(this.NAMES.log);
         if (!textarea)
             return;
-        
-        var dom = textarea.getInputNode();
-        if (code === 33) {
-            dom.scrollTop = Math.max(0, dom.scrollTop - dom.clientHeight);
-        } else {
-            dom.scrollTop = Math.min(dom.scrollHeight - dom.clientHeight, dom.scrollTop + dom.clientHeight);
-        }
+
+        const dom = textarea.getInputNode();
+        if (!dom)
+            return;
+
+        const pageHeight = dom.clientHeight;
+        if (isPageUp)
+            dom.scrollTop = Math.max(0, dom.scrollTop - pageHeight);
+        else
+            dom.scrollTop = Math.min(dom.scrollHeight - pageHeight, dom.scrollTop + pageHeight);
+
         e.preventDefault();
+        e.stopPropagation();
     }
 }
 
