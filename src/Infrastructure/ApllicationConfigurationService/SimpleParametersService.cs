@@ -154,20 +154,30 @@ public class SimpleParametersService : IParametersService
     {
         var isUpToDate = (settings.AppVersion == ApplicationInformation.AppVersion && settings.Assembly == ApplicationInformation.Assembly);
 
-        if (isUpToDate)
+#pragma warning disable CS0612
+        var needLocalModuleMove = settings.ServerConfig.LocalModuleVersion.HasValue;
+#pragma warning restore CS0612
+
+        if (isUpToDate && !needLocalModuleMove)
             return settings;
 
-        if (settings.AppVersion < 9)
-            settings = MigrationTo9.DoMigration(settings);
+        if (!isUpToDate)
+        {
+            if (settings.AppVersion < 9)
+                settings = MigrationTo9.DoMigration(settings);
 
-        if (settings.AppVersion == 10 & settings.Assembly < 2)
-            settings = MigrationTo10_2.DoMigration(settings);
+            if (settings.AppVersion == 10 & settings.Assembly < 2)
+                settings = MigrationTo10_2.DoMigration(settings);
 
-        if (settings.AppVersion == 11 & settings.Assembly < 10)
-            settings = MigrationTo11_10.DoMigration(settings);
+            if (settings.AppVersion == 11 & settings.Assembly < 10)
+                settings = MigrationTo11_10.DoMigration(settings);
 
-        if (settings.AppVersion < 12)
-            settings = MigrationTo12_0.DoMigration(settings);
+            if (settings.AppVersion < 12)
+                settings = MigrationTo12_0.DoMigration(settings);
+        }
+
+        if (settings.AppVersion == 12 && (settings.Assembly < 1 || needLocalModuleMove))
+            settings = MigrationTo12_1.DoMigration(settings);
 
         settings.AppVersion = ApplicationInformation.AppVersion;
 
@@ -254,7 +264,7 @@ public class SimpleParametersService : IParametersService
             || currentSettings.Logging.LogLevel != newSettings.Logging.LogLevel
             || currentSettings.Logging.IsEnabled != newSettings.Logging.IsEnabled
             || currentSettings.Logging.LogDepth != newSettings.Logging.LogDepth)
-            || currentSettings.ServerConfig.LocalModuleVersion != newSettings.ServerConfig.LocalModuleVersion;
+            || currentSettings.ServerConfig.LocalModuleGeneral.Version != newSettings.ServerConfig.LocalModuleGeneral.Version;
 
         _appState.NeedRestartService(needToRestartService);
 

@@ -9,6 +9,7 @@ class ServerConfigurationElement {
             ipPortApi: "IP-порт API сервиса",
             tsPiotUse: "Для проверки маркировки использовать ТС ПиОТ",
             localModuleVersion: "Версия локального модуля",
+            autoInitializeOnSyncError: "Автоматически инициализировать ЛМ при статусе sync_error",
             responseEncoding: "Кодировка ответа проверки марки",
         };
 
@@ -28,8 +29,9 @@ class ServerConfigurationElement {
         if (config?.serverConfig) {
             this.apiIpPort = config.serverConfig.apiIpPort ?? 2578;
             this.tsPiotEnabled = config.serverConfig.tsPiotEnabled ?? false;
-            this.localModuleVersion = config.serverConfig.localModuleVersion ?? 0;
             this.responseEncoding = config.serverConfig.responseEncoding ?? 0;
+            this.localModuleVersion = config.serverConfig.localModuleGeneral?.version ?? 0;
+            this.autoInitializeOnSyncError = config.serverConfig.localModuleGeneral?.autoInitializeOnSyncError ?? false;
         }
 
         if (config?.nodeName) {
@@ -79,7 +81,7 @@ class ServerConfigurationElement {
                                 labelPosition: "left",
                                 labelWidth: 250,
                                 id: "localModuleVersion",
-                                name: "serverConfig.localModuleVersion",
+                                name: "serverConfig.localModuleGeneral.version",
                                 options: this.LOCAL_MODULE_VERSIONS,
                                 value: this.localModuleVersion,
                             },
@@ -95,6 +97,11 @@ class ServerConfigurationElement {
                             }        
                         ]
                     },
+
+                    CheckBox(this.LABELS.autoInitializeOnSyncError, "serverConfig.localModuleGeneral.autoInitializeOnSyncError", {
+                        value: this.autoInitializeOnSyncError,
+                        Label: this.LABELS.autoInitializeOnSyncError,
+                    }),
 
                     {
                         view: "select",

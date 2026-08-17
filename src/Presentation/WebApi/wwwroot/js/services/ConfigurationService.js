@@ -25,6 +25,14 @@ function toInt32(value, fallback, min = 0) {
 }
 
 function normalizeFormValues(values) {
+    const serverConfig = values?.serverConfig;
+    if (serverConfig) {
+        if (serverConfig.localModuleGeneral) {
+            serverConfig.localModuleGeneral.version = parseInt(serverConfig.localModuleGeneral.version, 10) || 0;
+        }
+        serverConfig.responseEncoding = parseInt(serverConfig.responseEncoding, 10) || 0;
+    }
+
     const frontol = values?.connectedFrontolSettings;
     if (!frontol)
         return values;
@@ -37,12 +45,6 @@ function normalizeFormValues(values) {
     }
 
     frontol.printGroupSourseId = toInt32(frontol.printGroupSourseId, 0);
-
-    const serverConfig = values?.serverConfig;
-    if (serverConfig) {
-        serverConfig.localModuleVersion = parseInt(serverConfig.localModuleVersion, 10) || 0;
-        serverConfig.responseEncoding = parseInt(serverConfig.responseEncoding, 10) || 0;
-    }
 
     if (frontol.syncBeerTapsSettings) {
         frontol.syncBeerTapsSettings.syncBeerTapsPeriodSeconds =

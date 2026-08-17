@@ -40,7 +40,7 @@ namespace WebApi.Extensions
             });
 
             TrueApiRegistration.AddService(builder.Services);
-            LocalModuleRegistration.AddService(builder.Services, settings.ServerConfig.LocalModuleVersion);
+            LocalModuleRegistration.AddService(builder.Services, settings.ServerConfig.LocalModuleGeneral.Version);
 
             ConfigureLogging(builder, settings.Logging);
 
