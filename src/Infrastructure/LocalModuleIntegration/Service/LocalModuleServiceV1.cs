@@ -1,4 +1,4 @@
-﻿using FmuApiDomain.Configuration.Options;
+using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.LocalModule.Models;
 using FmuApiDomain.TrueApi.MarkData.Check;
 using LocalModuleIntegration.Interfaces;
@@ -58,7 +58,7 @@ namespace LocalModuleIntegration.Service
             return response.IsSuccessStatusCode;
         }
 
-        public async Task<CheckMarksDataTrueApi> OutCheckAsync(LocalModuleConnection connection, string cis, string xapiKey)
+        public async Task<CheckMarksDataTrueApi> OutCheckAsync(LocalModuleConnection connection, string cis, string xapiKey, int? pg = null)
         {
             using var httpClient = _httpClientFactory.CreateClient("LocalModule");
 

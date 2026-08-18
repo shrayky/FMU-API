@@ -10,6 +10,7 @@ using FmuApiDomain.BeerTaps.Interfaces;
 using FmuApiDomain.Documents.Interfaces;
 using FmuApiDomain.GisMt.Interfaces;
 using FmuApiDomain.Mark.Interfaces;
+using FmuApiDomain.ProductGroups.Interfaces;
 using FmuApiDomain.Statistics.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Headers;
@@ -71,6 +72,7 @@ public static class CouchDbServicesRegistration
         services.AddScoped<IBeerOnTapRepository, BeerOnTapRepository>();
         services.AddScoped<IGisMtDocumentRepository, GisMtDocumentRepository>();
         services.AddScoped<IGisMtMarkRepository, GisMtMarkRepository>();
+        services.AddScoped<IGtinCatalogRepository, GtinCatalogRepository>();
         services.AddSingleton<DataBaseMaintenanceService>();
 
         services.AddHttpClient("CouchDbState", client =>

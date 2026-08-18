@@ -8,6 +8,10 @@ export const MENU_ITEMS = {
         id: "config",
         value: "Настройка",
     },
+    PRODUCT_GROUPS: {
+        id: "productGroupsView",
+        value: "Товарные группы"
+    },
     CDN: {
         id: "cdnListInfo",
         value: "Список CDN"
@@ -19,6 +23,10 @@ export const MENU_ITEMS = {
     MARKS: {
         id: "marksView",
         value: "Марки"
+    },
+    GTIN_CATALOG: {
+        id: "gtinCatalogView",
+        value: "Каталог GTIN"
     },
     GIS_MT_MARKS: {
         id: "gisMtMarksView",
@@ -42,6 +50,7 @@ export function buildMenuItems(config) {
     const items = [
         MENU_ITEMS.MONITOR,
         MENU_ITEMS.CONFIG,
+        MENU_ITEMS.PRODUCT_GROUPS,
     ];
 
     const tsPiotEnabled = config?.serverConfig?.tsPiotEnabled ?? false;
@@ -57,6 +66,7 @@ export function buildMenuItems(config) {
 
     items.push(
         MENU_ITEMS.MARKS,
+        MENU_ITEMS.GTIN_CATALOG,
         MENU_ITEMS.GIS_MT_MARKS,
         MENU_ITEMS.MARK_CHECK,
         MENU_ITEMS.LOGS,

@@ -1,5 +1,3 @@
-﻿using FmuApiDomain.Configuration.Options;
-
 namespace CouchDb.DatabaseScheme
 {
     public static class DatabaseNames
@@ -10,6 +8,7 @@ namespace CouchDb.DatabaseScheme
         public const string BeerOnTaps = "fmu-api-beer-on-taps";
         public const string GisMtDocumentsDbName = "fmu-api-gis-mt-documents";
         public const string GisMtMarksDbName = "fmu-api-gis-mt-marks";
+        public const string GtinCatalogDbName = "fmu-api-gtin-catalog";
         public static string[] Names() =>
         [
             MarksDbName,
@@ -17,7 +16,8 @@ namespace CouchDb.DatabaseScheme
             MarkCheckingStatistic,
             BeerOnTaps,
             GisMtDocumentsDbName,
-            GisMtMarksDbName
+            GisMtMarksDbName,
+            GtinCatalogDbName
         ];
     }
 }

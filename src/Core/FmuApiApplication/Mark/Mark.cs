@@ -7,6 +7,8 @@ using FmuApiDomain.Documents;
 using FmuApiDomain.Documents.Enums;
 using FmuApiDomain.Mark.Enums;
 using FmuApiDomain.Mark.Interfaces;
+using FmuApiDomain.ProductGroups;
+using FmuApiDomain.ProductGroups.Interfaces;
 using FmuApiDomain.TrueApi.MarkData.Check;
 using FmuApiDomain.TsPiot.Models;
 using Microsoft.Extensions.Logging;
@@ -18,6 +20,7 @@ public class Mark : IMark
 {
     private readonly IMarkChecker _markChecker;
     private readonly IMarkStateManager _markStateManager;
+    private readonly IGtinCatalogService _gtinCatalogService;
     private readonly ILogger<Mark> _logger;
     private readonly Parameters _configuration;
 
@@ -26,7 +29,10 @@ public class Mark : IMark
     public string Cis { get; }
     public bool CodeIsSgtin { get; }
     public string Barcode { get; }
+    public string Gtin { get; }
     public int PrintGroupCode { get; private set; }
+    public int AtolItemType { get; private set; }
+    public string ProductName { get; private set; } = string.Empty;
     public string ErrorDescription { get; private set; } = string.Empty;
     
     private TsPiotConnectionSettings _tsPiotConnectionSettings = new();
@@ -41,11 +47,13 @@ public class Mark : IMark
         IMarkParser markParser,
         IMarkChecker markChecker,
         IMarkStateManager markStateManager,
+        IGtinCatalogService gtinCatalogService,
         IParametersService parametersService,
         ILogger<Mark> logger)
     {
         _markChecker = markChecker;
         _markStateManager = markStateManager;
+        _gtinCatalogService = gtinCatalogService;
         _logger = logger;
             
         _configuration = parametersService.Current();
@@ -60,6 +68,7 @@ public class Mark : IMark
         Cis = markParser.CalculateCis(Code);
         CodeIsSgtin = (SGtin == Code);
         Barcode = markParser.CalculateBarcode(SGtin);
+        Gtin = GtinCalculator.FromSgtin(SGtin);
 
         _logger.LogInformation(
             "Создан объект марки: Code={Code}, SGtin={SGtin}, CodeIsSGtin={CodeIsSgtin}, Barcode={Barcode}",
@@ -73,7 +82,7 @@ public class Mark : IMark
         CheckDelegate[] delegates =
         [
             async () => await _markChecker.TsPiotCheck(Code, _tsPiotConnectionSettings),
-            async () => await _markChecker.OfflineCheckAsync(Cis, PrintGroupCode),
+            async () => await _markChecker.OfflineCheckAsync(Cis, PrintGroupCode, AtolItemType, Gtin),
             async() => await _markChecker.FmuApiDatabaseCheck(SGtin, _markStateManager)
         ];
 
@@ -82,7 +91,7 @@ public class Mark : IMark
             delegates =
             [
                 async () => await _markChecker.OnlineCheck(Code, SGtin, CodeIsSgtin, PrintGroupCode),
-                async () => await _markChecker.OfflineCheckAsync(Cis, PrintGroupCode),
+                async () => await _markChecker.OfflineCheckAsync(Cis, PrintGroupCode, AtolItemType, Gtin),
                 async() => await _markChecker.FmuApiDatabaseCheck(SGtin, _markStateManager)
             ];
         }
@@ -134,6 +143,9 @@ public class Mark : IMark
             
             if (!_lastCheckResult.FmuAnswer.Offline)
                 await _markStateManager.Save(SGtin, _lastCheckResult.TrueMarkData);
+
+            if (!_lastCheckResult.FmuAnswer.Offline && !_lastCheckResult.FmuAnswer.OfflineRegime)
+                await SaveGtinCatalogAsync();
 
             checkErrors.Clear();
 
@@ -245,6 +257,15 @@ public class Mark : IMark
             PrintGroupCode, Code);
     }
 
+    /// <summary>
+    /// Сохраняет код группы Атол и наименование товара из позиции Frontol.
+    /// </summary>
+    public void SetPositionData(int itemType, string productName)
+    {
+        AtolItemType = itemType;
+        ProductName = productName ?? string.Empty;
+    }
+
     public async Task<CheckMarksDataTrueApi> TrueApiData()
     {
         if (_lastCheckResult.TrueMarkData.Codes.Count > 0)
@@ -296,6 +317,21 @@ public class Mark : IMark
             "Срок годности марки {Code} подставлен из остатков ГИС МТ: {ExpireDate}",
             Code,
             expireDate);
+    }
+
+    /// <summary>
+    /// Сохраняет GTIN и группу ЧЗ после успешной online-проверки.
+    /// </summary>
+    private async Task SaveGtinCatalogAsync()
+    {
+        var markData = _lastCheckResult.TrueMarkData.MarkData();
+        var groupId = markData.GroupIds?.FirstOrDefault() ?? 0;
+        var gtin = GtinCalculator.FromSgtin(SGtin);
+
+        if (string.IsNullOrWhiteSpace(gtin))
+            gtin = markData.Gtin;
+
+        await _gtinCatalogService.SaveFromOnlineCheck(gtin, groupId);
     }
 
     private bool ResetErrorFields()

@@ -185,14 +185,7 @@ public class GisMtMarkRepository(
 
         if (!hasFilters)
         {
-            var totalCount = await ExecuteSafetyDbOperation(
-                async () =>
-                {
-                    var dbInfo = await _database.GetInfoAsync();
-                    return (int?)dbInfo.DocCount;
-                },
-                "GisMtMarksGetInfo",
-                (int?)null);
+            var totalCount = await GetDocumentsCountAsync();
 
             if (totalCount == null)
                 return Result.Failure<GisMtMarkSearchResult>("Не удалось получить число документов");

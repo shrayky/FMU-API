@@ -5,6 +5,7 @@ using FmuApiDomain.Configuration.Options.Organization;
 using FmuApiDomain.Documents;
 using FmuApiDomain.Frontol.Interfaces;
 using FmuApiDomain.Mark.Interfaces;
+using FmuApiDomain.ProductGroups.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace FmuApiApplication.Mark.Services;
@@ -17,8 +18,9 @@ public class MarkFabric : IMarkFabric
     private readonly IMarkStateManager _markStateManager;
     private readonly IParametersService _parametersService;
     private readonly IFrontolSprTService _frontolSprTService;
+    private readonly IGtinCatalogService _gtinCatalogService;
 
-    public MarkFabric(ILoggerFactory loggerFactory, IMarkParser markParser, IMarkChecker markChecker, IMarkStateManager markStateManager, IParametersService parametersService, IFrontolSprTService frontolSprTService)
+    public MarkFabric(ILoggerFactory loggerFactory, IMarkParser markParser, IMarkChecker markChecker, IMarkStateManager markStateManager, IParametersService parametersService, IFrontolSprTService frontolSprTService, IGtinCatalogService gtinCatalogService)
     {
         _loggerFactory = loggerFactory;
         _markParser = markParser;
@@ -26,18 +28,21 @@ public class MarkFabric : IMarkFabric
         _markStateManager = markStateManager;
         _parametersService = parametersService;
         _frontolSprTService = frontolSprTService;
+        _gtinCatalogService = gtinCatalogService;
     }
 
     public async Task<IMark> Create(Position position, string mark)
     {
         var logger = _loggerFactory.CreateLogger<Mark>();
 
-        var markInstance = new Mark(mark, _markParser, _markChecker, _markStateManager, _parametersService, logger);
+        var markInstance = new Mark(mark, _markParser, _markChecker, _markStateManager, _gtinCatalogService, _parametersService, logger);
 
         var appSettings = await _parametersService.CurrentAsync();
 
         var inn = position.Organisation?.Inn ?? string.Empty;
         var printGroupCode = await SetOrganizationId(markInstance, appSettings.OrganisationConfig.PrintGroups, inn);
+
+        markInstance.SetPositionData(position.ItemType, position.Text);
 
         SetTsPiotSettings(markInstance, position, appSettings, printGroupCode);
 

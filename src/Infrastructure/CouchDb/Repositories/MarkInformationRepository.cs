@@ -77,14 +77,7 @@ namespace CouchDb.Repositories
             if (!_appState.CouchDbOnline())
                 return new();
 
-            var totalCount = await ExecuteSafetyDbOperation(
-                async () =>
-                {
-                    var dbInfo = await _database.GetInfoAsync();
-                    return (int?)dbInfo.DocCount;
-                },
-                "SearchMarkDataGetInfo",
-                (int?)null);
+            var totalCount = await GetDocumentsCountAsync();
 
             if (totalCount == null)
                 return new();

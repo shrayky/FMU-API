@@ -1,4 +1,4 @@
-﻿using FmuApiDomain.Configuration.Options;
+using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.LocalModule.Models;
 using FmuApiDomain.TrueApi.MarkData.Check;
 using LocalModuleIntegration.Interfaces;
@@ -104,25 +104,19 @@ public class LocalModuleServiceV2 : ILocalModuleService
         return new LocalModuleState();
     }
 
-    public async Task<CheckMarksDataTrueApi> OutCheckAsync(LocalModuleConnection connection, string cis, string xapiKey)
+    public async Task<CheckMarksDataTrueApi> OutCheckAsync(LocalModuleConnection connection, string cis, string xapiKey, int? pg = null)
     {
         using var httpClient = _httpClientFactory.CreateClient("LocalModule");
 
         httpClient.BaseAddress = new Uri(connection.ConnectionAddress);
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", connection.GetBasicAuthorizationHeader());
 
-        var cises = new[]
-        {
-            new
-            {
-                cis = cis
-            }
-        };
+        object content = pg.HasValue
+            ? new { cis_list = new[] { new { cis, pg = pg.Value } } }
+            : new { cis_list = new[] { new { cis } } };
 
-        var content = new
-        {
-            cis_list = cises
-        };
+        if (pg.HasValue)
+            _logger.LogInformation("Запрос в ЛМ /outCheck cis={Cis} pg={Pg}", cis, pg.Value);
 
         var response = await httpClient.PostAsJsonAsync(OutCheckAddress, content);
 

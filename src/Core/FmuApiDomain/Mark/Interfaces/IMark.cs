@@ -16,6 +16,7 @@ namespace FmuApiDomain.Mark.Interfaces
         public bool CodeIsSgtin { get; }
         public Task<CheckMarksDataTrueApi> TrueApiData();
         public void SetPrintGroupCode(int code);
+        public void SetPositionData(int itemType, string productName);
         public MarkEntity DatabaseState();
         public FmuAnswer MarkDataAfterCheck();
         public Task<Result<FmuAnswer>> PerformCheckAsync(OperationType operation);

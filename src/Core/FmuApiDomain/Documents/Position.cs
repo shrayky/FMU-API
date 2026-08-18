@@ -41,5 +41,6 @@ namespace FmuApiDomain.Documents
         [JsonPropertyName("product_price")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public double ProductPrice { get; set; } = 0;
+
     }
 }

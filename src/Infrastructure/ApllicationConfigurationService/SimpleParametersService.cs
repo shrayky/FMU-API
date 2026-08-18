@@ -4,6 +4,7 @@ using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Configuration.Options.Organization;
 using FmuApiDomain.Constants;
+using FmuApiDomain.TrueApi.MarkData;
 using FmuApiDomain.CentralServiceExchange.Models;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.Caching.Memory;
@@ -59,6 +60,7 @@ public class SimpleParametersService : IParametersService
 
         settings.NodeName = Environment.MachineName;
         settings.OrganisationConfig.FillIfEmpty();
+        settings.GisMtProductMappings = AtolToTrueApiGroupMap.CopyDefaults();
 
         SaveConfiguration(settings, true);
 
@@ -176,7 +178,7 @@ public class SimpleParametersService : IParametersService
                 settings = MigrationTo12_0.DoMigration(settings);
         }
 
-        if (settings.AppVersion == 12 && (settings.Assembly < 1 || needLocalModuleMove))
+        if (settings.AppVersion == 12 && (settings.Assembly != 1 || needLocalModuleMove))
             settings = MigrationTo12_1.DoMigration(settings);
 
         settings.AppVersion = ApplicationInformation.AppVersion;
@@ -331,7 +333,23 @@ public class SimpleParametersService : IParametersService
         => await Task.Run(() => { return Current(); });
 
     public async Task UpdateAsync(Parameters parameters)
-        => await SaveConfigurationAsync(parameters);
+    {
+        PreserveGisMtProductMappings(parameters);
+        await SaveConfigurationAsync(parameters);
+    }
+
+    /// <summary>
+    /// Форма настроек не содержит маппинг и при сохранении прислала бы пустой список.
+    /// </summary>
+    private void PreserveGisMtProductMappings(Parameters incoming)
+    {
+        if (incoming.GisMtProductMappings.Count > 0)
+            return;
+
+        var current = _cacheService.Get<Parameters>(CacheKey);
+        if (current is { GisMtProductMappings.Count: > 0 })
+            incoming.GisMtProductMappings = current.GisMtProductMappings;
+    }
 
     public async Task<Result> ApplyFromCentral(FmuApiSetting newSettings)
     {

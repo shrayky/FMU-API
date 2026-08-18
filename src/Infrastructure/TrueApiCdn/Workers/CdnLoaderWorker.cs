@@ -2,7 +2,6 @@ using FmuApiDomain.TrueApi.Cdn;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.State.Interfaces;
-using FmuApiDomain.TrueApi.Cdn;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;

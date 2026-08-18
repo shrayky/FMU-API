@@ -1,4 +1,4 @@
-﻿using CouchDb.Documents;
+using CouchDb.Documents;
 using CouchDB.Driver;
 using CouchDB.Driver.Types;
 using CSharpFunctionalExtensions;
@@ -155,6 +155,29 @@ namespace CouchDb.Repositories
                 },
                 "GetListById",
                 new List<T>());
+        }
+
+        /// <summary>
+        /// Число документов в базе без design-документов индексов.
+        /// </summary>
+        protected async Task<int?> GetDocumentsCountAsync()
+        {
+            return await ExecuteSafetyDbOperation<int?>(
+                async () =>
+                {
+                    var dbInfo = await _database.GetInfoAsync();
+                    var indexes = await _database.GetIndexesAsync();
+                    var designDocs = indexes
+                        .Where(index => !string.IsNullOrWhiteSpace(index.DesignDocument))
+                        .Select(index => index.DesignDocument)
+                        .Distinct(StringComparer.Ordinal)
+                        .Count();
+
+                    var count = (int)dbInfo.DocCount - designDocs;
+                    return count < 0 ? 0 : count;
+                },
+                "GetDocumentsCount",
+                null);
         }
 
         public async Task<Result<List<T>>> ExecuteMangoQueryAsync(object mangoQuery)

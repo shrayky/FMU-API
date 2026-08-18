@@ -1,4 +1,4 @@
-﻿using FmuApiDomain.Authentication.Models;
+using FmuApiDomain.Authentication.Models;
 using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.Configuration.Options.Organization;
 using FmuApiDomain.Constants;
@@ -37,6 +37,8 @@ public class Parameters
     public SaleControlConfig SaleControlConfig { get; set; } = new();
 
     public GisMtSettings GisMtSettings { get; set; } = new();
+
+    public List<GisMtProductMapping> GisMtProductMappings { get; set; } = [];
 
     public CentralServerConnectionProperties FmuApiCentralServer { get; set; } = new();
 

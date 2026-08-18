@@ -4,7 +4,8 @@ using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Documents;
 using FmuApiDomain.Documents.Interfaces;
-using FmuApiDomain.Documents.Interfaces;
+using FmuApiDomain.ProductGroups;
+using FmuApiDomain.ProductGroups.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.TrueApi.MarkData;
 using Microsoft.Extensions.Caching.Memory;
@@ -22,6 +23,7 @@ public class BeginDocument : IFrontolDocumentService
     private IMarkFabric MarkFabric { get; set; }
     private IParametersService ParametersService { get; set; }
     private IApplicationState AppState { get; set; }
+    private IProductGroupResolver ProductGroupResolver { get; set; }
     
     private readonly Parameters _configuration;
 
@@ -36,6 +38,7 @@ public class BeginDocument : IFrontolDocumentService
 
         ParametersService = provider.GetRequiredService<IParametersService>();
         AppState = provider.GetRequiredService<IApplicationState>();
+        ProductGroupResolver = provider.GetRequiredService<IProductGroupResolver>();
         _configuration = ParametersService.Current();
     }
 
@@ -74,26 +77,29 @@ public class BeginDocument : IFrontolDocumentService
                 var markData = trueApiCisData.Codes[0];
 
                 var groupId = 0;
-
-                // для табака есть минимальная цена, получим ее из настроек
-                // todo: в новых фронтолах код группы приходит с запросом, можно оттуда групу достать,
-                // если онлайн проверка не прошла
                 var minimalPriceFromSettings = 0;
 
-                if (markData.GroupIds != null)
+                if (markData.GroupIds != null && markData.GroupIds.Count > 0)
                 {
-                    if (!markData.GroupIds.Contains(TrueApiGroup.Tobaco))
-                    {
-                        minimalPriceFromSettings = _configuration.MinimalPrices.Tabaco;
-                    }
-
                     groupId = markData.GroupIds[0];
                 }
+                else
+                {
+                    var gtin = !string.IsNullOrWhiteSpace(markData.Gtin)
+                        ? markData.Gtin
+                        : GtinCalculator.FromSgtin(mark.SGtin);
+                    var resolvedGroup = await ProductGroupResolver.ResolveAsync(position.ItemType, gtin);
+                    if (resolvedGroup.HasValue)
+                        groupId = resolvedGroup.Value;
+                }
+
+                if (groupId == TrueApiGroup.Tobaco)
+                    minimalPriceFromSettings = _configuration.MinimalPrices.Tabaco;
 
                 var sellPrice = position.ProductPrice == 0 ? position.Total_price * 100 : position.ProductPrice * 100;
 
-                // проверка минимальной розничной цены единицы товара
-                if (markData.Smp != null)
+                // проверка ЕМЦ (smp) только для групп с признаком CheckSmp (по умолчанию ТГ 3 и 16)
+                if (markData.Smp != null && ProductGroupResolver.ShouldCheckSmp(position.ItemType, groupId))
                 {
                     var minPrice = minimalPriceFromSettings > markData.Smp ? minimalPriceFromSettings : markData.Smp;
 

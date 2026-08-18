@@ -8,6 +8,7 @@ using FmuApiDomain.LocalModule.Enums;
 using FmuApiDomain.Mark.Entities;
 using FmuApiDomain.Mark.Enums;
 using FmuApiDomain.Mark.Interfaces;
+using FmuApiDomain.ProductGroups.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.TrueApi.MarkData;
 using FmuApiDomain.TrueApi.MarkData.Check;
@@ -25,6 +26,7 @@ namespace FmuApiApplication.Mark.Services
         private readonly ILocalModuleService _localModuleService;
         private readonly IApplicationState _applicationState;
         private readonly ITsPiotService _tsPiotService;
+        private readonly IProductGroupResolver _productGroupResolver;
 
         private readonly Parameters _configuration;
 
@@ -32,7 +34,9 @@ namespace FmuApiApplication.Mark.Services
             IParametersService parametersService,
             IOnLineMarkCheckService onlineMarkCheck,
             IApplicationState applicationState,
-            ILocalModuleService localModuleService, ITsPiotService tsPiotService)
+            ILocalModuleService localModuleService,
+            ITsPiotService tsPiotService,
+            IProductGroupResolver productGroupResolver)
         {
             _logger = logger;
             _onlineMarkCHeck = onlineMarkCheck;
@@ -40,6 +44,7 @@ namespace FmuApiApplication.Mark.Services
             _applicationState = applicationState;
             _localModuleService = localModuleService;
             _tsPiotService = tsPiotService;
+            _productGroupResolver = productGroupResolver;
         }
 
         public async Task<MarkCheckResult> FmuApiDatabaseCheck(string sgtin, IMarkStateManager stateManager)
@@ -156,7 +161,7 @@ namespace FmuApiApplication.Mark.Services
             };
         }
 
-        public async Task<MarkCheckResult> OfflineCheckAsync(string cis, int organizationId)
+        public async Task<MarkCheckResult> OfflineCheckAsync(string cis, int organizationId, int atolItemType, string gtin)
         {
             _logger.LogWarning("Производится проверка марки {сis} в локальном модуле", cis);
 
@@ -172,11 +177,15 @@ namespace FmuApiApplication.Mark.Services
             if (lmState != LocalModuleStatus.Ready)
                 return MarkCheckResult.Failure($"Локальный модуль для организации с кодом {organizationId} находится в состоянии {lmState}, off-line проверка {cis} невозможна.");
 
+            var trueApiGroupId = await _productGroupResolver.ResolveAsync(atolItemType, gtin);
+            if (!trueApiGroupId.HasValue)
+                _logger.LogWarning("Для марки {Cis} не определён код товарной группы Честного знака, запрос в ЛМ уйдёт без pg", cis);
+
             Result<CheckMarksDataTrueApi> trueMarkCheckResult;
 
             try
             {
-                trueMarkCheckResult = await _localModuleService.OutCheckAsync(connection, cis, xApiKey);
+                trueMarkCheckResult = await _localModuleService.OutCheckAsync(connection, cis, xApiKey, trueApiGroupId);
             }
             catch (Exception ex)
             {

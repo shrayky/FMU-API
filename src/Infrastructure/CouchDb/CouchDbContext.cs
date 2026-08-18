@@ -3,9 +3,10 @@ using CouchDb.Documents;
 using CouchDB.Driver;
 using FmuApiDomain.BeerTaps.Entities;
 using FmuApiDomain.Documents.Entities;
-using FmuApiDomain.Statistics.Entities;
 using FmuApiDomain.GisMt.Entities;
 using FmuApiDomain.Mark.Entities;
+using FmuApiDomain.ProductGroups.Entities;
+using FmuApiDomain.Statistics.Entities;
 
 namespace CouchDb;
 
@@ -17,6 +18,7 @@ public class CouchDbContext
     public ICouchDatabase<CouchDoc<BeerTapEntity>> BeerOnTap { get; }
     public ICouchDatabase<CouchDoc<GisMtDocumentEntity>> GisMtDocuments { get; }
     public ICouchDatabase<CouchDoc<GisMtMarkEntity>> GisMtMarks { get; }
+    public ICouchDatabase<CouchDoc<GtinCatalogEntity>> GtinCatalog { get; }
 
     public CouchDbContext(CouchClient client)
     {
@@ -26,5 +28,6 @@ public class CouchDbContext
         BeerOnTap = client.GetDatabase<CouchDoc<BeerTapEntity>>(DatabaseNames.BeerOnTaps);
         GisMtDocuments = client.GetDatabase<CouchDoc<GisMtDocumentEntity>>(DatabaseNames.GisMtDocumentsDbName);
         GisMtMarks = client.GetDatabase<CouchDoc<GisMtMarkEntity>>(DatabaseNames.GisMtMarksDbName);
+        GtinCatalog = client.GetDatabase<CouchDoc<GtinCatalogEntity>>(DatabaseNames.GtinCatalogDbName);
     }
 }

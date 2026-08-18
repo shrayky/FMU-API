@@ -11,6 +11,7 @@ public class DatabaseIndexes
                 { DatabaseNames.BeerOnTaps, BeerOnTapsDbIndexes() },
                 { DatabaseNames.GisMtDocumentsDbName, GisMtDocumentsDbIndexes() },
                 { DatabaseNames.GisMtMarksDbName, GisMtMarksDbIndexes() },
+                { DatabaseNames.GtinCatalogDbName, GtinCatalogDbIndexes() },
             };
     }
 
@@ -48,5 +49,10 @@ public class DatabaseIndexes
             new("gis-mt-mark-product-group-loaded-at-idx", new(["data.productGroup", "data.infoLoadedAt"])),
             new("gis-mt-mark-info-loaded-at-idx", new(["data.infoLoadedAt"])),
             new("gis-mt-mark-cleanup-idx", new(["data.infoLoadedAt", "data.sold"])),
+        ];
+
+    private static CouchDbIndexDefinition[] GtinCatalogDbIndexes() =>
+        [
+            new("gtin-catalog-gtin-idx", new(["data.gtin"])),
         ];
 }
