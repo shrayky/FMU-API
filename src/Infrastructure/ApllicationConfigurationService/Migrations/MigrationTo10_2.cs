@@ -22,8 +22,10 @@ namespace ApplicationConfigurationService.Migrations
             if (settings.Database.NetAddress.Length > 0 && settings.Database.UserName.Length > 0 && settings.Database.Password.Length > 0)
                 settings.Database.Enable = true;
 
+#pragma warning disable CS0612 // Тип или член устарел
             settings.Database.FrontolDocumentsDbName = string.Empty;
             settings.Database.AlcoStampsDbName = string.Empty;
+#pragma warning restore CS0612 // Тип или член устарел
 
             settings.AppVersion = 10;
             settings.Assembly = 2;

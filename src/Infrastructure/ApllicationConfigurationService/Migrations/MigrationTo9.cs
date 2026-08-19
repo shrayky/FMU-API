@@ -9,6 +9,7 @@ namespace ApplicationConfigurationService.Migrations
     {
         public static Parameters DoMigration(Parameters settings)
         {
+#pragma warning disable CS0612 // Тип или член устарел
             settings.HostsToPing = FillHostsToPing(settings.HostToPing);
 
             if (settings.OrganisationConfig.PrintGroups.Count == 0)
@@ -20,6 +21,7 @@ namespace ApplicationConfigurationService.Migrations
             settings.AppVersion = 9;
 
             return settings;
+#pragma warning restore CS0612 // Тип или член устарел
         }
 
         private static OrganizationConfiguration MoveXapiConfiguration(string? XAPIKEY)

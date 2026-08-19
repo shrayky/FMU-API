@@ -18,20 +18,12 @@ using TrueApiCdn.Interface;
 namespace FmuApiApplication.CentralServiceExchange;
 
 [AutoRegisterService(ServiceLifetime.Scoped)]
-public class NodeInformationService : INodeInformationService
+public class NodeInformationService(IParametersService parametersService, ICdnService cdnService, IApplicationState applicationState, IMarkStatisticsService markStatisticsService) : INodeInformationService
 {
-    private readonly IParametersService _parametersService;
-    private readonly ICdnService _cdnService;
-    private IApplicationState _applicationState;
-    private IMarkStatisticsService _markStatisticsService;
-
-    public NodeInformationService(IParametersService parametersService, ICdnService cdnService, IApplicationState applicationState, IMarkStatisticsService markStatisticsService)
-    {
-        _parametersService = parametersService;
-        _cdnService = cdnService;
-        _applicationState = applicationState;
-        _markStatisticsService = markStatisticsService;
-    }
+    private readonly IParametersService _parametersService = parametersService;
+    private readonly ICdnService _cdnService = cdnService;
+    private readonly IApplicationState _applicationState = applicationState;
+    private readonly IMarkStatisticsService _markStatisticsService = markStatisticsService;
 
     public async Task<DataPacket> Create()
     {
@@ -124,10 +116,8 @@ public class NodeInformationService : INodeInformationService
                 IgnoreVerificationErrorForTrueApiGroups = settings.SaleControlConfig.IgnoreVerificationErrorForTrueApiGroups,
                 CheckReceiptReturn = settings.SaleControlConfig.CheckReceiptReturn,
                 CorrectExpireDateInSaleReturn = settings.SaleControlConfig.CorrectExpireDateInSaleReturn,
-                SendEmptyTrueApiAnswerWhenTimeoutError = settings.SaleControlConfig.SendEmptyTrueApiAnswerWhenTimeoutError,
                 CheckIsOwnerField = settings.SaleControlConfig.CheckIsOwnerField,
                 SendLocalModuleInformationalInRequestId = settings.SaleControlConfig.SendLocalModuleInformationalInRequestId,
-                RejectSalesWithoutCheckInformationFrom = settings.SaleControlConfig.RejectSalesWithoutCheckInformationFrom,
                 ResetSoldStatusForReturn = settings.SaleControlConfig.ResetSoldStatusForReturn,
                 UseBeUseBeerTaps = settings.SaleControlConfig.UseBeerTaps,
 

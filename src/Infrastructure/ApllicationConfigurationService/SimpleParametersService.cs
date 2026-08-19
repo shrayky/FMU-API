@@ -365,7 +365,6 @@ public class SimpleParametersService : IParametersService
         settings.SaleControlConfig.CorrectExpireDateInSaleReturn = newSettings.SaleControl.CorrectExpireDateInSaleReturn;
         settings.SaleControlConfig.IgnoreVerificationErrorForTrueApiGroups = newSettings.SaleControl.IgnoreVerificationErrorForTrueApiGroups;
         settings.SaleControlConfig.ResetSoldStatusForReturn = newSettings.SaleControl.ResetSoldStatusForReturn;
-        settings.SaleControlConfig.SendEmptyTrueApiAnswerWhenTimeoutError = newSettings.SaleControl.SendEmptyTrueApiAnswerWhenTimeoutError;
         settings.SaleControlConfig.SendLocalModuleInformationalInRequestId = newSettings.SaleControl.SendLocalModuleInformationalInRequestId;
 
         settings.HttpRequestTimeouts.CdnRequestTimeout = newSettings.TimeOut.CdnRequest;

@@ -1,7 +1,6 @@
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.BeerTaps.Models;
-using FmuApiDomain.BeerTaps.Models;
 
 namespace FmuApiDomain.BeerTaps.Interfaces;
 

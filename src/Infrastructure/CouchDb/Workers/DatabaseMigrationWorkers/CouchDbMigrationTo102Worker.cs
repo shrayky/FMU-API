@@ -41,9 +41,12 @@ namespace CouchDb.Workers.DatabaseMigrationWorkers
         {
             var appParameters = await _parametersService.CurrentAsync();
 
+
+#pragma warning disable CS0612 // Тип или член устарел
             if (string.IsNullOrEmpty(appParameters.Database.MarksStateDbName) &&
                 string.IsNullOrEmpty(appParameters.Database.FrontolDocumentsDbName))
                 return;
+
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -70,6 +73,7 @@ namespace CouchDb.Workers.DatabaseMigrationWorkers
                 {
                     _logger.LogError("Ошибка миграции данных марок на версию 10.2 {err}", E.Message);
                 }
+#pragma warning restore CS0612 // Тип или член устарел
             }
         }
 

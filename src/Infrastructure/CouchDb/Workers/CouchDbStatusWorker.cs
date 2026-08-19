@@ -3,7 +3,6 @@ using CouchDb.Interfaces;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.State.Interfaces;
-using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 

@@ -10,7 +10,6 @@ using FmuApiDomain.Mark.Entities;
 using FmuApiDomain.Mark.Enums;
 using FmuApiDomain.Mark.Interfaces;
 using FmuApiDomain.Mark.Models;
-using FmuApiDomain.Mark.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.TrueApi.MarkData.Check;
 using Microsoft.Extensions.DependencyInjection;

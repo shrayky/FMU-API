@@ -102,11 +102,11 @@ public class ApplicationState : IApplicationState
 
     public LocalModuleState LocalModuleInformation(int organizationId)
     {
-        LocalModuleState lmInfo = new();
+        LocalModuleState? lmInfo;
 
         _localModuleInformation.TryGetValue(organizationId, out lmInfo);
 
-        return lmInfo;
+        return lmInfo ?? new LocalModuleState();
     }
 
     public bool CouchDbOnline()

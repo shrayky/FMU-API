@@ -147,6 +147,8 @@ namespace LocalModuleIntegration.Service
             }
             catch (Exception ex)
             {
+                _logger.LogError("Ошибка получения статуса СУБД Енисей локального модуля! {exception}", ex);
+
                 return false;
             }
 

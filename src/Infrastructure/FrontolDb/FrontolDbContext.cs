@@ -1,5 +1,4 @@
-﻿using FmuApiDomain.Configuration;
-using FmuApiDomain.Configuration.Interfaces;
+﻿using FmuApiDomain.Configuration.Interfaces;
 using FrontolDb.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,19 +13,14 @@ public class FrontolDbContext : DbContext
     public DbSet<PrintGroup> PrintGroups { get; set; }
     public DbSet<BeerTapEntity> BeerTaps { get; set; }
 
-    private readonly IParametersService _parametersService;
-    private readonly Parameters _configuration;
-
     public FrontolDbContext(IParametersService parametersService)
     {
-        _parametersService = parametersService;
-        _configuration = _parametersService.Current();
-
-        var frontolConnetionId = _configuration.ConnectedFrontolSettings.PrintGroupSourseId;
+        var configuration = parametersService.Current();
+        var frontolConnetionId = configuration.ConnectedFrontolSettings.PrintGroupSourseId;
 
         if (frontolConnetionId != 0)
         {
-            var connection = _configuration.ConnectedFrontolSettings.ConnectionSettings.FirstOrDefault(p => p.Id == frontolConnetionId);
+            var connection = configuration.ConnectedFrontolSettings.ConnectionSettings.FirstOrDefault(p => p.Id == frontolConnetionId);
 
             if (connection != null)
             {

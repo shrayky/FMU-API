@@ -68,12 +68,17 @@ public class TsPiotService : ITsPiotService
             if (status == null)
                 return Result.Failure<CheckMarksDataTrueApi>("Пустой ответ от сервера");
 
-            if (status.Response.CodesResponseItems.Count == 0)
+            var responce = status.Response;
+
+           if (responce == null)
+                return Result.Failure<CheckMarksDataTrueApi>("Пустой ответ от сервера");
+
+            if (responce.CodesResponseItems.Count == 0)
             {
                 return Result.Failure<CheckMarksDataTrueApi>("Пустой ответ от сервера: отсутствуют элементы codesResponse");
             }
 
-            var firstItem = status.Response.CodesResponseItems[0];
+            var firstItem = responce.CodesResponseItems[0];
 
             if (firstItem.Code != 0)
             {
