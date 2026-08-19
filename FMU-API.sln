@@ -68,6 +68,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "winget", "winget", "{9A4B96
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HostApp", "src\Presentation\HostApp\HostApp.csproj", "{241E92A4-DC7B-5352-6C3B-7A1060181EFC}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{DEE5DD87-39C1-BF34-B639-A387DCCF972B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "_build", "build\_build.csproj", "{FA70338C-E88C-4BF5-90D4-5F0B63FFF080}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -142,6 +146,10 @@ Global
 		{241E92A4-DC7B-5352-6C3B-7A1060181EFC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{241E92A4-DC7B-5352-6C3B-7A1060181EFC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{241E92A4-DC7B-5352-6C3B-7A1060181EFC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FA70338C-E88C-4BF5-90D4-5F0B63FFF080}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FA70338C-E88C-4BF5-90D4-5F0B63FFF080}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FA70338C-E88C-4BF5-90D4-5F0B63FFF080}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FA70338C-E88C-4BF5-90D4-5F0B63FFF080}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -168,6 +176,7 @@ Global
 		{4E7AAEFD-9EA3-4508-B9F9-5EB1E0BD64FB} = {A2FC2158-423C-4F0A-909F-C65382DC2599}
 		{DD672ADA-1C05-480E-9ABA-9752A73EC98C} = {4CFBEE11-B6CC-49C1-88D0-327A674A2F89}
 		{241E92A4-DC7B-5352-6C3B-7A1060181EFC} = {8045AD33-2DDA-4328-8F98-5306A7047D50}
+		{FA70338C-E88C-4BF5-90D4-5F0B63FFF080} = {DEE5DD87-39C1-BF34-B639-A387DCCF972B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {853898A9-1472-4293-B761-F8E8DFA48C1F}

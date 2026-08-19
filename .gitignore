@@ -384,3 +384,4 @@ FmuApi.API/wwwroot/bundle/index.js
 /src/Presentation/WebApi/Properties/PublishProfiles/x86 full.pubxml
 /.superpowers/sdd
 /docs/superpowers
+/.nuke/temp
