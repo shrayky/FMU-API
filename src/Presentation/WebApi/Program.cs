@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 using Scalar.AspNetCore;
 using Serilog;
 using ServicesAndDaemonsManager;
+using Shared.Http;
 using Shared.Strings;
 using TrueApiIntegration;
 using TsPiotClinet;
@@ -90,6 +91,7 @@ bool RunHttpApiService()
     });
 
     services.AddHttpClient();
+    services.AddWin7HttpCompatibility();
 
     services.AddScoped<IOnLineMarkCheckService, MarksCheckService>();
     services.AddScoped<IMarkStatisticsService, MarkStatisticsService>();

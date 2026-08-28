@@ -8,7 +8,9 @@
 
   <ItemGroup>
     <PackageReference Include="CSharpFunctionalExtensions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Http" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
     <PackageReference Include="Serilog.Sinks.File" />
   </ItemGroup>
 
