@@ -139,7 +139,8 @@ public class NodeInformationService(IParametersService parametersService, ICdnSe
                 IsEnabled = settings.Logging.IsEnabled,
                 LogDepth = settings.Logging.LogDepth,
                 LogLevel = settings.Logging.LogLevel,
-            }
+            },
+            GisMtProductMappings = settings.GisMtProductMappings
         };
     }
 

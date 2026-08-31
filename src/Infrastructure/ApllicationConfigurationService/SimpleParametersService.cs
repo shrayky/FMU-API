@@ -370,6 +370,10 @@ public class SimpleParametersService : IParametersService
         settings.HttpRequestTimeouts.CdnRequestTimeout = newSettings.TimeOut.CdnRequest;
         settings.HttpRequestTimeouts.CheckInternetConnectionTimeout = newSettings.TimeOut.InternetConnectionCheck;
         settings.HttpRequestTimeouts.CheckMarkRequestTimeout = newSettings.TimeOut.TrueSignCheckRequest;
+        settings.HttpRequestTimeouts.SyncWithTsPiot = newSettings.TimeOut.SyncWithTsPiot;
+
+        if (newSettings.GisMtProductMappings.Count > 0)
+            settings.GisMtProductMappings = newSettings.GisMtProductMappings;
 
         settings.Logging.IsEnabled = newSettings.Logging.IsEnabled;
         settings.Logging.LogLevel = newSettings.Logging.LogLevel;

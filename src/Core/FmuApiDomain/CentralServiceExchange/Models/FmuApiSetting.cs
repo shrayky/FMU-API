@@ -35,6 +35,8 @@ public record FmuApiSetting
     [JsonPropertyName("logging")]
     public Logging Logging { get; init; } = new();
 
+    [JsonPropertyName("gisMtProductMappings")]
+    public List<GisMtProductMapping> GisMtProductMappings { get; init; } = [];
 
     [Obsolete]
     [JsonPropertyName("TokenService")]
