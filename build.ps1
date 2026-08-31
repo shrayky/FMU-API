@@ -8,6 +8,7 @@ Write-Output "PowerShell $($PSVersionTable.PSEdition) version $($PSVersionTable.
 
 Set-StrictMode -Version 2.0; $ErrorActionPreference = "Stop"; $ConfirmPreference = "None"; trap { Write-Error $_ -ErrorAction Continue; exit 1 }
 $PSScriptRoot = Split-Path $MyInvocation.MyCommand.Path -Parent
+Set-Location -LiteralPath $PSScriptRoot
 
 ###########################################################################
 # CONFIGURATION
@@ -68,4 +69,5 @@ else {
 Write-Output "Microsoft (R) .NET SDK version $(& $env:DOTNET_EXE --version)"
 
 ExecSafe { & $env:DOTNET_EXE build $BuildProjectFile /nodeReuse:false /p:UseSharedCompilation=false -nologo -clp:NoSummary }
-ExecSafe { & $env:DOTNET_EXE run --project $BuildProjectFile --no-build -- $BuildArguments }
+$NukeArguments = @('--root', $PSScriptRoot) + @($BuildArguments)
+ExecSafe { & $env:DOTNET_EXE run --project $BuildProjectFile --no-build -- $NukeArguments }

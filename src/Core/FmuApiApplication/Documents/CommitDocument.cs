@@ -1,14 +1,12 @@
 using CSharpFunctionalExtensions;
-using FmuApiApplication.Mark.Interfaces;
+using FmuApiApplication.Documents.Interfaces;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Documents;
 using FmuApiDomain.Documents.Interfaces;
-using FmuApiDomain.Mark.Enums;
-using FmuApiDomain.Mark.Interfaces;
-using FmuApiDomain.Mark.Models;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace FmuApiApplication.Documents;
 
@@ -16,24 +14,25 @@ public class CommitDocument : IFrontolDocumentService
 {
     private RequestDocument Document { get; set; }
     private Lazy<IDocumentRepository> TemporaryDocumentsService { get; set; }
-    private Lazy<IMarkStateManager> MarkStateService { get; set; }
-    private IMarkFabric MarkFabric { get; set; }
+    private Lazy<IOfflineDocumentStore> OfflineDocumentStore { get; set; }
+    private Lazy<IFrontolDocumentMarkStateService> MarkStateService { get; set; }
     private IParametersService ParametersService { get; set; }
     private IApplicationState AppState { get; set; }
+    private ILogger<CommitDocument> Logger { get; set; }
 
     private readonly Parameters _configuration;
-    private const string SaleDocumentType = "receipt";
 
     private CommitDocument(RequestDocument requestDocument, IServiceProvider provider)
     {
         Document = requestDocument;
 
         TemporaryDocumentsService = new Lazy<IDocumentRepository>(provider.GetRequiredService<IDocumentRepository>);
-        MarkStateService = new Lazy<IMarkStateManager>(provider.GetRequiredService<IMarkStateManager>);
-        MarkFabric = provider.GetRequiredService<IMarkFabric>();
+        OfflineDocumentStore = new Lazy<IOfflineDocumentStore>(provider.GetRequiredService<IOfflineDocumentStore>);
+        MarkStateService = new Lazy<IFrontolDocumentMarkStateService>(provider.GetRequiredService<IFrontolDocumentMarkStateService>);
 
         AppState = provider.GetRequiredService<IApplicationState>();
         ParametersService = provider.GetRequiredService<IParametersService>();
+        Logger = provider.GetRequiredService<ILogger<CommitDocument>>();
         _configuration = ParametersService.Current();
     }
 
@@ -60,65 +59,40 @@ public class CommitDocument : IFrontolDocumentService
         if (!_configuration.Database.ConfigurationIsEnabled)
             return Result.Success(checkResult);
 
-        if (!AppState.CouchDbOnline())
-            return Result.Success(checkResult);
+        var beginDocument = await LoadBeginDocument();
 
-        var loadDocumentResult = await TemporaryDocumentsService.Value.Get(Document.Uid);
-
-        if (loadDocumentResult.IsFailure)
-            return Result.Failure<FmuAnswer>(
-                $"Невозможно закрыть документ {Document.Uid}! Он не найден в базе документов!");
-
-        var frontolDocument = loadDocumentResult.Value;
-
-        var state = frontolDocument.FrontolDocument.Type == SaleDocumentType ? MarkState.Sold : MarkState.Returned;
-
-        // Словарь: код марки (SGtin) -> количество, из фронтола марка прилетает в base64
-        Dictionary<string, decimal> quantityByMark = frontolDocument.FrontolDocument.Positions
-            .SelectMany(p => p.Marking_codes.Select(code => new
-            {
-                code = Convert.FromBase64String(code),
-                Quantity = p.Volume > 0 ? (decimal)p.Volume : (decimal)p.Quantity
-            }))
-            .ToDictionary(
-                x => System.Text.Encoding.UTF8.GetString(x.code),
-                x => x.Quantity
-            );
-
-        // Получаем все объекты марки
-        var marks = await Task.WhenAll(
-            quantityByMark.Keys.Select(code => MarkFabric.Create(new(), code))
-        );
-
-        var marksToChangeState = new Dictionary<string, SaleData>();
-
-        foreach (var mark in marks)
+        if (beginDocument == null)
         {
-            SaleData saleData = new()
-            {
-                CheckNumber = frontolDocument.FrontolDocument.Number,
-                SaleDate = DateTime.Now,
-                Pos = frontolDocument.FrontolDocument.Pos,
-                IsSale = frontolDocument.FrontolDocument.Type == SaleDocumentType,
-                Quantity = quantityByMark[mark.Code]
-            };
-
-            marksToChangeState.Add(mark.SGtin, saleData);
+            Logger.LogWarning(
+                "Документ {Uid} не найден в CouchDB и в файловой очереди, commit принят без смены статусов марок",
+                Document.Uid);
+            return Result.Success(checkResult);
         }
-        
-        await MarkChangeStateBulk(marksToChangeState, state);
 
+        if (!AppState.CouchDbOnline())
+        {
+            await OfflineDocumentStore.Value.Save(beginDocument, OfflineDocumentStatus.Committed);
+            return Result.Success(checkResult);
+        }
+
+        await MarkStateService.Value.ApplyAsync(beginDocument);
         await TemporaryDocumentsService.Value.Delete(Document.Uid);
+        await OfflineDocumentStore.Value.Delete(Document.Uid);
 
         return Result.Success(checkResult);
     }
 
-    private async Task MarkChangeStateBulk(Dictionary<string, SaleData> marksToChangeState, string state)
+    private async Task<RequestDocument?> LoadBeginDocument()
     {
-        foreach (var mark in marksToChangeState)
+        if (AppState.CouchDbOnline())
         {
-            await MarkStateService.Value.ChangeState(mark.Key, state, mark.Value);
+            var loadResult = await TemporaryDocumentsService.Value.Get(Document.Uid);
+            if (loadResult.IsSuccess)
+                return loadResult.Value.FrontolDocument;
         }
+
+        var offline = await OfflineDocumentStore.Value.Get(Document.Uid);
+        return offline?.Document;
     }
 
     private async Task<Result> SendDocumentToAlcoUnit()
@@ -129,7 +103,7 @@ public class CommitDocument : IFrontolDocumentService
         await Task.Delay(1);
 
         var auDoc = Document;
-        
+
         return Result.Success(auDoc);
     }
 }

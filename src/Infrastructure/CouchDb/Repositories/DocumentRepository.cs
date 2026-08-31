@@ -25,9 +25,11 @@ namespace CouchDb.Repositories
                 FrontolDocument = document
             };
 
-            await CreateAsync(entity);
+            var created = await CreateAsync(entity);
+            if (!created)
+                return Result.Failure<DocumentEntity>("Не удалось сохранить документ в CouchDB");
 
-            return Result.Success<DocumentEntity>(entity);
+            return Result.Success(entity);
         }
 
         public async Task<Result<bool>> Delete(RequestDocument document)

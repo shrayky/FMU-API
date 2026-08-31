@@ -8,7 +8,6 @@ using FmuApiDomain.ProductGroups;
 using FmuApiDomain.ProductGroups.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.TrueApi.MarkData;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace FmuApiApplication.Documents;
@@ -18,7 +17,7 @@ public class BeginDocument : IFrontolDocumentService
     private RequestDocument Document { get; set; }
 
     private Lazy<IDocumentRepository> TemporaryDocumentsService { get; set; }
-    private Lazy<IMemoryCache> CacheService { get; set; }
+    private Lazy<IOfflineDocumentStore> OfflineDocumentStore { get; set; }
 
     private IMarkFabric MarkFabric { get; set; }
     private IParametersService ParametersService { get; set; }
@@ -32,7 +31,7 @@ public class BeginDocument : IFrontolDocumentService
         Document = requestDocument;
 
         TemporaryDocumentsService = new Lazy<IDocumentRepository>(provider.GetRequiredService<IDocumentRepository>);
-        CacheService = new Lazy<IMemoryCache>(provider.GetRequiredService<IMemoryCache>);
+        OfflineDocumentStore = new Lazy<IOfflineDocumentStore>(provider.GetRequiredService<IOfflineDocumentStore>);
         
         MarkFabric = provider.GetRequiredService<IMarkFabric>();
 
@@ -137,9 +136,13 @@ public class BeginDocument : IFrontolDocumentService
         }
 
         if (_configuration.Database.ConfigurationIsEnabled && AppState.CouchDbOnline())
-            await TemporaryDocumentsService.Value.Add(Document);
-        else
-            CacheService.Value.Set($"cashDoc_{Document.Uid}", Document, TimeSpan.FromMinutes(5));
+        {
+            var addResult = await TemporaryDocumentsService.Value.Add(Document);
+            if (addResult.IsFailure)
+                await OfflineDocumentStore.Value.Save(Document, OfflineDocumentStatus.Begun);
+        }
+        else if (_configuration.Database.ConfigurationIsEnabled)
+            await OfflineDocumentStore.Value.Save(Document, OfflineDocumentStatus.Begun);
 
         return Result.Success(checkResult);
     }

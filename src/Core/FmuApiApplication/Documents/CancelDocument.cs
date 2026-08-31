@@ -15,6 +15,7 @@ namespace FmuApiApplication.Documents
 
         private Lazy<ILogger<CancelDocument>> _logger { get; set; }
         private Lazy<IDocumentRepository> _temporaryDocumentsService { get; set; }
+        private Lazy<IOfflineDocumentStore> _offlineDocumentStore { get; set; }
 
         private IParametersService _parametersService { get; set; }
         private IApplicationState _appState { get; set; }
@@ -26,6 +27,7 @@ namespace FmuApiApplication.Documents
             _document = requestDocument;
 
             _temporaryDocumentsService = new Lazy<IDocumentRepository>(() => provider.GetRequiredService<IDocumentRepository>());
+            _offlineDocumentStore = new Lazy<IOfflineDocumentStore>(() => provider.GetRequiredService<IOfflineDocumentStore>());
             _logger = new Lazy<ILogger<CancelDocument>>(() => provider.GetRequiredService<ILogger<CancelDocument>>());
 
             _parametersService = provider.GetRequiredService<IParametersService>();
@@ -53,10 +55,14 @@ namespace FmuApiApplication.Documents
             if (!_configuration.Database.ConfigurationIsEnabled)
                 return Result.Success(checkResult);
 
-            if (!_appState.CouchDbOnline())
-                return Result.Success(checkResult);
+            if (_appState.CouchDbOnline())
+                await _temporaryDocumentsService.Value.Delete(_document.Uid);
 
-            await _temporaryDocumentsService.Value.Delete(_document.Uid);
+            var offline = await _offlineDocumentStore.Value.Get(_document.Uid);
+            if (offline != null)
+                await _offlineDocumentStore.Value.Delete(_document.Uid);
+            else if (!_appState.CouchDbOnline())
+                await _offlineDocumentStore.Value.Save(_document, OfflineDocumentStatus.Cancelled);
 
             return Result.Success(checkResult);
         }

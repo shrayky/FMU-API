@@ -1,4 +1,5 @@
 using FmuApiApplication.BeerTaps.Workers;
+using FmuApiApplication.Documents.Workers;
 using FmuApiApplication.Statistics.Workers;
 using FmuApiDomain.Attributes;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,5 +16,6 @@ public class AppRegistrationExtension
         services.AddHostedService<CalculateLongTimeStatisticsWorker>();
 
         services.AddHostedService<BeerTapsSynchronizationWorker>();
+        services.AddHostedService<OfflineDocumentFlushWorker>();
     }
 }

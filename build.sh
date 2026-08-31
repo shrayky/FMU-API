@@ -4,6 +4,7 @@ bash --version 2>&1 | head -n 1
 
 set -eo pipefail
 SCRIPT_DIR=$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)
+cd "$SCRIPT_DIR"
 
 ###########################################################################
 # CONFIGURATION
@@ -61,4 +62,4 @@ fi
 echo "Microsoft (R) .NET SDK version $("$DOTNET_EXE" --version)"
 
 "$DOTNET_EXE" build "$BUILD_PROJECT_FILE" /nodeReuse:false /p:UseSharedCompilation=false -nologo -clp:NoSummary
-"$DOTNET_EXE" run --project "$BUILD_PROJECT_FILE" --no-build -- "$@"
+"$DOTNET_EXE" run --project "$BUILD_PROJECT_FILE" --no-build -- --root "$SCRIPT_DIR" "$@"

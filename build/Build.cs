@@ -6,7 +6,11 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
 
 class Build : NukeBuild
 {
-    public static int Main() => Execute<Build>(x => x.Release);
+    public static int Main()
+    {
+        EnsureNukeRootDirectory();
+        return Execute<Build>(x => x.Release);
+    }
 
     const string ProductName = "fmu-api-check";
     const string HostExeName = "fmu-api.exe";
@@ -230,5 +234,39 @@ class Build : NukeBuild
             target.Parent.CreateDirectory();
             File.Copy(file, target, overwrite: true);
         }
+    }
+
+    /// <summary>
+    /// Ставит текущий каталог на корень репозитория (маркер .nuke), если процесс запущен не из него.
+    /// </summary>
+    static void EnsureNukeRootDirectory()
+    {
+        if (TryFindNukeRoot(Directory.GetCurrentDirectory(), out _))
+            return;
+
+        if (TryFindNukeRoot(AppContext.BaseDirectory, out var root))
+            Directory.SetCurrentDirectory(root);
+    }
+
+    /// <summary>
+    /// Ищет каталог с маркером .nuke, поднимаясь от start вверх по дереву.
+    /// </summary>
+    static bool TryFindNukeRoot(string start, out string root)
+    {
+        var current = new DirectoryInfo(Path.GetFullPath(start));
+        while (current != null)
+        {
+            var marker = Path.Combine(current.FullName, ".nuke");
+            if (Directory.Exists(marker) || File.Exists(marker))
+            {
+                root = current.FullName;
+                return true;
+            }
+
+            current = current.Parent;
+        }
+
+        root = string.Empty;
+        return false;
     }
 }

@@ -68,6 +68,7 @@ public static class CouchDbServicesRegistration
 
         services.AddScoped<IMarkInformationRepository, MarkInformationRepository>();
         services.AddScoped<IDocumentRepository, DocumentRepository>();
+        services.AddSingleton<IOfflineDocumentStore, FileOfflineDocumentStore>();
         services.AddScoped<ICheckStatisticRepository, MarkCheckingStatisticRepository>();
         services.AddScoped<IBeerOnTapRepository, BeerOnTapRepository>();
         services.AddScoped<IGisMtDocumentRepository, GisMtDocumentRepository>();
