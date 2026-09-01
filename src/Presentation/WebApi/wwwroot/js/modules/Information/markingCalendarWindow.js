@@ -208,7 +208,7 @@ function ensureStyles() {
             border-radius: 4px;
         }
         .mc-block-retail {
-            background: #38bdf8;
+            background: #4ade80;
         }
         .mc-block-permit {
             background: #a78bfa;
