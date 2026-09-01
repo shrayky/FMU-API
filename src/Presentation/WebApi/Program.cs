@@ -26,6 +26,7 @@ using WebApi;
 using WebApi.Extensions;
 using WebApi.Services;
 using System.Text;
+using FmuApiApplication.Connectivity.Services;
 
 var slConsole = new LoggerConfiguration()
     .MinimumLevel.Debug().WriteTo
@@ -98,6 +99,10 @@ bool RunHttpApiService()
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
         client.DefaultRequestHeaders.Accept.Add(
             new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+    });
+    services.AddHttpClient(CrptEspConnectivityService.HttpClientName, client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(5);
     });
     services.AddWin7HttpCompatibility();
 

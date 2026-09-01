@@ -1,5 +1,6 @@
 import { ApiServerAddress } from '../../utils/net.js';
 import { openMarkingCalendarWindow } from './markingCalendarWindow.js';
+import { openCrptEspCheckWindow } from './crptEspCheckWindow.js';
 
 export default function informationView(id) {
     $$("toolbarLabel").setValue("FMU-API: Информация о системе");
@@ -47,14 +48,14 @@ export default function informationView(id) {
 
                     {
                         view: "label",
-                        id: "telegramGroup",
-                        label: "• &#128172 <a href=\"https://t.me/frntlsc\" target=\"_blank\" style=\"color: #0088cc\">Telegram канал поддержки</a>"
+                        id: "site",
+                        label: "• &#128736; <a href=\"https://fmuapi.ru\" target=\"_blank\" style=\"color: #0088cc\">Сайт с документацией</a>"
                     },
 
                     {
                         view: "label",
-                        id: "maxGroup",
-                        label: "• &#128172 <a href=\"https://web.max.ru/-69374974279783\" target=\"_blank\" style=\"color: #0088cc\">Max канал поддержки</a>"
+                        id: "telegramGroup",
+                        label: "• &#128172 <a href=\"https://t.me/frntlsc\" target=\"_blank\" style=\"color: #0088cc\">Telegram канал поддержки</a>"
                     },
 
                     {
@@ -65,14 +66,26 @@ export default function informationView(id) {
 
                     {
                         view: "label",
-                        id: "moneySupport",
-                        label: "• &#128176; <a href=\"https://pay.cloudtips.ru/p/1fb36b3c\" target=\"_blank\" style=\"color: #0088cc\">Поддержать проект</a>"
+                        id: "maxGroup",
+                        label: "• &#128172 <a href=\"https://web.max.ru/-69374974279783\" target=\"_blank\" style=\"color: #0088cc\">Max канал поддержки</a>"
                     },
 
                     {
                         view: "label",
                         id: "markingCalendarLink",
                         label: "• &#128197; <a href=\"#\" class=\"marking-calendar-link\" style=\"color: #0088cc\">Календарь внедрения</a>"
+                    },
+
+                    {
+                        view: "label",
+                        id: "crptEspCheckLink",
+                        label: "• &#128225; <a href=\"#\" class=\"crpt-esp-check-link\" style=\"color: #0088cc\">Проверка ЦРПТ / АО ЕСП</a>"
+                    },
+
+                    {
+                        view: "label",
+                        id: "moneySupport",
+                        label: "• &#128176; <a href=\"https://pay.cloudtips.ru/p/1fb36b3c\" target=\"_blank\" style=\"color: #0088cc\">Поддержать проект</a>"
                     },
 
                     {},
@@ -126,16 +139,20 @@ function init() {
         });
 }
 
-/**
- * Открывает календарь внедрения по ссылке в блоке поддержки.
- */
-function onCalendarLinkClick(event) {
-    const link = event.target.closest("a.marking-calendar-link");
-    if (!link)
+function onInfoLinkClick(event) {
+    const calendarLink = event.target.closest("a.marking-calendar-link");
+    if (calendarLink) {
+        event.preventDefault();
+        openMarkingCalendarWindow();
+        return;
+    }
+
+    const checkLink = event.target.closest("a.crpt-esp-check-link");
+    if (!checkLink)
         return;
 
     event.preventDefault();
-    openMarkingCalendarWindow();
+    openCrptEspCheckWindow();
 }
 
-document.addEventListener("click", onCalendarLinkClick);
+document.addEventListener("click", onInfoLinkClick);
