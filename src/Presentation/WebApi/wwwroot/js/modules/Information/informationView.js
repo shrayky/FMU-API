@@ -49,7 +49,7 @@ export default function informationView(id) {
                     {
                         view: "label",
                         id: "site",
-                        label: "• &#128736; <a href=\"https://fmuapi.ru\" target=\"_blank\" style=\"color: #0088cc\">Сайт с документацией</a>"
+                        label: "• &#127760; <a href=\"https://fmuapi.ru\" target=\"_blank\" style=\"color: #0088cc\">Сайт с документацией</a>"
                     },
 
                     {
@@ -72,8 +72,14 @@ export default function informationView(id) {
 
                     {
                         view: "label",
+                        id: "serviceLinks",
+                        label: "<strong>Сервиc:</strong>"
+                    },
+
+                    {
+                        view: "label",
                         id: "markingCalendarLink",
-                        label: "• &#128197; <a href=\"#\" class=\"marking-calendar-link\" style=\"color: #0088cc\">Календарь внедрения</a>"
+                        label: "• &#128197; <a href=\"#\" class=\"marking-calendar-link\" style=\"color: #0088cc\">Календарь внедрения маркировки в рознице</a>"
                     },
 
                     {
@@ -85,7 +91,7 @@ export default function informationView(id) {
                     {
                         view: "label",
                         id: "moneySupport",
-                        label: "• &#128176; <a href=\"https://pay.cloudtips.ru/p/1fb36b3c\" target=\"_blank\" style=\"color: #0088cc\">Поддержать проект</a>"
+                        label: "• &#128176; <a href=\"https://pay.cloudtips.ru/p/1fb36b3c\" target=\"_blank\" style=\"color: #0088cc\">Разработчику на кофе</a>"
                     },
 
                     {},
