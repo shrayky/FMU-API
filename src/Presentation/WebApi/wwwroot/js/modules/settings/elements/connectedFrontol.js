@@ -42,8 +42,9 @@ class ConnectedFrontolConfigurationElement {
             close: "Закрыть",
             duplicatePath: "Подключение с таким путём уже есть в списке!",
             beerTaps: "Синхронизация пивных кранов",
-            loadBeerTaps: "Загрузить краны из Frontol",
-            selectFrontolFirst: "Выберите базу Frontol в таблице",
+            noFrontolConnections: "Нет подключений к базам Frontol",
+            selectSourceFrontol: "С какой базы взять текущее состояние кранов?",
+            confirmLoad: "Загрузить",
             connections: "Подключения к Frontol main.gdb"
         };
     }
@@ -205,11 +206,7 @@ class ConnectedFrontolConfigurationElement {
                             id: "modalSyncBeerTapsEnabled",
                             value: settings.syncBeerTapsSettings.syncBeerTapsEnabled,
                             on: {
-                                onChange: (enabled) => {
-                                    const periodControl = $$("modalSyncBeerTapsPeriodSeconds");
-                                    if (periodControl)
-                                        enabled ? periodControl.enable() : periodControl.disable();
-                                }
+                                onChange: (enabled) => this._onSyncBeerTapsChanged(enabled)
                             }
                         }),
                         
@@ -222,15 +219,7 @@ class ConnectedFrontolConfigurationElement {
                                 id: "modalSyncBeerTapsPeriodSeconds",
                                 disabled: !settings.syncBeerTapsSettings.syncBeerTapsEnabled
                             }
-                        ),
-                        {
-                            view: "button",
-                            value: this.LABELS.loadBeerTaps,
-                            id: "loadBeerTapsFromFrontol",
-                            autowidth: false,
-                            width: 320,
-                            click: () => this._loadBeerTapsFromFrontol()
-                        }
+                        )
                     ]
                 },
 
@@ -477,32 +466,175 @@ class ConnectedFrontolConfigurationElement {
         return saveConfiguration(this.mainFormId);
     }
 
-    async _loadBeerTapsFromFrontol() {
-        const table = $$(this.tableId);
-        const rowId = table?.getSelectedId();
-
-        if (!rowId) {
-            webix.message({ type: "error", text: this.LABELS.selectFrontolFirst });
+    _onSyncBeerTapsChanged(enabled) {
+        if (!enabled) {
+            const periodControl = $$("modalSyncBeerTapsPeriodSeconds");
+            if (periodControl)
+                periodControl.disable();
             return;
         }
 
-        const connectionId = toConnectionId(table.getItem(rowId)?.id, 0);
+        this._enableSyncBeerTaps();
+    }
+
+    async _enableSyncBeerTaps() {
+        const connections = this._modalConnections();
+
+        if (connections.length === 0) {
+            this._setSyncEnabled(false);
+            webix.message({ type: "error", text: this.LABELS.noFrontolConnections });
+            return;
+        }
+
+        const connectionId = await this._askFrontolSource(connections);
 
         if (!connectionId) {
-            webix.message({ type: "error", text: this.LABELS.selectFrontolFirst });
+            this._setSyncEnabled(false);
             return;
         }
 
         try {
+            const packet = await this._applyAndSave();
+
+            if (packet && packet.isSuccess === false) {
+                this._setSyncEnabled(false);
+                return;
+            }
+
             const result = await loadBeerTapsFromFrontol(connectionId);
+            this._setSyncEnabled(true);
             webix.message({ type: "success", text: `Загружено кранов: ${result.loaded ?? 0}` });
         } catch (error) {
+            this._setSyncEnabled(false);
+            await this._applyAndSave();
             webix.message({ type: "error", text: error.message ?? "Ошибка загрузки кранов" });
         }
     }
 
+    _modalConnections() {
+        const table = $$(this.tableId);
+        const connections = [];
+
+        if (!table)
+            return connections;
+
+        table.data.each(item => {
+            const fallback = connections.reduce(
+                (max, row) => row.id > max ? row.id : max,
+                0
+            ) + 1;
+
+            connections.push({
+                id: toConnectionId(item.id, fallback),
+                name: item.name ?? "",
+                path: item.path ?? ""
+            });
+        });
+
+        return connections;
+    }
+
+    _askFrontolSource(connections) {
+        const windowId = "beerTapsSourceFrontolWindow";
+        const selectId = "beerTapsSourceFrontolSelect";
+        const table = $$(this.tableId);
+        const selectedRowId = table?.getSelectedId();
+        const selectedConnectionId = selectedRowId
+            ? toConnectionId(table.getItem(selectedRowId)?.id, connections[0].id)
+            : connections[0].id;
+
+        if ($$(windowId))
+            $$(windowId).close();
+
+        return new Promise(resolve => {
+            let settled = false;
+
+            const finish = (value) => {
+                if (settled)
+                    return;
+
+                settled = true;
+
+                if ($$(windowId))
+                    $$(windowId).close();
+
+                resolve(value);
+            };
+
+            webix.ui({
+                view: "window",
+                id: windowId,
+                position: "center",
+                modal: true,
+                width: 520,
+                head: {
+                    view: "toolbar",
+                    elements: [
+                        { view: "label", label: this.LABELS.selectSourceFrontol },
+                        {
+                            view: "icon",
+                            icon: "wxi-close",
+                            click: () => finish(0)
+                        }
+                    ]
+                },
+                body: {
+                    padding: 10,
+                    rows: [
+                        {
+                            view: "richselect",
+                            id: selectId,
+                            label: this.LABELS.connections,
+                            labelPosition: "top",
+                            value: selectedConnectionId,
+                            options: connections.map(item => ({
+                                id: item.id,
+                                value: `${item.id} — ${item.name || item.path}`
+                            }))
+                        },
+                        {
+                            padding: { top: 10 },
+                            cols: [
+                                {},
+                                {
+                                    view: "button",
+                                    value: this.LABELS.confirmLoad,
+                                    autowidth: false,
+                                    width: 180,
+                                    click: () => finish(toConnectionId($$(selectId).getValue(), 0))
+                                },
+                                {
+                                    view: "button",
+                                    value: this.LABELS.close,
+                                    autowidth: false,
+                                    width: 180,
+                                    click: () => finish(0)
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }).show();
+        });
+    }
+
+    _setSyncEnabled(enabled) {
+        const checkbox = $$("modalSyncBeerTapsEnabled");
+        const periodControl = $$("modalSyncBeerTapsPeriodSeconds");
+
+        if (checkbox) {
+            checkbox.blockEvent();
+            checkbox.setValue(enabled ? 1 : 0);
+            checkbox.unblockEvent();
+        }
+
+        if (periodControl)
+            enabled ? periodControl.enable() : periodControl.disable();
+    }
+
     _fillModal(settings) {
-        $$("modalSyncBeerTapsEnabled").setValue(settings.syncBeerTapsSettings.syncBeerTapsEnabled);
+        const syncEnabled = settings.syncBeerTapsSettings.syncBeerTapsEnabled;
+        this._setSyncEnabled(syncEnabled);
         $$("modalSyncBeerTapsPeriodSeconds").setValue(settings.syncBeerTapsSettings.syncBeerTapsPeriodSeconds);
 
         const table = $$(this.tableId);
