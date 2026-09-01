@@ -1,4 +1,5 @@
 import { ApiServerAddress } from '../../utils/net.js';
+import { openMarkingCalendarWindow } from './markingCalendarWindow.js';
 
 export default function informationView(id) {
     $$("toolbarLabel").setValue("FMU-API: Информация о системе");
@@ -68,6 +69,12 @@ export default function informationView(id) {
                         label: "• &#128176; <a href=\"https://pay.cloudtips.ru/p/1fb36b3c\" target=\"_blank\" style=\"color: #0088cc\">Поддержать проект</a>"
                     },
 
+                    {
+                        view: "label",
+                        id: "markingCalendarLink",
+                        label: "• &#128197; <a href=\"#\" class=\"marking-calendar-link\" style=\"color: #0088cc\">Календарь внедрения</a>"
+                    },
+
                     {},
 
                     {
@@ -118,3 +125,17 @@ function init() {
             $$("appVersion").setValue(_appVersion);
         });
 }
+
+/**
+ * Открывает календарь внедрения по ссылке в блоке поддержки.
+ */
+function onCalendarLinkClick(event) {
+    const link = event.target.closest("a.marking-calendar-link");
+    if (!link)
+        return;
+
+    event.preventDefault();
+    openMarkingCalendarWindow();
+}
+
+document.addEventListener("click", onCalendarLinkClick);
