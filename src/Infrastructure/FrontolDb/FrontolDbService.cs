@@ -13,6 +13,7 @@ public class FrontolDbService
         services.AddDbContext<FrontolDbContext>(options => { });
 
         services.AddScoped<IFrontolSprTService, FrontolSprTRepo>();
+        services.AddScoped<IFrontolSprTServiceFactory, FrontolSprTRepositoryFactory>();
 
         // для подключений баз фронтола
         services.AddScoped<IBeerTapsRepositoryFactory, BeerTapsRepositoryFactory>();

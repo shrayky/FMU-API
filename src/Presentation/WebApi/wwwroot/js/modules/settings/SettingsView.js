@@ -70,6 +70,9 @@ export default function SettingsView(id) {
 
                     if (!isViewVisible) return;
 
+                    const existingViews = Array.from(scrollview.getChildViews());
+                    existingViews.forEach(view => scrollview.removeView(view.config.id));
+
                     for (const moduleId of Object.keys(SETTINGS_MODULES)) {
                         const module = await SETTINGS_MODULES[moduleId]();
                         const elements = module.default(moduleId, config);

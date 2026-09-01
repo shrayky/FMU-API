@@ -11,4 +11,6 @@ public interface IBeerOnTapManager
     Task<List<BeerOnTap>> List();
     Task<Result> AddSale(string sGtin, int saledVolume);
     Task<Result> SyncFrontolBeerTaps(List<FrontolConnectionSettings> frontolConnections);
+
+    Task<Result<int>> LoadFromFrontol(int connectionId);
 }

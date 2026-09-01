@@ -5,7 +5,7 @@ namespace FmuApiDomain.BeerTaps.Interfaces;
 
 public interface IBeerOnTapRepository
 {
-    Task<Result> SetOnTap(string id, string mark, string wareName, string awareCode, int volune);
+    Task<Result> SetOnTap(string id, string mark, string wareName, string awareCode, int volune, string tapName = "");
 
     Task<Result> FreeTap(string id);
 

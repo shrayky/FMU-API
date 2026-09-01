@@ -6,6 +6,7 @@ using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.BeerTaps.Entities;
 using FmuApiDomain.BeerTaps.Interfaces;
 using FmuApiDomain.BeerTaps.Models;
+using FmuApiDomain.Frontol.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -18,14 +19,22 @@ public class BeerTapsManager : IBeerOnTapManager
     private readonly IBeerOnTapRepository _tapsRepository;
     private readonly IMarkParser _markParser;
     private readonly IBeerTapsRepositoryFactory _frontolBeerTapsFactory;
+    private readonly IFrontolSprTServiceFactory _frontolSprTFactory;
     private readonly IParametersService _parametersService;
 
-    public BeerTapsManager(ILogger<BeerTapsManager> logger, IBeerOnTapRepository tapsRepository, IMarkParser markParser, IBeerTapsRepositoryFactory frontolBeerTapsFactory, IParametersService parametersService)
+    public BeerTapsManager(
+        ILogger<BeerTapsManager> logger,
+        IBeerOnTapRepository tapsRepository,
+        IMarkParser markParser,
+        IBeerTapsRepositoryFactory frontolBeerTapsFactory,
+        IFrontolSprTServiceFactory frontolSprTFactory,
+        IParametersService parametersService)
     {
         _logger = logger;
         _tapsRepository = tapsRepository;
         _markParser = markParser;
         _frontolBeerTapsFactory = frontolBeerTapsFactory;
+        _frontolSprTFactory = frontolSprTFactory;
         _parametersService = parametersService;
     }
 
@@ -256,5 +265,100 @@ public class BeerTapsManager : IBeerOnTapManager
         }
 
         return Result.Success();
+    }
+
+    public async Task<Result<int>> LoadFromFrontol(int connectionId)
+    {
+        var settings = await _parametersService.CurrentAsync();
+
+        if (!settings.Database.Enable)
+            return Result.Failure<int>("CouchDB выключена");
+
+        if (connectionId < 1)
+            return Result.Failure<int>("Не выбрана база Frontol для загрузки кранов");
+
+        var connection = settings.ConnectedFrontolSettings.ConnectionSettings
+            .FirstOrDefault(p => p.Id == connectionId);
+
+        if (connection == null || !connection.ConnectionEnable())
+            return Result.Failure<int>("Выбранное подключение Frontol недоступно");
+
+        using var tapsRepo = _frontolBeerTapsFactory.Create(connection.ConnectionStringBuild());
+        using var sprtRepo = _frontolSprTFactory.Create(connection.ConnectionStringBuild());
+
+        var frontolBeerTapsResult = await tapsRepo.All();
+
+        if (frontolBeerTapsResult.IsFailure)
+            return Result.Failure<int>(frontolBeerTapsResult.Error);
+
+        var placedKegs = frontolBeerTapsResult.Value
+            .Where(tap => !string.IsNullOrWhiteSpace(tap.MarkCode))
+            .ToList();
+
+        if (placedKegs.Count == 0)
+            return Result.Success(0);
+
+        var wareIds = placedKegs
+            .Where(tap => tap.WareId > 0)
+            .Select(tap => tap.WareId)
+            .Distinct()
+            .ToList();
+
+        var waresResult = await sprtRepo.GetWaresByIdsAsync(wareIds);
+
+        if (waresResult.IsFailure)
+            return Result.Failure<int>(waresResult.Error);
+
+        var wares = waresResult.Value;
+        var loaded = 0;
+
+        foreach (var frontolTap in placedKegs)
+        {
+            var mark = _markParser.EncodeMark(frontolTap.MarkCode);
+            var sgtin = _markParser.CalculateSGtin(mark);
+
+            wares.TryGetValue(frontolTap.WareId, out var ware);
+
+            if (frontolTap.WareId > 0 && ware == null)
+            {
+                _logger.LogWarning(
+                    "Первичная загрузка кранов: товар WareId {WareId} не найден в SPRT базы Frontol {Name}",
+                    frontolTap.WareId,
+                    connection.Name);
+            }
+
+            var wareName = ware?.Name ?? string.Empty;
+            var wareCode = ware != null ? ware.Code.ToString() : frontolTap.WareCode.ToString();
+            var volume = Convert.ToInt32(Math.Round(frontolTap.Volume));
+
+            var setResult = await _tapsRepository.SetOnTap(
+                sgtin,
+                mark,
+                wareName,
+                wareCode,
+                volume,
+                frontolTap.TapName);
+
+            if (setResult.IsFailure)
+            {
+                _logger.LogWarning(
+                    "Первичная загрузка кранов: ошибка записи кега {MarkCode} крана {TapName}: {Error}",
+                    frontolTap.MarkCode,
+                    frontolTap.TapName,
+                    setResult.Error);
+
+                continue;
+            }
+
+            loaded++;
+        }
+
+        _logger.LogInformation(
+            "Первичная загрузка кранов из Frontol {Name}: загружено {Loaded} из {Total}",
+            connection.Name,
+            loaded,
+            placedKegs.Count);
+
+        return Result.Success(loaded);
     }
 }

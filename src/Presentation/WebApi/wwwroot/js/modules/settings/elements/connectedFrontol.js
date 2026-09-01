@@ -1,6 +1,6 @@
 import { TableToolbar, Text, Number, padding, PasswordBox, CheckBox, Label } from "../../../utils/ui.js";
 import { saveConfiguration } from "../../../services/ConfigurationService.js";
-import { importFromFrontolAdmin } from "../../../services/FrontolConnectionService.js";
+import { importFromFrontolAdmin, loadBeerTapsFromFrontol } from "../../../services/FrontolConnectionService.js";
 import { frontolDbValidation } from "../../../utils/validators.js";
 
 const INT32_MAX = 2147483647;
@@ -42,6 +42,8 @@ class ConnectedFrontolConfigurationElement {
             close: "Закрыть",
             duplicatePath: "Подключение с таким путём уже есть в списке!",
             beerTaps: "Синхронизация пивных кранов",
+            loadBeerTaps: "Загрузить краны из Frontol",
+            selectFrontolFirst: "Выберите базу Frontol в таблице",
             connections: "Подключения к Frontol main.gdb"
         };
     }
@@ -221,6 +223,14 @@ class ConnectedFrontolConfigurationElement {
                                 disabled: !settings.syncBeerTapsSettings.syncBeerTapsEnabled
                             }
                         ),
+                        {
+                            view: "button",
+                            value: this.LABELS.loadBeerTaps,
+                            id: "loadBeerTapsFromFrontol",
+                            autowidth: false,
+                            width: 320,
+                            click: () => this._loadBeerTapsFromFrontol()
+                        }
                     ]
                 },
 
@@ -464,7 +474,31 @@ class ConnectedFrontolConfigurationElement {
     _applyAndSave() {
         const settings = this._collectModalSettings();
         this._writeSettingsToMainForm(settings);
-        saveConfiguration(this.mainFormId);
+        return saveConfiguration(this.mainFormId);
+    }
+
+    async _loadBeerTapsFromFrontol() {
+        const table = $$(this.tableId);
+        const rowId = table?.getSelectedId();
+
+        if (!rowId) {
+            webix.message({ type: "error", text: this.LABELS.selectFrontolFirst });
+            return;
+        }
+
+        const connectionId = toConnectionId(table.getItem(rowId)?.id, 0);
+
+        if (!connectionId) {
+            webix.message({ type: "error", text: this.LABELS.selectFrontolFirst });
+            return;
+        }
+
+        try {
+            const result = await loadBeerTapsFromFrontol(connectionId);
+            webix.message({ type: "success", text: `Загружено кранов: ${result.loaded ?? 0}` });
+        } catch (error) {
+            webix.message({ type: "error", text: error.message ?? "Ошибка загрузки кранов" });
+        }
     }
 
     _fillModal(settings) {

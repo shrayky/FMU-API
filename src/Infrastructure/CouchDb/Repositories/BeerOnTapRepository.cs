@@ -27,7 +27,7 @@ public class BeerOnTapRepository(ILogger<BeerOnTapRepository> logger, CouchDbCon
         return rowDeleted ? Result.Success() : Result.Failure("Снятие с крана прошло с ошибкой.");
     }
 
-    public async Task<Result> SetOnTap(string id, string mark, string wareName, string wareCode, int volune)
+    public async Task<Result> SetOnTap(string id, string mark, string wareName, string wareCode, int volune, string tapName = "")
     {
         if (_context == null)
             return new();
@@ -39,6 +39,7 @@ public class BeerOnTapRepository(ILogger<BeerOnTapRepository> logger, CouchDbCon
             WareName = wareName,
             WareCode = wareCode,
             Volume = volune,
+            TapName = tapName,
             LastUpdate = new DateTimeOffset(DateTime.SpecifyKind(DateTime.Now.Date, DateTimeKind.Utc)).ToUnixTimeSeconds()
         };
 
@@ -50,7 +51,10 @@ public class BeerOnTapRepository(ILogger<BeerOnTapRepository> logger, CouchDbCon
         if (document == null)
             rowSaved = await CreateAsync(entity);
         else
+        {
+            entity.Sales = document.Sales;
             rowSaved = await UpdateAsync(id, entity);
+        }
 
         return rowSaved ? Result.Success() : Result.Failure("Постановка на кран прошла с ошибкой.");
     }
