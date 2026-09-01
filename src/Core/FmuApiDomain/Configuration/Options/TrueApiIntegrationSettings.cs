@@ -8,8 +8,5 @@ public record TrueApiIntegrationSettings
 
     public string DigitalSignature { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Подключённые товарные группы участника (кэш из /participants).
-    /// </summary>
     public List<string> ProductGroups { get; set; } = [];
 }
