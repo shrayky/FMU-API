@@ -5,5 +5,5 @@ namespace FmuApiDomain.PacketTrapper.Interfaces;
 
 public interface IFmuPacketTrapper
 {
-    Task<Result> SaveCheckResultForCashRegister(RequestDocument requestDocument, FmuAnswer fmuAnswer);
+    Task<Result<string>> SaveCheckResultForCashRegister(RequestDocument requestDocument, FmuAnswer fmuAnswer);
 }

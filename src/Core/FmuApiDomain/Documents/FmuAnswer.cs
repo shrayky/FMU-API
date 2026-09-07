@@ -1,6 +1,5 @@
 using FmuApiDomain.Constants;
 using FmuApiDomain.Mark.Models;
-using FmuApiDomain.Mark.Interfaces;
 using FmuApiDomain.TrueApi.MarkData.Check;
 using FmuApiDomain.TsPiot.Models;
 using System.Text.Json.Serialization;
@@ -49,6 +48,10 @@ public class FmuAnswer
     [JsonPropertyName("fmu-api-version")]
     public string FmuApiVersion { get; set; } = $"{ApplicationInformation.AppVersion}.{ApplicationInformation.Assembly}";
 
+    [JsonPropertyName("fmu-api-packet-trapper-file-name")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? PacketFileNameForEcr { get; set; }
+
     [JsonIgnore]
     public bool IsEmpty => Stamps.Count == 0 && Marking_codes.Count == 0;
 
@@ -65,6 +68,7 @@ public class FmuAnswer
     public void FillFieldsForFrontol_6_25_5(string Inn)
     {
         CheckInformation checkInformation = new();
+        
         checkInformation.Codes = Truemark_response.Codes;
 
         CheckMarkResults checkMarkResults = new();

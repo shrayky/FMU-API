@@ -27,16 +27,16 @@ public class FmuPacketTrapper : IFmuPacketTrapper
         _saveDocument = appSettings.SaleControlConfig.MarkCheckResultSave.Enable;
     }
 
-    public async Task<Result> SaveCheckResultForCashRegister(RequestDocument requestDocument, FmuAnswer fmuAnswer)
+    public async Task<Result<string>> SaveCheckResultForCashRegister(RequestDocument requestDocument, FmuAnswer fmuAnswer)
     {
         if (!_saveDocument)
-            return Result.Success();
+            return Result.Success("");
 
         if (fmuAnswer.Truemark_response.Codes.Count == 0)
         {
             var err = "FmuPacketTrapper - нечего сохранять для ккт - пустой ответ от fmuapi";
             _logger.LogError(err);
-            return Result.Failure(err);
+            return Result.Failure<string>(err);
         }
 
         var position = requestDocument.Positions.FirstOrDefault();
@@ -45,7 +45,7 @@ public class FmuPacketTrapper : IFmuPacketTrapper
         {
             var err = "FmuPacketTrapper - нечего сохранять для ккт - пустой запрос от КПО";
             _logger.LogError(err);
-            return Result.Failure(err);
+            return Result.Failure<string>(err);
         }
 
         var markCode = position.Marking_codes.FirstOrDefault();
@@ -54,7 +54,7 @@ public class FmuPacketTrapper : IFmuPacketTrapper
         {
             var err = "FmuPacketTrapper - нечего сохранять для ккт - пустой запрос от КПО";
             _logger.LogError(err);
-            return Result.Failure(err);
+            return Result.Failure<string>(err);
         }
 
         var checkResult = $"{fmuAnswer.Truemark_response.ReqId} {fmuAnswer.Truemark_response.ReqTimestamp}";
@@ -62,8 +62,10 @@ public class FmuPacketTrapper : IFmuPacketTrapper
         return await SaveResultToFile(checkResult, markCode);
     }
 
-    private async Task<Result> SaveResultToFile(string checkResult, string markCode)
+    private async Task<Result<string>> SaveResultToFile(string checkResult, string markCode)
     {
+        string fileName;
+
         try
         {
             if (!Directory.Exists(_folderPath))
@@ -71,13 +73,12 @@ public class FmuPacketTrapper : IFmuPacketTrapper
 
             if (!Directory.Exists(_folderPath))
             {
-                var err = "FmuPacketTrapper - несущестаует каталог для выгрузки результатов проверки в файл\"";
+                var err = "FmuPacketTrapper - не сущестаует каталог для выгрузки результатов проверки в файл\"";
                 _logger.LogError(err);
-                return Result.Failure(err);
+                return Result.Failure<string>(err);
             }
 
-            var fileName = Path.Combine(_folderPath, string.Concat(markCode, ".txt"));
-
+            fileName = Path.Combine(_folderPath, string.Concat(markCode, ".txt"));
 
             StreamWriter file = new(fileName, false);
             await file.WriteAsync(checkResult);
@@ -85,9 +86,9 @@ public class FmuPacketTrapper : IFmuPacketTrapper
         }
         catch (Exception ex)
         {
-            return Result.Failure(ex.Message);
+            return Result.Failure<string>(ex.Message);
         }
 
-        return Result.Success();
+        return Result.Success(fileName);
     }
 }

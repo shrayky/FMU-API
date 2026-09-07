@@ -2,7 +2,6 @@ using CSharpFunctionalExtensions;
 using FmuApiApplication.Mark.Interfaces;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.Documents.Entities;
 using FmuApiDomain.Documents;
 using FmuApiDomain.Documents.Enums;
 using FmuApiDomain.Documents.Interfaces;
@@ -54,7 +53,14 @@ public class CheckSellDocument : IFrontolDocumentService
         var checkResult = await MarkInformation();
 
         if (checkResult.IsSuccess)
-            await _packetTrapper.SaveCheckResultForCashRegister(_document, checkResult.Value);
+        {
+            var saveResult = await _packetTrapper.SaveCheckResultForCashRegister(_document, checkResult.Value);
+
+            if (saveResult.IsSuccess)
+            {
+                checkResult.Value.PacketFileNameForEcr = saveResult.Value;
+            }
+        }
 
         return checkResult;
     }
