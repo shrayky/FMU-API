@@ -42,7 +42,7 @@ public class FrontolSprTRepo : IFrontolSprTService, IDisposableFrontolSprTServic
     {
         var appParams = await _parametersService.CurrentAsync();
 
-        var frontolConnetionId = appParams.ConnectedFrontolSettings.PrintGroupSourseId;
+        var frontolConnetionId = appParams.ConnectedFrontolSettings.ResolveWareDataSourceId();
 
         if (frontolConnetionId == 0)
             return Result.Success(0);
@@ -65,6 +65,27 @@ public class FrontolSprTRepo : IFrontolSprTService, IDisposableFrontolSprTServic
         }
 
         return Result.Success(code);
+    }
+
+    public async Task<Result<int>> WareTypeByBarcodeAsync(string barCode)
+    {
+        var appParams = await _parametersService.CurrentAsync();
+
+        if (appParams.ConnectedFrontolSettings.ResolveWareDataSourceId() == 0)
+            return Result.Success(0);
+
+        if (barCode.Length == 0)
+            return Result.Success(0);
+
+        try
+        {
+            var wareType = await WareTypeByWareBarcodeAsync(barCode);
+            return Result.Success(wareType);
+        }
+        catch (Exception e)
+        {
+            return Result.Failure<int>(e.Message);
+        }
     }
 
     private async Task<int> PrintGroupCodeByWareBarcodeAsync(string barCode)
@@ -95,6 +116,28 @@ public class FrontolSprTRepo : IFrontolSprTService, IDisposableFrontolSprTServic
         _cacheService.Set(barCode, pg.Code, TimeSpan.FromMinutes(_cacheExpirationMinutes));
 
         return pg.Code;
+    }
+
+    private async Task<int> WareTypeByWareBarcodeAsync(string barCode)
+    {
+        var cacheKey = $"frontol-waretype:{barCode}";
+
+        if (_cacheService.TryGetValue(cacheKey, out int cachedWareType))
+            return cachedWareType;
+
+        var barcode = await _db.Barcodes.FirstOrDefaultAsync(b => b.WareBarcode == barCode);
+
+        if (barcode == null)
+            return 0;
+
+        var sprt = await _db.Sprts.FirstOrDefaultAsync(s => s.Id == barcode.WareId);
+
+        if (sprt == null)
+            return 0;
+
+        _cacheService.Set(cacheKey, sprt.WareType, TimeSpan.FromMinutes(_cacheExpirationMinutes));
+
+        return sprt.WareType;
     }
 
     public async Task<Result<Dictionary<int, FrontolWare>>> GetWaresByIdsAsync(IReadOnlyCollection<int> wareIds)

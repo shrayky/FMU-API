@@ -7,6 +7,8 @@ public interface IFrontolSprTService
 {
     Task<Result<int>> PrintGroupCodeByBarcodeAsync(string barCode);
 
+    Task<Result<int>> WareTypeByBarcodeAsync(string barCode);
+
     Task<Result<Dictionary<int, FrontolWare>>> GetWaresByIdsAsync(IReadOnlyCollection<int> wareIds);
 }
 

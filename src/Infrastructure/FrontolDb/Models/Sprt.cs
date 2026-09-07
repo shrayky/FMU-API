@@ -18,6 +18,9 @@ public class Sprt : NameCodeFields
     [Column("PRINTGROUPCLOSE")]
     public int? PrintGroupFiscalCheck { get; set; }
 
+    [Column("WARETYPE")]
+    public int WareType { get; set; } = 0;
+
     public bool IsWare() => IsWareI == 1;
 
     public int FiscalPrinterGroupCode() => PrintGroupFiscalCheck ?? 0;

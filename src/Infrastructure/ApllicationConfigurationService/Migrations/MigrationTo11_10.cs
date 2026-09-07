@@ -41,7 +41,7 @@ public class MigrationTo11_10
         };
 
         settings.ConnectedFrontolSettings.ConnectionSettings.Add(conn);
-        settings.ConnectedFrontolSettings.PrintGroupSourseId = 1;
+        settings.ConnectedFrontolSettings.FrontolWareDataSourceId = 1;
         settings.FrontolConnectionSettings = new();
 
 #pragma warning restore CS0612 // Тип или член устарел

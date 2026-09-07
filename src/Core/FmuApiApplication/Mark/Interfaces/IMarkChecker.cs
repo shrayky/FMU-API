@@ -10,7 +10,7 @@ namespace FmuApiApplication.Mark.Interfaces
         
         Task<MarkCheckResult> OnlineCheck(string code, string sgtin, bool codeIsSgtin, int printGroupCode);
         
-        Task<MarkCheckResult> OfflineCheckAsync(string code, int printGroupCode, int atolItemType, string gtin);
+        Task<MarkCheckResult> OfflineCheck(string code, int printGroupCode, int trueApiGroupId);
         
         Task<MarkCheckResult> TsPiotCheck(string code, TsPiotConnectionSettings tsPiotConnectionSettings);
     }

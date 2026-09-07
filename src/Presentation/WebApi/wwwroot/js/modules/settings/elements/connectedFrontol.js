@@ -21,7 +21,7 @@ class ConnectedFrontolConfigurationElement {
         this.editFormBodyId = "FrontolConnectionEditFormBody";
         this.tableId = "FrontolConnections";
         this.hiddenTableId = "FrontolConnectionsHidden";
-        this.printGroupSelectId = "FrontolPrintGroupSourceId";
+        this.wareDataSourceSelectId = "FrontolWareDataSourceId";
 
         this.LABELS = {
             title: "Настройка подключения к Frontol",
@@ -29,7 +29,7 @@ class ConnectedFrontolConfigurationElement {
             modalTitle: "Подключения к базам Frontol",
             syncBeerTaps: "Использовать",
             syncPeriod: "Период синхронизации (сек)",
-            printGroupSource: "База для получения группы печати",
+            wareDataSource: "База справочника товаров Frontol",
             importFromAdmin: "Импорт из Frontol.Администратор",
             newConnection: "Новое подключение",
             editConnection: "Подключение",
@@ -56,7 +56,7 @@ class ConnectedFrontolConfigurationElement {
                 syncBeerTapsEnabled: settings.syncBeerTapsSettings?.syncBeerTapsEnabled ?? false,
                 syncBeerTapsPeriodSeconds: settings.syncBeerTapsSettings?.syncBeerTapsPeriodSeconds ?? 30
             },
-            printGroupSourseId: settings.printGroupSourseId ?? 0,
+            frontolWareDataSourceId: settings.frontolWareDataSourceId ?? settings.printGroupSourseId ?? 0,
             connectionSettings: (settings.connectionSettings ?? []).map(item => ({ ...item }))
         };
 
@@ -113,9 +113,9 @@ class ConnectedFrontolConfigurationElement {
                 {
                     view: "text",
                     type: "number",
-                    name: "connectedFrontolSettings.printGroupSourseId",
-                    id: "hiddenPrintGroupSourceId",
-                    value: this.settings.printGroupSourseId
+                    name: "connectedFrontolSettings.frontolWareDataSourceId",
+                    id: "hiddenFrontolWareDataSourceId",
+                    value: this.settings.frontolWareDataSourceId
                 },
                 {
                     view: "formtable",
@@ -189,8 +189,8 @@ class ConnectedFrontolConfigurationElement {
             rows: [
                 {
                     view: "richselect",
-                    id: this.printGroupSelectId,
-                    label: this.LABELS.printGroupSource,
+                    id: this.wareDataSourceSelectId,
+                    label: this.LABELS.wareDataSource,
                     labelPosition: "top",
                     placeholder: "Выберите подключение",
                     options: []
@@ -287,8 +287,8 @@ class ConnectedFrontolConfigurationElement {
                     if (table.count() === 0)
                         $$(`deleteAll_${this.tableId}`).disable();
 
-                    this._clearPrintGroupIfDeleted(deletedId);
-                    this._refreshPrintGroupOptions();
+                    this._clearWareDataSourceIfDeleted(deletedId);
+                    this._refreshWareDataSourceOptions();
                 },
                 onBeforeAdd: (_id, obj) => {
                     if (obj.path === undefined) {
@@ -417,7 +417,7 @@ class ConnectedFrontolConfigurationElement {
         if (table.count() > 0)
             $$(`deleteAll_${this.tableId}`).enable();
 
-        this._refreshPrintGroupOptions();
+        this._refreshWareDataSourceOptions();
         $$(this.editFormId).close();
     }
 
@@ -453,7 +453,7 @@ class ConnectedFrontolConfigurationElement {
             if (table.count() > 0)
                 $$(`deleteAll_${this.tableId}`).enable();
 
-            this._refreshPrintGroupOptions();
+            this._refreshWareDataSourceOptions();
             webix.message({ type: "success", text: "Импорт выполнен" });
         } catch (error) {
             webix.message({ type: "error", text: error.message ?? "Ошибка импорта" });
@@ -647,7 +647,7 @@ class ConnectedFrontolConfigurationElement {
             $$(`deleteAll_${this.tableId}`).disable();
 
         $$(`delete_${this.tableId}`).disable();
-        this._refreshPrintGroupOptions(settings.printGroupSourseId);
+        this._refreshWareDataSourceOptions(settings.frontolWareDataSourceId);
     }
 
     _collectModalSettings() {
@@ -674,7 +674,7 @@ class ConnectedFrontolConfigurationElement {
                 syncBeerTapsEnabled: $$("modalSyncBeerTapsEnabled").getValue(),
                 syncBeerTapsPeriodSeconds: +$$("modalSyncBeerTapsPeriodSeconds").getValue() || 30
             },
-            printGroupSourseId: +$$(this.printGroupSelectId).getValue() || 0,
+            frontolWareDataSourceId: +$$(this.wareDataSourceSelectId).getValue() || 0,
             connectionSettings
         };
     }
@@ -689,13 +689,13 @@ class ConnectedFrontolConfigurationElement {
                     syncBeerTapsEnabled: settings.syncBeerTapsSettings?.syncBeerTapsEnabled ?? false,
                     syncBeerTapsPeriodSeconds: settings.syncBeerTapsSettings?.syncBeerTapsPeriodSeconds ?? 30
                 },
-                printGroupSourseId: settings.printGroupSourseId ?? 0,
+                frontolWareDataSourceId: settings.frontolWareDataSourceId ?? settings.printGroupSourseId ?? 0,
                 connectionSettings: (settings.connectionSettings ?? []).map(item => ({ ...item }))
             };
 
         return {
             syncBeerTapsSettings: { ...this.settings.syncBeerTapsSettings },
-            printGroupSourseId: this.settings.printGroupSourseId,
+            frontolWareDataSourceId: this.settings.frontolWareDataSourceId,
             connectionSettings: this.settings.connectionSettings.map(item => ({ ...item }))
         };
     }
@@ -711,8 +711,8 @@ class ConnectedFrontolConfigurationElement {
         settings.connectionSettings.forEach(item => hiddenTable.add(webix.copy(item)));
     }
 
-    _refreshPrintGroupOptions(selectedId) {
-        const select = $$(this.printGroupSelectId);
+    _refreshWareDataSourceOptions(selectedId) {
+        const select = $$(this.wareDataSourceSelectId);
         const table = $$(this.tableId);
 
         if (!select || !table)
@@ -739,8 +739,8 @@ class ConnectedFrontolConfigurationElement {
             select.setValue("");
     }
 
-    _clearPrintGroupIfDeleted(deletedId) {
-        const select = $$(this.printGroupSelectId);
+    _clearWareDataSourceIfDeleted(deletedId) {
+        const select = $$(this.wareDataSourceSelectId);
         if (!select)
             return;
 

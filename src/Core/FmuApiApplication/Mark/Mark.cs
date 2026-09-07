@@ -32,6 +32,7 @@ public class Mark : IMark
     public string Gtin { get; }
     public int PrintGroupCode { get; private set; }
     public int AtolItemType { get; private set; }
+    public int TrueApiGroupId { get; private set; }
     public string ProductName { get; private set; } = string.Empty;
     public string ErrorDescription { get; private set; } = string.Empty;
     public MarkCheckSource CheckSource { get; private set; } = MarkCheckSource.Undefined;
@@ -83,7 +84,7 @@ public class Mark : IMark
         CheckDelegate[] delegates =
         [
             async () => await _markChecker.TsPiotCheck(Code, _tsPiotConnectionSettings),
-            async () => await _markChecker.OfflineCheckAsync(Cis, PrintGroupCode, AtolItemType, Gtin),
+            async () => await _markChecker.OfflineCheck(Cis, PrintGroupCode, TrueApiGroupId),
             async() => await _markChecker.FmuApiDatabaseCheck(SGtin, _markStateManager)
         ];
 
@@ -92,7 +93,7 @@ public class Mark : IMark
             delegates =
             [
                 async () => await _markChecker.OnlineCheck(Code, SGtin, CodeIsSgtin, PrintGroupCode),
-                async () => await _markChecker.OfflineCheckAsync(Cis, PrintGroupCode, AtolItemType, Gtin),
+                async () => await _markChecker.OfflineCheck(Cis, PrintGroupCode, TrueApiGroupId),
                 async() => await _markChecker.FmuApiDatabaseCheck(SGtin, _markStateManager)
             ];
         }
@@ -257,13 +258,11 @@ public class Mark : IMark
             PrintGroupCode, Code);
     }
 
-    /// <summary>
-    /// Сохраняет код группы Атол и наименование товара из позиции Frontol.
-    /// </summary>
-    public void SetPositionData(int itemType, string productName)
+    public void SetPositionData(int itemType, string productName, int trueApiGroupId)
     {
         AtolItemType = itemType;
         ProductName = productName ?? string.Empty;
+        TrueApiGroupId = trueApiGroupId;
     }
 
     public async Task<CheckMarksDataTrueApi> TrueApiData()
@@ -299,9 +298,6 @@ public class Mark : IMark
         return _lastCheckResult.FmuAnswer;
     }
 
-    /// <summary>
-    /// Подставляет срок годности из остатков ГИС МТ, если локальный модуль его не вернул.
-    /// </summary>
     private async Task ApplyGisMtExpireDateIfMissing()
     {
         var markData = _lastCheckResult.TrueMarkData.MarkData();
@@ -319,9 +315,6 @@ public class Mark : IMark
             expireDate);
     }
 
-    /// <summary>
-    /// Сохраняет GTIN и группу ЧЗ после успешной online-проверки.
-    /// </summary>
     private async Task SaveGtinCatalogAsync()
     {
         var markData = _lastCheckResult.TrueMarkData.MarkData();

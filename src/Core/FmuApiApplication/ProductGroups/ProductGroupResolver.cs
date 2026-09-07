@@ -21,7 +21,7 @@ public class ProductGroupResolver(
     private readonly IGtinCatalogService _gtinCatalogService = gtinCatalogService;
     private readonly ILogger<ProductGroupResolver> _logger = logger;
 
-    public async Task<int?> ResolveAsync(int atolItemType, string gtin)
+    public async Task<int?> Resolve(int atolItemType, string gtin)
     {
         var mappings = CurrentMappings();
 
@@ -32,6 +32,7 @@ public class ProductGroupResolver(
                 return fromAtol.TrueApiGroupId;
 
             _logger.LogWarning("Нет маппинга Атол {AtolCode} → Честный знак", atolItemType);
+            return null;
         }
 
         if (string.IsNullOrWhiteSpace(gtin))
@@ -44,9 +45,6 @@ public class ProductGroupResolver(
         return null;
     }
 
-    /// <summary>
-    /// Нужно ли проверять ЕМЦ (smp) для позиции.
-    /// </summary>
     public bool ShouldCheckSmp(int atolItemType, int trueApiGroupId)
     {
         var mappings = CurrentMappings();

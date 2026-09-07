@@ -5,7 +5,7 @@ namespace FmuApiDomain.ProductGroups.Interfaces;
 /// </summary>
 public interface IProductGroupResolver
 {
-    Task<int?> ResolveAsync(int atolItemType, string gtin);
+    Task<int?> Resolve(int atolItemType, string gtin);
 
     bool ShouldCheckSmp(int atolItemType, int trueApiGroupId);
 

@@ -4,7 +4,7 @@ using FmuApiDomain.TrueApi.MarkData;
 namespace ApplicationConfigurationService.Migrations;
 
 /// <summary>
-/// Включает проверку равенства цены МРЦ для уже сохранённых групп табака.
+/// Включает проверку МРЦ для табака и переносит id базы Frontol в FrontolWareDataSourceId.
 /// </summary>
 public class MigrationTo12_2
 {
@@ -15,6 +15,17 @@ public class MigrationTo12_2
             if (mapping.TrueApiGroupId == TrueApiGroup.Tobaco)
                 mapping.CheckMrp = true;
         }
+
+#pragma warning disable CS0618
+        if (settings.ConnectedFrontolSettings.FrontolWareDataSourceId == 0
+            && settings.ConnectedFrontolSettings.PrintGroupSourseId is > 0)
+        {
+            settings.ConnectedFrontolSettings.FrontolWareDataSourceId =
+                settings.ConnectedFrontolSettings.PrintGroupSourseId.Value;
+        }
+
+        settings.ConnectedFrontolSettings.PrintGroupSourseId = null;
+#pragma warning restore CS0618
 
         settings.AppVersion = 12;
         settings.Assembly = 2;

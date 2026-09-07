@@ -44,7 +44,11 @@ function normalizeFormValues(values) {
         }));
     }
 
-    frontol.printGroupSourseId = toInt32(frontol.printGroupSourseId, 0);
+    frontol.frontolWareDataSourceId = toInt32(
+        frontol.frontolWareDataSourceId ?? frontol.printGroupSourseId,
+        0
+    );
+    delete frontol.printGroupSourseId;
 
     if (frontol.syncBeerTapsSettings) {
         frontol.syncBeerTapsSettings.syncBeerTapsPeriodSeconds =

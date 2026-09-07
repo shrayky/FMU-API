@@ -16,7 +16,7 @@ public class FrontolDbContext : DbContext
     public FrontolDbContext(IParametersService parametersService)
     {
         var configuration = parametersService.Current();
-        var frontolConnetionId = configuration.ConnectedFrontolSettings.PrintGroupSourseId;
+        var frontolConnetionId = configuration.ConnectedFrontolSettings.ResolveWareDataSourceId();
 
         if (frontolConnetionId != 0)
         {

@@ -4,7 +4,6 @@ using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Documents;
 using FmuApiDomain.Documents.Interfaces;
-using FmuApiDomain.ProductGroups;
 using FmuApiDomain.ProductGroups.Interfaces;
 using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.TrueApi.MarkData;
@@ -76,22 +75,10 @@ public class BeginDocument : IFrontolDocumentService
 
                 var markData = trueApiCisData.Codes[0];
 
-                var groupId = 0;
+                var groupId = markData.GroupIds != null && markData.GroupIds.Count > 0
+                    ? markData.GroupIds[0]
+                    : mark.TrueApiGroupId;
                 var minimalPriceFromSettings = 0;
-
-                if (markData.GroupIds != null && markData.GroupIds.Count > 0)
-                {
-                    groupId = markData.GroupIds[0];
-                }
-                else
-                {
-                    var gtin = !string.IsNullOrWhiteSpace(markData.Gtin)
-                        ? markData.Gtin
-                        : GtinCalculator.FromSgtin(mark.SGtin);
-                    var resolvedGroup = await ProductGroupResolver.ResolveAsync(position.ItemType, gtin);
-                    if (resolvedGroup.HasValue)
-                        groupId = resolvedGroup.Value;
-                }
 
                 if (groupId == TrueApiGroup.Tobaco)
                     minimalPriceFromSettings = _configuration.MinimalPrices.Tabaco;
@@ -99,7 +86,7 @@ public class BeginDocument : IFrontolDocumentService
                 var sellPrice = (int)Math.Round(position.ProductPrice == 0 ? position.Total_price * 100 : position.ProductPrice * 100);
 
                 // проверка ЕМЦ (smp) только для групп с признаком CheckSmp (по умолчанию ТГ 3 и 16)
-                if (markData.Smp != null && ProductGroupResolver.ShouldCheckSmp(position.ItemType, groupId))
+                if (markData.Smp != null && ProductGroupResolver.ShouldCheckSmp(mark.AtolItemType, groupId))
                 {
                     var minPrice = minimalPriceFromSettings > markData.Smp ? minimalPriceFromSettings : markData.Smp;
 
@@ -116,7 +103,7 @@ public class BeginDocument : IFrontolDocumentService
                 // отсканируйте 0 из 0
                 if (markData.Mrp != null)
                 {
-                    if (ProductGroupResolver.ShouldCheckMrp(position.ItemType, groupId))
+                    if (ProductGroupResolver.ShouldCheckMrp(mark.AtolItemType, groupId))
                     {
                         if (markData.Mrp != sellPrice)
                         {
@@ -139,7 +126,7 @@ public class BeginDocument : IFrontolDocumentService
                     }
                 }
 
-                if (ProductGroupResolver.ShouldCheckExpireDate(position.ItemType, groupId)
+                if (ProductGroupResolver.ShouldCheckExpireDate(mark.AtolItemType, groupId)
                     && markData.ExpireDate == null)
                 {
                     checkResult.Code = 3;
