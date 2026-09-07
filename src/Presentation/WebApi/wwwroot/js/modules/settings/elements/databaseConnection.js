@@ -64,7 +64,6 @@ class DatabaseConnectionConfigurationElement {
                         id: this.SETTINGS_ID,
                         disabled: !this.enable,
                         rows: [
-                            CheckBox(this.LABELS.disableDbLog, "database.disableDbLog", { value: this.disableDbLog }),
                             Text(this.LABELS.serverDbAddress, "database.netAddress", this.serverDbAddress, httpAddressValidation),
                             {
                                 cols: [
@@ -96,6 +95,8 @@ class DatabaseConnectionConfigurationElement {
                                     Number(this.LABELS.queryTimeout, "database.queryTimeoutSeconds", this.queryTimeout),
                                 ]
                             },
+
+                            CheckBox(this.LABELS.disableDbLog, "database.disableDbLog", { value: this.disableDbLog }),
                         ]
                     }
                 ]
