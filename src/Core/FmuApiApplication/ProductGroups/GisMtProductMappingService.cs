@@ -48,6 +48,8 @@ public class GisMtProductMappingService(
             existing.TrueApiGroupId = mapping.TrueApiGroupId;
             existing.Name = mapping.Name;
             existing.CheckSmp = mapping.CheckSmp;
+            existing.CheckMrp = mapping.CheckMrp;
+            existing.CheckExpireDate = mapping.CheckExpireDate;
         }
 
         await _parametersService.UpdateAsync(parameters);

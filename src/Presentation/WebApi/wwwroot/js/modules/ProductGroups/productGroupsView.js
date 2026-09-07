@@ -10,6 +10,8 @@ class ProductGroupsView {
             trueApiGroupId: "Код ЧЗ",
             name: "Название",
             checkSmp: "ЕМЦ",
+            checkMrp: "Контроль МРЦ",
+            checkExpireDate: "Срок годности",
             add: "Добавить",
             remove: "Удалить",
             refresh: "Обновить",
@@ -28,6 +30,13 @@ class ProductGroupsView {
             addWindow: "pgMappingAddWindow",
             addForm: "pgMappingAddForm"
         };
+
+        webix.html.addStyle(
+            "#pgMappingTable .webix_ss_header .webix_hcell{line-height:48px;}" +
+            ".pg-header-twoline{display:flex;flex-direction:column;justify-content:center;" +
+            "line-height:18px !important;white-space:normal;text-align:center;height:48px;box-sizing:border-box;}",
+            "pg-header-twoline"
+        );
     }
 
     loadConfig() {
@@ -99,8 +108,27 @@ class ProductGroupsView {
                     template: "{common.checkbox()}",
                     checkValue: true,
                     uncheckValue: false
+                },
+                {
+                    id: "checkMrp",
+                    header: { text: this.LABELS.checkMrp, css: "pg-header-twoline" },
+                    width: 90,
+                    css: { "text-align": "center" },
+                    template: "{common.checkbox()}",
+                    checkValue: true,
+                    uncheckValue: false
+                },
+                {
+                    id: "checkExpireDate",
+                    header: { text: "Срок<br>годности", css: "pg-header-twoline" },
+                    width: 90,
+                    css: { "text-align": "center" },
+                    template: "{common.checkbox()}",
+                    checkValue: true,
+                    uncheckValue: false
                 }
             ],
+            headerRowHeight: 48,
             autoheight: true,
             scroll: false,
             checkboxRefresh: true,
@@ -129,7 +157,9 @@ class ProductGroupsView {
                 atolCode: row.atolCode,
                 trueApiGroupId: row.trueApiGroupId,
                 name: row.name || "",
-                checkSmp: !!row.checkSmp
+                checkSmp: !!row.checkSmp,
+                checkMrp: !!row.checkMrp,
+                checkExpireDate: !!row.checkExpireDate
             })));
             table.resize();
         } catch (error) {
@@ -151,7 +181,9 @@ class ProductGroupsView {
             atolCode: Number(item.atolCode),
             trueApiGroupId: Number(item.trueApiGroupId),
             name: item.name || "",
-            checkSmp: !!item.checkSmp
+            checkSmp: !!item.checkSmp,
+            checkMrp: !!item.checkMrp,
+            checkExpireDate: !!item.checkExpireDate
         });
 
         if (!saved)
@@ -159,7 +191,7 @@ class ProductGroupsView {
     }
 
     async _onCheckChanged(rowId, colId, state) {
-        if (colId !== "checkSmp")
+        if (colId !== "checkSmp" && colId !== "checkMrp" && colId !== "checkExpireDate")
             return;
 
         const table = $$(this.NAMES.mappingTable);
@@ -167,14 +199,16 @@ class ProductGroupsView {
         if (!item)
             return;
 
-        item.checkSmp = !!state;
+        item[colId] = !!state;
         table.updateItem(rowId, item);
 
         const saved = await this._saveMapping({
             atolCode: Number(item.atolCode),
             trueApiGroupId: Number(item.trueApiGroupId),
             name: item.name || "",
-            checkSmp: !!state
+            checkSmp: !!item.checkSmp,
+            checkMrp: !!item.checkMrp,
+            checkExpireDate: !!item.checkExpireDate
         });
 
         if (!saved)
@@ -221,6 +255,8 @@ class ProductGroupsView {
                     { view: "text", name: "trueApiGroupId", label: this.LABELS.trueApiGroupId, labelWidth: 120 },
                     { view: "text", name: "name", label: this.LABELS.name, labelWidth: 120 },
                     { view: "checkbox", name: "checkSmp", label: this.LABELS.checkSmp, labelWidth: 120, checkValue: true, uncheckValue: false },
+                    { view: "checkbox", name: "checkMrp", label: this.LABELS.checkMrp, labelWidth: 120, checkValue: true, uncheckValue: false },
+                    { view: "checkbox", name: "checkExpireDate", label: this.LABELS.checkExpireDate, labelWidth: 120, checkValue: true, uncheckValue: false },
                     {
                         cols: [
                             {
@@ -247,7 +283,9 @@ class ProductGroupsView {
             atolCode: Number(values.atolCode),
             trueApiGroupId: Number(values.trueApiGroupId),
             name: values.name || "",
-            checkSmp: !!values.checkSmp
+            checkSmp: !!values.checkSmp,
+            checkMrp: !!values.checkMrp,
+            checkExpireDate: !!values.checkExpireDate
         };
 
         if (!entity.atolCode || !entity.trueApiGroupId) {

@@ -178,8 +178,11 @@ public class SimpleParametersService : IParametersService
                 settings = MigrationTo12_0.DoMigration(settings);
         }
 
-        if (settings.AppVersion == 12 && (settings.Assembly != 1 || needLocalModuleMove))
+        if (settings.AppVersion == 12 && (settings.Assembly < 1 || needLocalModuleMove))
             settings = MigrationTo12_1.DoMigration(settings);
+
+        if (settings.AppVersion == 12 && settings.Assembly < 2)
+            settings = MigrationTo12_2.DoMigration(settings);
 
         settings.AppVersion = ApplicationInformation.AppVersion;
 
