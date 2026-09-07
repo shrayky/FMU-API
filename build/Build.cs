@@ -115,7 +115,8 @@ class Build : NukeBuild
     }
 
     /// <summary>
-    /// Публикует host-приложение для Windows.
+    /// Публикует host Native AOT — нативный exe без JIT, стартует без установленного .NET.
+    /// PublishSingleFile нельзя: AOT уже даёт один native-файл.
     /// </summary>
     void PublishHostApp(string runtime, AbsolutePath output)
     {
@@ -125,7 +126,8 @@ class Build : NukeBuild
             .SetConfiguration("Release")
             .SetRuntime(runtime)
             .SetSelfContained(true)
-            .SetPublishSingleFile(true)
+            .SetPublishSingleFile(false)
+            .SetProperty("PublishAot", "true")
             .SetOutput(output));
     }
 

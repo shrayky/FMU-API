@@ -9,9 +9,13 @@
     <UserSecretsId>dotnet-HostApp-18078318-eff6-4151-b9af-aaebc8dbd63d</UserSecretsId>
     <Version>1.0.0</Version>
 
-	  <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
-	  <DebugType>none</DebugType>
-	  <DebugSymbols>false</DebugSymbols>
+	  <PublishAot>true</PublishAot>
+	  <InvariantGlobalization>true</InvariantGlobalization>
+	  <StackTraceSupport>false</StackTraceSupport>
+	  <UseSystemResourceKeys>true</UseSystemResourceKeys>
+
+	  <DebugType>portable</DebugType>
+	  <DebugSymbols>true</DebugSymbols>
 	  <OptimizationPreference>Size</OptimizationPreference>
   </PropertyGroup>
 
