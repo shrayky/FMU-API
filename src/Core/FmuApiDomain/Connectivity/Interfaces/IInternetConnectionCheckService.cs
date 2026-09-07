@@ -5,5 +5,5 @@ namespace FmuApiDomain.Connectivity.Interfaces;
 /// </summary>
 public interface IInternetConnectionCheckService
 {
-    Task CheckAsync(CancellationToken cancellationToken);
+    Task PerformCheck(CancellationToken cancellationToken);
 }
