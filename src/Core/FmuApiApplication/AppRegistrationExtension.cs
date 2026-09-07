@@ -1,5 +1,6 @@
 using FmuApiApplication.BeerTaps.Workers;
 using FmuApiApplication.Documents.Workers;
+using FmuApiApplication.InternetConnectionCheck;
 using FmuApiApplication.Statistics.Workers;
 using FmuApiDomain.Attributes;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,5 +18,6 @@ public class AppRegistrationExtension
 
         services.AddHostedService<BeerTapsSynchronizationWorker>();
         services.AddHostedService<OfflineDocumentFlushWorker>();
+        services.AddInternetConnectionCheck();
     }
 }

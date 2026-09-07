@@ -10,75 +10,68 @@ using Shared.Logging;
 using System.Net;
 using TrueApi;
 
-namespace WebApi.Extensions
+namespace WebApi.Extensions;
+
+public static class WebHostExtensions
 {
-    public static class WebHostExtensions
+    public static WebApplicationBuilder ApplyAppConfigurationExtension(this WebApplicationBuilder builder)
     {
-        public static WebApplicationBuilder ApplyAppConfigurationExtension(this WebApplicationBuilder builder)
+        using var scope = builder.Services.BuildServiceProvider().CreateScope();
+        var configService = scope.ServiceProvider.GetRequiredService<IParametersService>();
+        var settings = configService.Current();
+
+        builder.WebHost.UseUrls($"http://+:{settings.ServerConfig.ApiIpPort}");
+
+        ConfigureCors(builder.Services, settings.ServerConfig.ApiIpPort);
+
+        if (DateTime.Today <= new DateTime(2025, 9, 1))
+            builder.Services.AddHostedService<AutoConfigurationApply250901Worker>();
+
+        builder.Services.AddHttpClient<AlcoUnitGateway>("alcoUnit", options =>
         {
-            using var scope = builder.Services.BuildServiceProvider().CreateScope();
-            var configService = scope.ServiceProvider.GetRequiredService<IParametersService>();
-            var settings = configService.Current();
+            options.BaseAddress = new Uri(settings.FrontolAlcoUnit.NetAdres);
+            options.Timeout = TimeSpan.FromSeconds(20);
+        });
 
-            builder.WebHost.UseUrls($"http://+:{settings.ServerConfig.ApiIpPort}");
+        TrueApiRegistration.AddService(builder.Services);
+        LocalModuleRegistration.AddService(builder.Services, settings.ServerConfig.LocalModuleGeneral.Version);
 
-            ConfigureCors(builder.Services, settings.ServerConfig.ApiIpPort);
+        ConfigureLogging(builder, settings.Logging);
 
-            if (settings.HostsToPing.Count > 0)
-            {
-                builder.Services.AddHttpClient("internetCheck");
-                builder.Services.AddHostedService<InternetConnectionCheckWorker>();
-            }
-
-            if (DateTime.Today <= new DateTime(2025, 9, 1))
-                builder.Services.AddHostedService<AutoConfigurationApply250901Worker>();
-
-            builder.Services.AddHttpClient<AlcoUnitGateway>("alcoUnit", options =>
-            {
-                options.BaseAddress = new Uri(settings.FrontolAlcoUnit.NetAdres);
-                options.Timeout = TimeSpan.FromSeconds(20);
-            });
-
-            TrueApiRegistration.AddService(builder.Services);
-            LocalModuleRegistration.AddService(builder.Services, settings.ServerConfig.LocalModuleGeneral.Version);
-
-            ConfigureLogging(builder, settings.Logging);
-
-            return builder;
-        }
-
-        private static void ConfigureLogging(WebApplicationBuilder builder, LogSettings settings)
-        {
-            if (!settings.IsEnabled)
-                return;
-
-            var logFolder = Folders.LogFolder(ApplicationInformation.Manufacture, ApplicationInformation.AppName);
-            
-            if (!Directory.Exists(logFolder))
-                Directory.CreateDirectory(logFolder);
-
-            string logFileName = Path.Combine(logFolder, $"{ApplicationInformation.AppName.ToLower()}.log");
-
-            builder.Logging.AddSerilog(SerilogConfiguration.LogToFile(settings.LogLevel, logFileName, settings.LogDepth));
-        }
-
-        private static void ConfigureCors(IServiceCollection services, int ipPort)
-        {
-            List<string> hostAdreses = [];
-
-            hostAdreses.Add($"http://{Dns.GetHostName()}:{ipPort}");
-            hostAdreses.Add($"http://localhost:{ipPort}");
-            hostAdreses.Add($"http://127.0.0.1:{ipPort}");
-
-            services.AddCors(opt =>
-            {
-                opt.AddDefaultPolicy(
-                    policy =>
-                    {
-                        policy.WithOrigins(hostAdreses.ToArray()).AllowAnyMethod();
-                    });
-            });
-        }
-
+        return builder;
     }
+
+    private static void ConfigureLogging(WebApplicationBuilder builder, LogSettings settings)
+    {
+        if (!settings.IsEnabled)
+            return;
+
+        var logFolder = Folders.LogFolder(ApplicationInformation.Manufacture, ApplicationInformation.AppName);
+        
+        if (!Directory.Exists(logFolder))
+            Directory.CreateDirectory(logFolder);
+
+        string logFileName = Path.Combine(logFolder, $"{ApplicationInformation.AppName.ToLower()}.log");
+
+        builder.Logging.AddSerilog(SerilogConfiguration.LogToFile(settings.LogLevel, logFileName, settings.LogDepth));
+    }
+
+    private static void ConfigureCors(IServiceCollection services, int ipPort)
+    {
+        List<string> hostAdreses = [];
+
+        hostAdreses.Add($"http://{Dns.GetHostName()}:{ipPort}");
+        hostAdreses.Add($"http://localhost:{ipPort}");
+        hostAdreses.Add($"http://127.0.0.1:{ipPort}");
+
+        services.AddCors(opt =>
+        {
+            opt.AddDefaultPolicy(
+                policy =>
+                {
+                    policy.WithOrigins(hostAdreses.ToArray()).AllowAnyMethod();
+                });
+        });
+    }
+
 }

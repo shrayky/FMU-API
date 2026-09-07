@@ -40,6 +40,8 @@ public class BeerTapsSynchronizationWorker : BackgroundService
                 var beerTapsManager = scope.ServiceProvider.GetRequiredService<IBeerOnTapManager>();
 
                 await beerTapsManager.SyncFrontolBeerTaps(_parameters.ConnectedFrontolSettings.ConnectionSettings);
+
+                _logger.LogInformation("Синхронизация пивных кранов завершена.");
             }
 
             await Task.Delay(TimeSpan.FromSeconds(syncDelay), stoppingToken);
