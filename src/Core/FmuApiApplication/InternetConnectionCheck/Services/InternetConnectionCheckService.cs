@@ -1,3 +1,4 @@
+using FmuApiApplication.InternetConnectionCheck.Interfaces;
 using FmuApiDomain.Attributes;
 using FmuApiDomain.Connectivity.Interfaces;
 using FmuApiDomain.Configuration.Interfaces;
