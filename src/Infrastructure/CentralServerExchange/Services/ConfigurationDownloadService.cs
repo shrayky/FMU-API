@@ -25,26 +25,31 @@ public class ConfigurationDownloadService
         _exchangeService = exchangeService;
     }
 
-    public async Task<Result> DownloadAndApply(FmuApiCentralResponse response, string baseAddress, string token)
+    public async Task<Result> DownloadAndApply(FmuApiCentralResponse response, string baseAddress, string token, string? bearerToken = null)
     {
         if (!response.SettingsUpdateAvailable)
             return Result.Success();
 
         _logger.LogInformation("В центральном сервере есть новые настройки для загрузки");
 
-        var requestAddress = $"{baseAddress}/settings/{token}";
-        var confirmAddress = $"{baseAddress}/settings/updated/{token}";
+        var requestAddress = string.IsNullOrEmpty(bearerToken)
+            ? $"{baseAddress}/settings/{token}"
+            : $"{baseAddress}/settings";
+        var confirmAddress = string.IsNullOrEmpty(bearerToken)
+            ? $"{baseAddress}/settings/updated/{token}"
+            : $"{baseAddress}/settings/updated";
 
-        return await DownloadSettingsData(requestAddress)
+        return await DownloadSettingsData(requestAddress, bearerToken)
+            .Map(JsonStringPayload.Unwrap)
             .Bind(async rawData => await DecryptSettingsData(rawData).ConfigureAwait(false))
             .Bind(async settingsRaw => await DeserializeSettings(settingsRaw).ConfigureAwait(false))
             .Bind(async loadedSettings => await ApplySettings(loadedSettings).ConfigureAwait(false))
-            .Bind(async () => await ConfirmDownload(confirmAddress).ConfigureAwait(false))
+            .Bind(async () => await ConfirmDownload(confirmAddress, bearerToken).ConfigureAwait(false))
             .ConfigureAwait(false);
     }
 
-    private async Task<Result<string>> DownloadSettingsData(string requestAddress)
-        => await _exchangeService.DownloadNewConfiguration(requestAddress).ConfigureAwait(false);
+    private async Task<Result<string>> DownloadSettingsData(string requestAddress, string? bearerToken)
+        => await _exchangeService.DownloadNewConfiguration(requestAddress, bearerToken).ConfigureAwait(false);
 
     private async Task<Result<string>> DecryptSettingsData(string rawData)
     {
@@ -83,6 +88,6 @@ public class ConfigurationDownloadService
     private async Task<Result> ApplySettings(FmuApiSetting newSettings)
         => await _parametersService.ApplyFromCentral(newSettings).ConfigureAwait(false);
 
-    private async Task<Result> ConfirmDownload(string confirmAddress)
-        => await _exchangeService.ConfirmDownloadConfiguration(confirmAddress).ConfigureAwait(false);
+    private async Task<Result> ConfirmDownload(string confirmAddress, string? bearerToken)
+        => await _exchangeService.ConfirmDownloadConfiguration(confirmAddress, bearerToken).ConfigureAwait(false);
 }

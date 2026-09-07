@@ -34,7 +34,7 @@ namespace Shared.Json
 
             stream.Position = 0;
 
-            return await JsonSerializer.DeserializeAsync<T>(stream);
+            return await JsonSerializer.DeserializeAsync<T>(stream, JsonSerializeOptionsProvider.Default());
         }
 
         public static async Task<string> SerializeAsync<T>(T obj)

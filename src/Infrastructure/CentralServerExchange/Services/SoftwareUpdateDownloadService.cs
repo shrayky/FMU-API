@@ -41,7 +41,7 @@ public class SoftwareUpdateDownloadService
         _appState = appState;
     }
 
-    public async Task<Result> DownloadAndInstall(FmuApiCentralResponse response, string baseAddress)
+    public async Task<Result> DownloadAndInstall(FmuApiCentralResponse response, string baseAddress, string? bearerToken = null)
     {
         var parameters = await _parametersService.CurrentAsync();
 
@@ -79,9 +79,11 @@ public class SoftwareUpdateDownloadService
             if (sha256.Length != 64 || !sha256.All(Uri.IsHexDigit))
                 return Result.Failure($"Некорректный формат UpdateHash: {sha256}");
 
-            var requestAddress = $"{baseAddress}/fmuApiUpdate/{token}";
+            var requestAddress = string.IsNullOrEmpty(bearerToken)
+                ? $"{baseAddress}/fmuApiUpdate/{token}"
+                : $"{baseAddress}/fmuApiUpdate";
 
-            var downloadResult = await DownloadAndVerifyAsync(requestAddress, sha256).ConfigureAwait(false);
+            var downloadResult = await DownloadAndVerifyAsync(requestAddress, sha256, bearerToken).ConfigureAwait(false);
 
             if (downloadResult.IsFailure)
             {
@@ -103,17 +105,14 @@ public class SoftwareUpdateDownloadService
         }
     }
 
-    /// <summary>
-    /// Скачивает обновление с повторами и проверяет SHA-256. При несовпадении хэша частичный файл удаляется.
-    /// </summary>
-    private async Task<Result<string>> DownloadAndVerifyAsync(string requestAddress, string sha256)
+    private async Task<Result<string>> DownloadAndVerifyAsync(string requestAddress, string sha256, string? bearerToken)
     {
         var lastError = "Загрузка обновления не выполнялась";
 
         for (var attempt = 1; attempt <= DownloadRetryCount; attempt++)
         {
             var downloadResult = await _exchangeService
-                .DownloadSoftwareUpdateToTemp(requestAddress, sha256)
+                .DownloadSoftwareUpdateToTemp(requestAddress, sha256, bearerToken)
                 .ConfigureAwait(false);
 
             if (downloadResult.IsFailure)
@@ -153,9 +152,6 @@ public class SoftwareUpdateDownloadService
             error);
     }
 
-    /// <summary>
-    /// Переименовывает докачанный .partial в .zip перед установкой.
-    /// </summary>
     private static string PromotePartialToZip(string fileName)
     {
         if (!fileName.EndsWith(".partial", StringComparison.OrdinalIgnoreCase))
@@ -166,9 +162,6 @@ public class SoftwareUpdateDownloadService
         return zipPath;
     }
 
-    /// <summary>
-    /// Проверяет попадание текущего времени в интервал, включая окна через полночь.
-    /// </summary>
     private static bool IsWithinSchedule(TimeOnly now, ScheduleTime interval)
     {
         if (interval.BeginTime <= interval.EndTime)
@@ -230,8 +223,6 @@ public class SoftwareUpdateDownloadService
 
         var hostExe = Path.Combine(stagingPath, HostExeName);
 
-        // Host в пакете: --install. Staging не удаляем — из него работает установщик.
-        // Текущий процесс завершаем, чтобы сработал --waitForPid.
         if (File.Exists(hostExe))
         {
             _logger.LogInformation("В пакете найден {Host} — запускаю --install", HostExeName);
@@ -254,9 +245,6 @@ public class SoftwareUpdateDownloadService
         }
     }
 
-    /// <summary>
-    /// Запускает host --install и завершает текущий процесс (для --waitForPid).
-    /// </summary>
     private Result RunHostInstallAndExit(string hostExePath, string sha256)
     {
         var startInfo = new ProcessStartInfo
@@ -291,10 +279,6 @@ public class SoftwareUpdateDownloadService
         return Result.Success();
     }
 
-    /// <summary>
-    /// Копирует из staging каталоги вида {product}\{ver}\{product}.exe в каталог установки.
-    /// Host сам подхватит старшую версию при следующем скане.
-    /// </summary>
     private Result CopyProductVersionsFromStaging(string stagingPath)
     {
         var installRoot = GetInstallDirectory();
@@ -396,9 +380,6 @@ public class SoftwareUpdateDownloadService
             CopyDirectory(dir, Path.Combine(targetDir, Path.GetFileName(dir)));
     }
 
-    /// <summary>
-    /// Устанавливает обновление на Linux и ждёт завершения установщика.
-    /// </summary>
     private async Task<Result> UpdateLinuxApp(string updateFileName)
     {
         _logger.LogWarning("Начинаю установку обновления");
@@ -471,9 +452,6 @@ public class SoftwareUpdateDownloadService
         return Result.Success();
     }
 
-    /// <summary>
-    /// Проверяет zip на path traversal (zip-slip) перед распаковкой.
-    /// </summary>
     private static Result ValidateZipEntries(string zipPath, string destinationDir)
     {
         try

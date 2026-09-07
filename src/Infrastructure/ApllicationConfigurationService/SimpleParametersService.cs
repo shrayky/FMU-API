@@ -2,7 +2,6 @@ using ApplicationConfigurationService.Migrations;
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
-using FmuApiDomain.Configuration.Options.Organization;
 using FmuApiDomain.Constants;
 using FmuApiDomain.TrueApi.MarkData;
 using FmuApiDomain.CentralServiceExchange.Models;
@@ -360,16 +359,6 @@ public class SimpleParametersService : IParametersService
 
         settings.HostsToPing = newSettings.HostsToPing;
 
-        settings.MinimalPrices.Tabaco = newSettings.MinimalPrices.Tabaco;
-
-        settings.SaleControlConfig.BanSalesReturnedWares = newSettings.SaleControl.BanSalesReturnedWares;
-        settings.SaleControlConfig.CheckIsOwnerField = newSettings.SaleControl.CheckIsOwnerField;
-        settings.SaleControlConfig.CheckReceiptReturn = newSettings.SaleControl.CheckReceiptReturn;
-        settings.SaleControlConfig.CorrectExpireDateInSaleReturn = newSettings.SaleControl.CorrectExpireDateInSaleReturn;
-        settings.SaleControlConfig.IgnoreVerificationErrorForTrueApiGroups = newSettings.SaleControl.IgnoreVerificationErrorForTrueApiGroups;
-        settings.SaleControlConfig.ResetSoldStatusForReturn = newSettings.SaleControl.ResetSoldStatusForReturn;
-        settings.SaleControlConfig.SendLocalModuleInformationalInRequestId = newSettings.SaleControl.SendLocalModuleInformationalInRequestId;
-
         settings.HttpRequestTimeouts.CdnRequestTimeout = newSettings.TimeOut.CdnRequest;
         settings.HttpRequestTimeouts.CheckInternetConnectionTimeout = newSettings.TimeOut.InternetConnectionCheck;
         settings.HttpRequestTimeouts.CheckMarkRequestTimeout = newSettings.TimeOut.TrueSignCheckRequest;
@@ -377,45 +366,6 @@ public class SimpleParametersService : IParametersService
 
         if (newSettings.GisMtProductMappings.Count > 0)
             settings.GisMtProductMappings = newSettings.GisMtProductMappings;
-
-        settings.Logging.IsEnabled = newSettings.Logging.IsEnabled;
-        settings.Logging.LogLevel = newSettings.Logging.LogLevel;
-        settings.Logging.LogDepth = newSettings.Logging.LogDepth;
-
-        List<int> loadedPrintGroupsIds = [];
-
-        foreach (var loadedOrganization in newSettings.Organizations)
-        {
-            var current = settings.OrganisationConfig.PrintGroups.FirstOrDefault(x => x.Id == loadedOrganization.Id);
-
-            if (current == null)
-            {
-                var newPg = new PrintGroupData()
-                {
-                    Id = loadedOrganization.Id,
-                    Name = loadedOrganization.Name,
-                    INN = loadedOrganization.Inn,
-                    XAPIKEY = loadedOrganization.XApiKey
-                };
-
-                settings.OrganisationConfig.PrintGroups.Add(newPg);
-            }
-            else
-            {
-                current.Name = loadedOrganization.Name;
-                current.INN = loadedOrganization.Inn;
-                current.XAPIKEY = loadedOrganization.XApiKey;
-            }
-
-            loadedPrintGroupsIds.Add(loadedOrganization.Id);
-        }
-
-        var groupsToDelete = settings.OrganisationConfig.PrintGroups.Where(x => !loadedPrintGroupsIds.Contains(x.Id));
-
-        foreach (var groupToDelete in groupsToDelete)
-        {
-            settings.OrganisationConfig.PrintGroups.Remove(groupToDelete);
-        }
 
         await SaveConfigurationAsync(settings);
 

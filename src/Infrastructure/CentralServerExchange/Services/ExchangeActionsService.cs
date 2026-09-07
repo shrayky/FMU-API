@@ -59,8 +59,15 @@ public class ExchangeActionsService : ICentralServerExchangeActions
             foreach (var centralAddress in addresses)
             {
                 var normalizedAddress = centralAddress.TrimEnd('/');
-                var baseAddress = $"{normalizedAddress}/{EndpointAddress}";
-                var exchangeResult = await SendPacket(data, baseAddress);
+                var token = configuration.FmuApiCentralServer.Token;
+                var secret = configuration.FmuApiCentralServer.Secret;
+                var bearer = await TryHandshake(normalizedAddress, token, secret).ConfigureAwait(false);
+                var useAgentApi = !string.IsNullOrEmpty(bearer);
+                var baseAddress = useAgentApi
+                    ? $"{normalizedAddress}/api/Agent"
+                    : $"{normalizedAddress}/{EndpointAddress}";
+
+                var exchangeResult = await SendPacket(data, baseAddress, bearer);
 
                 if (exchangeResult.IsFailure)
                 {
@@ -74,12 +81,13 @@ public class ExchangeActionsService : ICentralServerExchangeActions
                     .ApplyIfChanged(exchangeResult.Value.CentralServerProperties)
                     .ConfigureAwait(false);
 
-                await _softwareUpdateDownloadService.DownloadAndInstall(exchangeResult.Value, baseAddress).ConfigureAwait(false);
+                await _softwareUpdateDownloadService.DownloadAndInstall(exchangeResult.Value, baseAddress, bearer).ConfigureAwait(false);
 
                 await _configurationDownloadService.DownloadAndApply(
                     exchangeResult.Value,
                     baseAddress,
-                    configuration.FmuApiCentralServer.Token).ConfigureAwait(false);
+                    token,
+                    bearer).ConfigureAwait(false);
 
                 break;
             }
@@ -105,9 +113,25 @@ public class ExchangeActionsService : ICentralServerExchangeActions
         return data;
     }
 
-    private async Task<Result<FmuApiCentralResponse>> SendPacket(DataPacket dataPacket, string baseAddress)
+    private async Task<string?> TryHandshake(string centralAddress, string token, string secret)
     {
-        var exchangeResult = await _exchangeService.ActExchange(dataPacket, baseAddress).ConfigureAwait(false);
+        if (string.IsNullOrEmpty(secret) || string.IsNullOrEmpty(token))
+            return null;
+
+        var handshakeUrl = $"{centralAddress}/api/Agent/handshake";
+        var result = await _exchangeService.Handshake(handshakeUrl, token, secret).ConfigureAwait(false);
+        if (result.IsFailure)
+        {
+            _logger.LogInformation("Handshake недоступен, используем старый API: {Error}", result.Error);
+            return null;
+        }
+
+        return result.Value.AccessToken;
+    }
+
+    private async Task<Result<FmuApiCentralResponse>> SendPacket(DataPacket dataPacket, string baseAddress, string? bearer)
+    {
+        var exchangeResult = await _exchangeService.ActExchange(dataPacket, baseAddress, bearer).ConfigureAwait(false);
 
         if (exchangeResult.IsFailure)
         {

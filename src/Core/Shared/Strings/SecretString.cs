@@ -36,7 +36,7 @@ public static class SecretString
 
     public static string DecryptData(string encryptedData, string secret)
     {
-        var encryptedBytes = Convert.FromBase64String(encryptedData);
+        var encryptedBytes = Convert.FromBase64String(encryptedData.Trim());
 
         // Извлекаем IV (первые 16 байт)
         var iv = new byte[16];

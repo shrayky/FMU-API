@@ -2,11 +2,13 @@ using CentralServerExchange.Interfaces;
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Attributes;
 using FmuApiDomain.Constants;
+using FmuApiDomain.CentralServiceExchange.Models;
 using FmuApiDomain.CentralServiceExchange.Models.Answer;
 using FmuApiDomain.CentralServiceExchange.Models.DataPacket;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shared.Http;
+using Shared.Strings;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -31,19 +33,72 @@ public class CentralServerExchangeService : IExchangeService
         _httpClientFactory = httpClientFactory;
     }
 
-    public async Task<Result<FmuApiCentralResponse>> ActExchange(DataPacket request, string url)
-        => await SafeActExchange(request, url).ConfigureAwait(false);
+    public async Task<Result<FmuApiCentralResponse>> ActExchange(DataPacket request, string url, string? bearerToken = null)
+        => await SafeActExchange(request, url, bearerToken).ConfigureAwait(false);
+
+    public async Task<Result<AgentAccessToken>> Handshake(string url, string token, string secret)
+    {
+        if (string.IsNullOrEmpty(secret))
+            return Result.Failure<AgentAccessToken>("Секретный ключ не задан");
+
+        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var nonce = Guid.NewGuid().ToString("N");
+        var body = new AgentHandshakeRequest
+        {
+            Token = token,
+            Timestamp = timestamp,
+            Nonce = nonce,
+            Signature = InstanceHmac.Sign(secret, token, timestamp, nonce)
+        };
+
+        try
+        {
+            var httpClient = CreateClient();
+            using var request = new HttpRequestMessage(HttpMethod.Post, url)
+            {
+                Content = JsonContent.Create(body)
+            };
+            using var response = await httpClient.SendAsync(request).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                return Result.Failure<AgentAccessToken>($"Handshake {response.StatusCode}: {error}");
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<AgentAccessToken>().ConfigureAwait(false);
+            if (result is null || string.IsNullOrEmpty(result.AccessToken))
+                return Result.Failure<AgentAccessToken>("Пустой ответ handshake");
+
+            return Result.Success(result);
+        }
+        catch (Exception ex)
+        {
+            return Result.Failure<AgentAccessToken>($"Handshake: {ex.Message}");
+        }
+    }
 
     private HttpClient CreateClient() => _httpClientFactory.CreateClient(HttpClientName);
 
-    private async Task<Result<FmuApiCentralResponse>> SafeActExchange(DataPacket request, string url)
+    private static void SetBearer(HttpRequestMessage request, string? bearerToken)
+    {
+        if (!string.IsNullOrEmpty(bearerToken))
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
+    }
+
+    private async Task<Result<FmuApiCentralResponse>> SafeActExchange(DataPacket request, string url, string? bearerToken)
     {
         _logger.LogInformation("Готовлю к отправке пакет информации на сервер: {Url}", url);
 
         try
         {
             var httpClient = CreateClient();
-            using var response = await httpClient.PostAsJsonAsync(url, request).ConfigureAwait(false);
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, url)
+            {
+                Content = JsonContent.Create(request)
+            };
+            SetBearer(httpRequest, bearerToken);
+
+            using var response = await httpClient.SendAsync(httpRequest).ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -77,11 +132,16 @@ public class CentralServerExchangeService : IExchangeService
         }
     }
 
-    public async Task<Result<string>> DownloadNewConfiguration(string url)
+    public async Task<Result<string>> DownloadNewConfiguration(string url, string? bearerToken = null)
     {
         var httpClient = CreateClient();
         var operationResult = await httpClient.SendRequestSafelyAsync(
-            client => client.GetAsync(url),
+            client =>
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
+                SetBearer(request, bearerToken);
+                return client.SendAsync(request);
+            },
             _logger,
             "загрузка настроек из центрального сервера").ConfigureAwait(false);
 
@@ -100,11 +160,19 @@ public class CentralServerExchangeService : IExchangeService
         return Result.Success(content);
     }
 
-    public async Task<Result> ConfirmDownloadConfiguration(string url)
+    public async Task<Result> ConfirmDownloadConfiguration(string url, string? bearerToken = null)
     {
         var httpClient = CreateClient();
         var operationResult = await httpClient.SendRequestSafelyAsync(
-            client => client.PutAsJsonAsync(url, new { }),
+            client =>
+            {
+                var request = new HttpRequestMessage(HttpMethod.Put, url)
+                {
+                    Content = JsonContent.Create(new { })
+                };
+                SetBearer(request, bearerToken);
+                return client.SendAsync(request);
+            },
             _logger,
             "уведомление о загрузке настроек").ConfigureAwait(false);
 
@@ -122,7 +190,7 @@ public class CentralServerExchangeService : IExchangeService
         return Result.Success();
     }
 
-    public async Task<Result<string>> DownloadSoftwareUpdateToTemp(string requestAddress, string sha256)
+    public async Task<Result<string>> DownloadSoftwareUpdateToTemp(string requestAddress, string sha256, string? bearerToken = null)
     {
         var tmpFolder = Path.Combine(Path.GetTempPath(), ApplicationInformation.AppName, "updates");
         var tmpPath = Path.Combine(tmpFolder, $"update_{sha256}.partial");
@@ -143,6 +211,7 @@ public class CentralServerExchangeService : IExchangeService
 
             var httpClient = _httpClientFactory.CreateClient(DownloadHttpClientName);
             using var request = new HttpRequestMessage(HttpMethod.Get, requestAddress);
+            SetBearer(request, bearerToken);
             if (existingLength > 0)
             {
                 request.Headers.Range = new RangeHeaderValue(existingLength, null);
