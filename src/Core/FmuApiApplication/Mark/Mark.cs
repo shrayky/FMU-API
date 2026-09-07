@@ -34,6 +34,7 @@ public class Mark : IMark
     public int AtolItemType { get; private set; }
     public string ProductName { get; private set; } = string.Empty;
     public string ErrorDescription { get; private set; } = string.Empty;
+    public MarkCheckSource CheckSource { get; private set; } = MarkCheckSource.Undefined;
     
     private TsPiotConnectionSettings _tsPiotConnectionSettings = new();
     
@@ -155,25 +156,24 @@ public class Mark : IMark
         if (checkErrors.Count == 0)
         {
             var answer = _lastCheckResult.FmuAnswer;
+            CheckSource = ResolveCheckSource(answer);
 
-            if (answer.OfflineRegime)
-                _logger.LogInformation("Проверка марки {mark} выполнена через локальный модуль честного знака.", Code);
-            
-            if (answer.Offline)
+            if (CheckSource == MarkCheckSource.LocalModule)
+            {
+                if (_useTsPiot)
+                    _logger.LogInformation("Проверка марки {mark} выполнена через ТС ПИоТ в локальном модуле честного знака.", Code);
+                else
+                    _logger.LogInformation("Проверка марки {mark} выполнена через локальный модуль честного знака.", Code);
+            }
+
+            if (CheckSource == MarkCheckSource.Database)
                 _logger.LogInformation("Проверка марки {mark} выполнена через базу данных fmu-api.", Code);
 
-            if (!answer.OfflineRegime && !answer.Offline)
-            {
-                if (!_useTsPiot)
-                    _logger.LogInformation("Проверка марки {mark} выполнена в онлайне через xapikey.", Code);
-                else
-                {
-                    if (answer.IsCheckedTsPiotOffline())
-                        _logger.LogInformation("Проверка марки {mark} выполнена через ТС ПИоТ в локальном модуле честного знака.", Code);
-                    else
-                        _logger.LogInformation("Проверка марки {mark} выполнена в онлайне через ТС ПИоТ.", Code);
-                }
-            }
+            if (CheckSource == MarkCheckSource.OnlineXApiKey)
+                _logger.LogInformation("Проверка марки {mark} выполнена в онлайне через xapikey.", Code);
+
+            if (CheckSource == MarkCheckSource.OnlineTsPiot)
+                _logger.LogInformation("Проверка марки {mark} выполнена в онлайне через ТС ПИоТ.", Code);
 
             return Result.Success(_lastCheckResult.FmuAnswer);
         }
@@ -332,6 +332,17 @@ public class Mark : IMark
             gtin = markData.Gtin;
 
         await _gtinCatalogService.SaveFromOnlineCheck(gtin, groupId);
+    }
+
+    private MarkCheckSource ResolveCheckSource(FmuAnswer answer)
+    {
+        if (answer.OfflineRegime)
+            return MarkCheckSource.LocalModule;
+
+        if (answer.Offline)
+            return MarkCheckSource.Database;
+
+        return _useTsPiot ? MarkCheckSource.OnlineTsPiot : MarkCheckSource.OnlineXApiKey;
     }
 
     private bool ResetErrorFields()

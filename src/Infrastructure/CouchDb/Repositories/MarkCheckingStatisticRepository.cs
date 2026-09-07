@@ -46,9 +46,9 @@ public class MarkCheckingStatisticRepository(
         return await GetByIdAsync(id);
     }
 
-    public async Task<Dictionary<string, string>> LastCheckIds(IReadOnlyList<string> sgtins)
+    public async Task<Dictionary<string, LastMarkCheck>> LastChecks(IReadOnlyList<string> sgtins)
     {
-        var result = new Dictionary<string, string>(StringComparer.Ordinal);
+        var result = new Dictionary<string, LastMarkCheck>(StringComparer.Ordinal);
         if (sgtins.Count == 0)
             return result;
 
@@ -81,7 +81,11 @@ public class MarkCheckingStatisticRepository(
             if (last == null || string.IsNullOrEmpty(last.Id))
                 continue;
 
-            result[group.Key] = last.Id;
+            result[group.Key] = new LastMarkCheck
+            {
+                Id = last.Id,
+                CheckSource = last.CheckSource
+            };
         }
 
         return result;

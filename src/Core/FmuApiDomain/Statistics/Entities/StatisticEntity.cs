@@ -1,4 +1,5 @@
 using FmuApiDomain.Documents;
+using FmuApiDomain.Mark.Enums;
 using FmuApiDomain.Templates.Tables;
 
 namespace FmuApiDomain.Statistics.Entities;
@@ -12,6 +13,7 @@ public class StatisticEntity : IHaveStringId
     public bool SuccessCheck { get; set; } = false;
     public bool OnLineCheck { get; set; } = false;
     public bool OffLineCheck { get; set; } = false;
+    public MarkCheckSource CheckSource { get; set; } = MarkCheckSource.Undefined;
     public string WarningMessage { get; set; } = string.Empty;
     public RequestDocument? CheckRequest { get; set; }
     public FmuAnswer? CheckResponse { get; set; }

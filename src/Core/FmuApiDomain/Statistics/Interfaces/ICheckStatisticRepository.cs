@@ -10,7 +10,7 @@ public interface ICheckStatisticRepository
     
     Task<StatisticEntity?> ById(string id);
     
-    Task<Dictionary<string, string>> LastCheckIds(IReadOnlyList<string> sgtins);
+    Task<Dictionary<string, LastMarkCheck>> LastChecks(IReadOnlyList<string> sgtins);
     
     Task<MarkCheckStatistics> CheckStatisticsByDays(DateTime fromDate, DateTime toDate);
     

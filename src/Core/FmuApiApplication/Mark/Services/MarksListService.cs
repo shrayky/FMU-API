@@ -34,7 +34,7 @@ public class MarksListService(
         if (result.IsFailure)
             return result;
 
-        await FillCheckIds(result.Value.Marks);
+        await FillLastChecks(result.Value.Marks);
         return result;
     }
 
@@ -51,7 +51,7 @@ public class MarksListService(
         return Result.Success(check);
     }
 
-    private async Task FillCheckIds(List<MarkListItem> marks)
+    private async Task FillLastChecks(List<MarkListItem> marks)
     {
         var sgtins = marks
             .Select(mark => mark.MarkId)
@@ -62,11 +62,14 @@ public class MarksListService(
         if (sgtins.Count == 0)
             return;
 
-        var lastCheckIds = await checkStatisticRepository.LastCheckIds(sgtins);
+        var lastChecks = await checkStatisticRepository.LastChecks(sgtins);
         foreach (var mark in marks)
         {
-            if (lastCheckIds.TryGetValue(mark.MarkId, out var checkId))
-                mark.CheckId = checkId;
+            if (!lastChecks.TryGetValue(mark.MarkId, out var lastCheck))
+                continue;
+
+            mark.CheckId = lastCheck.Id;
+            mark.CheckSource = lastCheck.CheckSource;
         }
     }
 

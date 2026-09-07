@@ -19,9 +19,13 @@ class MarksView {
             noData: "Нет данных",
             markId: "Номер марки",
             state: "Состояние",
+            checkSource: "Способ проверки",
             checkDate: "Дата проверки",
-            onlineCheck: "On-line проверка",
-            offlineCheck: "Off-line проверка"
+            checkSourceUndefined: "Неопределено",
+            checkSourceOnlineXApiKey: "Online (X-Api-Key)",
+            checkSourceOnlineTsPiot: "Online (ТС ПИоТ)",
+            checkSourceLocalModule: "Локальный модуль",
+            checkSourceDatabase: "Данные БД"
         }
 
         this.NAMES = {
@@ -151,6 +155,12 @@ class MarksView {
                     width: 120,
                     sort: "string",
                 },
+                {
+                    id: "checkSource",
+                    header: this.LABELS.checkSource,
+                    width: 180,
+                    sort: "string"
+                },
                 { 
                     id: "checkDate", 
                     header: this.LABELS.checkDate, 
@@ -263,6 +273,7 @@ class MarksView {
             id: mark.id,
             markId: mark.markId,
             state: mark.state,
+            checkSource: this._checkSourceLabel(mark.checkSource),
             checkDate: new Date(mark.trueApiAnswerProperties.reqTimestamp).toLocaleString(),
             haveTrueApiAnswer: mark.haveTrueApiAnswer,
             checkId: mark.checkId || mark.CheckId || ""
@@ -271,6 +282,28 @@ class MarksView {
         table.clearAll();
         table.parse(tableData);
         table.resize();
+    }
+
+    _checkSourceLabel(checkSource) {
+        const labels = {
+            0: this.LABELS.checkSourceUndefined,
+            1: this.LABELS.checkSourceOnlineXApiKey,
+            2: this.LABELS.checkSourceOnlineTsPiot,
+            3: this.LABELS.checkSourceLocalModule,
+            4: this.LABELS.checkSourceDatabase,
+            Undefined: this.LABELS.checkSourceUndefined,
+            OnlineXApiKey: this.LABELS.checkSourceOnlineXApiKey,
+            OnlineTsPiot: this.LABELS.checkSourceOnlineTsPiot,
+            LocalModule: this.LABELS.checkSourceLocalModule,
+            Database: this.LABELS.checkSourceDatabase,
+            undefined: this.LABELS.checkSourceUndefined,
+            onlineXApiKey: this.LABELS.checkSourceOnlineXApiKey,
+            onlineTsPiot: this.LABELS.checkSourceOnlineTsPiot,
+            localModule: this.LABELS.checkSourceLocalModule,
+            database: this.LABELS.checkSourceDatabase
+        };
+
+        return labels[checkSource] ?? this.LABELS.checkSourceUndefined;
     }
 
     _updatePagination(data) {

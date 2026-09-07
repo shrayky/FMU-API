@@ -6,6 +6,7 @@ using FmuApiDomain.Documents;
 using FmuApiDomain.Documents.Enums;
 using FmuApiDomain.Documents.Interfaces;
 using FmuApiDomain.PacketTrapper.Interfaces;
+using FmuApiDomain.Mark.Enums;
 using FmuApiDomain.Mark.Interfaces;
 using FmuApiDomain.Statistics.Entities;
 using FmuApiDomain.Statistics.Interfaces;
@@ -80,13 +81,13 @@ public class CheckSellDocument : IFrontolDocumentService
             markInformation.FillFieldsForFrontol_6_25_5(_document.Inn);
             markInformation.FillFieldsForIMark(_document.RequestFromAppId);
 
-            await SaveCheckStatistic(mark.SGtin, markInformation, failed: false);
+            await SaveCheckStatistic(mark.SGtin, markInformation, failed: false, mark.CheckSource);
 
             return Result.Success(markInformation);
         }
         else
         {
-            await SaveCheckStatistic(mark.SGtin, answer: null, failed: true);
+            await SaveCheckStatistic(mark.SGtin, answer: null, failed: true, MarkCheckSource.Undefined);
         }
 
         _logger.LogError(checkResult.Error);
@@ -94,7 +95,7 @@ public class CheckSellDocument : IFrontolDocumentService
         return checkResult;
     }
 
-    private async Task SaveCheckStatistic(string sgtin, FmuAnswer? answer, bool failed)
+    private async Task SaveCheckStatistic(string sgtin, FmuAnswer? answer, bool failed, MarkCheckSource checkSource)
     {
         if (!_configuration.Statistics.SaveToDb)
             return;
@@ -110,6 +111,7 @@ public class CheckSellDocument : IFrontolDocumentService
             SuccessCheck = success,
             OnLineCheck = online,
             OffLineCheck = offline,
+            CheckSource = checkSource,
             WarningMessage = failed ? string.Empty : (answer?.Error ?? string.Empty),
             CheckRequest = _document,
             CheckResponse = answer
