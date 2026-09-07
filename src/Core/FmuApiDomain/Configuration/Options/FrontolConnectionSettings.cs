@@ -26,6 +26,6 @@ public class FrontolConnectionSettings
         if (Password == string.Empty)
             return string.Empty;
 
-        return $"Database={Path};user={UserName};password={Password};Dialect=3;";
+        return $"Database={Path};user={UserName};password={Password};Charset=WIN1251;Dialect=3;";
     }
 }
