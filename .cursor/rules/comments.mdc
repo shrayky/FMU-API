@@ -1,0 +1,24 @@
+---
+description: Комментарии — только у классов, не у очевидных методов
+alwaysApply: true
+---
+
+# Комментарии
+
+Комментировать классы и интерфейсы (на русском). У методов, свойств и конструкторов не писать комментарии, которые повторяют имя или очевидны из сигнатуры.
+
+```csharp
+// ❌ BAD
+/// <summary>
+/// Создаёт HttpClient с адресом и авторизацией CouchDB.
+/// </summary>
+private Result<HttpClient> CreateAuthorizedClient(CouchDbConnection connection)
+
+// ✅ GOOD
+/// <summary>
+/// Применяет настройки подключения к конфигурации ноды CouchDB.
+/// </summary>
+public class CouchDbConfigurationService : ICouchDbConfigurationService
+{
+    private Result<HttpClient> CreateAuthorizedClient(CouchDbConnection connection)
+```

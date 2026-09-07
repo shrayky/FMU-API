@@ -15,6 +15,7 @@ class DatabaseConnectionConfigurationElement {
             bulkLabel: "Параметры пакетной обработки",
             queryLimit: "Максимальное количество записей для запроса выборки",
             queryTimeout: "Таймаут запроса (секунд)",
+            disableDbLog: "Отключить лог базы данных",
         };
     }
 
@@ -32,6 +33,7 @@ class DatabaseConnectionConfigurationElement {
             this.bulkParallelTasks = settings.bulkParallelTasks;
             this.queryLimit = settings.queryLimit;
             this.queryTimeout = settings.queryTimeoutSeconds;
+            this.disableDbLog = settings.disableDbLog;
         }
 
         return this;
@@ -62,6 +64,7 @@ class DatabaseConnectionConfigurationElement {
                         id: this.SETTINGS_ID,
                         disabled: !this.enable,
                         rows: [
+                            CheckBox(this.LABELS.disableDbLog, "database.disableDbLog", { value: this.disableDbLog }),
                             Text(this.LABELS.serverDbAddress, "database.netAddress", this.serverDbAddress, httpAddressValidation),
                             {
                                 cols: [

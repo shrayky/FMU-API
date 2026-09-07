@@ -13,13 +13,15 @@ class CouchDbStatusWorker(
     IParametersService parametersService,
     IApplicationState applicationState,
     IStatusDbService statusDbService,
-    IIndexingService indexingService) : BackgroundService
+    IIndexingService indexingService,
+    ICouchDbConfigurationService couchDbConfigurationService) : BackgroundService
 {
     private readonly ILogger<CouchDbStatusWorker> _logger = logger;
     private readonly IParametersService _parametersService = parametersService;
     private readonly IApplicationState _applicationState = applicationState;
     private readonly IStatusDbService _statusDbService = statusDbService;
     private readonly IIndexingService _indexingService = indexingService;
+    private readonly ICouchDbConfigurationService _couchDbConfigurationService = couchDbConfigurationService;
 
     private readonly TimeSpan _checkInterval = TimeSpan.FromSeconds(10);
 
@@ -44,6 +46,8 @@ class CouchDbStatusWorker(
 
                 if (needToEnsureDatabaseIndex)
                     needToEnsureDatabaseIndex = !await EnsureDatabaseIndexes(databaseConfig, stoppingToken);
+
+                await EnsureCouchDbSettings(databaseConfig, stoppingToken);
             }
                 
 #if DEBUG
@@ -104,5 +108,13 @@ class CouchDbStatusWorker(
         }
 
         return true;
+    }
+
+    private async Task EnsureCouchDbSettings(CouchDbConnection databaseConfig, CancellationToken stoppingToken)
+    {
+        var settingsResult = await _couchDbConfigurationService.EnsureSettings(databaseConfig, stoppingToken);
+
+        if (settingsResult.IsFailure)
+            _logger.LogWarning("Не удалось применить настройки CouchDB: {err}", settingsResult.Error);
     }
 }

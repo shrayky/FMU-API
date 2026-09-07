@@ -21,6 +21,8 @@ public class CouchDbConnection
 
     public int QueryTimeoutSeconds { get; set; } = 300;
 
+    public bool DisableDbLog { get; set; } = true;
+
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? NetAdres { get; set; } = string.Empty;
 
