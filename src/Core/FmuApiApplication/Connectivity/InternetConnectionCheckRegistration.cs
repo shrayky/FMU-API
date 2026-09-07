@@ -1,9 +1,9 @@
 using System.Net;
 using System.Security.Authentication;
-using FmuApiApplication.InternetConnectionCheck.Workers;
+using FmuApiApplication.Connectivity.Workers;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace FmuApiApplication.InternetConnectionCheck;
+namespace FmuApiApplication.Connectivity;
 
 /// <summary>
 /// Регистрация проверки доступности интернета.

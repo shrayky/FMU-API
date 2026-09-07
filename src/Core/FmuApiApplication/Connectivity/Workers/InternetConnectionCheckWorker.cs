@@ -1,9 +1,9 @@
-﻿using FmuApiDomain.Connectivity.Interfaces;
+using FmuApiDomain.Connectivity.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace FmuApiApplication.InternetConnectionCheck.Workers;
+namespace FmuApiApplication.Connectivity.Workers;
 
 public class InternetConnectionCheckWorker(
     IServiceScopeFactory scopeFactory,

@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 using Shared.Http;
 using System.Net;
 
-namespace FmuApiApplication.InternetConnectionCheck.Services;
+namespace FmuApiApplication.Connectivity.Services;
 
 [AutoRegisterService(ServiceLifetime.Scoped)]
 public class InternetConnectionCheckService(

@@ -1,6 +1,6 @@
 using FmuApiApplication.BeerTaps.Workers;
 using FmuApiApplication.Documents.Workers;
-using FmuApiApplication.InternetConnectionCheck;
+using FmuApiApplication.Connectivity;
 using FmuApiApplication.Statistics.Workers;
 using FmuApiDomain.Attributes;
 using Microsoft.Extensions.DependencyInjection;
