@@ -18,7 +18,7 @@ public class MigrationTo12_1
         }
 #pragma warning restore CS0612
 
-        if (settings.GisMtProductMappings.Count == 0 || settings.Assembly > 1)
+        if (settings.GisMtProductMappings.Count == 0)
             settings.GisMtProductMappings = AtolToTrueApiGroupMap.CopyDefaults();
 
         settings.AppVersion = 12;

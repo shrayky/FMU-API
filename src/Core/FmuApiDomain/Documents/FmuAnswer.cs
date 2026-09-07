@@ -18,6 +18,7 @@ public class FmuAnswer
     public List<string> Marking_codes { get; set; } = [];
 
     [JsonPropertyName("truemark_response")]
+    [JsonConverter(typeof(CheckMarksDataTrueApiJsonConverter))]
     public CheckMarksDataTrueApi Truemark_response { get; set; } = new();
 
     [JsonPropertyName("truemark_responses")]

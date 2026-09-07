@@ -26,6 +26,7 @@ using WebApi;
 using WebApi.Extensions;
 using WebApi.Services;
 using System.Text;
+using System.Text.Encodings.Web;
 using FmuApiApplication.Connectivity.Services;
 
 var slConsole = new LoggerConfiguration()
@@ -72,7 +73,10 @@ bool RunHttpApiService()
     var builder = WebApplication.CreateBuilder();
     var services = builder.Services;
 
-    services.AddControllers();
+    services.AddControllers().AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+    });
     services.AddScoped<FmuDocumentResponseService>();
     services.AddRazorPages();
     services.AddEndpointsApiExplorer();

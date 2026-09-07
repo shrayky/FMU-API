@@ -58,6 +58,7 @@ public class BeginDocument : IFrontolDocumentService
     private async Task<Result<FmuAnswer>> BeginDocumentAsync()
     {
         FmuAnswer checkResult = new();
+        var errors = new List<string>();
 
         foreach (var position in Document.Positions)
         {
@@ -95,7 +96,7 @@ public class BeginDocument : IFrontolDocumentService
                 if (groupId == TrueApiGroup.Tobaco)
                     minimalPriceFromSettings = _configuration.MinimalPrices.Tabaco;
 
-                var sellPrice = position.ProductPrice == 0 ? position.Total_price * 100 : position.ProductPrice * 100;
+                var sellPrice = (int)Math.Round(position.ProductPrice == 0 ? position.Total_price * 100 : position.ProductPrice * 100);
 
                 // проверка ЕМЦ (smp) только для групп с признаком CheckSmp (по умолчанию ТГ 3 и 16)
                 if (markData.Smp != null && ProductGroupResolver.ShouldCheckSmp(position.ItemType, groupId))
@@ -105,35 +106,51 @@ public class BeginDocument : IFrontolDocumentService
                     if (minPrice > sellPrice)
                     {
                         checkResult.Code = 3;
-                        checkResult.Error += $"\r\n {position.Text} цена ниже минимальной розничной!";
+                        errors.Add($"{position.Text} цена ниже минимальной розничной!");
                         checkResult.Marking_codes.Add(markInBase64);
                     }
                 }
 
-                // проверка максимальной прозничной цены для ТГ=3 (табак)
-                if (markData.Mrp != null && groupId == TrueApiGroup.Tobaco)
+                // ТУТ ВОЗВРАЩАЕТСЯ КОД ОШИБКИ 3 ПОТОМУ ЧТО ФРОНТОЛ НЕКОРРЕКТНО РЕАГИРУЕТ НА ПРАВИЛЬНЫЙ КОД 1
+                // по правильному - должен быть код 1, но фронтол показывает окошко, что есть марки с ошбиками,
+                // отсканируйте 0 из 0
+                if (markData.Mrp != null)
                 {
-                    if (markData.Mrp < sellPrice)
+                    if (ProductGroupResolver.ShouldCheckMrp(position.ItemType, groupId))
+                    {
+                        if (markData.Mrp != sellPrice)
+                        {
+                            checkResult.Code = 3;
+                            errors.Add($"{position.Text} цена не соответствует МРЦ ({position.ProductPrice}, а должна быть {markData.Mrp / 100})!");
+                            checkResult.Marking_codes.Add(markInBase64);
+                        }
+                    }
+                    else if (groupId == TrueApiGroup.Ncp && markData.Mrp > sellPrice)
                     {
                         checkResult.Code = 3;
-                        checkResult.Error += $"\r\n {position.Text} цена выше максимальной розничной!";
+                        errors.Add($"{position.Text} цена ниже минимальной розничной!");
+                        checkResult.Marking_codes.Add(markInBase64);
+                    }
+                    else if (markData.Mrp < sellPrice)
+                    {
+                        checkResult.Code = 3;
+                        errors.Add($"{position.Text} цена выше максимальной розничной!");
                         checkResult.Marking_codes.Add(markInBase64);
                     }
                 }
 
-                // проверка минимальной прозничной цены для ТГ=16 (стики)
-                if (markData.Mrp != null && groupId == TrueApiGroup.Ncp)
+                if (ProductGroupResolver.ShouldCheckExpireDate(position.ItemType, groupId)
+                    && markData.ExpireDate == null)
                 {
-                    if (markData.Mrp > sellPrice)
-                    {
-                        checkResult.Code = 3;
-                        checkResult.Error += $"\r\n {position.Text} цена ниже минимальной розничной!";
-                        checkResult.Marking_codes.Add(markInBase64);
-                    }
+                    checkResult.Code = 3;
+                    errors.Add($"{position.Text} отсутствует срок годности!");
+                    checkResult.Marking_codes.Add(markInBase64);
                 }
 
             }
         }
+
+        checkResult.Error = string.Join("\r\n", errors);
 
         if (_configuration.Database.ConfigurationIsEnabled && AppState.CouchDbOnline())
         {

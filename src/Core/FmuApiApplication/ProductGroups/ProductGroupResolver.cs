@@ -72,6 +72,54 @@ public class ProductGroupResolver(
         return false;
     }
 
+    public bool ShouldCheckMrp(int atolItemType, int trueApiGroupId)
+    {
+        var mappings = CurrentMappings();
+
+        if (atolItemType > 0)
+        {
+            var byAtol = FindByAtolCode(mappings, atolItemType);
+            if (byAtol != null)
+                return byAtol.CheckMrp;
+        }
+
+        if (trueApiGroupId > 0)
+        {
+            foreach (var item in mappings)
+            {
+                if (item.TrueApiGroupId == trueApiGroupId && item.CheckMrp)
+                    return true;
+            }
+
+            return AtolToTrueApiGroupMap.DefaultCheckMrp(trueApiGroupId);
+        }
+
+        return false;
+    }
+
+    public bool ShouldCheckExpireDate(int atolItemType, int trueApiGroupId)
+    {
+        var mappings = CurrentMappings();
+
+        if (atolItemType > 0)
+        {
+            var byAtol = FindByAtolCode(mappings, atolItemType);
+            if (byAtol != null)
+                return byAtol.CheckExpireDate;
+        }
+
+        if (trueApiGroupId > 0)
+        {
+            foreach (var item in mappings)
+            {
+                if (item.TrueApiGroupId == trueApiGroupId && item.CheckExpireDate)
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
     private List<GisMtProductMapping> CurrentMappings()
     {
         var mappings = _parametersService.Current().GisMtProductMappings;

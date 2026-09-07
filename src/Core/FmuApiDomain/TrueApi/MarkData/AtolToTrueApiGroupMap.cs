@@ -55,6 +55,9 @@ public static class AtolToTrueApiGroupMap
     public static bool DefaultCheckSmp(int trueApiGroupId)
         => trueApiGroupId == TrueApiGroup.Tobaco || trueApiGroupId == TrueApiGroup.Ncp;
 
+    public static bool DefaultCheckMrp(int trueApiGroupId)
+        => trueApiGroupId == TrueApiGroup.Tobaco;
+
     /// <summary>
     /// Создаёт запись маппинга с признаком ЕМЦ по коду Честного знака.
     /// </summary>
@@ -64,7 +67,9 @@ public static class AtolToTrueApiGroupMap
             AtolCode = atolCode,
             TrueApiGroupId = trueApiGroupId,
             Name = name,
-            CheckSmp = DefaultCheckSmp(trueApiGroupId)
+            CheckSmp = DefaultCheckSmp(trueApiGroupId),
+            CheckMrp = DefaultCheckMrp(trueApiGroupId),
+            CheckExpireDate = false
         };
 
     /// <summary>
@@ -77,7 +82,9 @@ public static class AtolToTrueApiGroupMap
                 AtolCode = item.AtolCode,
                 TrueApiGroupId = item.TrueApiGroupId,
                 Name = item.Name,
-                CheckSmp = item.CheckSmp
+                CheckSmp = item.CheckSmp,
+                CheckMrp = item.CheckMrp,
+                CheckExpireDate = item.CheckExpireDate
             })
             .ToList();
 

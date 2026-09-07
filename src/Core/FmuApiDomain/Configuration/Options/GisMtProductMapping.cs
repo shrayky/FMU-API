@@ -12,4 +12,8 @@ public class GisMtProductMapping
     public string Name { get; set; } = string.Empty;
 
     public bool CheckSmp { get; set; }
+
+    public bool CheckMrp { get; set; }
+
+    public bool CheckExpireDate { get; set; }
 }
