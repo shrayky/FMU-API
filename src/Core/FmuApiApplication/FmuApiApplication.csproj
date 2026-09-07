@@ -22,4 +22,8 @@
     <ProjectReference Include="..\FmuApiDomain\FmuApiDomain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="InternetConnectionCheck\Services\" />
+  </ItemGroup>
+
 </Project>
