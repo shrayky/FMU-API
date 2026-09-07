@@ -8,21 +8,15 @@ using FmuApiDomain.Mark.Models;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text;
 
-namespace FmuApiApplication.Documents;
+namespace FmuApiApplication.Documents.Services;
 
 [AutoRegisterService(ServiceLifetime.Scoped)]
-public class FrontolDocumentMarkStateService : IFrontolDocumentMarkStateService
+public class FrontolDocumentMarkStateService(IMarkFabric markFabric, IMarkStateManager markStateManager) : IFrontolDocumentMarkStateService
 {
     private const string SaleDocumentType = "receipt";
 
-    private readonly IMarkFabric _markFabric;
-    private readonly IMarkStateManager _markStateManager;
-
-    public FrontolDocumentMarkStateService(IMarkFabric markFabric, IMarkStateManager markStateManager)
-    {
-        _markFabric = markFabric;
-        _markStateManager = markStateManager;
-    }
+    private readonly IMarkFabric _markFabric = markFabric;
+    private readonly IMarkStateManager _markStateManager = markStateManager;
 
     /// <summary>
     /// Меняет состояние марок документа: продажа или возврат.

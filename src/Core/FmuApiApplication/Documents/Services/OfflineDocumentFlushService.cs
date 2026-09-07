@@ -6,27 +6,19 @@ using FmuApiDomain.Documents.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace FmuApiApplication.Documents;
+namespace FmuApiApplication.Documents.Services;
 
 [AutoRegisterService(ServiceLifetime.Scoped)]
-public class OfflineDocumentFlushService : IOfflineDocumentFlushService
+public class OfflineDocumentFlushService(
+    IOfflineDocumentStore offlineStore,
+    IDocumentRepository documentRepository,
+    IFrontolDocumentMarkStateService markStateService,
+    ILogger<OfflineDocumentFlushService> logger) : IOfflineDocumentFlushService
 {
-    private readonly IOfflineDocumentStore _offlineStore;
-    private readonly IDocumentRepository _documentRepository;
-    private readonly IFrontolDocumentMarkStateService _markStateService;
-    private readonly ILogger<OfflineDocumentFlushService> _logger;
-
-    public OfflineDocumentFlushService(
-        IOfflineDocumentStore offlineStore,
-        IDocumentRepository documentRepository,
-        IFrontolDocumentMarkStateService markStateService,
-        ILogger<OfflineDocumentFlushService> logger)
-    {
-        _offlineStore = offlineStore;
-        _documentRepository = documentRepository;
-        _markStateService = markStateService;
-        _logger = logger;
-    }
+    private readonly IOfflineDocumentStore _offlineStore = offlineStore;
+    private readonly IDocumentRepository _documentRepository = documentRepository;
+    private readonly IFrontolDocumentMarkStateService _markStateService = markStateService;
+    private readonly ILogger<OfflineDocumentFlushService> _logger = logger;
 
     public async Task FlushAsync(CancellationToken cancellationToken)
     {
