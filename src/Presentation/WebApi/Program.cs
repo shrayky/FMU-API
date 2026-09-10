@@ -150,7 +150,14 @@ bool RunHttpApiService()
     {
         OnPrepareResponse = prm =>
         {
-            prm.Context.Response.Headers.Append("Cache-Control", "publc, max-age=864000");
+            var requestPath = prm.Context.Request.Path.Value ?? "";
+            if (requestPath.StartsWith("/js/", StringComparison.OrdinalIgnoreCase))
+            {
+                prm.Context.Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate";
+                return;
+            }
+
+            prm.Context.Response.Headers["Cache-Control"] = "public, max-age=864000";
         }
     });
     

@@ -6,10 +6,12 @@ export const createLayout = (config) => ({
     ...config
 });
 
-export const createToolbar = (label) => ({
+export const createToolbar = (label, options = {}) => ({
     view: "toolbar",
-    padding: 5,
-    height: 60,
+    id: "mainToolbar",
+    padding: options.hidden ? 0 : 5,
+    height: options.hidden ? 0 : 60,
+    hidden: !!options.hidden,
     elements: [
         {
             view: "label",

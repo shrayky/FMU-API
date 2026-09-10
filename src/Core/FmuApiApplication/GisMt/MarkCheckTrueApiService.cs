@@ -4,11 +4,15 @@ using FmuApiDomain.GisMt;
 using FmuApiDomain.GisMt.Interfaces;
 using FmuApiDomain.GisMt.Models;
 using FmuApiDomain.State.Interfaces;
+using FmuApiDomain.TrueApi.ProductInfo;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace FmuApiApplication.GisMt;
 
+/// <summary>
+/// Проверка марки через True API cises/info с добором карточки товара.
+/// </summary>
 [AutoRegisterService(ServiceLifetime.Scoped)]
 public class MarkCheckTrueApiService(
     ILogger<MarkCheckTrueApiService> logger,
@@ -78,6 +82,8 @@ public class MarkCheckTrueApiService(
                     cisInfo.Error);
             }
 
+            await EnrichWithProductInfo(token, cisInfo.Value, cancellationToken);
+
             return MarkCheckTrueApiResult.Success(cisInfo.Value);
         }
         catch (OperationCanceledException)
@@ -90,6 +96,73 @@ public class MarkCheckTrueApiService(
             return MarkCheckTrueApiResult.WithStatus(
                 MarkCheckTrueApiStatuses.Error,
                 ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Дополняет сведения о КИ карточкой товара из product/info.
+    /// </summary>
+    private async Task EnrichWithProductInfo(
+        string token,
+        List<CisInfoResponseItem> items,
+        CancellationToken cancellationToken)
+    {
+        var gtins = items
+            .Select(item => item.CisInfo?.Gtin)
+            .Where(gtin => !string.IsNullOrWhiteSpace(gtin))
+            .Select(gtin => gtin!)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (gtins.Count == 0)
+            return;
+
+        var products = await _cisesClient.ProductInfo(token, gtins, cancellationToken);
+        if (products.IsFailure)
+        {
+            _logger.LogWarning("Не удалось получить product/info для проверки марки: {Error}", products.Error);
+            return;
+        }
+
+        ApplyProductInfo(items, products.Value);
+    }
+
+    private static void ApplyProductInfo(List<CisInfoResponseItem> items, ProductsInformationTrueApi products)
+    {
+        if (products.Results.Count == 0)
+            return;
+
+        var byGtin = products.Results
+            .Where(product => !string.IsNullOrWhiteSpace(product.Gtin))
+            .GroupBy(product => product.Gtin, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+
+        foreach (var item in items)
+        {
+            var info = item.CisInfo;
+            if (info?.Gtin is null || !byGtin.TryGetValue(info.Gtin, out var product))
+                continue;
+
+            if (string.IsNullOrWhiteSpace(info.ProductName))
+                info.ProductName = product.Name;
+
+            if (string.IsNullOrWhiteSpace(info.Brand))
+                info.Brand = product.Brand;
+
+            if (string.IsNullOrWhiteSpace(info.ProducerName))
+                info.ProducerName = product.ProducerName;
+
+            if (string.IsNullOrWhiteSpace(info.ProducerInn))
+                info.ProducerInn = product.Inn;
+
+            if (string.IsNullOrWhiteSpace(info.TnVedEaes))
+                info.TnVedEaes = product.TnVedEaes;
+
+            if (info.ProductWeight is null)
+                info.ProductWeight = product.ProductWeight;
+
+            if (string.IsNullOrWhiteSpace(info.VolumeWeight))
+                info.VolumeWeight = product.VolumeWeight;
         }
     }
 }

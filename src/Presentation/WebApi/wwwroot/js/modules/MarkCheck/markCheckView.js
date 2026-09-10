@@ -1,6 +1,9 @@
 
 import { ServerAdres } from '../../utils/net.js';
 import { ScannerWedge } from '../../utils/scannerWedge.js';
+import { ClipboardMarkWatcher } from '../../utils/clipboardMarkWatcher.js';
+import { isMobileDevice } from '../../utils/device.js';
+import { buildMarkCardsHtml, buildCheckingHtml, buildScanHintHtml, ensureMarkCheckStyles } from './markCheckCards.js';
 
 class MarkCheckView {
     constructor(id) {
@@ -8,36 +11,50 @@ class MarkCheckView {
         this.id = id;
         this.apiAddress = "/api/fmu/document";
         this.trueApiAddress = "/api/ts/cises/info";
+        this.isMobile = isMobileDevice();
 
         this.LABELS = {
-            formTitle: "FMU-API: Проверка маркировки",
+            formTitle: this.isMobile ? "Проверка марки" : "FMU-API: Проверка маркировки",
             innLabel: "ИНН организации",
             innPlaceholder: "Введите ИНН",
             markLabel: "Штрихкод маркировки",
             markPlaceholder: "Введите или вставьте штрихкод маркировки",
+            scanHint: "Сканируйте марку",
             checkButton: "Проверить",
-            jsonResponseLabel: "JSON ответ",
-            decodedResponseLabel: "Расшифровка ответа",
+            checking: "Проверка…",
             noResponse: "Нет данных",
-            permissiveBlockTitle: "=== Разрешительный режим / ТСПИоТ ===",
-            trueApiBlockTitle: "=== True API (cises/info) ===",
-            trueApiNoData: "Нет данных True API"
+            showJson: "Показать JSON",
+            hideJson: "Скрыть JSON"
         };
 
         this.NAMES = {
             innInput: "innInput",
             markInput: "markInput",
             checkButton: "checkButton",
-            jsonResponse: "jsonResponse",
-            decodedResponse: "decodedResponse"
+            markCards: "markCards",
+            jsonToggle: "jsonToggle",
+            jsonResponse: "jsonResponse"
         };
 
         this.lastResponse = null;
         this.defaultInn = "";
+        this._checking = false;
+        this._autoCheckTimer = null;
+        this._idleCheckMs = this.isMobile ? 400 : 300;
+        this._rawMark = "";
+        this._applyingScan = false;
 
         this.scanner = new ScannerWedge({
-            timeoutMs: 50,
+            timeoutMs: this.isMobile ? 250 : 50,
+            completeOnIdle: this.isMobile,
+            gsAsEnterHoldMs: this.isMobile ? 250 : 0,
+            onBufferChange: (code) => this._onBuffer(code),
             onScan: (code, meta) => this._onScan(code, meta)
+        });
+
+        this.clipboardWatcher = new ClipboardMarkWatcher({
+            intervalMs: 350,
+            onCode: (code) => this._onClipboardMark(code)
         });
     }
 
@@ -72,104 +89,132 @@ class MarkCheckView {
     }
 
     render() {
-        $$("toolbarLabel").setValue(this.LABELS.formTitle);
+        if (!this.isMobile)
+            $$("toolbarLabel").setValue(this.LABELS.formTitle);
 
-        const formElements = [
-            {
-                rows: [
-                    {
-                        view: "text",
-                        id: this.NAMES.innInput,
-                        label: this.LABELS.innLabel,
-                        labelWidth: 180,
-                        placeholder: this.LABELS.innPlaceholder,
-                        value: this.defaultInn || ""
-                    },
+        ensureMarkCheckStyles();
 
-                    {
-                        cols: [
-                            {
-                                view: "text",
-                                id: this.NAMES.markInput,
-                                label: this.LABELS.markLabel,
-                                labelWidth: 180,
-                                placeholder: this.LABELS.markPlaceholder,
-                                value: ""
-                            },
-                
-                            {
-                                view: "button",
-                                id: this.NAMES.checkButton,
-                                value: this.LABELS.checkButton,
-                                width: 150,
-                                click: () => this._onCheck()
-                            }, 
-                        ]
-                    }
-                ]
-            },
-            {
-                cols: [
-                    {
-                        rows: [
-                            {
-                                view: "label",
-                                label: this.LABELS.jsonResponseLabel,
-                                labelAlign: "center"
-                            },
-                            {
-                                view: "textarea",
-                                id: this.NAMES.jsonResponse,
-                                readonly: true,
-                                fillspace: true,
-                                value: this.LABELS.noResponse
-                            },
-                        ]
-                    },
-                    { view: "resizer" },
-                    {
-                        rows: [
-                            {
-                                view: "label",
-                                label: this.LABELS.decodedResponseLabel,
-                                labelAlign: "center"
-                            },
-                            {
-                                view: "textarea",
-                                id: this.NAMES.decodedResponse,
-                                readonly: true,
-                                fillspace: true,
-                                value: this.LABELS.noResponse
-                            },
-                        ]
-                    },
-                ]
-            },
-        ];
-
-        var form = {
+        const form = {
             view: "form",
             id: this.id,
             name: this.formName,
-            elements: formElements,
+            padding: this.isMobile ? 4 : undefined,
+            elements: [
+                this._inputBlock(),
+                {
+                    view: "scrollview",
+                    gravity: 3,
+                    body: {
+                        view: "template",
+                        id: this.NAMES.markCards,
+                        borderless: true,
+                        autoheight: true,
+                        css: "mark-cards",
+                        template: this.isMobile ? buildScanHintHtml() : buildMarkCardsHtml(null)
+                    }
+                },
+                this._jsonBlock()
+            ],
             on: {
                 onAfterRender: () => {
-                    this.scanner.start();
-                    setTimeout(() => {
-                        const markInput = $$(this.NAMES.markInput);
-                        if (markInput) {
-                            markInput.focus();
-                        }
-                    }, 50);
+                    this._setMobileToolbarVisible(false);
+                    this._bindScanner();
                 },
                 onDestruct: () => {
+                    if (this._autoCheckTimer)
+                        clearTimeout(this._autoCheckTimer);
+
+                    this._setMobileToolbarVisible(true);
+                    this.clipboardWatcher.stop();
                     this.scanner.stop();
                 }
             }
-        }
+        };
 
         this._formConfig = form;
         return this;
+    }
+
+    _inputBlock() {
+        if (this.isMobile) {
+            return {
+                view: "text",
+                id: this.NAMES.innInput,
+                hidden: true,
+                value: this.defaultInn || ""
+            };
+        }
+
+        return {
+            rows: [
+                {
+                    view: "text",
+                    id: this.NAMES.innInput,
+                    label: this.LABELS.innLabel,
+                    labelWidth: 180,
+                    placeholder: this.LABELS.innPlaceholder,
+                    value: this.defaultInn || ""
+                },
+                {
+                    view: "text",
+                    id: this.NAMES.markInput,
+                    label: this.LABELS.markLabel,
+                    labelWidth: 180,
+                    placeholder: this.LABELS.markPlaceholder,
+                    value: "",
+                    on: this._markInputEvents()
+                },
+                {
+                    cols: [
+                        {},
+                        {
+                            view: "button",
+                            id: this.NAMES.checkButton,
+                            value: this.LABELS.checkButton,
+                            width: 150,
+                            click: () => this._onCheck()
+                        }
+                    ]
+                }
+            ]
+        };
+    }
+
+    _jsonBlock() {
+        if (this.isMobile) {
+            return {
+                view: "textarea",
+                id: this.NAMES.jsonResponse,
+                hidden: true,
+                readonly: true
+            };
+        }
+
+        return {
+            rows: [
+                {
+                    cols: [
+                        {
+                            view: "button",
+                            id: this.NAMES.jsonToggle,
+                            value: this.LABELS.showJson,
+                            css: "webix_transparent mark-json-link",
+                            width: 160,
+                            click: () => this._toggleJson()
+                        },
+                        {}
+                    ]
+                },
+                {
+                    view: "textarea",
+                    id: this.NAMES.jsonResponse,
+                    hidden: true,
+                    readonly: true,
+                    height: 280,
+                    value: this.LABELS.noResponse
+                }
+            ]
+        };
     }
 
     delayedInnLoading() {
@@ -182,12 +227,242 @@ class MarkCheckView {
         return this;
     }
 
-    _onScan(code, meta = {}) {
-        const markInput = $$(this.NAMES.markInput);
-        if (markInput) {
-            markInput.setValue(code);
-            markInput.focus();
+    _bindScanner() {
+        this.scanner.start();
+        setTimeout(() => {
+            if (this.isMobile) {
+                const capture = document.getElementById("fmuScanCapture");
+                this.scanner.start(capture);
+                capture?.focus();
+                this.clipboardWatcher.start();
+                return;
+            }
+
+            const markInput = $$(this.NAMES.markInput);
+            if (!markInput)
+                return;
+
+            const node = typeof markInput.getInputNode === "function"
+                ? markInput.getInputNode()
+                : null;
+            this.scanner.start(node);
+        }, 50);
+    }
+
+    _scanCaptureNode() {
+        return document.getElementById("fmuScanCapture");
+    }
+
+    _setMobileToolbarVisible(visible) {
+        if (!this.isMobile)
+            return;
+
+        const toolbar = this._findMainToolbar();
+        if (!toolbar)
+            return;
+
+        const node = toolbar.$view;
+        if (visible) {
+            toolbar.define("height", 60);
+            toolbar.show();
+            if (node) {
+                node.style.display = "";
+                node.style.height = "";
+                node.style.padding = "";
+                node.style.overflow = "";
+            }
+        } else {
+            toolbar.define("height", 0);
+            toolbar.hide();
+            if (node) {
+                node.style.display = "none";
+                node.style.height = "0px";
+                node.style.padding = "0px";
+                node.style.overflow = "hidden";
+            }
         }
+
+        toolbar.resize();
+        toolbar.getParentView()?.resize();
+        $$("root")?.resize();
+    }
+
+    _findMainToolbar() {
+        if ($$("mainToolbar"))
+            return $$("mainToolbar");
+
+        let view = $$("toolbarLabel");
+        while (view && view.config.view !== "toolbar")
+            view = view.getParentView();
+
+        return view;
+    }
+
+    _markInputEvents() {
+        return {
+            onEnter: () => this._onInputEnter(),
+            onChange: (value) => this._onInputChange(value),
+            onTimedKeyPress: () => {
+                const node = this._markInputNode();
+                const view = $$(this.NAMES.markInput);
+                const value = node?.value ?? view?.getValue?.() ?? "";
+                this._onInputChange(value);
+            }
+        };
+    }
+
+    _toDisplay(code) {
+        return (code || "").replace(/\x1d/g, "\u241d");
+    }
+
+    _fromDisplay(value) {
+        return (value || "").replace(/\u241d/g, "\x1d").replace(/<GS>/gi, "\x1d");
+    }
+
+    _escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+    }
+
+    _markTemplate(code) {
+        const display = this._toDisplay(code);
+        if (!display)
+            return `<span class="mark-scan-placeholder">${this._escapeHtml(this.LABELS.markPlaceholder)}</span>`;
+
+        return this._escapeHtml(display);
+    }
+
+    _markInputNode() {
+        if (this.isMobile)
+            return this._scanCaptureNode();
+
+        const view = $$(this.NAMES.markInput);
+        if (!view || typeof view.getInputNode !== "function")
+            return null;
+
+        return view.getInputNode() || null;
+    }
+
+    _onClipboardMark(code) {
+        if (this._checking)
+            return;
+
+        this._rawMark = code;
+        this._scheduleAutoCheck();
+    }
+
+    _onBuffer(code) {
+        this._rawMark = code || "";
+        if (!this.isMobile)
+            this._showMark(code);
+
+        if (this._hasGsTail(this._rawMark))
+            this._scheduleAutoCheck();
+    }
+
+    _hasGsTail(code) {
+        const value = code || "";
+        const gs = value.indexOf("\x1d");
+        return gs >= 0 && value.length - gs - 1 >= 4;
+    }
+
+    _setCardsHtml(html) {
+        const cards = $$(this.NAMES.markCards);
+        if (!cards)
+            return;
+
+        cards.define("template", html);
+        cards.refresh();
+    }
+
+    _showMark(code) {
+        this._rawMark = code || "";
+        const view = $$(this.NAMES.markInput);
+        if (!view || typeof view.setValue !== "function")
+            return;
+
+        this._applyingScan = true;
+        view.setValue(this._toDisplay(this._rawMark));
+        this._applyingScan = false;
+        this._scheduleIdleCheck();
+    }
+
+    _onInputChange(value) {
+        if (this._applyingScan)
+            return;
+
+        this._rawMark = this._fromDisplay(value);
+        this._scheduleIdleCheck();
+    }
+
+    _clearMarkInput() {
+        if (this._autoCheckTimer) {
+            clearTimeout(this._autoCheckTimer);
+            this._autoCheckTimer = null;
+        }
+
+        this._rawMark = "";
+        const node = this._markInputNode();
+        this._applyingScan = true;
+        if (node)
+            node.value = "";
+        const view = $$(this.NAMES.markInput);
+        if (view)
+            view.config.value = "";
+        this._applyingScan = false;
+    }
+
+    _onInputEnter() {
+        this._scheduleAutoCheck();
+    }
+
+    _currentMark() {
+        if (this._rawMark)
+            return this._rawMark;
+
+        const node = this._markInputNode();
+        if (node && node.value)
+            return this._fromDisplay(node.value);
+
+        const view = $$(this.NAMES.markInput);
+        if (view && typeof view.getValue === "function")
+            return this._fromDisplay(view.getValue() || "");
+
+        return "";
+    }
+
+    _scheduleIdleCheck() {
+        if (this._autoCheckTimer)
+            clearTimeout(this._autoCheckTimer);
+
+        this._autoCheckTimer = setTimeout(() => {
+            const code = this._currentMark().trim();
+            if (code.length >= 14)
+                this._onCheck();
+        }, this._idleCheckMs);
+    }
+
+    _scheduleAutoCheck() {
+        if (this._autoCheckTimer)
+            clearTimeout(this._autoCheckTimer);
+
+        this._autoCheckTimer = setTimeout(() => {
+            const code = this._currentMark().trim();
+            if (code.length > 0)
+                this._onCheck();
+        }, 50);
+    }
+
+    _onScan(code, meta = {}) {
+        this._rawMark = code || "";
+        this.clipboardWatcher.remember(this._rawMark);
+        if (!this.isMobile)
+            this._showMark(code);
+
+        this._scheduleAutoCheck();
 
         const warnings = [];
         if (meta.capsLock) {
@@ -238,18 +513,26 @@ class MarkCheckView {
     }
 
     async _onCheck() {
+        if (this._checking)
+            return;
+
         const innInput = $$(this.NAMES.innInput);
         const markInput = $$(this.NAMES.markInput);
         const checkButton = $$(this.NAMES.checkButton);
         const form = $$(this.id);
 
-        if (!innInput || !markInput) {
+        if (!this.isMobile && (!innInput || !markInput)) {
             webix.message({ text: "Ошибка: не найдены поля ввода", type: "error" });
             return;
         }
 
-        const inn = innInput.getValue().trim();
-        const markingCode = markInput.getValue().trim();
+        let inn = (innInput?.getValue() || this.defaultInn || "").trim();
+        if (!inn) {
+            await this._loadInnFromConfig();
+            inn = (innInput.getValue() || this.defaultInn || "").trim();
+        }
+
+        const markingCode = this._currentMark().trim();
 
         if (!inn) {
             webix.message({ text: "Введите ИНН организации", type: "error" });
@@ -257,13 +540,19 @@ class MarkCheckView {
         }
 
         if (!markingCode) {
-            webix.message({ text: "Введите штрихкод маркировки", type: "error" });
+            if (!this.isMobile)
+                webix.message({ text: "Введите штрихкод маркировки", type: "error" });
             return;
         }
 
-        checkButton.disable();
-        webix.extend(form, webix.ProgressBar);
-        form.showProgress({ type: "icon" });
+        this._checking = true;
+        this.clipboardWatcher.remember(markingCode);
+        this._setCardsHtml(buildCheckingHtml());
+        if (!this.isMobile) {
+            checkButton?.disable();
+            webix.extend(form, webix.ProgressBar);
+            form.showProgress({ type: "icon" });
+        }
 
         try {
             const documentUrl = ServerAdres(this.apiAddress);
@@ -337,231 +626,53 @@ class MarkCheckView {
             });
             this._clearResponse();
         } finally {
-            checkButton.enable();
-            form.hideProgress();
-        }
-    }
-
-    _displayResponse(responseData) {
-        const jsonResponse = $$(this.NAMES.jsonResponse);
-        if (jsonResponse) {
-            jsonResponse.setValue(JSON.stringify(responseData, null, 2));
-        }
-
-        const decodedResponse = $$(this.NAMES.decodedResponse);
-        if (decodedResponse) {
-            decodedResponse.setValue(this._decodeResponse(responseData));
+            this._checking = false;
+            if (!this.isMobile) {
+                checkButton?.enable();
+                form.hideProgress();
+            }
+            this._clearMarkInput();
         }
     }
 
     _displayCombinedResponse(combined) {
+        const cards = $$(this.NAMES.markCards);
+        if (cards) {
+            cards.define("template", buildMarkCardsHtml(combined));
+            cards.refresh();
+        }
+
         const jsonResponse = $$(this.NAMES.jsonResponse);
         if (jsonResponse) {
             jsonResponse.setValue(JSON.stringify(combined, null, 2));
         }
-
-        const decodedResponse = $$(this.NAMES.decodedResponse);
-        if (decodedResponse) {
-            decodedResponse.setValue(this._decodeCombinedResponse(combined));
-        }
     }
 
-    _decodeCombinedResponse(combined) {
-        let result = "";
+    _toggleJson() {
+        const jsonResponse = $$(this.NAMES.jsonResponse);
+        const toggle = $$(this.NAMES.jsonToggle);
+        if (!jsonResponse || !toggle)
+            return;
 
-        result += `${this.LABELS.permissiveBlockTitle}\n`;
-        if (combined.permissive && !combined.permissive.error) {
-            result += this._decodeResponse(combined.permissive);
+        if (jsonResponse.isVisible()) {
+            jsonResponse.hide();
+            toggle.setValue(this.LABELS.showJson);
         } else {
-            result += `Ошибка: ${combined.permissive?.error || this.LABELS.noResponse}\n`;
+            jsonResponse.show();
+            toggle.setValue(this.LABELS.hideJson);
         }
-
-        result += "\n";
-        result += `${this.LABELS.trueApiBlockTitle}\n`;
-        result += this._decodeTrueApiResponse(combined.trueApi);
-
-        return result || this.LABELS.noResponse;
-    }
-
-    _decodeTrueApiResponse(trueApi) {
-        if (!trueApi) {
-            return `${this.LABELS.trueApiNoData}\n`;
-        }
-
-        let result = "";
-        result += `Статус: ${trueApi.status || "error"}\n`;
-
-        if (trueApi.status !== "ok") {
-            if (trueApi.reason) {
-                result += `Причина: ${trueApi.reason}\n`;
-            }
-            return result;
-        }
-
-        if (!trueApi.data || trueApi.data.length === 0) {
-            result += `${this.LABELS.trueApiNoData}\n`;
-            return result;
-        }
-
-        trueApi.data.forEach((item, index) => {
-            result += `Элемент ${index + 1}:\n`;
-            if (item.errorMessage) result += `  ErrorMessage: ${item.errorMessage}\n`;
-            if (item.errorCode) result += `  ErrorCode: ${item.errorCode}\n`;
-
-            const info = item.cisInfo;
-            if (!info) {
-                result += "  CisInfo: нет данных\n";
-                return;
-            }
-
-            if (info.requestedCis) result += `  RequestedCis: ${info.requestedCis}\n`;
-            if (info.cis) result += `  CIS: ${info.cis}\n`;
-            if (info.gtin) result += `  GTIN: ${info.gtin}\n`;
-            if (info.printView) result += `  PrintView: ${info.printView}\n`;
-            if (info.status) result += `  Status: ${info.status}\n`;
-            if (info.ownerInn) result += `  OwnerInn: ${info.ownerInn}\n`;
-            if (info.ownerName) result += `  OwnerName: ${info.ownerName}\n`;
-            if (info.producerInn) result += `  ProducerInn: ${info.producerInn}\n`;
-            if (info.productGroup) result += `  ProductGroup: ${info.productGroup}\n`;
-            if (info.productGroupId !== undefined && info.productGroupId !== null) {
-                result += `  ProductGroupId: ${info.productGroupId}\n`;
-            }
-            if (info.expirationDate) result += `  ExpirationDate: ${info.expirationDate}\n`;
-            if (info.expireDate) result += `  ExpireDate: ${info.expireDate}\n`;
-            if (info.markWithdraw !== undefined) result += `  MarkWithdraw: ${info.markWithdraw}\n`;
-            if (info.packageType) result += `  PackageType: ${info.packageType}\n`;
-        });
-
-        return result;
-    }
-
-    _decodeResponse(response) {
-        let result = "";
-
-        result += `Код ответа: ${response.code || 0}\n`;
-        if (response.error) {
-            result += `Ошибка: ${response.error}\n`;
-        }
-        result += "\n";
-
-        if (response.stamps && response.stamps.length > 0) {
-            result += `Stamps (${response.stamps.length}):\n`;
-            response.stamps.forEach((stamp, index) => {
-                result += `  ${index + 1}. ${stamp}\n`;
-            });
-            result += "\n";
-        }
-
-        if (response.marking_codes && response.marking_codes.length > 0) {
-            result += `Marking codes (${response.marking_codes.length}):\n`;
-            response.marking_codes.forEach((code, index) => {
-                result += `  ${index + 1}. ${code}\n`;
-            });
-            result += "\n";
-        }
-
-        if (response.truemark_response) {
-            result += "=== Truemark Response ===\n";
-            const tr = response.truemark_response;
-            result += `Код: ${tr.code || 0}\n`;
-            if (tr.description) {
-                result += `Описание: ${tr.description}\n`;
-            }
-            if (tr.reqId) {
-                result += `ReqId: ${tr.reqId}\n`;
-            }
-            if (tr.reqTimestamp) {
-                const date = new Date(tr.reqTimestamp);
-                result += `Время запроса: ${date.toLocaleString()}\n`;
-            }
-            if (tr.version) {
-                result += `Версия: ${tr.version}\n`;
-            }
-            if (tr.codes && tr.codes.length > 0) {
-                result += `Коды (${tr.codes.length}):\n`;
-                tr.codes.forEach((code, index) => {
-                    result += `  Код ${index + 1}:\n`;
-                    if (code.cis) result += `    CIS: ${code.cis}\n`;
-                    if (code.gtin) result += `    GTIN: ${code.gtin}\n`;
-                    if (code.serial) result += `    Serial: ${code.serial}\n`;
-                    if (code.status !== undefined) result += `    Status: ${code.status}\n`;
-                    if (code.sold !== undefined) result += `    Sold: ${code.sold}\n`;
-                    if (code.isExpired !== undefined) result += `    IsExpired: ${code.isExpired}\n`;
-                    if (code.realizable !== undefined) result += `    Realizable: ${code.realizable}\n`;
-                    if (code.printView) result += `    PrintView: ${code.printView}\n`;
-                });
-            }
-            result += "\n";
-        }
-
-        if (response.truemark_responses && response.truemark_responses.length > 0) {
-            result += `=== Truemark Responses (${response.truemark_responses.length}) ===\n`;
-            response.truemark_responses.forEach((trResp, index) => {
-                result += `Ответ ${index + 1}:\n`;
-                if (trResp.inn) result += `  INN: ${trResp.inn}\n`;
-                if (trResp.kpp) result += `  KPP: ${trResp.kpp}\n`;
-                if (trResp.response) {
-                    const resp = trResp.response;
-                    result += `  Код: ${resp.code || 0}\n`;
-                    if (resp.description) result += `  Описание: ${resp.description}\n`;
-                    if (resp.codes && resp.codes.length > 0) {
-                        result += `  Коды: ${resp.codes.length}\n`;
-                    }
-                }
-                result += "\n";
-            });
-        }
-
-        if (response.offline_truemark_response && response.offline_truemark_response.length > 0) {
-            result += `=== Offline Truemark Responses (${response.offline_truemark_response.length}) ===\n`;
-            response.offline_truemark_response.forEach((resp, index) => {
-                result += `Ответ ${index + 1}: Код ${resp.code || 0}\n`;
-            });
-            result += "\n";
-        }
-
-        if (response.esm_response) {
-            result += "=== ESM Response ===\n";
-            const esm = response.esm_response;
-            if (esm.code !== undefined) result += `Код: ${esm.code}\n`;
-            if (esm.message) result += `Сообщение: ${esm.message}\n`;
-            result += "\n";
-        }
-
-        if (response.dmdk_responses && response.dmdk_responses.length > 0) {
-            result += `=== DMDK Responses (${response.dmdk_responses.length}) ===\n`;
-            response.dmdk_responses.forEach((resp, index) => {
-                result += `Ответ ${index + 1}: Код ${resp.code || 0}\n`;
-            });
-            result += "\n";
-        }
-
-        result += "=== Метаданные ===\n";
-        if (response["fmu-api-offline"] !== undefined) {
-            result += `Offline режим: ${response["fmu-api-offline"]}\n`;
-        }
-        if (response["fmu-api-local-Module"] !== undefined) {
-            result += `Локальный модуль: ${response["fmu-api-local-Module"]}\n`;
-        }
-        if (response["fmu-api-print-group"] !== undefined) {
-            result += `Print Group Code: ${response["fmu-api-print-group"]}\n`;
-        }
-        if (response["fmu-api-version"]) {
-            result += `Версия FMU-API: ${response["fmu-api-version"]}\n`;
-        }
-
-        return result || this.LABELS.noResponse;
     }
 
     _clearResponse() {
-        const jsonResponse = $$(this.NAMES.jsonResponse);
-        const decodedResponse = $$(this.NAMES.decodedResponse);
+        const cards = $$(this.NAMES.markCards);
+        if (cards) {
+            cards.define("template", this.isMobile ? buildScanHintHtml() : buildMarkCardsHtml(null));
+            cards.refresh();
+        }
 
+        const jsonResponse = $$(this.NAMES.jsonResponse);
         if (jsonResponse) {
             jsonResponse.setValue(this.LABELS.noResponse);
-        }
-        if (decodedResponse) {
-            decodedResponse.setValue(this.LABELS.noResponse);
         }
     }
 }
@@ -573,4 +684,3 @@ export default function (id) {
 
     return view._formConfig;
 }
-

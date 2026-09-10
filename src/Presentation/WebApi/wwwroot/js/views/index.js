@@ -6,6 +6,7 @@ import { loadParameters, SETTINGS_SAVED_EVENT } from '../services/ConfigurationS
 import { createLayout, createToolbar } from '../components/Layout.js';
 import { Sidebar } from '../components/Sidebar.js';
 import { buildMenuItems } from '../config/menu.js';
+import { isMobileDevice } from '../utils/device.js';
 
 import SettingsView from '../modules/settings/SettingsView.js';
 import InformationView from '../modules/Information/informationView.js';
@@ -41,10 +42,21 @@ class App {
     }
 
     isMobile() {
-        return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        return isMobileDevice();
+    }
+
+    defaultPage() {
+        return this.isMobile() ? "markCheckView" : "monitorView";
     }
 
     createMainLayout(config) {
+        if (this.isMobile()) {
+            return createLayout({
+                type: "clean",
+                rows: [{ id: this.bodyId }]
+            });
+        }
+
         const mainSidebar = new Sidebar({
             items: buildMenuItems(config),
             onSelect: (id) => this.router.navigate(id, this.bodyId),
@@ -58,14 +70,15 @@ class App {
             ]
         };
 
-        const layout = this.isMobile()
-            ? { cols: [mainBody, mainSidebar] }
-            : { cols: [mainSidebar, mainBody] };
-
-        return createLayout(layout);
+        return createLayout({
+            cols: [mainSidebar, mainBody]
+        });
     }
 
     refreshMenu(config) {
+        if (this.isMobile())
+            return;
+
         this.config = config;
 
         const items = buildMenuItems(config);
@@ -78,7 +91,7 @@ class App {
 
         const visibleIds = items.map(item => item.id);
         if (!visibleIds.includes(this.router.currentPage)) {
-            this.router.navigate("monitorView", this.bodyId);
+            this.router.navigate(this.defaultPage(), this.bodyId);
         }
     }
 
@@ -97,7 +110,7 @@ class App {
             }
 
             webix.ui(this.createMainLayout(this.config));
-            this.router.navigate("monitorView", this.bodyId);
+            this.router.navigate(this.defaultPage(), this.bodyId);
 
             window.addEventListener(SETTINGS_SAVED_EVENT, (event) => {
                 this.refreshMenu(event.detail);

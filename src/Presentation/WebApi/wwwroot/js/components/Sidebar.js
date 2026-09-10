@@ -1,3 +1,5 @@
+import { isMobileDevice } from '../utils/device.js';
+
 const SIDEBAR_COLLAPSED_KEY = "sidebar_collapsed";
 
 function ensureIconsStyles() {
@@ -105,7 +107,7 @@ export class Sidebar {
     }
 
     _isMobile() {
-        return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        return isMobileDevice();
     }
 
     _getCollapsed() {
