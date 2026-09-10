@@ -2,47 +2,58 @@
 export const MENU_ITEMS = {
     MONITOR: {
         id: "monitorView",
-        value: "Мониторинг"
+        value: "Мониторинг",
+        icon: "mdi mdi-monitor-dashboard"
     },
     CONFIG: {
         id: "config",
         value: "Настройка",
+        icon: "mdi mdi-cog"
     },
     PRODUCT_GROUPS: {
         id: "productGroupsView",
-        value: "Товарные группы"
+        value: "Товарные группы",
+        icon: "mdi mdi-folder"
     },
     CDN: {
         id: "cdnListInfo",
-        value: "Список CDN"
+        value: "Список CDN",
+        icon: "mdi mdi-cloud"
     },
     BEER_TAPS: {
         id: "beerTapsView",
-        value: "Пивные краны"
+        value: "Пивные краны",
+        icon: "mdi mdi-beer"
     },
     MARKS: {
         id: "marksView",
-        value: "Марки"
+        value: "Марки",
+        icon: "mdi mdi-barcode"
     },
     GTIN_CATALOG: {
         id: "gtinCatalogView",
-        value: "Каталог GTIN"
+        value: "Каталог GTIN",
+        icon: "mdi mdi-table-chart"
     },
     GIS_MT_MARKS: {
         id: "gisMtMarksView",
-        value: "Остатки марок ГИС МТ"
+        value: "Остатки марок ГИС МТ",
+        icon: "mdi mdi-package-variant"
     },
     MARK_CHECK: {
         id: "markCheckView",
-        value: "Проверка маркировки"
+        value: "Проверка маркировки",
+        icon: "mdi mdi-qrcode-scan"
     },
     LOGS: {
         id: "logsView",
-        value: "Логи"
+        value: "Логи",
+        icon: "mdi mdi-file-log"
     },
     INFO: {
         id: "information",
-        value: "Информация"
+        value: "Информация",
+        icon: "mdi mdi-information"
     },
 };
 

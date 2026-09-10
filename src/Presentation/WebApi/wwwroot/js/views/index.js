@@ -3,7 +3,8 @@ import '../utils/customComponents.js';
 import { InitProxy } from '../utils/proxy.js';
 import { RouterService } from '../services/RouterService.js';
 import { loadParameters, SETTINGS_SAVED_EVENT } from '../services/ConfigurationService.js';
-import { createLayout, createToolbar, createSidebar } from '../components/Layout.js';
+import { createLayout, createToolbar } from '../components/Layout.js';
+import { Sidebar } from '../components/Sidebar.js';
 import { buildMenuItems } from '../config/menu.js';
 
 import SettingsView from '../modules/settings/SettingsView.js';
@@ -39,28 +40,36 @@ class App {
         this.router.register("beerTapsView", async () => (await import("../modules/BeerTaps/beerTapsView.js")).default);
     }
 
+    isMobile() {
+        return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }
+
     createMainLayout(config) {
-        return createLayout({
+        const mainSidebar = new Sidebar({
+            items: buildMenuItems(config),
+            onSelect: (id) => this.router.navigate(id, this.bodyId),
+            logoText: "FMU-API"
+        }).getView();
+
+        const mainBody = {
             rows: [
                 createToolbar("FMU-API"),
-                {
-                    cols: [
-                        createSidebar(
-                            buildMenuItems(config),
-                            (id) => this.router.navigate(id, this.bodyId)
-                        ),
-                        { id: this.bodyId }
-                    ]
-                }
+                { id: this.bodyId }
             ]
-        });
+        };
+
+        const layout = this.isMobile()
+            ? { cols: [mainBody, mainSidebar] }
+            : { cols: [mainSidebar, mainBody] };
+
+        return createLayout(layout);
     }
 
     refreshMenu(config) {
         this.config = config;
 
         const items = buildMenuItems(config);
-        const sidebar = $$("sidebar");
+        const sidebar = $$("mainSidebar");
 
         if (sidebar) {
             sidebar.clearAll();

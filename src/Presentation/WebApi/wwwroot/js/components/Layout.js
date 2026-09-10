@@ -18,14 +18,3 @@ export const createToolbar = (label) => ({
         }
     ]
 });
-
-export const createSidebar = (items, onSelect) => ({
-    view: "sidebar",
-    id: "sidebar",
-    width: 200,
-    collapsed: false,
-    data: items,
-    on: {
-        onAfterSelect: onSelect
-    }
-});
