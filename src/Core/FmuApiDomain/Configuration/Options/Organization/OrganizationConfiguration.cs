@@ -91,6 +91,14 @@ public class OrganizationConfiguration
         PrintGroups.Remove(row);
     }
 
+    public PrintGroupData? PrintGroupByXapiKey(string? xapikey)
+    {
+        if (string.IsNullOrWhiteSpace(xapikey))
+            return null;
+
+        return PrintGroups.FirstOrDefault(x => x.XAPIKEY == xapikey);
+    }
+
     public LocalModuleConnection LocalModuleConnection(int organizationId)
     {
         organizationId = organizationId == 0 ? 1 : organizationId;

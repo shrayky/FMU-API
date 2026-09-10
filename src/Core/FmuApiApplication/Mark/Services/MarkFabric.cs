@@ -32,10 +32,7 @@ public class MarkFabric(
 
     public async Task<IMark> Create(Position position, string mark)
     {
-        var logger = _loggerFactory.CreateLogger<Mark>();
-
-        var markInstance = new Mark(mark, _markParser, _markChecker, _markStateManager, _gtinCatalogService, _parametersService, logger);
-
+        var markInstance = CreateMarkInstance(mark);
         var appSettings = await _parametersService.CurrentAsync();
 
         var inn = position.Organisation?.Inn ?? string.Empty;
@@ -46,6 +43,40 @@ public class MarkFabric(
         SetTsPiotSettings(markInstance, position, appSettings, printGroupCode);
 
         return markInstance;
+    }
+
+    public async Task<IMark> CreateFromCode(string mark, string? xApiKey)
+    {
+        var markInstance = CreateMarkInstance(mark);
+        var appSettings = await _parametersService.CurrentAsync();
+        var printGroup = appSettings.OrganisationConfig.PrintGroupByXapiKey(xApiKey);
+
+        int printGroupCode;
+        if (printGroup != null)
+        {
+            markInstance.SetPrintGroupCode(printGroup.Id);
+            printGroupCode = printGroup.Id;
+        }
+        else
+        {
+            printGroupCode = await SetOrganizationId(
+                markInstance,
+                appSettings.OrganisationConfig.PrintGroups,
+                string.Empty);
+        }
+
+        var position = new Position();
+        await SetProductGroup(markInstance, position);
+        SetTsPiotSettings(markInstance, position, appSettings, printGroupCode);
+
+        return markInstance;
+    }
+
+    private Mark CreateMarkInstance(string mark)
+    {
+        var logger = _loggerFactory.CreateLogger<Mark>();
+
+        return new Mark(mark, _markParser, _markChecker, _markStateManager, _gtinCatalogService, _parametersService, logger);
     }
 
     private async Task SetProductGroup(Mark markInstance, Position position)

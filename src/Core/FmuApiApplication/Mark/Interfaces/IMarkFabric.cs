@@ -6,4 +6,5 @@ namespace FmuApiApplication.Mark.Interfaces;
 public interface IMarkFabric
 {
     Task<IMark> Create(Position position, string mark);
+    Task<IMark> CreateFromCode(string mark, string? xApiKey);
 }

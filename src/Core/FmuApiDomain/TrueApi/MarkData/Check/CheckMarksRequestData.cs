@@ -1,8 +1,15 @@
-﻿namespace FmuApiDomain.TrueApi.MarkData.Check
+﻿using System.Text.Json.Serialization;
+
+namespace FmuApiDomain.TrueApi.MarkData.Check
 {
     public class CheckMarksRequestData
     {
+        [JsonPropertyName("codes")]
         public List<string> Codes { get; set; } = [];
+
+        public CheckMarksRequestData()
+        {
+        }
 
         public CheckMarksRequestData(string mark)
         {
