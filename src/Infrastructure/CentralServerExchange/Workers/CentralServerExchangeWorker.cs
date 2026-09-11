@@ -1,4 +1,5 @@
-﻿using FmuApiDomain.CentralServiceExchange.Interfaces;
+﻿using CentralServerExchange.Services;
+using FmuApiDomain.CentralServiceExchange.Interfaces;
 using FmuApiDomain.Configuration.Interfaces;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -11,6 +12,7 @@ public class CentralServerExchangeWorker : BackgroundService
 
     private readonly IParametersService _parametersService;
     private readonly ICentralServerExchangeActions _exchangeActions;
+    private readonly SidecarConnectionImporter _sidecarImporter;
 
     private DateTime _nextExchangeTime;
 
@@ -24,17 +26,21 @@ public class CentralServerExchangeWorker : BackgroundService
 
     public CentralServerExchangeWorker(ILogger<CentralServerExchangeWorker> logger,
         IParametersService parametersService,
-        ICentralServerExchangeActions exchangeActions)
+        ICentralServerExchangeActions exchangeActions,
+        SidecarConnectionImporter sidecarImporter)
     {
         _logger = logger;
         _parametersService = parametersService;
         _exchangeActions = exchangeActions;
+        _sidecarImporter = sidecarImporter;
 
         _nextExchangeTime = DateTime.Now.AddMinutes(StartDelayMinutes);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        await _sidecarImporter.ApplyIfNeededAsync(_parametersService).ConfigureAwait(false);
+
         var tryCounts = 0;
 
         while (!stoppingToken.IsCancellationRequested)

@@ -7,6 +7,7 @@ using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.Templates.Tables;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace CouchDb.Repositories
 {
@@ -195,6 +196,34 @@ namespace CouchDb.Repositories
                 return Result.Failure<List<T>>("Ошибка запроса к БД");
 
             return Result.Success(data);
+        }
+
+        /// <summary>
+        /// Считает документы mango-запроса по полю docs, без десериализации CouchDoc.Data.
+        /// </summary>
+        protected async Task<Result<int>> ExecuteMangoCountAsync(object mangoQuery)
+        {
+            var count = await ExecuteSafetyDbOperation<int?>(
+                async () =>
+                {
+                    var response = await _database.NewRequest()
+                        .AppendPathSegment("_find")
+                        .PostJsonAsync(mangoQuery);
+
+                    await using var stream = await response.Content.ReadAsStreamAsync();
+                    using var document = await JsonDocument.ParseAsync(stream);
+                    if (!document.RootElement.TryGetProperty("docs", out var docs))
+                        return 0;
+
+                    return docs.GetArrayLength();
+                },
+                "MangoCount",
+                null);
+
+            if (count == null)
+                return Result.Failure<int>("Ошибка запроса к БД");
+
+            return Result.Success(count.Value);
         }
 
         private async Task<CouchDoc<T>?> CouchDocGet(string id)

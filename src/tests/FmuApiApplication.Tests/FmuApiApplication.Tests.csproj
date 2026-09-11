@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\FmuApiApplication\FmuApiApplication.csproj" />
+    <ProjectReference Include="..\..\Core\FmuApiDomain\FmuApiDomain.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\CentralServerExchange\CentralServerExchange.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\CouchDb\CouchDb.csproj" />
+  </ItemGroup>
+
+</Project>

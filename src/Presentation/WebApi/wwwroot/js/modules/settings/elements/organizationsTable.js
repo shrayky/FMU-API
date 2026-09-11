@@ -32,6 +32,9 @@ class OrganizationsConfigurationElement {
             signPassword: "Пароль от ЭЦП",
             LoadToken: "Получить токен",
             DigitalSignature: "Сертификат ЭЦП",
+            useExternalToken: "Использовать внешний токен (fmu-api-central)",
+            tokenStatus: "Токен",
+            tokenNotLoaded: "Не загружен",
             gisMt: "ГИС МТ",
             gisMtWindowTitle: "ГИС МТ",
             productGroupsTab: "Группы",
@@ -63,6 +66,7 @@ class OrganizationsConfigurationElement {
 
         this.POLL_INTERVAL = 10000;
         this._startLocalModuleStatusPolling();
+        this._startTrueApiTokenStatusPolling();
     }
 
     _getStatusDisplay(organisationConfig) {
@@ -76,15 +80,30 @@ class OrganizationsConfigurationElement {
         };
     }
 
+    _getTokenStatusDisplay(organisationConfig) {
+        if (!organisationConfig.trueApiIntegrationSettings?.enable) {
+            return { text: "—", color: "#95A5A6" };
+        }
+
+        const status = organisationConfig.trueApiTokenStatus;
+        if (!status || status === this.LABELS.tokenNotLoaded) {
+            return { text: this.LABELS.tokenNotLoaded, color: "#E74C3C" };
+        }
+
+        return { text: status, color: "#2ECC71" };
+    }
+
     loadConfig(config) {
         if (config && config.organisationConfig && config.organisationConfig.printGroups) {
             this.printGroups = config.organisationConfig.printGroups.map(group => ({
                 ...group,
                 trueApiIntegrationSettings: {
                     ...(group.trueApiIntegrationSettings ?? {}),
-                    enable: !!(group.trueApiIntegrationSettings?.enable)
+                    enable: !!(group.trueApiIntegrationSettings?.enable),
+                    useExternalToken: !!(group.trueApiIntegrationSettings?.useExternalToken)
                 },
-                localModuleStatus: this.LOCAL_MODULE_STATUS.NOT_CONFIGURED
+                localModuleStatus: this.LOCAL_MODULE_STATUS.NOT_CONFIGURED,
+                trueApiTokenStatus: ""
             }));
         }
 
@@ -149,6 +168,22 @@ class OrganizationsConfigurationElement {
                     fillspace: true,
                     template: (obj) => {
                         const status = this._getStatusDisplay(obj);
+                        return `<div style="
+                            color: ${status.color};
+                            font-weight: bold;
+                            text-align: center;
+                            padding: 2px 5px;
+                            border-radius: 3px;
+                            background: ${status.color}15;
+                        ">${status.text}</div>`;
+                    }
+                },
+                {
+                    id: "trueApiTokenStatus",
+                    header: this.LABELS.tokenStatus,
+                    fillspace: true,
+                    template: (obj) => {
+                        const status = this._getTokenStatusDisplay(obj);
                         return `<div style="
                             color: ${status.color};
                             font-weight: bold;
@@ -306,6 +341,37 @@ class OrganizationsConfigurationElement {
                     });
                 } catch (error) {
                     console.error("Ошибка при получении статусов ЛМ:", error);
+                }
+            },
+            this.POLL_INTERVAL,
+            { autoStart: true }
+        );
+    }
+
+    _startTrueApiTokenStatusPolling() {
+        pollingManager.register(
+            "trueApiTokenStatus",
+            async () => {
+                try {
+                    const response = await fetch("/api/ts/token/states");
+                    if (!response.ok)
+                        throw new Error("Ошибка получения статусов токенов");
+
+                    const states = await response.json();
+                    const table = $$("PrintGroups");
+                    if (!table) return;
+
+                    states.forEach(({ organization, status }) => {
+                        if (!table.exists(organization)) return;
+
+                        const item = table.getItem(organization);
+                        table.updateItem(organization, {
+                            ...item,
+                            trueApiTokenStatus: status
+                        });
+                    });
+                } catch (error) {
+                    console.error("Ошибка при получении статусов токенов True API:", error);
                 }
             },
             this.POLL_INTERVAL,

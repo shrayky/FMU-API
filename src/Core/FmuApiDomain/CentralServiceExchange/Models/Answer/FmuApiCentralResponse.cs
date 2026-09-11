@@ -21,4 +21,7 @@ public record FmuApiCentralResponse
 
     [JsonPropertyName("centralServerProperties")]
     public CentralServerProperties? CentralServerProperties { get; init; }
+
+    [JsonPropertyName("trueApiTokens")]
+    public List<TrueApiTokenFromCentral> TrueApiTokens { get; init; } = [];
 }

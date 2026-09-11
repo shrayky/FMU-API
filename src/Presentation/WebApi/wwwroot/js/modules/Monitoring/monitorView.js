@@ -39,7 +39,11 @@ class MonitorView {
             tspiotOnline: "Онлайн",
             tspiotLastCheck: "Последняя проверка",
             tspiotLastCheckStatus: "Ответ",
-            tspiotLicenseActiveTill: "Срок лицензии"
+            tspiotLicenseActiveTill: "Срок лицензии",
+            trueApiTokens: "Токены ГИС МТ",
+            trueApiTokenInn: "ИНН",
+            trueApiTokenName: "Организация",
+            trueApiTokenStatus: "Токен"
         }
         this.NAMES = {
             toolbarLabel: "toolbarLabel",
@@ -50,6 +54,8 @@ class MonitorView {
             checkStatisticsTableLabel: "checkStatisticsTableLabel",
             pollingLabel: "pollingLabel",
             tsPiotTableLabel: "tsPiotTableLabel",
+            trueApiTokensTable: "trueApiTokensTable",
+            trueApiTokensTableLabel: "trueApiTokensTableLabel",
         }
     }
 
@@ -78,6 +84,7 @@ class MonitorView {
 
             ...this._tspiot(),
             ...this._localModules(),
+            ...this._trueApiTokens(),
             ...this._checkStatistics(),
 
             {}
@@ -286,6 +293,54 @@ class MonitorView {
         ];
     }
 
+    _trueApiTokens() {
+        return [
+            {
+                view: "label",
+                label: this.LABELS.trueApiTokens,
+                id: this.NAMES.trueApiTokensTableLabel,
+            },
+            {
+                id: this.NAMES.trueApiTokensTable,
+                view: "datatable",
+                css: "webix_data_border",
+                autoheight: true,
+                select: false,
+                scroll: false,
+                data: [],
+                columns: [
+                    {
+                        id: "name",
+                        header: this.LABELS.trueApiTokenName,
+                        fillspace: true,
+                        sort: "string"
+                    },
+                    {
+                        id: "inn",
+                        header: this.LABELS.trueApiTokenInn,
+                        width: 160,
+                        sort: "string"
+                    },
+                    {
+                        id: "status",
+                        header: {
+                            text: this.LABELS.trueApiTokenStatus,
+                            css: { "text-align": "center" }
+                        },
+                        minWidth: 280,
+                        fillspace: true,
+                        sort: "string",
+                        css: { "text-align": "center" },
+                        template: function (obj) {
+                            const color = obj.loaded ? "#2ECC71" : "#E74C3C";
+                            return `<span style="color: ${color}; font-weight: bold;">${obj.status || "Не загружен"}</span>`;
+                        }
+                    }
+                ]
+            }
+        ];
+    }
+
     _checkStatistics() {
         return [
             {
@@ -381,6 +436,7 @@ class MonitorView {
                 this._updateDbState(monitoringData.couchDbOnLine);
                 this._updateLocalModulesInformation(monitoringData.stateOfLocalModules);
                 this._updateTspiotInformation(monitoringData.tsPiotStates);
+                this._updateTrueApiTokens(monitoringData.trueApiTokens);
                 this._updateCheckStatistics(monitoringData.markCheksStatistics, monitoringData.couchDbOnLine);
 
             } catch (error) {
@@ -533,6 +589,37 @@ class MonitorView {
         table.show();
         tableLabel.show();
 
+        table.parse(tableData);
+    }
+
+    _updateTrueApiTokens(tokens) {
+        const table = $$(this.NAMES.trueApiTokensTable);
+        const tableLabel = $$(this.NAMES.trueApiTokensTableLabel);
+
+        if (!table)
+            return;
+
+        if (!tokens || tokens.length === 0) {
+            table.clearAll();
+            table.hide();
+            if (tableLabel)
+                tableLabel.hide();
+            return;
+        }
+
+        table.show();
+        if (tableLabel)
+            tableLabel.show();
+
+        const tableData = tokens.map((row, index) => ({
+            id: row.id || row.organization || `token_${index}`,
+            name: row.name || "Неизвестно",
+            inn: row.inn || "",
+            loaded: !!row.loaded,
+            status: row.status || "Не загружен"
+        }));
+
+        table.clearAll();
         table.parse(tableData);
     }
 

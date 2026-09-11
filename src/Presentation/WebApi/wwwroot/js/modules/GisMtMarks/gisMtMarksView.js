@@ -1,5 +1,6 @@
 import { ScannerWedge } from '../../utils/scannerWedge.js';
 import { loadParameters } from '../../services/ConfigurationService.js';
+import { loadProductGroupLabels, productGroupLabel } from '../../utils/productGroupLabels.js';
 
 class GisMtMarksView {
     constructor(id) {
@@ -82,7 +83,7 @@ class GisMtMarksView {
                         id: this.NAMES.productGroupFilter,
                         label: this.LABELS.productGroupFilter,
                         labelWidth: 60,
-                        width: 260,
+                        width: 360,
                         value: this.ALL_GROUPS,
                         options: this.productGroupOptions,
                         on: {
@@ -147,20 +148,31 @@ class GisMtMarksView {
         };
     }
 
+    /// Колонка с экранированием HTML: в КИ бывают &, <, >.
+    _textColumn(id, header, size) {
+        return {
+            id,
+            header,
+            sort: "string",
+            ...size,
+            template: (obj) => webix.template.escape(String(obj[id] ?? ""))
+        };
+    }
+
     _createTable() {
         return {
             view: "datatable",
             id: this.NAMES.marksTable,
             columns: [
-                { id: "sgtin", header: this.LABELS.sgtin, fillspace: 2, sort: "string" },
-                { id: "cis", header: this.LABELS.cis, fillspace: 2, sort: "string" },
-                { id: "status", header: this.LABELS.status, width: 120, sort: "string" },
-                { id: "sold", header: this.LABELS.sold, width: 90, sort: "string" },
-                { id: "expireDate", header: this.LABELS.expireDate, width: 140, sort: "string" },
-                { id: "ownerInn", header: this.LABELS.ownerInn, width: 120, sort: "string" },
-                { id: "productGroup", header: this.LABELS.productGroup, width: 100, sort: "string" },
-                { id: "infoLoadedAt", header: this.LABELS.infoLoadedAt, width: 160, sort: "string" },
-                { id: "sourceDocumentId", header: this.LABELS.sourceDocumentId, fillspace: 1, sort: "string" }
+                this._textColumn("sgtin", this.LABELS.sgtin, { fillspace: 2 }),
+                this._textColumn("cis", this.LABELS.cis, { fillspace: 2 }),
+                this._textColumn("status", this.LABELS.status, { width: 120 }),
+                this._textColumn("sold", this.LABELS.sold, { width: 90 }),
+                this._textColumn("expireDate", this.LABELS.expireDate, { width: 140 }),
+                this._textColumn("ownerInn", this.LABELS.ownerInn, { width: 120 }),
+                this._textColumn("productGroup", this.LABELS.productGroup, { fillspace: 1.5, minWidth: 180 }),
+                this._textColumn("infoLoadedAt", this.LABELS.infoLoadedAt, { width: 160 }),
+                this._textColumn("sourceDocumentId", this.LABELS.sourceDocumentId, { fillspace: 1 })
             ],
             autoheight: true,
             scroll: false,
@@ -172,6 +184,7 @@ class GisMtMarksView {
     /// Собирает уникальный список товарных групп из настроек организаций.
     async _loadProductGroups() {
         try {
+            await loadProductGroupLabels();
             const config = await loadParameters();
             const groups = new Set();
 
@@ -186,7 +199,9 @@ class GisMtMarksView {
 
             this.productGroupOptions = [
                 { id: this.ALL_GROUPS, value: "Все группы" },
-                ...[...groups].sort().map(g => ({ id: g, value: g }))
+                ...[...groups]
+                    .sort((a, b) => productGroupLabel(a).localeCompare(productGroupLabel(b), "ru"))
+                    .map(g => ({ id: g, value: productGroupLabel(g) }))
             ];
 
             const filter = $$(this.NAMES.productGroupFilter);
@@ -328,6 +343,7 @@ class GisMtMarksView {
             return;
         }
 
+        await loadProductGroupLabels();
         this._updateTable(data);
         this._updatePagination(data);
         form.enable();
@@ -347,7 +363,7 @@ class GisMtMarksView {
             sold: mark.sold ? "Да" : "Нет",
             expireDate: mark.expireDate ? new Date(mark.expireDate).toLocaleDateString() : "",
             ownerInn: mark.ownerInn,
-            productGroup: mark.productGroup,
+            productGroup: productGroupLabel(mark.productGroup, mark.productGroupId),
             infoLoadedAt: mark.infoLoadedAt ? new Date(mark.infoLoadedAt).toLocaleString() : "",
             sourceDocumentId: mark.sourceDocumentId
         }));

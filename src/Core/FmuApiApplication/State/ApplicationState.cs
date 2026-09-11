@@ -7,6 +7,9 @@ using FmuApiDomain.TsPiot.Models;
 
 namespace FmuApiApplication.State;
 
+/// <summary>
+/// Хранит рабочее состояние сервиса: токены, статусы модулей и признаки доступности.
+/// </summary>
 public class ApplicationState : IApplicationState
 {
     private bool _online { get; set; } = true;
@@ -131,6 +134,7 @@ public class ApplicationState : IApplicationState
 
     public void UpdateTrueApiToken(string inn, string token, DateTime lifeUntil)
     {
+        inn = inn?.Trim() ?? string.Empty;
         var organisationTokenData = _trueApiTokens.FirstOrDefault(p => p.Inn == inn);
 
         if (organisationTokenData != null)
@@ -150,6 +154,7 @@ public class ApplicationState : IApplicationState
 
     public TokenData TrueApiToken(string inn)
     {
+        inn = inn?.Trim() ?? string.Empty;
         var tokenData = _trueApiTokens.FirstOrDefault(p => p.Inn == inn);
 
         if (tokenData == null)

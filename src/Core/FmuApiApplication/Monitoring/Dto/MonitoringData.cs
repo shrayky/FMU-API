@@ -1,4 +1,5 @@
 using FmuApiApplication.LocalModule.Models;
+using FmuApiApplication.TrueApi.Models;
 using FmuApiApplication.TsPiot.Models;
 
 namespace FmuApiApplication.Monitoring.Dto;
@@ -9,4 +10,5 @@ public record MonitoringData
     public List<LocalModuleStateInformation> StateOfLocalModules { get; init; } = [];
     public MarkChecksStatistics MarkCheksStatistics { get; init; } = new();
     public List<TsPiotStateInformation> TsPiotStates { get; init; } = new();
+    public List<TrueApiTokenStateInformation> TrueApiTokens { get; init; } = [];
 }

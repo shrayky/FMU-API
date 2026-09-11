@@ -1,7 +1,9 @@
+import { loadProductGroupLabels, productGroupLabel } from "../../../utils/productGroupLabels.js";
+
 /**
  * Окно работы с ГИС МТ для выбранной организации.
  */
-export function openGisMtWindow({ item, selectedId, labels, onSaveConfiguration }) {
+export async function openGisMtWindow({ item, selectedId, labels, onSaveConfiguration }) {
     const inn = String(item.inn || "").trim();
     if (!inn) {
         webix.message({ text: "У организации не указан ИНН", type: "error" });
@@ -12,10 +14,9 @@ export function openGisMtWindow({ item, selectedId, labels, onSaveConfiguration 
     if ($$(windowId))
         $$(windowId).destructor();
 
-    const groups = (item.trueApiIntegrationSettings?.productGroups ?? []).map((g, i) => ({
-        id: i + 1,
-        name: g
-    }));
+    await loadProductGroupLabels();
+
+    const groups = toGroupRows(item.trueApiIntegrationSettings?.productGroups);
 
     const WINDOW_WIDTH = 640;
     const WINDOW_HEIGHT = 480;
@@ -68,7 +69,12 @@ export function openGisMtWindow({ item, selectedId, labels, onSaveConfiguration 
                                 view: "datatable",
                                 id: "GisMtProductGroupsTable",
                                 columns: [
-                                    { id: "name", header: "Товарная группа", fillspace: true }
+                                    {
+                                        id: "name",
+                                        header: "Товарная группа",
+                                        fillspace: true,
+                                        template: (obj) => webix.template.escape(productGroupLabel(obj.name))
+                                    }
                                 ],
                                 data: groups,
                                 scroll: "y",
@@ -175,7 +181,7 @@ async function loadProductGroups(inn, selectedId, onSaveConfiguration) {
         const table = $$("GisMtProductGroupsTable");
         if (table) {
             table.clearAll();
-            table.parse(productGroups.map((g, i) => ({ id: i + 1, name: g })));
+            table.parse(toGroupRows(productGroups));
         }
 
         onSaveConfiguration();
@@ -186,4 +192,11 @@ async function loadProductGroups(inn, selectedId, onSaveConfiguration) {
             type: "error"
         });
     }
+}
+
+function toGroupRows(codes) {
+    return (codes ?? []).map((g, i) => ({
+        id: i + 1,
+        name: productGroupLabel(g)
+    }));
 }

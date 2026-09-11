@@ -51,7 +51,7 @@ public class TrueApiTokenLoaderWorker : BackgroundService
                 if (string.IsNullOrEmpty(organisation.INN))
                     continue;
 
-                if (!organisation.TrueApiIntegrationSettings.Enable)
+                if (!organisation.TrueApiIntegrationSettings.ShouldRequestTokenViaCryptoPro())
                     continue;
 
                 var tokenData = _applicationState.TrueApiToken(organisation.INN);

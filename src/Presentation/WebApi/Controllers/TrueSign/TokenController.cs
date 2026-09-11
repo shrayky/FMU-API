@@ -1,4 +1,6 @@
-﻿using FmuApiDomain.State.Interfaces;
+﻿using FmuApiApplication.TrueApi;
+using FmuApiDomain.Configuration.Interfaces;
+using FmuApiDomain.State.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers.TrueSign;
@@ -9,10 +11,12 @@ namespace WebApi.Controllers.TrueSign;
 public class TokenController : ControllerBase
 {
     private readonly IApplicationState _applicationState;
+    private readonly IParametersService _parametersService;
 
-    public TokenController(IApplicationState applicationState)
+    public TokenController(IApplicationState applicationState, IParametersService parametersService)
     {
         _applicationState = applicationState;
+        _parametersService = parametersService;
     }
 
     [HttpGet]
@@ -35,5 +39,12 @@ public class TokenController : ControllerBase
             return NotFound();
 
         return Ok(data);
+    }
+
+    [HttpGet("states")]
+    public async Task<IActionResult> States()
+    {
+        var parameters = await _parametersService.CurrentAsync();
+        return Ok(TrueApiTokenStateCollector.Collect(parameters, _applicationState));
     }
 }

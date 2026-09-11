@@ -3,6 +3,7 @@ using FmuApiApplication.Monitoring.Dto;
 using FmuApiApplication.Monitoring.Interfaces;
 using FmuApiApplication.Statistics;
 using FmuApiApplication.Statistics.Interfaces;
+using FmuApiApplication.TrueApi;
 using FmuApiApplication.TsPiot;
 using FmuApiDomain.Attributes;
 using FmuApiDomain.Configuration;
@@ -43,7 +44,8 @@ public class MonitoringInformationService : IMonitoringInformation
             CouchDbOnLine = DatabaseOnline(currentSettings),
             StateOfLocalModules = LmStateCollector.Collect(currentSettings, _applicationState),
             MarkCheksStatistics = await ColleсtStatistics(),
-            TsPiotStates = TsPiotStateCollector.Collect(currentSettings, _applicationState)
+            TsPiotStates = TsPiotStateCollector.Collect(currentSettings, _applicationState),
+            TrueApiTokens = TrueApiTokenStateCollector.Collect(currentSettings, _applicationState)
         };
     }
 

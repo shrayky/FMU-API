@@ -5,6 +5,8 @@ using FmuApiDomain.CentralServiceExchange.Interfaces;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.CentralServiceExchange.Models.Answer;
 using FmuApiDomain.CentralServiceExchange.Models.DataPacket;
+using FmuApiDomain.State.Interfaces;
+using FmuApiDomain.TrueApiIntegration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -21,6 +23,7 @@ public class ExchangeActionsService : ICentralServerExchangeActions
     private readonly SoftwareUpdateDownloadService _softwareUpdateDownloadService;
     private readonly CentralServerPropertiesApplyService _centralServerPropertiesApplyService;
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IApplicationState _applicationState;
 
     private const string EndpointAddress = "api/FmuApiInstanceMonitoring";
 
@@ -31,7 +34,8 @@ public class ExchangeActionsService : ICentralServerExchangeActions
         ConfigurationDownloadService configurationDownloadService,
         SoftwareUpdateDownloadService softwareUpdateDownloadService,
         CentralServerPropertiesApplyService centralServerPropertiesApplyService,
-        IServiceScopeFactory scopeFactory)
+        IServiceScopeFactory scopeFactory,
+        IApplicationState applicationState)
     {
         _logger = logger;
         _parametersService = parametersService;
@@ -40,6 +44,7 @@ public class ExchangeActionsService : ICentralServerExchangeActions
         _softwareUpdateDownloadService = softwareUpdateDownloadService;
         _centralServerPropertiesApplyService = centralServerPropertiesApplyService;
         _scopeFactory = scopeFactory;
+        _applicationState = applicationState;
     }
 
     public async Task<bool> StartExchange()
@@ -80,6 +85,12 @@ public class ExchangeActionsService : ICentralServerExchangeActions
                 await _centralServerPropertiesApplyService
                     .ApplyIfChanged(exchangeResult.Value.CentralServerProperties)
                     .ConfigureAwait(false);
+
+                var currentSettings = await _parametersService.CurrentAsync().ConfigureAwait(false);
+                TrueApiTokensFromExchangeApplier.Apply(
+                    exchangeResult.Value.TrueApiTokens,
+                    currentSettings.OrganisationConfig.PrintGroups,
+                    _applicationState);
 
                 await _softwareUpdateDownloadService.DownloadAndInstall(exchangeResult.Value, baseAddress, bearer).ConfigureAwait(false);
 

@@ -1,3 +1,4 @@
+using CouchDb.Queries;
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.GisMt.Entities;
@@ -180,112 +181,50 @@ public class GisMtMarkRepository(
         int page,
         int pageSize)
     {
-        var selector = BuildSelector(searchTerm, productGroup);
         var hasFilters = !string.IsNullOrWhiteSpace(searchTerm) || !string.IsNullOrWhiteSpace(productGroup);
 
+        int totalCount;
         if (!hasFilters)
         {
-            var totalCount = await GetDocumentsCountAsync();
-
-            if (totalCount == null)
+            var documentsCount = await GetDocumentsCountAsync();
+            if (documentsCount == null)
                 return Result.Failure<GisMtMarkSearchResult>("Не удалось получить число документов");
 
-            var mangoQuery = new
-            {
-                selector,
-                sort = new[] { new Dictionary<string, string> { ["data.infoLoadedAt"] = "desc" } },
-                limit = pageSize,
-                skip = (page - 1) * pageSize
-            };
+            totalCount = documentsCount.Value;
+        }
+        else
+        {
+            var countQuery = GisMtMarkMangoQueryBuilder.BuildCountQuery(
+                searchTerm,
+                productGroup,
+                await QueryLimitAsync());
 
-            var pageResult = await ExecuteMangoQueryAsync(mangoQuery);
-            if (pageResult.IsFailure)
-                return Result.Failure<GisMtMarkSearchResult>(pageResult.Error);
+            var countResult = await ExecuteMangoCountAsync(countQuery);
+            if (countResult.IsFailure)
+                return Result.Failure<GisMtMarkSearchResult>(countResult.Error);
 
-            return Result.Success(new GisMtMarkSearchResult
-            {
-                Marks = pageResult.Value,
-                Count = totalCount.Value,
-                CurrentPage = page,
-                PageSize = pageSize,
-                TotalPages = (int)Math.Ceiling((double)totalCount.Value / pageSize),
-                SearchTerm = string.Empty
-            });
+            totalCount = countResult.Value;
         }
 
-        var searchQuery = new
-        {
-            selector,
-            sort = new[] { new Dictionary<string, string> { ["data.infoLoadedAt"] = "desc" } }
-        };
-
-        var allResults = await ExecuteMangoQueryAsync(searchQuery);
-        if (allResults.IsFailure)
-            return Result.Failure<GisMtMarkSearchResult>(allResults.Error);
-
-        var paginated = allResults.Value
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToList();
+        var pageQuery = GisMtMarkMangoQueryBuilder.BuildPageQuery(searchTerm, productGroup, page, pageSize);
+        var pageResult = await ExecuteMangoQueryAsync(pageQuery);
+        if (pageResult.IsFailure)
+            return Result.Failure<GisMtMarkSearchResult>(pageResult.Error);
 
         return Result.Success(new GisMtMarkSearchResult
         {
-            Marks = paginated,
-            Count = allResults.Value.Count,
+            Marks = pageResult.Value,
+            Count = totalCount,
             CurrentPage = page,
             PageSize = pageSize,
-            TotalPages = (int)Math.Ceiling((double)allResults.Value.Count / pageSize),
+            TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
             SearchTerm = searchTerm
         });
     }
 
-    /// <summary>
-    /// Собирает mango-селектор по строке поиска и товарной группе.
-    /// </summary>
-    private static Dictionary<string, object> BuildSelector(string searchTerm, string? productGroup)
+    private async Task<int> QueryLimitAsync()
     {
-        var conditions = new List<object>();
-
-        if (!string.IsNullOrWhiteSpace(searchTerm))
-        {
-            conditions.Add(new Dictionary<string, object>
-            {
-                ["$or"] = new object[]
-                {
-                    new Dictionary<string, object>
-                    {
-                        ["data.sGtin"] = new Dictionary<string, object> { ["$regex"] = searchTerm }
-                    },
-                    new Dictionary<string, object>
-                    {
-                        ["data.cis"] = new Dictionary<string, object> { ["$regex"] = searchTerm }
-                    }
-                }
-            });
-        }
-
-        if (!string.IsNullOrWhiteSpace(productGroup))
-        {
-            conditions.Add(new Dictionary<string, object>
-            {
-                ["data.productGroup"] = productGroup
-            });
-        }
-
-        if (conditions.Count == 0)
-        {
-            return new Dictionary<string, object>
-            {
-                ["data"] = new Dictionary<string, object> { ["$exists"] = true }
-            };
-        }
-
-        if (conditions.Count == 1)
-            return (Dictionary<string, object>)conditions[0];
-
-        return new Dictionary<string, object>
-        {
-            ["$and"] = conditions.ToArray()
-        };
+        var appConfig = await _appConfiguration.CurrentAsync();
+        return GisMtMarkMangoQueryBuilder.ResolveQueryLimit(appConfig.Database.QueryLimit);
     }
 }

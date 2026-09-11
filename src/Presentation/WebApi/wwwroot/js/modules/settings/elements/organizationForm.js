@@ -47,7 +47,7 @@ function createFormBody(labels, tableId, id, formName, onSave) {
             },
             {
                 view: "tabview",
-                height: 300,
+                height: 340,
                 cells: [
                     {
                         header: "ТСПИоТ",
@@ -121,6 +121,7 @@ function createFormBody(labels, tableId, id, formName, onSave) {
                             padding: 10,
                             rows: [
                                 CheckBox(labels.enable, "TrueApiIntegrationEnable"),
+                                CheckBox(labels.useExternalToken, "TrueApiIntegrationUseExternalToken"),
                                 {
                                     view: "richselect",
                                     id: "TrueApiIntegrationDigitalSignature",
@@ -266,6 +267,7 @@ function initFormValues(tableId, id) {
 
     const trueApi = item.trueApiIntegrationSettings ?? {};
     $$("TrueApiIntegrationEnable").setValue(!!trueApi.enable);
+    $$("TrueApiIntegrationUseExternalToken").setValue(!!trueApi.useExternalToken);
     $$("TrueApiIntegrationPassword").setValue(trueApi.password ?? "");
     $$("TrueApiIntegrationDigitalSignature").setValue(trueApi.digitalSignature ?? "");
 }
@@ -300,6 +302,7 @@ export function collectOrganizationFormData(table, id) {
         },
         trueApiIntegrationSettings: {
             enable: !!$$("TrueApiIntegrationEnable").getValue(),
+            useExternalToken: !!$$("TrueApiIntegrationUseExternalToken").getValue(),
             password: $$("TrueApiIntegrationPassword").getValue(),
             digitalSignature: $$("TrueApiIntegrationDigitalSignature").getValue(),
             productGroups: existingGroups
