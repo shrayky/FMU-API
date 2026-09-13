@@ -1,0 +1,73 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="com.honeywell.decode.permission.DECODE"/>
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
+    <application
+        android:label="Fmu-Api: Проверка марки"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="stateAlwaysHidden">
+            <meta-data
+              android:name="io.flutter.embedding.android.NormalTheme"
+              android:resource="@style/NormalTheme"
+              />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+        <receiver
+            android:name=".ScanMonitorReceiver"
+            android:exported="true"
+            android:enabled="true">
+            <intent-filter android:priority="1000">
+                <action android:name="nlscan.action.SCANNER_RESULT"/>
+                <action android:name="android.intent.ACTION_DECODE_DATA"/>
+                <action android:name="android.intent.ACTION_DECODE"/>
+                <action android:name="com.android.server.scannerservice.broadcast"/>
+                <action android:name="android.intent.action.SCANRESULT"/>
+                <action android:name="android.intent.action.RECEIVE_SCAN_RESULT"/>
+                <action android:name="android.intent.action.BARCODE"/>
+                <action android:name="android.intent.action.DECODE_DATA"/>
+                <action android:name="com.symbol.datawedge.api.RESULT_ACTION"/>
+                <action android:name="com.honeywell.aidc.action.ACTION_BARCODE_DATA"/>
+                <action android:name="com.honeywell.intent.action.SCAN_RESULT"/>
+                <action android:name="scan.rcv.message"/>
+                <action android:name="com.scanner.broadcast"/>
+                <action android:name="device.scanner.ACTION"/>
+                <action android:name="device.scanner.EVENT"/>
+                <action android:name="com.rscja.scanner.action.SCAN_RESULT"/>
+                <action android:name="com.ubx.decoder.broadcast.SCAN"/>
+                <action android:name="com.cipherlab.barcodebaseapi.ACTION_BARCODE_DATA"/>
+                <action android:name="ru.atol.scanner.action.SCAN"/>
+                <action android:name="com.xcheng.scanner.action.BARCODE_DECODING_BROADCAST"/>
+                <action android:name="com.sunmi.scanner.ACTION_DATA_CODE_RECEIVED"/>
+                <action android:name="com.android.scanner.broadcast"/>
+                <action android:name="scanner.action.BARCODE"/>
+                <action android:name="com.zebra.scanner.ACTION"/>
+            </intent-filter>
+        </receiver>
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+    </application>
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <data android:mimeType="text/plain"/>
+        </intent>
+    </queries>
+</manifest>

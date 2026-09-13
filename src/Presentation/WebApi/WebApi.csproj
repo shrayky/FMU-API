@@ -63,7 +63,7 @@
     <Exec Command="npm run build" WorkingDirectory="$(ProjectDir)wwwroot" />
   </Target>
 
-    <!-- После копирования wwwroot в публикацию убираем исходники фронта и node_modules — в рантайне нужны bundle, lib, favicon. -->
+    <!-- После копирования wwwroot в публикацию убираем исходники фронта и node_modules — в рантайме нужны bundle, lib, css, favicon. -->
     <Target Name="PrunePublishedWwwroot" AfterTargets="Publish" Condition="Exists('$(PublishDir)wwwroot')">
         <Exec Command="node &quot;$(ProjectDir)wwwroot\scripts\prune-wwwroot.mjs&quot; &quot;$(PublishDir)wwwroot&quot;" />
     </Target>

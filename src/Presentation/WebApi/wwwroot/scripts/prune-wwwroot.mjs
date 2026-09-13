@@ -1,5 +1,5 @@
 /**
- * Оставляет в указанном каталоге только bundle, lib и favicon.ico (для папки публикации).
+ * Оставляет в указанном каталоге только bundle, lib, css и favicon.ico (для папки публикации).
  * Использование: node scripts/prune-wwwroot.mjs <абсолютный_путь_к_wwwroot>
  */
 import { readdir, rm } from 'node:fs/promises';
@@ -11,7 +11,7 @@ if (!targetDir) {
   process.exit(1);
 }
 
-const keep = new Set(['bundle', 'lib', 'favicon.ico']);
+const keep = new Set(['bundle', 'lib', 'css', 'favicon.ico']);
 
 const entries = await readdir(targetDir, { withFileTypes: true });
 for (const entry of entries) {
