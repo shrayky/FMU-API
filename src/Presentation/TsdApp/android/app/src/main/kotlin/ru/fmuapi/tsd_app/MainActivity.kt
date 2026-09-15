@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -18,6 +19,8 @@ class MainActivity : FlutterActivity() {
     private var scanReceiver: BroadcastReceiver? = null
     private var monitorReceiver: BroadcastReceiver? = null
     private var extraKey: String = "barcode"
+    private var lastScanCode: String = ""
+    private var lastScanAt: Long = 0
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -31,6 +34,8 @@ class MainActivity : FlutterActivity() {
                 result.notImplemented()
             }
         }
+        scanSink = { incoming -> deliverIntent(incoming) }
+        registerScanReceiver("")
 
         monitorChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, monitorChannelName)
         monitorChannel?.setMethodCallHandler { call, result ->
@@ -60,6 +65,7 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onDestroy() {
+        scanSink = null
         unregisterScanReceiver()
         unregisterMonitorReceiver()
         super.onDestroy()
@@ -67,7 +73,11 @@ class MainActivity : FlutterActivity() {
 
     private fun registerScanReceiver(action: String) {
         unregisterScanReceiver()
-        if (action.isBlank()) {
+        val actions = (listOf(action.trim()) + defaultActions)
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+        if (actions.isEmpty()) {
             return
         }
 
@@ -76,7 +86,12 @@ class MainActivity : FlutterActivity() {
                 deliverIntent(incoming)
             }
         }
-        registerExported(scanReceiver, IntentFilter(action))
+        val filter = IntentFilter()
+        for (scanAction in actions) {
+            filter.addAction(scanAction)
+        }
+        filter.addCategory(Intent.CATEGORY_DEFAULT)
+        registerExported(scanReceiver, filter)
     }
 
     private fun registerMonitorReceiver(actions: List<String>): Int {
@@ -100,6 +115,7 @@ class MainActivity : FlutterActivity() {
         for (action in unique) {
             filter.addAction(action)
         }
+        filter.addCategory(Intent.CATEGORY_DEFAULT)
         filter.priority = IntentFilter.SYSTEM_HIGH_PRIORITY
         registerExported(monitorReceiver, filter)
         return unique.size
@@ -146,20 +162,24 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun deliverIntent(incoming: Intent?) {
-        if (incoming == null) {
+        if (incoming == null || incoming.action == Intent.ACTION_MAIN) {
             return
         }
 
         val extras = incoming.extras
-        val code = extras?.getString(extraKey)
-            ?: extras?.getString("barcode")
-            ?: extras?.getString("data")
-            ?: extras?.getString("com.symbol.datawedge.data_string")
-            ?: incoming.dataString
+        val fromExtras = extras?.let { ScanIntentBarcode.fromExtras(it, extraKey) }.orEmpty()
+        val code = fromExtras.ifBlank { incoming.dataString.orEmpty() }
 
-        if (code.isNullOrBlank()) {
+        if (code.isBlank()) {
             return
         }
+
+        val now = SystemClock.elapsedRealtime()
+        if (code == lastScanCode && now - lastScanAt < 400) {
+            return
+        }
+        lastScanCode = code
+        lastScanAt = now
 
         scanChannel?.invokeMethod("onScan", code)
     }
@@ -168,24 +188,9 @@ class MainActivity : FlutterActivity() {
         val extras = incoming.extras ?: return emptyMap()
         val mapped = mutableMapOf<String, String>()
         for (key in extras.keySet()) {
-            mapped[key] = runCatching { extraValue(extras, key) }.getOrElse { "<unreadable>" }
+            mapped[key] = runCatching { ScanIntentBarcode.extraValue(extras, key) }.getOrElse { "<unreadable>" }
         }
         return mapped
-    }
-
-    private fun extraValue(extras: Bundle, key: String): String {
-        val text = extras.getString(key)
-        if (!text.isNullOrEmpty()) {
-            return text
-        }
-
-        val bytes = extras.getByteArray(key)
-        if (bytes != null) {
-            return String(bytes, Charsets.UTF_8)
-        }
-
-        @Suppress("DEPRECATION")
-        return extras.get(key)?.toString().orEmpty()
     }
 
     companion object {
@@ -219,9 +224,17 @@ class MainActivity : FlutterActivity() {
         @Volatile
         var monitorSink: ((Intent) -> Unit)? = null
 
+        @Volatile
+        var scanSink: ((Intent) -> Unit)? = null
+
         fun forwardMonitor(incoming: Intent?) {
             val intent = incoming ?: return
             monitorSink?.invoke(intent)
+        }
+
+        fun forwardScan(incoming: Intent?) {
+            val intent = incoming ?: return
+            scanSink?.invoke(intent)
         }
 
         fun monitorActionsFrom(arguments: Any?): List<String> {

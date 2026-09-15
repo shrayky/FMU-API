@@ -130,7 +130,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('Сканирование камерой'),
-            subtitle: const Text('Штрихеоды маркировки, камерой устройства'),
+            subtitle: const Text('Штрихкоды маркировки, камерой устройства'),
             value: _camera,
             onChanged: (value) => setState(() => _camera = value),
           ),

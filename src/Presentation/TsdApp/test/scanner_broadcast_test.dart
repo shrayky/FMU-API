@@ -33,6 +33,47 @@ void main() {
     );
   });
 
+  test('Honeywell: decode_rslt важнее special_keys', () {
+    expect(
+      ScannerBroadcast.guessExtraKey({
+        'special_keys': '9,10,13',
+        'decode_rslt': '0104607003502720',
+      }),
+      'decode_rslt',
+    );
+  });
+
+  test('не выбирает special_keys как extra штрихкода', () {
+    expect(
+      ScannerBroadcast.guessExtraKey({
+        'special_keys': '9,10,13',
+      }),
+      'barcode',
+    );
+  });
+
+  test('ACTION_DECODE_DATA: barcode, не length и barcodeType', () {
+    expect(
+      ScannerBroadcast.guessExtraKey({
+        'length': '31',
+        'barcode': '0104607003502720215(IPaf93j0WM',
+        'barcode_string': '0104607003502720215(IPaf93j0WM',
+        'barcodeType': '119',
+      }),
+      'barcode',
+    );
+  });
+
+  test('не выбирает length и barcodeType как extra штрихкода', () {
+    expect(
+      ScannerBroadcast.guessExtraKey({
+        'length': '31',
+        'barcodeType': '119',
+      }),
+      'barcode',
+    );
+  });
+
   test('событие монитора не отбрасывает пустой action', () {
     final event = BroadcastEvent.fromArguments({
       'action': '',

@@ -39,16 +39,38 @@ class ScannerBroadcast {
     'barcode_data',
     'value',
     'scannerdata',
+    'decode_rslt',
     'decode_data',
+    'decode_data_disp',
   ];
+
+  static const ignoredExtras = {
+    'special_keys',
+    'charset',
+    'codeId',
+    'aimId',
+    'timestamp',
+    'version',
+    'length',
+    'barcodeType',
+    'barcode_type',
+  };
 
   static String guessExtraKey(Map<String, String> extras) {
     for (final key in preferredExtras) {
-      if (extras.containsKey(key)) {
+      if (extras.containsKey(key) && !_isIgnored(key)) {
         return key;
       }
     }
 
-    return extras.isEmpty ? 'barcode' : extras.keys.first;
+    for (final key in extras.keys) {
+      if (!_isIgnored(key)) {
+        return key;
+      }
+    }
+
+    return 'barcode';
   }
+
+  static bool _isIgnored(String key) => ignoredExtras.contains(key);
 }

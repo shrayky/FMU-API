@@ -58,6 +58,7 @@
                 <action android:name="com.android.scanner.broadcast"/>
                 <action android:name="scanner.action.BARCODE"/>
                 <action android:name="com.zebra.scanner.ACTION"/>
+                <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
         </receiver>
         <meta-data
