@@ -87,10 +87,17 @@ public class ExchangeActionsService : ICentralServerExchangeActions
                     .ConfigureAwait(false);
 
                 var currentSettings = await _parametersService.CurrentAsync().ConfigureAwait(false);
-                TrueApiTokensFromExchangeApplier.Apply(
+                var settingsChanged = TrueApiTokensFromExchangeApplier.Apply(
                     exchangeResult.Value.TrueApiTokens,
                     currentSettings.OrganisationConfig.PrintGroups,
+                    currentSettings.GisMtSettings,
                     _applicationState);
+
+                if (settingsChanged)
+                {
+                    _logger.LogInformation("По токену из fmu-api-central включён режим ГИС МТ с внешним токеном");
+                    await _parametersService.UpdateAsync(currentSettings).ConfigureAwait(false);
+                }
 
                 await _softwareUpdateDownloadService.DownloadAndInstall(exchangeResult.Value, baseAddress, bearer).ConfigureAwait(false);
 
