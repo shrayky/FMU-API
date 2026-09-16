@@ -3,7 +3,7 @@ import '../utils/customComponents.js';
 import { InitProxy } from '../utils/proxy.js';
 import { RouterService } from '../services/RouterService.js';
 import { loadParameters, SETTINGS_SAVED_EVENT } from '../services/ConfigurationService.js';
-import { createLayout, createToolbar } from '../components/Layout.js';
+import { createLayout, createToolbar, setToolbarNodeName } from '../components/Layout.js';
 import { Sidebar } from '../components/Sidebar.js';
 import { buildMenuItems } from '../config/menu.js';
 import { isMobileDevice } from '../utils/device.js';
@@ -65,7 +65,7 @@ class App {
 
         const mainBody = {
             rows: [
-                createToolbar("FMU-API"),
+                createToolbar("FMU-API", { nodeName: config?.nodeName }),
                 { id: this.bodyId }
             ]
         };
@@ -80,6 +80,7 @@ class App {
             return;
 
         this.config = config;
+        setToolbarNodeName(config?.nodeName);
 
         const items = buildMenuItems(config);
         const sidebar = $$("mainSidebar");

@@ -16,7 +16,24 @@ export const createToolbar = (label, options = {}) => ({
         {
             view: "label",
             id: "toolbarLabel",
-            label
+            label,
+            gravity: 1
+        },
+        {
+            view: "label",
+            id: "toolbarNodeName",
+            label: options.nodeName || "",
+            align: "center",
+            gravity: 1
+        },
+        {
+            gravity: 1
         }
     ]
 });
+
+export const setToolbarNodeName = (nodeName) => {
+    const label = $$("toolbarNodeName");
+    if (label)
+        label.setValue(nodeName || "");
+};
