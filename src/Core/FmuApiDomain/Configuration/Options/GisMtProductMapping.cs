@@ -16,4 +16,6 @@ public class GisMtProductMapping
     public bool CheckMrp { get; set; }
 
     public bool CheckExpireDate { get; set; }
+
+    public bool HaveExpireDate { get; set; }
 }

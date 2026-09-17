@@ -76,7 +76,7 @@ public class MarkFabric(
     {
         var logger = _loggerFactory.CreateLogger<Mark>();
 
-        return new Mark(mark, _markParser, _markChecker, _markStateManager, _gtinCatalogService, _parametersService, logger);
+        return new Mark(mark, _markParser, _markChecker, _markStateManager, _gtinCatalogService, _productGroupResolver, _parametersService, logger);
     }
 
     private async Task SetProductGroup(Mark markInstance, Position position)

@@ -12,4 +12,6 @@ public interface IProductGroupResolver
     bool ShouldCheckMrp(int atolItemType, int trueApiGroupId);
 
     bool ShouldCheckExpireDate(int atolItemType, int trueApiGroupId);
+
+    bool ShouldHaveExpireDate(int atolItemType, int trueApiGroupId);
 }

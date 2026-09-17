@@ -1,5 +1,8 @@
 ﻿namespace CouchDb.DatabaseScheme;
 
+/// <summary>
+/// Схема mango-индексов CouchDB и отбор устаревших индексов для удаления.
+/// </summary>
 public class DatabaseIndexes
 {
     public static Dictionary<string, CouchDbIndexDefinition[]> DatabaseIndexSchema()
@@ -15,10 +18,29 @@ public class DatabaseIndexes
             };
     }
 
+    /// <summary>
+    /// Индексы, которых нет в схеме: их нужно снять, чтобы планировщик CouchDB не выбирал устаревшие.
+    /// </summary>
+    public static IReadOnlyList<CouchDbIndexEntry> ObsoleteIndexes(
+        CouchDbIndexDefinition[] schemaIndexes,
+        IEnumerable<CouchDbIndexEntry> existing)
+    {
+        var schemaNames = schemaIndexes
+            .Select(index => index.Name)
+            .ToHashSet(StringComparer.Ordinal);
+
+        return existing
+            .Where(index =>
+                !string.Equals(index.Name, "_all_docs", StringComparison.Ordinal)
+                && !string.Equals(index.Type, "special", StringComparison.Ordinal)
+                && !schemaNames.Contains(index.Name)
+                && !string.IsNullOrWhiteSpace(index.Ddoc))
+            .ToList();
+    }
+
     private static CouchDbIndexDefinition[] MarksDbIndexes() =>
         [
             new("mark-id-idx", new(["data.markId"])),
-            new("mark-data-idx", new(["data"])),
             new("timeStamp-data-idx", new(["data.trueApiAnswerProperties.reqTimestamp"])),
         ];
 

@@ -46,6 +46,9 @@ public class FmuAnswer
     [JsonPropertyName("fmu-api-print-group")]
     public int PrintGroupCode { get; set; } = 0;
 
+    [JsonPropertyName("shouldHaveExpireDate")]
+    public bool ShouldHaveExpireDate { get; set; }
+
     [JsonPropertyName("fmu-api-version")]
     public string FmuApiVersion { get; set; } = $"{ApplicationInformation.AppVersion}.{ApplicationInformation.Assembly}";
 
@@ -98,7 +101,7 @@ public class FmuAnswer
         checkInformation.Version = Truemark_response.Version;
         checkInformation.Inst = Truemark_response.Inst;
 
-        if (string.IsNullOrEmpty(checkInformation.Inst))
+        if (string.IsNullOrEmpty(checkInformation.Inst) || !ShouldHaveExpireDate)
             TrueMarkResponses.Add(onlineCheckResult);
         else
             OffLineTrueMarkResponses.Add(offlineCheckResult);

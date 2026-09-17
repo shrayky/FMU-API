@@ -21,6 +21,7 @@ public class Mark : IMark
     private readonly IMarkChecker _markChecker;
     private readonly IMarkStateManager _markStateManager;
     private readonly IGtinCatalogService _gtinCatalogService;
+    private readonly IProductGroupResolver _productGroupResolver;
     private readonly ILogger<Mark> _logger;
     private readonly Parameters _configuration;
 
@@ -50,12 +51,14 @@ public class Mark : IMark
         IMarkChecker markChecker,
         IMarkStateManager markStateManager,
         IGtinCatalogService gtinCatalogService,
+        IProductGroupResolver productGroupResolver,
         IParametersService parametersService,
         ILogger<Mark> logger)
     {
         _markChecker = markChecker;
         _markStateManager = markStateManager;
         _gtinCatalogService = gtinCatalogService;
+        _productGroupResolver = productGroupResolver;
         _logger = logger;
             
         _configuration = parametersService.Current();
@@ -142,6 +145,7 @@ public class Mark : IMark
             }
 
             _lastCheckResult.FmuAnswer.PrintGroupCode = PrintGroupCode;
+            _lastCheckResult.FmuAnswer.ShouldHaveExpireDate = ResolveShouldHaveExpireDate();
             
             if (!_lastCheckResult.FmuAnswer.Offline)
                 await _markStateManager.Save(SGtin, _lastCheckResult.TrueMarkData);
@@ -313,6 +317,15 @@ public class Mark : IMark
             "Срок годности марки {Code} подставлен из остатков ГИС МТ: {ExpireDate}",
             Code,
             expireDate);
+    }
+
+    private bool ResolveShouldHaveExpireDate()
+    {
+        var groupId = TrueApiGroupId > 0
+            ? TrueApiGroupId
+            : _lastCheckResult.TrueMarkData.MarkData().GroupIds?.FirstOrDefault() ?? 0;
+
+        return _productGroupResolver.ShouldHaveExpireDate(AtolItemType, groupId);
     }
 
     private async Task SaveGtinCatalogAsync()

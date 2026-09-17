@@ -164,7 +164,7 @@ class OrganizationsConfigurationElement {
                 { id: "inn", header: this.LABELS.inn, fillspace: true },
                 {
                     id: "localModuleStatus",
-                    header: this.LABELS.localModuleStatusTitle,
+                    header: { text: this.LABELS.localModuleStatusTitle, css: { "text-align": "center" } },
                     fillspace: true,
                     template: (obj) => {
                         const status = this._getStatusDisplay(obj);
@@ -180,7 +180,7 @@ class OrganizationsConfigurationElement {
                 },
                 {
                     id: "trueApiTokenStatus",
-                    header: this.LABELS.tokenStatus,
+                    header: { text: this.LABELS.tokenStatus, css: { "text-align": "center" } },
                     fillspace: true,
                     template: (obj) => {
                         const status = this._getTokenStatusDisplay(obj);

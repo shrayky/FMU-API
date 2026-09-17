@@ -45,7 +45,7 @@ public class IndexingService : IIndexingService
 
         foreach (var index in indexShema)
         {
-            if (await CreateIndexesForDatabase(httpClient, index.Key, index.Value, cancellationToken))
+            if (await SyncIndexesForDatabase(httpClient, index.Key, index.Value, cancellationToken))
                 success++;
         }
 
@@ -58,13 +58,16 @@ public class IndexingService : IIndexingService
         return Result.Success();
     }
 
-    private async Task<bool> CreateIndexesForDatabase(
+    /// <summary>
+    /// Создаёт недостающие mango-индексы и снимает те, которых больше нет в схеме.
+    /// </summary>
+    private async Task<bool> SyncIndexesForDatabase(
         HttpClient httpClient,
         string databaseName,
         CouchDbIndexDefinition[] databaseIndexes,
         CancellationToken cancellationToken)
     {
-        var existingIndexResult = await ExistingIndexNames(httpClient, databaseName, cancellationToken);
+        var existingIndexResult = await ExistingIndexes(httpClient, databaseName, cancellationToken);
 
         if (existingIndexResult.IsFailure)
         {
@@ -72,8 +75,15 @@ public class IndexingService : IIndexingService
             return false;
         }
 
-        var existingNames = existingIndexResult.Value;
+        var existing = existingIndexResult.Value;
         var allSucceeded = true;
+
+        foreach (var obsolete in DatabaseIndexes.ObsoleteIndexes(databaseIndexes, existing))
+            await DeleteIndex(httpClient, databaseName, obsolete, cancellationToken);
+
+        var existingNames = existing
+            .Select(index => index.Name)
+            .ToHashSet(StringComparer.Ordinal);
 
         foreach (var index in databaseIndexes)
         {
@@ -111,7 +121,38 @@ public class IndexingService : IIndexingService
         return allSucceeded;
     }
 
-    private async Task<Result<HashSet<string>>> ExistingIndexNames(
+    /// <summary>
+    /// Удаляет mango-индекс по design-документу и имени.
+    /// </summary>
+    private async Task<bool> DeleteIndex(
+        HttpClient httpClient,
+        string databaseName,
+        CouchDbIndexEntry index,
+        CancellationToken cancellationToken)
+    {
+        var path = $"/{databaseName}/_index/{index.Ddoc}/json/{index.Name}";
+        var responseResult = await httpClient.SendRequestSafelyAsync(
+            client => client.DeleteAsync(path, cancellationToken),
+            _logger,
+            $"удаление индекса {index.Name} для базы {databaseName}");
+
+        if (responseResult.IsFailure)
+        {
+            _logger.LogWarning("Не удалось удалить индекс {IndexName} для базы {DatabaseName}: {Error}", index.Name, databaseName, responseResult.Error);
+            return false;
+        }
+
+        if (!responseResult.Value.IsSuccessStatusCode)
+        {
+            _logger.LogWarning("Не удалось удалить индекс {IndexName} для базы {DatabaseName}: {StatusCode}", index.Name, databaseName, responseResult.Value.StatusCode);
+            return false;
+        }
+
+        _logger.LogInformation("Удалён устаревший индекс {IndexName} для базы {DatabaseName}", index.Name, databaseName);
+        return true;
+    }
+
+    private async Task<Result<List<CouchDbIndexEntry>>> ExistingIndexes(
         HttpClient httpClient,
         string databaseName,
         CancellationToken cancellationToken)
@@ -123,21 +164,18 @@ public class IndexingService : IIndexingService
 
         if (responseResult.IsFailure)
         {
-            return Result.Failure<HashSet<string>>($"Не удалось получить список индексов для базы {databaseName}: {responseResult.Error}.");
+            return Result.Failure<List<CouchDbIndexEntry>>($"Не удалось получить список индексов для базы {databaseName}: {responseResult.Error}.");
         }
 
         using var response = responseResult.Value;
         if (!response.IsSuccessStatusCode)
         {
-            return Result.Failure<HashSet<string>>($"Не удалось получить список индексов для базы {databaseName}: {response.StatusCode}");
+            return Result.Failure<List<CouchDbIndexEntry>>($"Не удалось получить список индексов для базы {databaseName}: {response.StatusCode}");
         }
 
         var json = await response.Content.ReadAsStringAsync(cancellationToken);
         var indexList = JsonSerializer.Deserialize<CouchDbIndexListResponse>(json);
 
-        return indexList?.Indexes
-            .Select(i => i.Name)
-            .ToHashSet(StringComparer.Ordinal)
-            ?? [];
+        return indexList?.Indexes ?? [];
     }
 }

@@ -7,7 +7,11 @@ namespace CouchDb.DatabaseScheme;
 /// </summary>
 public sealed record CouchDbIndexDefinition(
     [property: JsonPropertyName("name")] string Name,
-    [property: JsonPropertyName("index")] CouchDbIndexBody Index);
+    [property: JsonPropertyName("index")] CouchDbIndexBody Index)
+{
+    [JsonPropertyName("ddoc")]
+    public string Ddoc => Name;
+}
 
 /// <summary>
 /// Тело индекса с перечнем полей для Mango-индекса.
@@ -31,4 +35,10 @@ public sealed class CouchDbIndexEntry
 {
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
+
+    [JsonPropertyName("ddoc")]
+    public string Ddoc { get; set; } = string.Empty;
+
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = string.Empty;
 }

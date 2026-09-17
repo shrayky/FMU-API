@@ -118,6 +118,29 @@ public class ProductGroupResolver(
         return false;
     }
 
+    public bool ShouldHaveExpireDate(int atolItemType, int trueApiGroupId)
+    {
+        var mappings = CurrentMappings();
+
+        if (atolItemType > 0)
+        {
+            var byAtol = FindByAtolCode(mappings, atolItemType);
+            if (byAtol != null)
+                return byAtol.HaveExpireDate;
+        }
+
+        if (trueApiGroupId > 0)
+        {
+            foreach (var item in mappings)
+            {
+                if (item.TrueApiGroupId == trueApiGroupId && item.HaveExpireDate)
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
     private List<GisMtProductMapping> CurrentMappings()
     {
         var mappings = _parametersService.Current().GisMtProductMappings;
@@ -134,4 +157,5 @@ public class ProductGroupResolver(
 
         return null;
     }
+
 }

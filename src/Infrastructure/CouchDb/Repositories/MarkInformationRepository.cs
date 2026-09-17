@@ -1,3 +1,4 @@
+using CouchDb.Queries;
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Mark.Entities;
@@ -77,17 +78,20 @@ namespace CouchDb.Repositories
             if (!_appState.CouchDbOnline())
                 return new();
 
-            var totalCount = await GetDocumentsCountAsync();
-
-            if (totalCount == null)
-                return new();
-
             Result<MarkSearchResult> searchResult;
 
-            if (string.IsNullOrEmpty(searchTerm))
+            if (string.IsNullOrWhiteSpace(searchTerm))
+            {
+                var totalCount = await GetDocumentsCountAsync();
+                if (totalCount == null)
+                    return new();
+
                 searchResult = await AllMarksWithPagination(page, pageSize, totalCount.Value);
+            }
             else
-                searchResult = await SearchMarksWithPagination(searchTerm, page, pageSize);
+            {
+                searchResult = await SearchMarksWithPagination(searchTerm.Trim(), page, pageSize);
+            }
 
             if (searchResult.IsFailure)
                 return Result.Failure<MarkSearchResult>(searchResult.Error);
@@ -97,56 +101,38 @@ namespace CouchDb.Repositories
 
         private async Task<Result<MarkSearchResult>> SearchMarksWithPagination(string searchTerm, int page, int pageSize)
         {
-            var searchQuery = new
-            {
-                selector = new Dictionary<string, object>
-                {
-                    ["data"] = new Dictionary<string, object> { ["$exists"] = true },
-                    ["data.markId"] = new Dictionary<string, object> { ["$regex"] = searchTerm }
-                },
-                sort = new[] { new Dictionary<string, string> { ["data.trueApiAnswerProperties.reqTimestamp"] = "desc" } }
-            };
+            var searchQuery = MarkMangoQueryBuilder.BuildPrefixSearchQuery(searchTerm, page, pageSize);
+            var searchResult = await ExecuteMangoQueryAsync(searchQuery);
 
-            var allResults = await ExecuteMangoQueryAsync(searchQuery);
+            if (searchResult.IsFailure)
+                return Result.Failure<MarkSearchResult>(searchResult.Error);
 
-            if (allResults.IsFailure)
-                return Result.Failure<MarkSearchResult>(allResults.Error);
-
-            var paginatedResults = allResults.Value
-                .Skip((page - 1) * pageSize)
+            var (count, totalPages) = MarkMangoQueryBuilder.ResolveSearchPagination(page, pageSize, searchResult.Value.Count);
+            var marks = searchResult.Value
                 .Take(pageSize)
                 .Select(MarkListItem.FromEntity)
                 .ToList();
 
-            var answer = new MarkSearchResult
+            return Result.Success(new MarkSearchResult
             {
-                Marks = paginatedResults,
-                Count = allResults.Value.Count,
+                Marks = marks,
+                Count = count,
                 CurrentPage = page,
                 PageSize = pageSize,
-                TotalPages = (int)Math.Ceiling((double)allResults.Value.Count / pageSize),
+                TotalPages = totalPages,
                 SearchTerm = searchTerm
-            };
-
-            return Result.Success(answer);
+            });
         }
 
         private async Task<Result<MarkSearchResult>> AllMarksWithPagination(int page, int pageSize, int totalCount)
         {
-            var mangoQuery = new
-            {
-                selector = new Dictionary<string, object>
-                {
-                    ["data"] = new Dictionary<string, object> { ["$exists"] = true }
-                },
-                sort = new[] { new Dictionary<string, string> { ["data.trueApiAnswerProperties.reqTimestamp"] = "desc" } },
-                limit = pageSize,
-                skip = (page - 1) * pageSize
-            };
-
+            var mangoQuery = MarkMangoQueryBuilder.BuildListQuery(page, pageSize);
             var paginatedResults = await ExecuteMangoQueryAsync(mangoQuery);
 
-            var answer = new MarkSearchResult
+            if (paginatedResults.IsFailure)
+                return Result.Failure<MarkSearchResult>(paginatedResults.Error);
+
+            return Result.Success(new MarkSearchResult
             {
                 Marks = paginatedResults.Value.Select(MarkListItem.FromEntity).ToList(),
                 Count = totalCount,
@@ -154,9 +140,7 @@ namespace CouchDb.Repositories
                 PageSize = pageSize,
                 TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
                 SearchTerm = string.Empty
-            };
-
-            return Result.Success(answer);
+            });
         }
     }
 }

@@ -50,6 +50,7 @@ public class GisMtProductMappingService(
             existing.CheckSmp = mapping.CheckSmp;
             existing.CheckMrp = mapping.CheckMrp;
             existing.CheckExpireDate = mapping.CheckExpireDate;
+            existing.HaveExpireDate = mapping.HaveExpireDate;
         }
 
         await _parametersService.UpdateAsync(parameters);
