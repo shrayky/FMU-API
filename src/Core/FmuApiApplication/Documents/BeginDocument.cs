@@ -118,7 +118,7 @@ public class BeginDocument : IFrontolDocumentService
                         errors.Add($"{position.Text} цена ниже минимальной розничной!");
                         checkResult.Marking_codes.Add(markInBase64);
                     }
-                    else if (markData.Mrp < sellPrice)
+                    else if (groupId != TrueApiGroup.Ncp && markData.Mrp < sellPrice)
                     {
                         checkResult.Code = 3;
                         errors.Add($"{position.Text} цена выше максимальной розничной!");
