@@ -53,6 +53,7 @@ public static class WebHostExtensions
 
         string logFileName = Path.Combine(logFolder, $"{ApplicationInformation.AppName.ToLower()}.log");
 
+        builder.Logging.AddFilter("Microsoft.Extensions.Http", LogLevel.Error);
         builder.Logging.AddSerilog(SerilogConfiguration.LogToFile(settings.LogLevel, logFileName, settings.LogDepth));
     }
 
