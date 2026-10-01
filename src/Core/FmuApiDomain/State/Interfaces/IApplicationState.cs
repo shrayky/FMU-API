@@ -15,6 +15,8 @@ public interface IApplicationState
     void UpdateOrganizationLocalModuleStatus(int organizationId, LocalModuleStatus status);
     void UpdateOrganizationLocalModuleInformation(int organizationId, LocalModuleState localModuleInfo);
     LocalModuleState LocalModuleInformation(int organizationId);
+    void UpdateLocalModuleTsPiotCredential(int organizationId, string token, DateTime? expiresAtUtc, string fiscalDriveNumber);
+    LocalModuleTsPiotCredential? LocalModuleTsPiotCredential(int organizationId);
     bool WithoutOnlineCheck();
     void UpdateWithoutOnlineCheck(bool value);
     bool CouchDbOnline();

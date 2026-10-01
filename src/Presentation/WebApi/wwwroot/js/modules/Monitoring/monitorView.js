@@ -17,6 +17,9 @@ class MonitorView {
             dbStatusDisabled: "Disabled",
             dbStatusUnknown: "Неизвестно",
             localModules: "Локальные модули",
+            initialization: "Инициализация",
+            initializedByTsPiot: "ТС ПИоТ",
+            initializedLocally: "Локально",
             lastSync: "Последняя синхронизация",
             version: "Версия",
             status: "Статус",
@@ -226,6 +229,8 @@ class MonitorView {
     }
 
     _localModules() {
+        const self = this;
+
         return [
             {
                 view: "label",
@@ -267,6 +272,23 @@ class MonitorView {
                             const date = new Date(value);
                             if (date.getFullYear() <= 1970) return "Нет данных";
                             return date.toLocaleString();
+                        }
+                    },
+                    {
+                        id: "initialization",
+                        header:
+                        {
+                            text: this.LABELS.initialization,
+                            css: { "text-align": "center" }
+                        },
+                        width: 140,
+                        sort: "string",
+                        css: { "text-align": "center" },
+                        template: function (obj) {
+                            const label = obj.initializedByTsPiot ?
+                                self.LABELS.initializedByTsPiot : self.LABELS.initializedLocally;
+
+                            return `<span>${label}</span>`;
                         }
                     },
                     {
@@ -497,6 +519,7 @@ class MonitorView {
                 version: module.version || "Нет данных",
                 status: module.state || "Нет данных",
                 lastSyncDateTime: module.lastSyncTime,
+                initializedByTsPiot: !!module.initializedByTsPiot,
                 isReady: module.isReady || false,
                 hasSyncError: !module.isReady
             };

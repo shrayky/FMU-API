@@ -43,7 +43,8 @@ public class StateOfLocalModuleController : ControllerBase
             OrganizationLocalModuleState lmStateInformation = new()
             {
                 Organization = organization.Id,
-                Status = _applicationState.OrganizationLocalModuleStatus(organization.Id)
+                Status = _applicationState.OrganizationLocalModuleStatus(organization.Id),
+                InitializedByTsPiot = _applicationState.LocalModuleTsPiotCredential(organization.Id) != null
             };
 
             states.Add(lmStateInformation);

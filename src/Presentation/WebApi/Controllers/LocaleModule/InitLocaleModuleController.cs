@@ -43,6 +43,17 @@ public class InitLocaleModuleController : ControllerBase
             return NotFound();
         }
 
+        if (_applicationState.LocalModuleTsPiotCredential(printGroup.Id) != null)
+        {
+            _logger.LogWarning("ЛМ для организации {OrganizationId} инициализирован ТС ПИоТ, инициализация не выполняется", organizationId);
+
+            return Conflict(new
+            {
+                success = false,
+                message = "Локальный модуль инициализирован ТС ПИоТ"
+            });
+        }
+
         try
         {
             var initResult = await _localModuleService.InitializeAsync(printGroup.LocalModuleConnection, printGroup.XAPIKEY);

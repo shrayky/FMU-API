@@ -59,7 +59,7 @@ namespace TsPiotClinet.Workers
                 if (string.IsNullOrEmpty(printGroup.TsPiot.Host) || string.IsNullOrEmpty(printGroup.TsPiot.Port))
                     continue;
 
-                var address = $"{printGroup.TsPiot.Host}:{printGroup.TsPiot.Port}";
+                var address = Address(printGroup);
 
                 var checkModuleVersion = await AskModuleVersion(printGroup.TsPiot);
 
@@ -71,6 +71,8 @@ namespace TsPiotClinet.Workers
 
                 if (checkProtocolResult.Protocol.IsSuccess)
                     protocol = checkProtocolResult.Protocol.Value;
+
+                ApplyTsPiotInfoAnswer(printGroup, checkProtocolResult.IsAnswered, checkProtocolResult.KktInfo);
 
                 _applicationState.TsPiotApiVersion(address, protocol, version);
 
@@ -99,9 +101,15 @@ namespace TsPiotClinet.Workers
         }
 
         /// <summary>
+        /// Результат опроса <c>/api/v{1..3}/info</c>.
+        /// <c>IsAnswered</c> — получено и разобрано тело ответа: только в этом случае можно менять сохранённый токен.
+        /// </summary>
+        internal record TsPiotInfoAnswer(Result<int> Protocol, int StatusCode, TsPiotKktInfo? KktInfo, bool IsAnswered);
+
+        /// <summary>
         /// Определяет версию протокола ТС ПИоТ и фиксирует HTTP-код последнего ответа.
         /// </summary>
-        private async Task<(Result<int> Protocol, int StatusCode)> AskProtocolVersion(TsPiotConnectionSettings tsPiot)
+        internal async Task<TsPiotInfoAnswer> AskProtocolVersion(TsPiotConnectionSettings tsPiot)
         {
             using var httpClient = _httpClientFactory.CreateClient("TsPiotStateChecker");
 
@@ -146,9 +154,11 @@ namespace TsPiotClinet.Workers
                     if (status != null)
                     {
                         _logger.LogInformation("Используется ТСПиОТ с {v} версией протокола.", protocolVersion);
-                        return (Result.Success(protocolVersion), lastStatusCode);
+                        return new TsPiotInfoAnswer(Result.Success(protocolVersion), lastStatusCode, status, true);
                     }
 
+                    // Тело ответа разобрано, но модель не получена: токен менять нельзя, пробуем следующую версию протокола.
+                    _logger.LogWarning("Ответ info ТСПИоТ версии протокола {Version} не разобран", protocolVersion);
                 }
                 catch (Exception ex)
                 {
@@ -158,7 +168,79 @@ namespace TsPiotClinet.Workers
                 }
             }
 
-            return (Result.Failure<int>($"Не удалось подключится к экземпляру ТСПиОТ {tsPiot.Host}:{tsPiot.Port}"), lastStatusCode);
+            return new TsPiotInfoAnswer(
+                Result.Failure<int>($"Не удалось подключится к экземпляру ТСПиоТ {tsPiot.Host}:{tsPiot.Port}"),
+                lastStatusCode,
+                null,
+                false);
+        }
+
+        private static string Address(PrintGroupData printGroup)
+        {
+            return $"{printGroup.TsPiot.Host}:{printGroup.TsPiot.Port}";
+        }
+
+        /// <summary>
+        /// Применяет результат опроса info к сохранённому токену ТС ПИоТ организации.
+        /// </summary>
+        internal void ApplyTsPiotInfoAnswer(PrintGroupData printGroup, bool isAnswered, TsPiotKktInfo? kktInfo)
+        {
+            // Токен меняем только тогда, когда info ответил и тело разобрано:
+            // таймаут, 5xx или неразобранный ответ не должны снимать запрет на инициализацию ЛМ.
+            if (!isAnswered)
+            {
+                _logger.LogDebug("Ответ info ТСПиоТ для организации {OrganizationId} не получен, сохранённый токен не изменяется", printGroup.Id);
+                return;
+            }
+
+            SaveTsPiotCredential(printGroup, kktInfo);
+        }
+
+        /// <summary>
+        /// Сохраняет токен, которым ТС ПИоТ инициализировал ЛМ организации.
+        /// Вызывается только для разобранного ответа info: пустой <c>lm.token</c> очищает сохранённое значение.
+        /// </summary>
+        private void SaveTsPiotCredential(PrintGroupData printGroup, TsPiotKktInfo? kktInfo)
+        {
+            var localModule = kktInfo?.LocalModeStatus;
+            var token = localModule?.Token;
+
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                _applicationState.UpdateLocalModuleTsPiotCredential(printGroup.Id, string.Empty, null, string.Empty);
+                return;
+            }
+
+            var expiresAtUtc = ParseTokenExpirationDate(printGroup, localModule!.TokenExpirationDate);
+
+            _applicationState.UpdateLocalModuleTsPiotCredential(
+                printGroup.Id,
+                token,
+                expiresAtUtc,
+                kktInfo!.FnSerialNumber);
+
+            _logger.LogInformation("Получен токен ТС ПИоТ для организации {OrganizationId}", printGroup.Id);
+        }
+
+        /// <summary>
+        /// Разбирает дату истечения токена (ISO 8601, UTC). Неразобранную дату считает отсутствующей:
+        /// непустой токен в этом случае считается действующим.
+        /// </summary>
+        private DateTime? ParseTokenExpirationDate(PrintGroupData printGroup, string expDate)
+        {
+            if (string.IsNullOrWhiteSpace(expDate))
+                return null;
+
+            if (DateTime.TryParse(expDate, CultureInfo.InvariantCulture,
+                    DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out var parsed))
+                return parsed;
+
+            _logger.LogWarning(
+                "Не удалось разобрать дату истечения токена ТС ПИоТ {ExpDate} для организации {OrganizationId}, токен считается действующим",
+                expDate,
+                printGroup.Id);
+
+            return null;
         }
 
         private async Task SyncLicenses(List<PrintGroupData> printGroups, TsPiotConnectionSettings tsPiot, List<TsPiotInstanceListItem> instances)
@@ -191,7 +273,7 @@ namespace TsPiotClinet.Workers
                 if (organization == null || string.IsNullOrEmpty(organization.TsPiot.Host) || string.IsNullOrEmpty(organization.TsPiot.Port))
                     continue;
 
-                var address = $"{organization.TsPiot.Host}:{organization.TsPiot.Port}";
+                var address = Address(organization);
                 _applicationState.UpdateTsPiotLicense(address, organization.Id, licenseActiveTill);
             }
         }

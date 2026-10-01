@@ -30,4 +30,7 @@ public record LocalModuleStateInformation
 
     [JsonPropertyName("operationMode")]
     public string OperationMode { get; init; } = string.Empty;
+
+    [JsonPropertyName("initializedByTsPiot")]
+    public bool InitializedByTsPiot { get; init; }
 }

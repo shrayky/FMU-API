@@ -17,6 +17,7 @@ public class ApplicationState : IApplicationState
     private TokenData _fmuToken { get; set; } = new();
     private List<OrganizationLocalModuleState> _localModules { get; set; } = [];
     private Dictionary<int, LocalModuleState> _localModuleInformation { get; set; } = [];
+    private Dictionary<int, LocalModuleTsPiotCredential> _localModuleTsPiotCredentials { get; set; } = [];
     private bool _withoutOnlineCheck { get; set; } = false;
     private bool _couchDbIsOnline { get; set; } = false;
     private bool _needRestartService { get; set; } = false;
@@ -68,7 +69,7 @@ public class ApplicationState : IApplicationState
 
     public LocalModuleStatus OrganizationLocalModuleStatus(int organizationId)
     {
-        organizationId = organizationId == 0 ? 1 : organizationId;
+        organizationId = OrganizationCode(organizationId);
 
         var lmStatusInfo = _localModules.FirstOrDefault(p => p.Organization == organizationId);
 
@@ -76,6 +77,15 @@ public class ApplicationState : IApplicationState
             return LocalModuleStatus.Unknown;
 
         return lmStatusInfo.Status;
+    }
+
+    /// <summary>
+    /// Приводит код организации к тому же виду, что используется для статуса ЛМ:
+    /// код 0 означает организацию по умолчанию с кодом 1.
+    /// </summary>
+    private static int OrganizationCode(int organizationId)
+    {
+        return organizationId == 0 ? 1 : organizationId;
     }
 
     public void UpdateOrganizationLocalModuleStatus(int organizationId, LocalModuleStatus status)
@@ -110,6 +120,60 @@ public class ApplicationState : IApplicationState
         _localModuleInformation.TryGetValue(organizationId, out lmInfo);
 
         return lmInfo ?? new LocalModuleState();
+    }
+
+    /// <summary>
+    /// Сохраняет токен, которым ТС ПИоТ инициализировал ЛМ организации. Пустой токен очищает сохранённое значение.
+    /// </summary>
+    public void UpdateLocalModuleTsPiotCredential(int organizationId, string token, DateTime? expiresAtUtc, string fiscalDriveNumber)
+    {
+        organizationId = OrganizationCode(organizationId);
+
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            _localModuleTsPiotCredentials.Remove(organizationId);
+            return;
+        }
+
+        _localModuleTsPiotCredentials[organizationId] = new LocalModuleTsPiotCredential(
+            token.Trim(),
+            ToUtc(expiresAtUtc),
+            fiscalDriveNumber?.Trim() ?? string.Empty);
+    }
+
+    /// <summary>
+    /// Возвращает действующий токен ТС ПИоТ организации или <c>null</c>, если токена нет либо срок истёк.
+    /// </summary>
+    public LocalModuleTsPiotCredential? LocalModuleTsPiotCredential(int organizationId)
+    {
+        organizationId = OrganizationCode(organizationId);
+
+        if (!_localModuleTsPiotCredentials.TryGetValue(organizationId, out var credential))
+            return null;
+
+        if (string.IsNullOrWhiteSpace(credential.Token))
+            return null;
+
+        if (credential.ExpiresAtUtc.HasValue && credential.ExpiresAtUtc.Value <= DateTime.UtcNow)
+            return null;
+
+        return credential;
+    }
+
+    /// <summary>
+    /// Приводит срок действия токена к UTC: срок хранится в UTC и сравнивается с <see cref="DateTime.UtcNow"/>.
+    /// </summary>
+    private static DateTime? ToUtc(DateTime? expiresAtUtc)
+    {
+        if (!expiresAtUtc.HasValue)
+            return null;
+
+        return expiresAtUtc.Value.Kind switch
+        {
+            DateTimeKind.Utc => expiresAtUtc.Value,
+            DateTimeKind.Local => expiresAtUtc.Value.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(expiresAtUtc.Value, DateTimeKind.Utc)
+        };
     }
 
     public bool CouchDbOnline()

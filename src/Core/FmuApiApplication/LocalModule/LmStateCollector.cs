@@ -30,7 +30,8 @@ public static class LmStateCollector
                 Id = printGroup.Id,
                 LastSync = fullStateInfo.LastSyncTimestamp,
                 OperationMode = fullStateInfo.OperationModeRaw,
-                Status = fullStateInfo.StatusRaw
+                Status = fullStateInfo.StatusRaw,
+                InitializedByTsPiot = appState.LocalModuleTsPiotCredential(printGroup.Id) != null
             };
 
             stateOfLocalModules.Add(lmState);

@@ -1,4 +1,4 @@
-using FmuApiDomain.Configuration.Options;
+﻿using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.LocalModule.Models;
 using FmuApiDomain.TrueApi.MarkData.Check;
 using LocalModuleIntegration.Interfaces;
@@ -58,8 +58,9 @@ namespace LocalModuleIntegration.Service
             return response.IsSuccessStatusCode;
         }
 
-        public async Task<CheckMarksDataTrueApi> OutCheckAsync(LocalModuleConnection connection, string cis, string xapiKey, int? pg = null)
+        public async Task<CheckMarksDataTrueApi> OutCheckAsync(LocalModuleConnection connection, string cis, string xapiKey, int? pg = null, LocalModuleCheckAuthorization? authorization = null)
         {
+            // Спецификация авторизации по токену ТС ПИоТ относится к ЛМ v2, здесь всегда Basic.
             using var httpClient = _httpClientFactory.CreateClient("LocalModule");
 
             httpClient.BaseAddress = new Uri(connection.ConnectionAddress);

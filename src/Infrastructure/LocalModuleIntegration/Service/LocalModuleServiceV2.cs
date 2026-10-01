@@ -1,4 +1,4 @@
-using FmuApiDomain.Configuration.Options;
+﻿using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.LocalModule.Models;
 using FmuApiDomain.TrueApi.MarkData.Check;
 using LocalModuleIntegration.Interfaces;
@@ -104,12 +104,23 @@ public class LocalModuleServiceV2 : ILocalModuleService
         return new LocalModuleState();
     }
 
-    public async Task<CheckMarksDataTrueApi> OutCheckAsync(LocalModuleConnection connection, string cis, string xapiKey, int? pg = null)
+    public async Task<CheckMarksDataTrueApi> OutCheckAsync(LocalModuleConnection connection, string cis, string xapiKey, int? pg = null, LocalModuleCheckAuthorization? authorization = null)
     {
         using var httpClient = _httpClientFactory.CreateClient("LocalModule");
 
         httpClient.BaseAddress = new Uri(connection.ConnectionAddress);
-        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", connection.GetBasicAuthorizationHeader());
+
+        var token = authorization?.Token;
+
+        if (string.IsNullOrWhiteSpace(token))
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", connection.GetBasicAuthorizationHeader());
+        else
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Token", token.Trim());
+
+        var fiscalDriveNumber = authorization?.FiscalDriveNumber;
+
+        if (!string.IsNullOrWhiteSpace(fiscalDriveNumber))
+            httpClient.DefaultRequestHeaders.Add("X-ClientId", fiscalDriveNumber.Trim());
 
         object content = pg.HasValue
             ? new { cis_list = new[] { new { cis, pg = pg.Value } } }

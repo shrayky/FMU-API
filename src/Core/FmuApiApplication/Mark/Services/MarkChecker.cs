@@ -1,10 +1,11 @@
-using CSharpFunctionalExtensions;
+﻿using CSharpFunctionalExtensions;
 using FmuApiApplication.Mark.Interfaces;
 using FmuApiApplication.Mark.Models;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Documents;
 using FmuApiDomain.LocalModule.Enums;
+using FmuApiDomain.LocalModule.Models;
 using FmuApiDomain.Mark.Entities;
 using FmuApiDomain.Mark.Enums;
 using FmuApiDomain.Mark.Interfaces;
@@ -179,9 +180,20 @@ namespace FmuApiApplication.Mark.Services
 
             Result<CheckMarksDataTrueApi> trueMarkCheckResult;
 
+            var tsPiotCredential = _applicationState.LocalModuleTsPiotCredential(organizationId);
+
+            LocalModuleCheckAuthorization? authorization = null;
+
+            if (tsPiotCredential != null)
+            {
+                authorization = new LocalModuleCheckAuthorization(tsPiotCredential.Token, tsPiotCredential.FiscalDriveNumber);
+
+                _logger.LogInformation("Проверка марки {Cis} в ЛМ выполняется с токеном ТС ПИоТ, ФН {FiscalDriveNumber}", cis, tsPiotCredential.FiscalDriveNumber);
+            }
+
             try
             {
-                trueMarkCheckResult = await _localModuleService.OutCheckAsync(connection, cis, xApiKey, productGroupId);
+                trueMarkCheckResult = await _localModuleService.OutCheckAsync(connection, cis, xApiKey, productGroupId, authorization);
             }
             catch (Exception ex)
             {

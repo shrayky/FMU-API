@@ -103,6 +103,7 @@ class OrganizationsConfigurationElement {
                     useExternalToken: !!(group.trueApiIntegrationSettings?.useExternalToken)
                 },
                 localModuleStatus: this.LOCAL_MODULE_STATUS.NOT_CONFIGURED,
+                initializedByTsPiot: false,
                 trueApiTokenStatus: ""
             }));
         }
@@ -325,20 +326,7 @@ class OrganizationsConfigurationElement {
                     if (!response.ok)
                         throw new Error('Ошибка получения статусов');
 
-                    const states = await response.json();
-                    const table = $$("PrintGroups");
-                    if (!table) return;
-
-                    // API: [{ organization, status }, ...]
-                    states.forEach(({ organization, status }) => {
-                        if (!table.exists(organization)) return;
-
-                        const item = table.getItem(organization);
-                        table.updateItem(organization, {
-                            ...item,
-                            localModuleStatus: status
-                        });
-                    });
+                    this._applyLocalModuleStates(await response.json());
                 } catch (error) {
                     console.error("Ошибка при получении статусов ЛМ:", error);
                 }
@@ -346,6 +334,27 @@ class OrganizationsConfigurationElement {
             this.POLL_INTERVAL,
             { autoStart: true }
         );
+    }
+
+    /**
+     * Обновляет строки таблицы из ответа GET /api/lm/state:
+     * [{ organization, status, initializedByTsPiot }, ...], где status — числовой код LOCAL_MODULE_STATUS.
+     */
+    _applyLocalModuleStates(states) {
+        const table = $$("PrintGroups");
+        if (!table || !Array.isArray(states)) return;
+
+        states.forEach(({ organization, status, initializedByTsPiot }) => {
+            if (!table.exists(organization)) return;
+
+            const item = table.getItem(organization);
+
+            table.updateItem(organization, {
+                ...item,
+                localModuleStatus: Number.isInteger(status) ? status : this.LOCAL_MODULE_STATUS.UNKNOWN,
+                initializedByTsPiot: !!initializedByTsPiot
+            });
+        });
     }
 
     _startTrueApiTokenStatusPolling() {
@@ -395,9 +404,17 @@ class OrganizationsConfigurationElement {
         if (!item.localModuleConnection?.enable)
             return;
 
+        if (item.initializedByTsPiot) {
+            webix.message({
+                text: `Локальный модуль организации "${item.name}" инициализирован ТС ПИоТ, инициализация не требуется`,
+                type: "info"
+            });
+            return;
+        }
+
         if (item.localModuleStatus === this.LOCAL_MODULE_STATUS.NOT_CONFIGURED
             || item.localModuleStatus === this.LOCAL_MODULE_STATUS.SYNC_ERROR) {
-            this._startInitialization(selectedId, item);
+            this._startInitialization(selectedId);
             return;
         }
 
@@ -416,31 +433,49 @@ class OrganizationsConfigurationElement {
             cancel: "Отмена",
             callback: (result) => {
                 if (result)
-                    this._startInitialization(selectedId, item);
+                    this._startInitialization(selectedId);
             }
         });
     }
 
-    _startInitialization(selectedId, item) {
-        const table = $$("PrintGroups");
-        table.updateItem(selectedId, {
-            ...item,
-            localModuleStatus: this.LOCAL_MODULE_STATUS.INITIALIZATION
-        });
-
+    _startInitialization(selectedId) {
+        // Статус «Инициализация» и сообщение об успехе показываем только после ответа сервиса:
+        // при 409 (ЛМ инициализирован ТС ПИоТ) инициализация не запускается.
         fetch(`/api/lm/init/${selectedId}`, { method: 'POST' })
+            .then(response => {
+                if (!response.ok)
+                    throw new Error(`Ошибка инициализации локального модуля: ${response.status}`);
+
+                this._refreshLocalModuleStatus();
+
+                webix.message({
+                    text: "Запущена инициализация локального модуля",
+                    type: "info"
+                });
+            })
             .catch(error => {
                 console.error("Ошибка при отправке запроса инициализации:", error);
                 webix.message({
-                    text: "Ошибка при отправке запроса инициализации",
+                    text: `Ошибка при отправке запроса инициализации: ${error.message}`,
                     type: "error"
                 });
             });
+    }
 
-        webix.message({
-            text: "Запущена инициализация локального модуля",
-            type: "info"
-        });
+    /**
+     * Запрашивает у сервиса фактические статусы ЛМ: инициализация могла не запуститься.
+     * Используется список GET /api/lm/state, где status — числовой код, как и ждёт таблица.
+     */
+    async _refreshLocalModuleStatus() {
+        try {
+            const response = await fetch('/api/lm/state');
+            if (!response.ok)
+                return;
+
+            this._applyLocalModuleStates(await response.json());
+        } catch (error) {
+            console.error("Ошибка при получении статуса ЛМ после инициализации:", error);
+        }
     }
 }
 

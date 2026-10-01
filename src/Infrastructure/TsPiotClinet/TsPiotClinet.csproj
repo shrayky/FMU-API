@@ -14,4 +14,8 @@
         <ProjectReference Include="..\..\Core\FmuApiDomain\FmuApiDomain.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+        <InternalsVisibleTo Include="FmuApiApplication.Tests" />
+    </ItemGroup>
+
 </Project>
