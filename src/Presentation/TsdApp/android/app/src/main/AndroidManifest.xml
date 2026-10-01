@@ -29,38 +29,6 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <receiver
-            android:name=".ScanMonitorReceiver"
-            android:exported="true"
-            android:enabled="true">
-            <intent-filter android:priority="1000">
-                <action android:name="nlscan.action.SCANNER_RESULT"/>
-                <action android:name="android.intent.ACTION_DECODE_DATA"/>
-                <action android:name="android.intent.ACTION_DECODE"/>
-                <action android:name="com.android.server.scannerservice.broadcast"/>
-                <action android:name="android.intent.action.SCANRESULT"/>
-                <action android:name="android.intent.action.RECEIVE_SCAN_RESULT"/>
-                <action android:name="android.intent.action.BARCODE"/>
-                <action android:name="android.intent.action.DECODE_DATA"/>
-                <action android:name="com.symbol.datawedge.api.RESULT_ACTION"/>
-                <action android:name="com.honeywell.aidc.action.ACTION_BARCODE_DATA"/>
-                <action android:name="com.honeywell.intent.action.SCAN_RESULT"/>
-                <action android:name="scan.rcv.message"/>
-                <action android:name="com.scanner.broadcast"/>
-                <action android:name="device.scanner.ACTION"/>
-                <action android:name="device.scanner.EVENT"/>
-                <action android:name="com.rscja.scanner.action.SCAN_RESULT"/>
-                <action android:name="com.ubx.decoder.broadcast.SCAN"/>
-                <action android:name="com.cipherlab.barcodebaseapi.ACTION_BARCODE_DATA"/>
-                <action android:name="ru.atol.scanner.action.SCAN"/>
-                <action android:name="com.xcheng.scanner.action.BARCODE_DECODING_BROADCAST"/>
-                <action android:name="com.sunmi.scanner.ACTION_DATA_CODE_RECEIVED"/>
-                <action android:name="com.android.scanner.broadcast"/>
-                <action android:name="scanner.action.BARCODE"/>
-                <action android:name="com.zebra.scanner.ACTION"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-        </receiver>
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />

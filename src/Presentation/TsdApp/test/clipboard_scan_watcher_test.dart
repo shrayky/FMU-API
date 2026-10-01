@@ -51,4 +51,25 @@ void main() {
     expect(emitted, isEmpty);
     expect(clipboard, 'привет');
   });
+
+  test('stop отменяет периодический опрос буфера', () async {
+    var reads = 0;
+    final watcher = ClipboardScanWatcher(
+      interval: const Duration(milliseconds: 20),
+      readClipboard: () async {
+        reads++;
+        return '';
+      },
+      clearClipboard: () async {},
+    );
+
+    watcher.start();
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    final afterStart = reads;
+    expect(afterStart, greaterThan(0));
+
+    watcher.stop();
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(reads, afterStart);
+  });
 }

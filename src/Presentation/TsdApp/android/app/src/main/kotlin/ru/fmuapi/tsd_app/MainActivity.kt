@@ -19,6 +19,9 @@ class MainActivity : FlutterActivity() {
     private var scanReceiver: BroadcastReceiver? = null
     private var monitorReceiver: BroadcastReceiver? = null
     private var extraKey: String = "barcode"
+    private var lastScanAction: String = ""
+    private var lastMonitorActions: List<String> = emptyList()
+    private var monitorActive: Boolean = false
     private var lastScanCode: String = ""
     private var lastScanAt: Long = 0
 
@@ -28,23 +31,25 @@ class MainActivity : FlutterActivity() {
         scanChannel?.setMethodCallHandler { call, result ->
             if (call.method == "configure") {
                 extraKey = call.argument<String>("extra")?.ifBlank { "barcode" } ?: "barcode"
-                registerScanReceiver(call.argument<String>("action").orEmpty())
+                lastScanAction = call.argument<String>("action").orEmpty()
+                registerScanReceiver(lastScanAction)
                 result.success(null)
             } else {
                 result.notImplemented()
             }
         }
-        scanSink = { incoming -> deliverIntent(incoming) }
         registerScanReceiver("")
 
         monitorChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, monitorChannelName)
         monitorChannel?.setMethodCallHandler { call, result ->
             when (call.method) {
                 "startMonitor" -> {
-                    val fromDart = monitorActionsFrom(call.arguments)
-                    result.success(registerMonitorReceiver(fromDart))
+                    lastMonitorActions = monitorActionsFrom(call.arguments)
+                    monitorActive = true
+                    result.success(registerMonitorReceiver(lastMonitorActions))
                 }
                 "stopMonitor" -> {
+                    monitorActive = false
                     unregisterMonitorReceiver()
                     result.success(null)
                 }
@@ -58,6 +63,20 @@ class MainActivity : FlutterActivity() {
         deliverIntent(intent)
     }
 
+    override fun onResume() {
+        super.onResume()
+        registerScanReceiver(lastScanAction)
+        if (monitorActive) {
+            registerMonitorReceiver(lastMonitorActions)
+        }
+    }
+
+    override fun onPause() {
+        unregisterScanReceiver()
+        unregisterMonitorReceiver()
+        super.onPause()
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -65,13 +84,13 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onDestroy() {
-        scanSink = null
         unregisterScanReceiver()
         unregisterMonitorReceiver()
         super.onDestroy()
     }
 
     private fun registerScanReceiver(action: String) {
+        lastScanAction = action
         unregisterScanReceiver()
         val actions = (listOf(action.trim()) + defaultActions)
             .map { it.trim() }
@@ -104,7 +123,6 @@ class MainActivity : FlutterActivity() {
             return 0
         }
 
-        monitorSink = { incoming -> emitMonitor(incoming) }
         monitorReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, incoming: Intent?) {
                 emitMonitor(incoming)
@@ -155,7 +173,6 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun unregisterMonitorReceiver() {
-        monitorSink = null
         val current = monitorReceiver ?: return
         unregisterReceiver(current)
         monitorReceiver = null
@@ -220,22 +237,6 @@ class MainActivity : FlutterActivity() {
             "scanner.action.BARCODE",
             "com.zebra.scanner.ACTION",
         )
-
-        @Volatile
-        var monitorSink: ((Intent) -> Unit)? = null
-
-        @Volatile
-        var scanSink: ((Intent) -> Unit)? = null
-
-        fun forwardMonitor(incoming: Intent?) {
-            val intent = incoming ?: return
-            monitorSink?.invoke(intent)
-        }
-
-        fun forwardScan(incoming: Intent?) {
-            val intent = incoming ?: return
-            scanSink?.invoke(intent)
-        }
 
         fun monitorActionsFrom(arguments: Any?): List<String> {
             val map = arguments as? Map<*, *> ?: return emptyList()

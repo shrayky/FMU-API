@@ -23,7 +23,7 @@ class BroadcastMonitorScreen extends StatefulWidget {
   State<BroadcastMonitorScreen> createState() => _BroadcastMonitorScreenState();
 }
 
-class _BroadcastMonitorScreenState extends State<BroadcastMonitorScreen> {
+class _BroadcastMonitorScreenState extends State<BroadcastMonitorScreen> with WidgetsBindingObserver {
   final _channel = BroadcastMonitorChannel();
   final _clipboard = ClipboardScanWatcher(requireMark: false, clearAfterEmit: false);
   final _events = <BroadcastEvent>[];
@@ -36,6 +36,7 @@ class _BroadcastMonitorScreenState extends State<BroadcastMonitorScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _keys.requestFocus();
       _start();
@@ -44,6 +45,7 @@ class _BroadcastMonitorScreenState extends State<BroadcastMonitorScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _clipboard.stop();
     if (_listening) {
       _channel.stop();
@@ -51,6 +53,22 @@ class _BroadcastMonitorScreenState extends State<BroadcastMonitorScreen> {
     _keys.dispose();
     _keysCtrl.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      if (_listening) {
+        _clipboard.start();
+      }
+      return;
+    }
+
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.detached) {
+      _clipboard.stop();
+    }
   }
 
   Future<void> _toggle() async {

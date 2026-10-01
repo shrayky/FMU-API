@@ -18,20 +18,21 @@ import '../settings/settings_screen.dart';
 
 /// Главный экран ТСД: ожидает скан и рисует карточку марки.
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, this.lanScanner});
+  const HomeScreen({super.key, this.lanScanner, this.clipboard});
 
   final LanFmuScanner? lanScanner;
+  final ClipboardScanWatcher? clipboard;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final _focus = FocusNode();
   final _buffer = ScanBuffer();
   final _settingsStore = SettingsStore();
   final _intent = IntentScanChannel();
-  final _clipboard = ClipboardScanWatcher();
+  late final ClipboardScanWatcher _clipboard;
   late final LanFmuScanner _lan;
 
   AppSettings _settings = const AppSettings();
@@ -39,11 +40,14 @@ class _HomeScreenState extends State<HomeScreen> {
   String _placeholder = 'Сканируйте марку';
   bool _checking = false;
   String? _inn;
+  bool _clipboardOnHome = true;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _lan = widget.lanScanner ?? LanFmuScanner();
+    _clipboard = widget.clipboard ?? ClipboardScanWatcher();
     _intent.onScan = _onReadyCode;
     _clipboard.onCode = (code) => _accept(_buffer.completeRaw(code));
     _intent.start();
@@ -54,11 +58,28 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _lan.cancel();
     _intent.stop();
     _clipboard.stop();
     _focus.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      if (_clipboardOnHome) {
+        _clipboard.start();
+      }
+      return;
+    }
+
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.detached) {
+      _clipboard.stop();
+    }
   }
 
   Future<void> _loadSettings() async {
@@ -122,11 +143,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _openSettings() async {
+    _clipboardOnHome = false;
     _clipboard.stop();
     final result = await Navigator.of(context).push<AppSettings>(
       MaterialPageRoute(builder: (_) => SettingsScreen(settings: _settings)),
     );
-    _clipboard.start();
+    _clipboardOnHome = true;
+    if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+      _clipboard.start();
+    }
     _focus.requestFocus();
     if (result == null) {
       return;
@@ -137,11 +162,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _openCamera() async {
+    _clipboardOnHome = false;
     _clipboard.stop();
     final code = await Navigator.of(context).push<String>(
       MaterialPageRoute(builder: (_) => const CameraScanPage()),
     );
-    _clipboard.start();
+    _clipboardOnHome = true;
+    if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+      _clipboard.start();
+    }
     _focus.requestFocus();
     if (code == null || code.isEmpty) {
       return;

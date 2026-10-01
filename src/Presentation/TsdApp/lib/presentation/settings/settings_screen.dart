@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../infrastructure/discovery/lan_fmu_scanner.dart';
 import '../../infrastructure/settings/app_settings.dart';
@@ -11,10 +12,12 @@ class SettingsScreen extends StatefulWidget {
     super.key,
     required this.settings,
     this.lanScanner,
+    this.appVersion,
   });
 
   final AppSettings settings;
   final LanFmuScanner? lanScanner;
+  final String? appVersion;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -27,6 +30,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late final LanFmuScanner _lan;
   late bool _camera;
   bool _searching = false;
+  String? _version;
 
   @override
   void initState() {
@@ -36,6 +40,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _extra = TextEditingController(text: widget.settings.intentExtra);
     _camera = widget.settings.cameraScanEnabled;
     _lan = widget.lanScanner ?? LanFmuScanner();
+    _version = widget.appVersion;
+    if (_version == null) {
+      _loadVersion();
+    }
+  }
+
+  Future<void> _loadVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (!mounted) {
+        return;
+      }
+      setState(() => _version = '${info.version} (${info.buildNumber})');
+    } catch (_) {}
   }
 
   @override
@@ -158,6 +176,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: const Text('Сканер: broadcast'),
             ),
           ),
+          if (_version != null) ...[
+            const SizedBox(height: 24),
+            Text(
+              'Версия $_version',
+              style: const TextStyle(color: WebixDarkTheme.muted, fontSize: 13),
+            ),
+          ],
         ],
       ),
     );
