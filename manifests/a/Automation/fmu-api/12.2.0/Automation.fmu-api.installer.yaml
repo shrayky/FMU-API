@@ -2,7 +2,7 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.12.0.schema.json
 
 PackageIdentifier: Automation.fmu-api
-PackageVersion: 12.1.0
+PackageVersion: 12.2.0
 InstallerType: zip
 NestedInstallerType: exe
 NestedInstallerFiles:
@@ -20,11 +20,11 @@ Commands:
 - fmu-api
 Installers:
 - Architecture: x64
-  InstallerUrl: https://github.com/shrayky/FMU-API/releases/download/fmuapi12-1/12-1-x64-win.zip
-  InstallerSha256: 3ABC9661953C0CE51F1A13935932E236A072E0A1FF649DDF7CD6DC957159DB82
+  InstallerUrl: https://github.com/shrayky/FMU-API/releases/download/fmuapi12-2/12-2-x64-win.zip
+  InstallerSha256: CDFB48DC9D3812B4C38BA5299EBEB0A4542C70694EFEF11FA4729E66EDE7B85D
 - Architecture: x86
-  InstallerUrl: https://github.com/shrayky/FMU-API/releases/download/fmuapi12-1/12-1-x86-win.zip
-  InstallerSha256: 5A7BF5798D3B098D30A47E764AED537A2CB5F0A18E4D7F7E6BAA7619D8BDD7D3
+  InstallerUrl: https://github.com/shrayky/FMU-API/releases/download/fmuapi12-2/12-2-x86-win.zip
+  InstallerSha256: C0604A6A4415175B6F8E180C73DE2443BAFCE68BAFC59CF7B7CE9E32CB321BA4
 ManifestType: installer
 ManifestVersion: 1.12.0
-ReleaseDate: 2026-08-19
+ReleaseDate: 2026-09-16
