@@ -4,9 +4,10 @@
 
 > Страница мониторинга показывает доступность CouchDB, локальных модулей, ТС ПИоТ и токенов ГИС МТ. Связь с базой Frontol (Firebird, справочник товаров) нигде не проверяется: обрыв виден только когда запрос к SPRT или кранам уже падает. В настройках подключения тоже нет способа убедиться, что путь, пользователь и пароль верные, пока настройки не сохранены.
 
-Два независимых входа в одну проверку Firebird:
+Три входа в одну проверку Firebird:
 
 - кнопка «Проверить связь» в окне подключения — по полям формы, до сохранения;
+- кнопка «Проверить связь» рядом с выбором базы справочника товаров — по строке таблицы в модальном окне, без сохранения конфигурации;
 - фоновая проверка выбранной базы справочника товаров — статус на странице мониторинга.
 
 ## Поведение
@@ -30,6 +31,10 @@
 
 Поля берутся из формы, а не из строки таблицы: новое подключение ещё не сохранено, но проверяться должно так же, как сохранённое.
 
+Вторая кнопка «Проверить связь» (`id` = `testWareDataSourceConnection`) стоит в одном ряду с полем «База справочника товаров Frontol». Над кнопкой пустой ряд высотой 26, высота кнопки 32, ширина 200: так она совпадает с полем выбора, у которого подпись сверху.
+
+Кнопка читает выбранную строку таблицы модального окна (`path`, `userName`, `password`) и вызывает тот же `POST api/configuration/FrontolConnection/test`. Конфигурация службы при этом не сохраняется. Если в списке ничего не выбрано, запрос не уходит, `webix.message` с `type: "error"` и текстом «Выберите подключение для проверки». На время запроса кнопка ведёт себя так же, как кнопка в окне редактирования.
+
 ### Мониторинг
 
 Проверяется одно сохранённое подключение: выбранное в «База справочника товаров Frontol», `ConnectedFrontolSettings.ResolveWareDataSourceId()`. Остальные подключения, включая базу кранов, воркер не трогает. Кнопка в окне проверяет любое открытое подключение, в том числе ещё не сохранённое.
@@ -44,7 +49,7 @@
 
 `GET /api/monitoring/systemstate` статус только читает. К Firebird из `MonitoringInformationService.Collect()` не обращаться: недоступный сервер задержит ответ мониторинга.
 
-На странице мониторинга подпись «Статус базы Frontol» стоит сразу под «Статус базы данных». Цвета те же: синий `On-line`, красный `Off-line`, белый `Disabled`.
+На странице мониторинга секция «Базы данных»: колонки «База данных» и «База Frontol», одна строка «Статус». До первого ответа опроса в статусе «Неизвестно». Цвета: синий `On-line`, красный `Off-line`, белый `Disabled`.
 
 Первая проверка — сразу после старта процесса, дальше каждые 30 секунд. Смена настроек подхватывается следующим циклом, перезапуск службы не нужен.
 
@@ -52,7 +57,28 @@
 
 И кнопка, и воркер вызывают один метод. Таймаут подключения 5 секунд, константа в реализации проверки. К строке `FrontolConnectionSettings.ConnectionStringBuild()` добавляется `Connection Timeout=5`, если его ещё нет.
 
-Проверка: `FrontolDbContext` со этой строкой и `Database.CanConnectAsync`. Исключение ловится один раз на методе проверки. Успех — `Result.Success()`. Ошибка — `Result.Failure` с `Exception.Message`. Наружу из цикла воркера исключение не выходит.
+Проверка открывает соединение: `FrontolDbContext` со этой строкой и `Database.GetDbConnection().OpenAsync`. `Database.CanConnectAsync` не подходит: он глушит исключения соединения и возвращает `false`, тогда до пользователя не дойдёт текст от Firebird.
+
+Ожидание ограничивает токен, а не строка подключения: `CancellationTokenSource.CreateLinkedTokenSource` плюс `CancelAfter(5 секунд)`, токен передаётся в `OpenAsync`. Параметр `Connection Timeout=5` в строке подключения ожидание недоступного сервера не ограничивает — проверено на живом драйвере: подключение к недоступному адресу висело 81 секунду при `Connection Timeout=1`, а отмена токеном сработала ровно на 5 секундах.
+
+Исключение ловится один раз на методе проверки, результат:
+
+| Случай | `Result` |
+|---|---|
+| соединение открылось | `Success()` |
+| `OperationCanceledException`, внешний токен не отменён | `Failure` — «Превышено время ожидания подключения (5 сек)» |
+| `OperationCanceledException`, внешний токен отменён | исключение пробрасывается: это остановка службы |
+| любое другое исключение | `Failure` с `Exception.Message` от Firebird |
+
+Наружу из цикла воркера исключение не выходит: остановка службы завершает цикл.
+
+Тексты, которые приходят от Firebird (проверено на живом драйвере):
+
+| Ситуация | Текст |
+|---|---|
+| хост не разрешается | `Unable to complete network request to host "..."` |
+| файл базы не найден | `I/O error during "CreateFile (open)" operation for file "..."` |
+| неверный пароль | `Your user name and password are not defined. ...` |
 
 `FrontolDbContext` создаётся конструктором со строкой подключения (`new FrontolDbContext(connectionString)`), а не через DI: конструктор с `IParametersService` читает только сохранённые настройки и для кнопки не подходит.
 
@@ -78,7 +104,7 @@ using FmuApiDomain.Configuration.Options;
 /// </summary>
 public interface IFrontolConnectionProbe
 {
-    Task<Result> ProbeAsync(FrontolConnectionSettings connection, CancellationToken cancellationToken);
+    Task<Result> Probe(FrontolConnectionSettings connection, CancellationToken cancellationToken);
 }
 ```
 
@@ -96,15 +122,14 @@ void UpdateFrontolDbState(bool value);
 В `src/Infrastructure/FrontolDb/FrontolDb.csproj` добавить пакет `Microsoft.Extensions.Hosting.Abstractions` — его ещё нет, без него `BackgroundService` не соберётся. Версия 10.0.11 берётся из `Directory.Packages.props`, номер в проекте не указывается.
 
 `src/Infrastructure/FrontolDb/Services/FrontolConnectionProbe.cs` — реализация `IFrontolConnectionProbe`.
-
 `src/Infrastructure/FrontolDb/Workers/FrontolDbStatusWorker.cs` — `BackgroundService`:
 
 1. Прочитать настройки через `IParametersService.CurrentAsync()`.
 2. Найти подключение по `ResolveWareDataSourceId()`.
 3. Если подключения нет или `ConnectionEnable()` равен false — записать в состояние `false` и не открывать Firebird. Смену с `true` на `false` залогировать.
-4. Иначе вызвать `ProbeAsync`. Успех — `UpdateFrontolDbState(true)`, неуспех — `false`.
-5. Лог только при смене статуса, текстом как в `CouchDbStatusWorker`: было → стало.
-6. `Task.Delay` 30 секунд в конце цикла, не в начале, чтобы первая проверка прошла сразу. `CancellationToken` пробрасывать в `Delay` и в `ProbeAsync`.
+4. Иначе вызвать `Probe`. Успех — `UpdateFrontolDbState(true)`, неуспех — `false`.
+5. Лог только при смене статуса, текстом как в `CouchDbStatusWorker`: было → стало. Если проверка не удалась, в ту же строку дописать `probeResult.Error`, чтобы в журнале был текст Firebird, а не только `True -> False`.
+6. `Task.Delay` 30 секунд в конце цикла, не в начале, чтобы первая проверка прошла сразу. `CancellationToken` пробрасывать в `Delay` и в `Probe`.
 
 Регистрация в `FrontolDbService.AddService`:
 
@@ -145,11 +170,7 @@ public string FrontolDbOnLine { get; init; } = string.Empty;
 - выбранное подключение отсутствует или `ConnectionEnable()` равен false — `Disabled`;
 - иначе `FrontolDbOnline()` — `On-line`, иначе `Off-line`.
 
-`monitorView.js`:
-
-- подпись в `LABELS`, id в `NAMES`, элемент `label` сразу после блока статуса CouchDB;
-- в обработчике опроса вызывать обновление из `monitoringData.frontolDbOnLine`;
-- цвета скопировать из `_updateDbState`.
+`monitorView.js`: секция «Базы данных». Таблица `databasesTable`: колонки `couchDb` и `frontolDb`, строка `status`. Опрос пишет в неё `monitoringData.couchDbOnLine` и `monitoringData.frontolDbOnLine`.
 
 ## Файлы
 
@@ -167,7 +188,7 @@ public string FrontolDbOnLine { get; init; } = string.Empty;
 | `src/Presentation/WebApi/wwwroot/js/modules/settings/elements/connectedFrontol.js` | кнопка и обработчик |
 | `src/Core/FmuApiApplication/Monitoring/Dto/MonitoringData.cs` | `FrontolDbOnLine` |
 | `src/Core/FmuApiApplication/Monitoring/MonitoringInformationService.cs` | заполнение поля |
-| `src/Presentation/WebApi/wwwroot/js/modules/Monitoring/monitorView.js` | строка статуса |
+| `src/Presentation/WebApi/wwwroot/js/modules/Monitoring/monitorView.js` | таблица «Базы данных» |
 
 ## Порядок работ
 
@@ -180,7 +201,8 @@ public string FrontolDbOnLine { get; init; } = string.Empty;
 
 ## Готово, когда
 
-- «Проверить связь» по несохранённым полям показывает успех на живой базе и текст ошибки на неверном пути или пароле. Конфигурация при этом не записывается.
+- «Проверить связь» в окне подключения по несохранённым полям показывает успех на живой базе и текст ошибки на неверном пути или пароле. Конфигурация при этом не записывается.
+- «Проверить связь» у выбора базы справочника проверяет строку таблицы. Без выбранного подключения показывает «Выберите подключение для проверки» и запрос не отправляет.
 - При живой выбранной базе на мониторинге `On-line`.
 - При недоступной сохранённой базе — `Off-line`, страница мониторинга открывается без ожидания таймаута Firebird.
 - Если база справочника не выбрана — `Disabled`, воркер к Firebird не подключается.

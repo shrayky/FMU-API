@@ -1,7 +1,8 @@
-﻿using FmuApiDomain.BeerTaps.Interfaces;
+using FmuApiDomain.BeerTaps.Interfaces;
 using FmuApiDomain.Frontol.Interfaces;
 using FrontolDb.Repository;
 using FrontolDb.Services;
+using FrontolDb.Workers;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace FrontolDb;
@@ -21,5 +22,9 @@ public class FrontolDbService
         services.AddScoped<IBeerTapsRepository, BeerTapsRepo>();
 
         services.AddSingleton<FrontolAdminIniReader>();
+
+        // проверка связи с базой Frontol: по кнопке в настройках и по расписанию воркера
+        services.AddSingleton<IFrontolConnectionProbe, FrontolConnectionProbe>();
+        services.AddHostedService<FrontolDbStatusWorker>();
     }
 }

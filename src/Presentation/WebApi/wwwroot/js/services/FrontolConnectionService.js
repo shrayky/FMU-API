@@ -1,5 +1,6 @@
 const IMPORT_URL = "api/configuration/FrontolConnection/import-from-admin";
 const LOAD_BEER_TAPS_URL = "api/configuration/FrontolConnection/load-beer-taps";
+const TEST_URL = "api/configuration/FrontolConnection/test";
 
 /// Загружает подключения из Frontol.Администратор (FrontolAdmin.ini).
 export async function importFromFrontolAdmin() {
@@ -22,6 +23,26 @@ export async function loadBeerTapsFromFrontol(connectionId) {
 
     if (!response.ok)
         throw new Error(data.message ?? "Ошибка загрузки кранов из Frontol");
+
+    return data;
+}
+
+/// Проверяет связь с базой Frontol по параметрам подключения, без сохранения настроек.
+export async function testFrontolConnection(connection) {
+    const response = await fetch(TEST_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            path: connection.path ?? "",
+            userName: connection.userName ?? "",
+            password: connection.password ?? ""
+        })
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok)
+        throw new Error(data.message ?? "Ошибка проверки связи с Frontol");
 
     return data;
 }

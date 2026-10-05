@@ -11,7 +11,9 @@ class MonitorView {
 
         this.LABELS = {
             formTitle: "FMU-API: Мониторинг",
-            dbStatus: "Статус базы данных: ",
+            databases: "Базы данных",
+            database: "База данных",
+            frontolDatabase: "База Frontol",
             dbStatusOnline: "On-line",
             dbStatusOffline: "Off-line",
             dbStatusDisabled: "Disabled",
@@ -50,7 +52,8 @@ class MonitorView {
         }
         this.NAMES = {
             toolbarLabel: "toolbarLabel",
-            dbStatus: "dbStatus",
+            databasesTable: "databasesTable",
+            databasesTableLabel: "databasesTableLabel",
             localModulesTable: "localModulesTable",
             tsPiotTable: "tsPiotTable",
             checkStatisticsTable: "checkStatisticsTable",
@@ -79,12 +82,7 @@ class MonitorView {
                 hidden: true,
             },
 
-            {
-                view: "label",
-                id: "dbStatus",
-                label: this.LABELS.dbStatus + this.LABELS.dbStatusUnknown
-            },
-
+            ...this._databases(),
             ...this._tspiot(),
             ...this._localModules(),
             ...this._trueApiTokens(),
@@ -455,7 +453,7 @@ class MonitorView {
 
                 const monitoringData = await response.json();
 
-                this._updateDbState(monitoringData.couchDbOnLine);
+                this._updateDatabaseState(monitoringData.couchDbOnLine, monitoringData.frontolDbOnLine);
                 this._updateLocalModulesInformation(monitoringData.stateOfLocalModules);
                 this._updateTspiotInformation(monitoringData.tsPiotStates);
                 this._updateTrueApiTokens(monitoringData.trueApiTokens);
@@ -488,19 +486,76 @@ class MonitorView {
         );
     }
 
-    _updateDbState(couchDbOnLine) {
-        const couchDbState = $$(this.NAMES.dbStatus);
+    _databases() {
+        const statusColumn = (id, header) => ({
+            id,
+            header: {
+                text: header,
+                css: { "text-align": "center" }
+            },
+            fillspace: true,
+            css: { "text-align": "center" },
+            template: (obj) => this._formatDatabaseStatus(obj[id])
+        });
 
-        if (!couchDbState)
+        return [
+            {
+                view: "label",
+                label: this.LABELS.databases,
+                id: this.NAMES.databasesTableLabel,
+            },
+            {
+                id: this.NAMES.databasesTable,
+                view: "datatable",
+                css: "webix_data_border",
+                autoheight: true,
+                select: false,
+                scroll: false,
+                columns: [
+                    {
+                        id: "metric",
+                        header: "",
+                        width: 160
+                    },
+                    statusColumn("couchDb", this.LABELS.database),
+                    statusColumn("frontolDb", this.LABELS.frontolDatabase)
+                ],
+                data: [
+                    {
+                        id: "status",
+                        metric: this.LABELS.status,
+                        couchDb: this.LABELS.dbStatusUnknown,
+                        frontolDb: this.LABELS.dbStatusUnknown
+                    }
+                ]
+            }
+        ];
+    }
+
+    _formatDatabaseStatus(status) {
+        if (status === this.LABELS.dbStatusUnknown)
+            return status;
+
+        const color = status === "Disabled" ? "#FFFFFF"
+            : status === "On-line" ? "#00BFFF"
+                : "#ff0000";
+        const text = status === "Disabled" ? this.LABELS.dbStatusDisabled
+            : status === "On-line" ? this.LABELS.dbStatusOnline
+                : this.LABELS.dbStatusOffline;
+
+        return `<span style="color: ${color};">${text}</span>`;
+    }
+
+    _updateDatabaseState(couchDbOnLine, frontolDbOnLine) {
+        const table = $$(this.NAMES.databasesTable);
+
+        if (!table)
             return;
 
-        if (couchDbOnLine == "Disabled") {
-            couchDbState.setValue(this.LABELS.dbStatus + `<span style="color: #FFFFFF;">${this.LABELS.dbStatusDisabled}</span>`);
-        }
-        else
-            couchDbState.setValue(this.LABELS.dbStatus + (couchDbOnLine == "On-line" ?
-                `<span style="color: #00BFFF;">${this.LABELS.dbStatusOnline}</span>` :
-                `<span style="color: #ff0000;">${this.LABELS.dbStatusOffline}</span>`));
+        table.updateItem("status", {
+            couchDb: couchDbOnLine || this.LABELS.dbStatusOffline,
+            frontolDb: frontolDbOnLine || this.LABELS.dbStatusOffline
+        });
     }
 
     _updateLocalModulesInformation(localModulesInfo) {

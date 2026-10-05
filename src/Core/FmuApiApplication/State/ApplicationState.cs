@@ -1,4 +1,4 @@
-﻿using FmuApiDomain.Authentication.Models;
+using FmuApiDomain.Authentication.Models;
 using FmuApiDomain.LocalModule.Enums;
 using FmuApiDomain.LocalModule.Models;
 using FmuApiDomain.State.Interfaces;
@@ -20,6 +20,7 @@ public class ApplicationState : IApplicationState
     private Dictionary<int, LocalModuleTsPiotCredential> _localModuleTsPiotCredentials { get; set; } = [];
     private bool _withoutOnlineCheck { get; set; } = false;
     private bool _couchDbIsOnline { get; set; } = false;
+    private bool _frontolDbIsOnline { get; set; } = false;
     private bool _needRestartService { get; set; } = false;
     private List<TrueApiToken> _trueApiTokens { get; set; } = [];
     private int TsPiotProtocolVersion { get; set; } = 1;
@@ -184,6 +185,16 @@ public class ApplicationState : IApplicationState
     public void UpdateCouchDbState(bool value)
     {
         _couchDbIsOnline = value;
+    }
+
+    public bool FrontolDbOnline()
+    {
+        return _frontolDbIsOnline;
+    }
+
+    public void UpdateFrontolDbState(bool value)
+    {
+        _frontolDbIsOnline = value;
     }
 
     public void NeedRestartService(bool flag)

@@ -1,9 +1,14 @@
 import { TableToolbar, Text, Number, padding, PasswordBox, CheckBox, Label } from "../../../utils/ui.js";
 import { saveConfiguration } from "../../../services/ConfigurationService.js";
-import { importFromFrontolAdmin, loadBeerTapsFromFrontol } from "../../../services/FrontolConnectionService.js";
+import { importFromFrontolAdmin, loadBeerTapsFromFrontol, testFrontolConnection } from "../../../services/FrontolConnectionService.js";
 import { frontolDbValidation } from "../../../utils/validators.js";
 
 const INT32_MAX = 2147483647;
+
+// Высоты темы Webix: подпись поля с labelPosition "top" и само поле.
+// Нужны, чтобы кнопка проверки связи встала ровно в строку с полем выбора базы.
+const LABEL_ROW_HEIGHT = 26;
+const FIELD_HEIGHT = 32;
 
 function toConnectionId(value, fallback) {
     const id = parseInt(value, 10);
@@ -22,6 +27,7 @@ class ConnectedFrontolConfigurationElement {
         this.tableId = "FrontolConnections";
         this.hiddenTableId = "FrontolConnectionsHidden";
         this.wareDataSourceSelectId = "FrontolWareDataSourceId";
+        this.testWareDataSourceButtonId = "testWareDataSourceConnection";
 
         this.LABELS = {
             title: "Настройка подключения к Frontol",
@@ -40,6 +46,10 @@ class ConnectedFrontolConfigurationElement {
             save: "Сохранить",
             apply: "Применить",
             close: "Закрыть",
+            testConnection: "Проверить связь",
+            testingConnection: "Проверка...",
+            connectionEstablished: "Связь установлена",
+            selectConnectionForTest: "Выберите подключение для проверки",
             duplicatePath: "Подключение с таким путём уже есть в списке!",
             beerTaps: "Синхронизация пивных кранов",
             noFrontolConnections: "Нет подключений к базам Frontol",
@@ -188,12 +198,33 @@ class ConnectedFrontolConfigurationElement {
             padding: 10,
             rows: [
                 {
-                    view: "richselect",
-                    id: this.wareDataSourceSelectId,
-                    label: this.LABELS.wareDataSource,
-                    labelPosition: "top",
-                    placeholder: "Выберите подключение",
-                    options: []
+                    cols: [
+                        {
+                            view: "richselect",
+                            id: this.wareDataSourceSelectId,
+                            label: this.LABELS.wareDataSource,
+                            labelPosition: "top",
+                            placeholder: "Выберите подключение",
+                            clear: true,
+                            options: []
+                        },
+                        {
+                            // пустой ряд на месте подписи списка и высота кнопки, равная высоте поля:
+                            // так кнопка встаёт ровно по полю выбора (проверено замером в браузере)
+                            rows: [
+                                { height: LABEL_ROW_HEIGHT },
+                                {
+                                    view: "button",
+                                    id: this.testWareDataSourceButtonId,
+                                    value: this.LABELS.testConnection,
+                                    autowidth: false,
+                                    width: 200,
+                                    height: FIELD_HEIGHT,
+                                    click: () => this._testWareDataSource()
+                                }
+                            ]
+                        }
+                    ]
                 },
 
 
@@ -341,16 +372,24 @@ class ConnectedFrontolConfigurationElement {
                             {},
                             {
                                 view: "button",
+                                id: "testFrontolConnection",
+                                value: this.LABELS.testConnection,
+                                autowidth: false,
+                                width: 200,
+                                click: () => this._testConnection()
+                            },
+                            {
+                                view: "button",
                                 value: this.LABELS.save,
                                 autowidth: false,
-                                width: 300,
+                                width: 200,
                                 click: () => this._saveConnection(id)
                             },
                             {
                                 view: "button",
                                 value: this.LABELS.close,
                                 autowidth: false,
-                                width: 300,
+                                width: 200,
                                 click: () => $$(this.editFormId).close()
                             },
                         ]
@@ -419,6 +458,70 @@ class ConnectedFrontolConfigurationElement {
 
         this._refreshWareDataSourceOptions();
         $$(this.editFormId).close();
+    }
+
+    // проверяет связь с базой Frontol по текущим полям формы, настройки при этом не сохраняются
+    async _testConnection() {
+        await this._probeConnection("testFrontolConnection", this._readEditFormConnection());
+    }
+
+    // проверяет связь с подключением, выбранным в «База справочника товаров Frontol»
+    async _testWareDataSource() {
+        const connection = this._readWareDataSourceConnection();
+
+        if (!connection) {
+            webix.message({ type: "error", text: this.LABELS.selectConnectionForTest });
+            return;
+        }
+
+        await this._probeConnection(this.testWareDataSourceButtonId, connection);
+    }
+
+    _readEditFormConnection() {
+        return {
+            path: $$("FrontolConnectionPath").getValue()?.trim() ?? "",
+            userName: $$("FrontolConnectionUserName").getValue()?.trim() ?? "",
+            password: $$("FrontolConnectionPassword").getValue() ?? ""
+        };
+    }
+
+    /// Параметры выбранного подключения из таблицы. Без выбранного подключения возвращает null.
+    _readWareDataSourceConnection() {
+        const connectionId = +$$(this.wareDataSourceSelectId).getValue();
+
+        if (!connectionId)
+            return null;
+
+        const row = $$(this.tableId).find(
+            item => toConnectionId(item.id, 0) === connectionId,
+            true
+        );
+
+        if (!row)
+            return null;
+
+        return {
+            path: row.path?.trim() ?? "",
+            userName: row.userName?.trim() ?? "",
+            password: row.password ?? ""
+        };
+    }
+
+    async _probeConnection(buttonId, connection) {
+        const button = $$(buttonId);
+
+        button.disable();
+        button.setValue(this.LABELS.testingConnection);
+
+        try {
+            await testFrontolConnection(connection);
+            webix.message({ type: "success", text: this.LABELS.connectionEstablished });
+        } catch (error) {
+            webix.message({ type: "error", text: error.message ?? "Ошибка проверки связи с Frontol" });
+        } finally {
+            button.enable();
+            button.setValue(this.LABELS.testConnection);
+        }
     }
 
     async _importFromAdmin() {

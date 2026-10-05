@@ -42,6 +42,7 @@ public class MonitoringInformationService : IMonitoringInformation
         return new MonitoringData()
         {
             CouchDbOnLine = DatabaseOnline(currentSettings),
+            FrontolDbOnLine = FrontolDatabaseOnline(currentSettings),
             StateOfLocalModules = LmStateCollector.Collect(currentSettings, _applicationState),
             MarkCheksStatistics = await ColleсtStatistics(),
             TsPiotStates = TsPiotStateCollector.Collect(currentSettings, _applicationState),
@@ -53,6 +54,20 @@ public class MonitoringInformationService : IMonitoringInformation
         => parameters.Database.Enable
                 ? (_applicationState.CouchDbOnline() ? "On-line" : "Off-line")
                 : "Disabled";
+
+    // к Firebird не обращается: недоступный сервер задержит ответ мониторинга
+    private string FrontolDatabaseOnline(Parameters parameters)
+    {
+        var wareDataSourceId = parameters.ConnectedFrontolSettings.ResolveWareDataSourceId();
+        var connection = parameters.ConnectedFrontolSettings.ConnectionSettings
+            .FirstOrDefault(item => item.Id == wareDataSourceId);
+
+        if (connection == null || !connection.ConnectionEnable())
+            return "Disabled";
+
+        return _applicationState.FrontolDbOnline() ? "On-line" : "Off-line";
+    }
+
     private async Task<MarkChecksStatistics> ColleсtStatistics()
     {
         var todayRaw = await _markStatisticsService.Today();

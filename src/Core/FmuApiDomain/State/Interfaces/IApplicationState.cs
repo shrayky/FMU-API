@@ -1,4 +1,4 @@
-﻿using FmuApiDomain.Authentication.Models;
+using FmuApiDomain.Authentication.Models;
 using FmuApiDomain.LocalModule.Enums;
 using FmuApiDomain.LocalModule.Models;
 
@@ -21,6 +21,8 @@ public interface IApplicationState
     void UpdateWithoutOnlineCheck(bool value);
     bool CouchDbOnline();
     void UpdateCouchDbState(bool value);
+    bool FrontolDbOnline();
+    void UpdateFrontolDbState(bool value);
     void NeedRestartService(bool flag);
     bool NeedRestartService();
     void UpdateTrueApiToken(string inn, string token, DateTime lifeUntil);
