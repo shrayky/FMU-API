@@ -8,4 +8,11 @@ public static class ApplicationInformation
     public const string ServiceName = "DS:FMU-API";
     public const int AppVersion = 12;
     public const int Assembly = 2;
+
+    public const string GitHubOwner = "shrayky";
+    public const string GitHubRepository = "fmu-api";
+
+    /// Адрес метаданных последнего релиза репозитория.
+    public const string GitHubReleaseMetadataUrl =
+        $"https://api.github.com/repos/{GitHubOwner}/{GitHubRepository}/releases/latest";
 }

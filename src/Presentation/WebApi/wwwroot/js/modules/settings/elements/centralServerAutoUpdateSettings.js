@@ -1,9 +1,11 @@
 import centralServerConnection from "./centralServerConnection.js";
 import autoUpdate from "./autoUpdate.js";
+import githubReleaseUpdate from "./githubReleaseUpdate.js";
 
 const TABVIEW_ID = "centralServerAutoUpdateTabView";
 const CENTRAL_SERVER_TAB_ID = "centralServerConnectionTab";
 const AUTO_UPDATE_TAB_ID = "autoUpdateTab";
+const GITHUB_RELEASE_UPDATE_TAB_ID = "githubReleaseUpdateTab";
 
 export default function (id, config) {
     return {
@@ -26,6 +28,10 @@ export default function (id, config) {
                     {
                         header: "Автообновление",
                         body: autoUpdate(AUTO_UPDATE_TAB_ID, config)
+                    },
+                    {
+                        header: "Автообновление из GitHub",
+                        body: githubReleaseUpdate(GITHUB_RELEASE_UPDATE_TAB_ID, config)
                     }
                 ]
             }

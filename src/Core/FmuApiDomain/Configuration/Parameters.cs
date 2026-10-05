@@ -42,6 +42,9 @@ public class Parameters
 
     public CentralServerConnectionProperties FmuApiCentralServer { get; set; } = new();
 
+    [JsonPropertyName("githubReleaseUpdate")]
+    public GitHubReleaseUpdateOptions GitHubReleaseUpdate { get; set; } = new();
+
     [JsonInclude]
     public AutoUpdateOptions AutoUpdate { get; private set; } = AutoUpdateOptions.Create();
 

@@ -12,15 +12,3 @@ public class CentralServerConnectionProperties
     public bool DownloadNewVersion { get; set; } = false;
     public List<ScheduleTime> SchedulerUpdateInstall { get; set; } = new();
 }
-
-public record ScheduleTime
-{
-    [JsonPropertyName("id")]
-    public int Id { get; set; }
-
-    [JsonPropertyName("beginTime")]
-    public TimeOnly BeginTime { get; set; }
-
-    [JsonPropertyName("endTime")]
-    public TimeOnly EndTime { get; set; }
-}

@@ -14,6 +14,7 @@ using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.Statistics.Interfaces;
 using FmuPacketTrapper;
 using FrontolDb;
+using GitHubReleaseUpdate;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Scalar.AspNetCore;
 using Serilog;
@@ -118,6 +119,7 @@ bool RunHttpApiService()
     FrontolDbService.AddService(services);
     services.AddExchangeWithFmuApiCentral();
     AutoUpdateRegistrationExtension.AddService(services);
+    GitHubReleaseRegistrationExtension.AddService(services);
     AppRegistrationExtension.AddAppServices(services);
     ServicesAndDaemonsRegistrationExtension.AddService(services);
     TsPiotClientRegistration.AddService(services);
