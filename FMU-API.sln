@@ -1,4 +1,4 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
 VisualStudioVersion = 18.4.11620.152
@@ -77,6 +77,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared.Tests", "src\tests\Shared.Tests\Shared.Tests.csproj", "{89305B63-C97E-4DCE-953E-E89E87754CA0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FmuApiApplication.Tests", "src\tests\FmuApiApplication.Tests\FmuApiApplication.Tests.csproj", "{D369C8F8-D719-4263-8805-1B8D0A7EFFFE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sqlite", "src\Infrastructure\Sqlite\Sqlite.csproj", "{0081A1E2-F760-43CD-BD55-676CF7714ABF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -340,6 +342,18 @@ Global
 		{D369C8F8-D719-4263-8805-1B8D0A7EFFFE}.Release|x64.Build.0 = Release|Any CPU
 		{D369C8F8-D719-4263-8805-1B8D0A7EFFFE}.Release|x86.ActiveCfg = Release|Any CPU
 		{D369C8F8-D719-4263-8805-1B8D0A7EFFFE}.Release|x86.Build.0 = Release|Any CPU
+		{0081A1E2-F760-43CD-BD55-676CF7714ABF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0081A1E2-F760-43CD-BD55-676CF7714ABF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0081A1E2-F760-43CD-BD55-676CF7714ABF}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0081A1E2-F760-43CD-BD55-676CF7714ABF}.Debug|x64.Build.0 = Debug|Any CPU
+		{0081A1E2-F760-43CD-BD55-676CF7714ABF}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0081A1E2-F760-43CD-BD55-676CF7714ABF}.Debug|x86.Build.0 = Debug|Any CPU
+		{0081A1E2-F760-43CD-BD55-676CF7714ABF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0081A1E2-F760-43CD-BD55-676CF7714ABF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0081A1E2-F760-43CD-BD55-676CF7714ABF}.Release|x64.ActiveCfg = Release|Any CPU
+		{0081A1E2-F760-43CD-BD55-676CF7714ABF}.Release|x64.Build.0 = Release|Any CPU
+		{0081A1E2-F760-43CD-BD55-676CF7714ABF}.Release|x86.ActiveCfg = Release|Any CPU
+		{0081A1E2-F760-43CD-BD55-676CF7714ABF}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -370,6 +384,7 @@ Global
 		{FA70338C-E88C-4BF5-90D4-5F0B63FFF080} = {DEE5DD87-39C1-BF34-B639-A387DCCF972B}
 		{89305B63-C97E-4DCE-953E-E89E87754CA0} = {F3583C5D-5AE1-46EE-A029-D57844E04BD1}
 		{D369C8F8-D719-4263-8805-1B8D0A7EFFFE} = {F3583C5D-5AE1-46EE-A029-D57844E04BD1}
+		{0081A1E2-F760-43CD-BD55-676CF7714ABF} = {A2FC2158-423C-4F0A-909F-C65382DC2599}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {853898A9-1472-4293-B761-F8E8DFA48C1F}

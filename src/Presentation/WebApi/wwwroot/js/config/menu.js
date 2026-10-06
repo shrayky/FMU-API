@@ -50,6 +50,11 @@ export const MENU_ITEMS = {
         value: "Логи",
         icon: "mdi mdi-file-log"
     },
+    SERVICE: {
+        id: "serviceView",
+        value: "Сервис",
+        icon: "mdi mdi-settings-b-roll"
+    },
     INFO: {
         id: "information",
         value: "Информация",
@@ -81,6 +86,7 @@ export function buildMenuItems(config) {
         MENU_ITEMS.GIS_MT_MARKS,
         MENU_ITEMS.MARK_CHECK,
         MENU_ITEMS.LOGS,
+        MENU_ITEMS.SERVICE,
         MENU_ITEMS.INFO,
     );
 

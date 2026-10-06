@@ -68,7 +68,6 @@ public static class CouchDbServicesRegistration
 
         services.AddScoped<IMarkInformationRepository, MarkInformationRepository>();
         services.AddScoped<IDocumentRepository, DocumentRepository>();
-        services.AddSingleton<IOfflineDocumentStore, FileOfflineDocumentStore>();
         services.AddScoped<ICheckStatisticRepository, MarkCheckingStatisticRepository>();
         services.AddScoped<IBeerOnTapRepository, BeerOnTapRepository>();
         services.AddScoped<IGisMtDocumentRepository, GisMtDocumentRepository>();
@@ -92,6 +91,14 @@ public static class CouchDbServicesRegistration
         services.AddHostedService<CouchDbStatusWorker>();
         services.AddHostedService<DatabaseCompactWorker>();
         services.AddHostedService<CouchDbMigrationTo102Worker>();
+    }
+
+    /// <summary>
+    /// Регистрация, не зависящая от провайдера базы: файловая очередь документов и очистка статистики.
+    /// </summary>
+    public static void AddSharedServices(IServiceCollection services)
+    {
+        services.AddSingleton<IOfflineDocumentStore, FileOfflineDocumentStore>();
         services.AddHostedService<ClearingStorageOfStatisticsWorker>();
     }
 }

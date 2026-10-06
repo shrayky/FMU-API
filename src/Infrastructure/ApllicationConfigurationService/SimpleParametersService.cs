@@ -2,6 +2,7 @@ using ApplicationConfigurationService.Migrations;
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
+using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.Constants;
 using FmuApiDomain.TrueApi.MarkData;
 using FmuApiDomain.CentralServiceExchange.Models;
@@ -60,6 +61,8 @@ public class SimpleParametersService : IParametersService
         settings.NodeName = Environment.MachineName;
         settings.OrganisationConfig.FillIfEmpty();
         settings.GisMtProductMappings = AtolToTrueApiGroupMap.CopyDefaults();
+        settings.Database.Provider = DatabaseProvider.Sqlite;
+        settings.Database.Enable = true;
 
         SaveConfiguration(settings, true);
 
@@ -261,6 +264,8 @@ public class SimpleParametersService : IParametersService
         var currentSettings = GetSettings();
 
         needToRestartService = (currentSettings.ServerConfig.ApiIpPort != newSettings.ServerConfig.ApiIpPort
+            || currentSettings.Database.Provider != newSettings.Database.Provider
+            || currentSettings.Database.SqlitePath != newSettings.Database.SqlitePath
             || currentSettings.Database.NetAddress != newSettings.Database.NetAddress
             || currentSettings.Database.UserName != newSettings.Database.UserName
             || currentSettings.Database.Password != newSettings.Database.Password

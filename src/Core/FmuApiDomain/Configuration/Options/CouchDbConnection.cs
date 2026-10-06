@@ -1,4 +1,6 @@
-﻿
+
+using FmuApiDomain.Constants;
+using Shared.FilesFolders;
 using System.Text.Json.Serialization;
 
 namespace FmuApiDomain.Configuration.Options;
@@ -6,6 +8,10 @@ namespace FmuApiDomain.Configuration.Options;
 public class CouchDbConnection
 {
     public bool Enable { get; set; } = false;
+
+    public DatabaseProvider Provider { get; set; } = DatabaseProvider.CouchDb;
+
+    public string SqlitePath { get; set; } = string.Empty;
 
     public string NetAddress { get; set; } = string.Empty;
 
@@ -43,10 +49,22 @@ public class CouchDbConnection
     public string AlcoStampsDbName { get; set; } = string.Empty;
 
     [JsonIgnore]
-    public bool ConfigurationIsEnabled => !string.IsNullOrWhiteSpace(NetAddress) &&
-                                            !string.IsNullOrWhiteSpace(UserName) &&
-                                            !string.IsNullOrWhiteSpace(Password) &&
-                                            Enable;
+    public static string DefaultSqlitePath => Path.Combine(
+        Folders.CommonApplicationDataFolder(ApplicationInformation.Manufacture, ApplicationInformation.AppName),
+        "fmu-api.db");
+
+    [JsonIgnore]
+    public string ResolvedSqlitePath => string.IsNullOrWhiteSpace(SqlitePath) ? DefaultSqlitePath : SqlitePath;
+
+    [JsonIgnore]
+    public bool CouchDbConnectionIsFilled => !string.IsNullOrWhiteSpace(NetAddress) &&
+                                             !string.IsNullOrWhiteSpace(UserName) &&
+                                             !string.IsNullOrWhiteSpace(Password);
+
+    [JsonIgnore]
+    public bool ConfigurationIsEnabled => Provider == DatabaseProvider.Sqlite
+        ? Enable && !string.IsNullOrWhiteSpace(ResolvedSqlitePath)
+        : CouchDbConnectionIsFilled && Enable;
 
     [JsonIgnore]
     public bool DatabaseCheckIsEnabled => ConfigurationIsEnabled && Enable;

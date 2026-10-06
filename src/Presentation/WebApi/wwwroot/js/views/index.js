@@ -18,6 +18,7 @@ import GisMtMarksView from '../modules/GisMtMarks/gisMtMarksView.js';
 import MarkCheckView from '../modules/MarkCheck/markCheckView.js';
 import ProductGroupsView from '../modules/ProductGroups/productGroupsView.js';
 import GtinCatalogView from '../modules/GtinCatalog/gtinCatalogView.js';
+import ServiceView from '../modules/Service/serviceView.js';
 
 class App {
     constructor() {
@@ -38,6 +39,7 @@ class App {
         this.router.register("markCheckView", () => MarkCheckView);
         this.router.register("productGroupsView", () => ProductGroupsView);
         this.router.register("gtinCatalogView", () => GtinCatalogView);
+        this.router.register("serviceView", () => ServiceView);
         this.router.register("beerTapsView", async () => (await import("../modules/BeerTaps/beerTapsView.js")).default);
     }
 

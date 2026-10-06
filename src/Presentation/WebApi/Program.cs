@@ -29,6 +29,8 @@ using WebApi.Services;
 using System.Text;
 using System.Text.Encodings.Web;
 using FmuApiApplication.Connectivity.Services;
+using FmuApiDomain.Configuration.Options;
+using Sqlite;
 
 var slConsole = new LoggerConfiguration()
     .MinimumLevel.Debug().WriteTo
@@ -115,7 +117,15 @@ bool RunHttpApiService()
     services.AddScoped<IMarkStatisticsService, MarkStatisticsService>();
     services.AddScoped<AlcoUnitGateway>();
     
-    CouchDbServicesRegistration.AddService(services);
+    CouchDbServicesRegistration.AddSharedServices(services);
+
+    if (SqliteService.ResolveProvider(services) == DatabaseProvider.Sqlite)
+        SqliteService.AddService(services);
+    else
+        CouchDbServicesRegistration.AddService(services);
+
+    SqliteService.AddImportService(services);
+
     FrontolDbService.AddService(services);
     services.AddExchangeWithFmuApiCentral();
     AutoUpdateRegistrationExtension.AddService(services);
