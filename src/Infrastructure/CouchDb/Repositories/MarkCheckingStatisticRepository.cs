@@ -1,4 +1,5 @@
 using CouchDb.Documents;
+using CouchDb.Queries;
 using CouchDB.Driver.Types;
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration.Interfaces;
@@ -55,40 +56,61 @@ public class MarkCheckingStatisticRepository(
         if (_context == null || !_appState.CouchDbOnline())
             return result;
 
-        var mangoQuery = new
-        {
-            selector = new Dictionary<string, object>
-            {
-                ["data.sGtin"] = new Dictionary<string, object>
-                {
-                    ["$in"] = sgtins.ToList()
-                }
-            },
-            limit = await QueryLimitAsync()
-        };
+        var distinct = sgtins
+            .Where(sgtin => !string.IsNullOrEmpty(sgtin))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
 
-        var queryResult = await ExecuteMangoQueryAsync(mangoQuery);
-        if (queryResult.IsFailure)
+        if (distinct.Count == 0)
             return result;
 
-        foreach (var group in queryResult.Value.GroupBy(x => x.SGtin))
-        {
-            var last = group
-                .Where(HasCheckPayload)
-                .OrderByDescending(x => x.CheckDate)
-                .FirstOrDefault();
+        var first = await FindLastCheck(distinct[0]);
+        if (!first.Ok)
+            return result;
 
-            if (last == null || string.IsNullOrEmpty(last.Id))
-                continue;
+        Remember(result, first.Check);
 
-            result[group.Key] = new LastMarkCheck
-            {
-                Id = last.Id,
-                CheckSource = last.CheckSource
-            };
-        }
+        if (distinct.Count == 1)
+            return result;
+
+        var rest = await Task.WhenAll(distinct.Skip(1).Select(FindLastCheck));
+        foreach (var item in rest)
+            Remember(result, item.Check);
 
         return result;
+    }
+
+    private async Task<(bool Ok, KeyValuePair<string, LastMarkCheck>? Check)> FindLastCheck(string sgtin)
+    {
+        var queryResult = await ExecuteMangoQueryAsync(MarkCheckStatisticMangoQueryBuilder.BuildLastCheckQuery(sgtin));
+        if (queryResult.IsFailure)
+            return (false, null);
+
+        var last = queryResult.Value
+            .Where(HasCheckPayload)
+            .OrderByDescending(entity => entity.CheckDate)
+            .FirstOrDefault();
+
+        if (last == null || string.IsNullOrEmpty(last.Id))
+            return (true, null);
+
+        var check = new KeyValuePair<string, LastMarkCheck>(sgtin, new LastMarkCheck
+        {
+            Id = last.Id,
+            CheckSource = last.CheckSource
+        });
+
+        return (true, check);
+    }
+
+    private static void Remember(
+        Dictionary<string, LastMarkCheck> result,
+        KeyValuePair<string, LastMarkCheck>? check)
+    {
+        if (check == null)
+            return;
+
+        result[check.Value.Key] = check.Value.Value;
     }
 
     private static bool HasCheckPayload(StatisticEntity entity) =>

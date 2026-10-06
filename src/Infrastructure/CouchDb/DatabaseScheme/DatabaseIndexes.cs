@@ -1,4 +1,6 @@
-﻿namespace CouchDb.DatabaseScheme;
+﻿using CouchDb.Queries;
+
+namespace CouchDb.DatabaseScheme;
 
 /// <summary>
 /// Схема mango-индексов CouchDB и отбор устаревших индексов для удаления.
@@ -49,6 +51,14 @@ public class DatabaseIndexes
             new ("date-time-idx", new (["data.checkDate"])),
             new ("date-sgtin", new (["data.sGtin"])),
             new ("check-day-idx", new (["data.checkDay"])),
+            new (MarkCheckStatisticMangoQueryBuilder.SgtinCheckDateIndex, new CouchDbIndexBody(
+            [
+                MarkCheckStatisticMangoQueryBuilder.SgtinField,
+                new Dictionary<string, string>
+                {
+                    [MarkCheckStatisticMangoQueryBuilder.CheckDateField] = "desc"
+                }
+            ])),
         ];
 
     private static CouchDbIndexDefinition[] BeerOnTapsDbIndexes() =>

@@ -42,4 +42,17 @@ public class DatabaseIndexesTests
         Assert.Equal("mark-id-idx", document.RootElement.GetProperty("name").GetString());
         Assert.Equal("mark-id-idx", document.RootElement.GetProperty("ddoc").GetString());
     }
+
+    [Fact]
+    public void StatisticIndex_сортирует_дату_проверки_по_убыванию()
+    {
+        var indexes = DatabaseIndexes.DatabaseIndexSchema()[DatabaseNames.MarkCheckingStatistic];
+        var index = Assert.Single(indexes, item => item.Name == "sgtin-check-date-idx");
+        var json = JsonSerializer.Serialize(index);
+
+        using var document = JsonDocument.Parse(json);
+        var fields = document.RootElement.GetProperty("index").GetProperty("fields");
+        Assert.Equal("data.sGtin", fields[0].GetString());
+        Assert.Equal("desc", fields[1].GetProperty("data.checkDate").GetString());
+    }
 }

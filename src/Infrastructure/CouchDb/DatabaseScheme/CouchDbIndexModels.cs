@@ -15,9 +15,10 @@ public sealed record CouchDbIndexDefinition(
 
 /// <summary>
 /// Тело индекса с перечнем полей для Mango-индекса.
+/// Поле — строка (по возрастанию) или объект с направлением, например {"data.checkDate": "desc"}.
 /// </summary>
 public sealed record CouchDbIndexBody(
-    [property: JsonPropertyName("fields")] string[] Fields);
+    [property: JsonPropertyName("fields")] object[] Fields);
 
 /// <summary>
 /// Ответ CouchDB на запрос списка индексов (GET /{db}/_index).
