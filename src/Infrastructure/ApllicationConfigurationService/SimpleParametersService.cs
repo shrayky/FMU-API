@@ -265,7 +265,6 @@ public class SimpleParametersService : IParametersService
 
         needToRestartService = (currentSettings.ServerConfig.ApiIpPort != newSettings.ServerConfig.ApiIpPort
             || currentSettings.Database.Provider != newSettings.Database.Provider
-            || currentSettings.Database.SqlitePath != newSettings.Database.SqlitePath
             || currentSettings.Database.NetAddress != newSettings.Database.NetAddress
             || currentSettings.Database.UserName != newSettings.Database.UserName
             || currentSettings.Database.Password != newSettings.Database.Password

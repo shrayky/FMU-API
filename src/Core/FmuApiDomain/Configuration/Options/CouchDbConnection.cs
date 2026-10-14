@@ -11,8 +11,6 @@ public class CouchDbConnection
 
     public DatabaseProvider Provider { get; set; } = DatabaseProvider.CouchDb;
 
-    public string SqlitePath { get; set; } = string.Empty;
-
     public string NetAddress { get; set; } = string.Empty;
 
     public string UserName { get; set; } = string.Empty;
@@ -54,7 +52,7 @@ public class CouchDbConnection
         "fmu-api.db");
 
     [JsonIgnore]
-    public string ResolvedSqlitePath => string.IsNullOrWhiteSpace(SqlitePath) ? DefaultSqlitePath : SqlitePath;
+    public string ResolvedSqlitePath => DefaultSqlitePath;
 
     [JsonIgnore]
     public bool CouchDbConnectionIsFilled => !string.IsNullOrWhiteSpace(NetAddress) &&
@@ -63,7 +61,7 @@ public class CouchDbConnection
 
     [JsonIgnore]
     public bool ConfigurationIsEnabled => Provider == DatabaseProvider.Sqlite
-        ? Enable && !string.IsNullOrWhiteSpace(ResolvedSqlitePath)
+        ? Enable
         : CouchDbConnectionIsFilled && Enable;
 
     [JsonIgnore]

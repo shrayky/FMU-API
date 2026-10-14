@@ -14,9 +14,9 @@
 
 Пока выбран CouchDB, форма как сейчас: адрес, пользователь, пароль, кнопка Fauxton, пакетная обработка, таймаут, флажок лога.
 
-При выборе SQLite скрываются адрес, пользователь, пароль и Fauxton. Остаются путь к файлу, размер пакета, таймаут и флажок лога. Размер пакета задаёт шаг переноса из CouchDB. Адрес, логин и пароль CouchDB из `config.json` не стираются: они нужны как источник переноса.
+При выборе SQLite скрываются адрес, пользователь, пароль и Fauxton. Остаются размер пакета, таймаут и флажок лога. Размер пакета задаёт шаг переноса из CouchDB. Адрес, логин и пароль CouchDB из `config.json` не стираются: они нужны как источник переноса.
 
-Пустой путь означает файл по умолчанию:
+Файл SQLite не настраивается. Он всегда лежит здесь:
 
 | ОС | Путь |
 |---|---|
@@ -25,7 +25,7 @@
 
 Каталог — `Folders.CommonApplicationDataFolder(ApplicationInformation.Manufacture, ApplicationInformation.AppName)`, туда же пишется файловая очередь документов.
 
-При первой установке, когда файла конфигурации ещё нет, провайдер — SQLite и база включена. Путь к файлу пустой, поэтому берётся путь по умолчанию.
+При первой установке, когда файла конфигурации ещё нет, провайдер — SQLite и база включена.
 
 Старый `config.json` без поля провайдера читается как CouchDB.
 
@@ -83,13 +83,11 @@ public enum DatabaseProvider
 
 ```csharp
 public DatabaseProvider Provider { get; set; } = DatabaseProvider.CouchDb;
-
-public string SqlitePath { get; set; } = string.Empty;
 ```
 
 `ConfigurationIsEnabled`:
 
-- `Provider == Sqlite` — `Enable` и непустой путь (пустая строка перед проверкой заменяется путём по умолчанию);
+- `Provider == Sqlite` — `Enable`;
 - иначе текущее правило: `Enable`, адрес, пользователь и пароль.
 
 `src/Core/FmuApiDomain/Database/Interfaces/ICouchDbToSqliteImport.cs` — запуск и чтение хода. Состояние:
@@ -210,7 +208,6 @@ public class CouchDbImportState
 `databaseConnection.js`:
 
 - `richselect` «СУБД», значения `CouchDb` и `Sqlite`, поле `database.provider`;
-- поле «Файл SQLite», `database.sqlitePath`, видно только при `Sqlite`;
 - блок адреса, пользователя, пароля и кнопка Fauxton видны только при `CouchDb`.
 
 ## Файлы
@@ -220,7 +217,7 @@ public class CouchDbImportState
 | `Directory.Packages.props` | `Microsoft.EntityFrameworkCore.Sqlite` 10.0.11 |
 | `src/Infrastructure/Sqlite/Sqlite.csproj` | новый проект |
 | `src/Core/FmuApiDomain/Configuration/Options/DatabaseProvider.cs` | новый |
-| `src/Core/FmuApiDomain/Configuration/Options/CouchDbConnection.cs` | `Provider`, `SqlitePath`, `ConfigurationIsEnabled` |
+| `src/Core/FmuApiDomain/Configuration/Options/CouchDbConnection.cs` | `Provider`, `ConfigurationIsEnabled` |
 | `src/Core/FmuApiDomain/Database/Interfaces/ICouchDbToSqliteImport.cs` | новый |
 | `src/Core/FmuApiDomain/Database/Models/CouchDbImportState.cs` | новый |
 | `src/Infrastructure/Sqlite/SqliteDbContext.cs` | новый |

@@ -5,12 +5,10 @@ const COUCH_DB_PROVIDER = "CouchDb";
 const SQLITE_PROVIDER = "Sqlite";
 
 const PROVIDER_FIELD = "database.provider";
-const SQLITE_PATH_FIELD = "database.sqlitePath";
 const COUCH_DB_BLOCK_ID = "couchDbConnectionBlock";
-const SQLITE_BLOCK_ID = "sqliteConnectionBlock";
 const PARALLEL_TASKS_BLOCK_ID = "bulkParallelTasksBlock";
 
-/// Настройки подключения: выбор СУБД, параметры CouchDB и путь к файлу SQLite.
+/// Настройки подключения: выбор СУБД и параметры CouchDB.
 class DatabaseConnectionConfigurationElement {
     constructor(id) {
         this.id = id;
@@ -21,7 +19,6 @@ class DatabaseConnectionConfigurationElement {
             serverDbAddress: "Адрес сервера CouchDb",
             user: "Пользователь",
             password: "Пароль",
-            sqlitePath: "Файл SQLite",
             bulkBatchSize: "Размер пакета",
             bulkParallelTasks: "Количество параллельных задач",
             bulkLabel: "Параметры пакетной обработки",
@@ -38,7 +35,6 @@ class DatabaseConnectionConfigurationElement {
             this.enable = settings.enable;
 
             this.provider = settings.provider ?? COUCH_DB_PROVIDER;
-            this.sqlitePath = settings.sqlitePath;
 
             this.serverDbAddress = settings.netAddress;
             this.userName = settings.userName;
@@ -82,8 +78,6 @@ class DatabaseConnectionConfigurationElement {
                             this._providerSelect(),
 
                             this._couchDbFields(),
-
-                            this._sqliteFields(),
 
                             Label("lBulkConfig", this.LABELS.bulkLabel),
                             {
@@ -159,27 +153,13 @@ class DatabaseConnectionConfigurationElement {
         };
     }
 
-    _sqliteFields() {
-        return {
-            id: SQLITE_BLOCK_ID,
-            hidden: this.provider !== SQLITE_PROVIDER,
-            rows: [
-                Text(this.LABELS.sqlitePath, SQLITE_PATH_FIELD, this.sqlitePath)
-            ]
-        };
-    }
-
     /// Показывает поля выбранной СУБД. Адрес, логин и пароль CouchDB остаются в форме и сохраняются.
     _applyProvider(provider) {
         const couchDbBlock = $$(COUCH_DB_BLOCK_ID);
-        const sqliteBlock = $$(SQLITE_BLOCK_ID);
         const parallelTasksBlock = $$(PARALLEL_TASKS_BLOCK_ID);
 
         if (couchDbBlock)
             provider === COUCH_DB_PROVIDER ? couchDbBlock.show() : couchDbBlock.hide();
-
-        if (sqliteBlock)
-            provider === SQLITE_PROVIDER ? sqliteBlock.show() : sqliteBlock.hide();
 
         if (parallelTasksBlock)
             provider === COUCH_DB_PROVIDER ? parallelTasksBlock.show() : parallelTasksBlock.hide();
