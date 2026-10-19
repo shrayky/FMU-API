@@ -2,11 +2,13 @@
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.VisualBasic;
 using TrueApiIntegration.Interfaces;
 
 namespace TrueApiIntegration.Workers;
 
+/// <summary>
+/// Запрашивает UUID-токен True API для организаций с локальным подключением.
+/// </summary>
 public class TrueApiTokenLoaderWorker : BackgroundService
 {
     private readonly ILogger<TrueApiTokenLoaderWorker> _logger;
@@ -16,7 +18,6 @@ public class TrueApiTokenLoaderWorker : BackgroundService
 
     private DateTime _nextWorkDate = DateTime.Now;
     private const int CheckIntervalMinutes = 10;
-    private const int TokenLifeInHour = 8;
     private const int StartDelayMinutes = 2;
 
     public TrueApiTokenLoaderWorker(ILogger<TrueApiTokenLoaderWorker> logger,
@@ -63,18 +64,16 @@ public class TrueApiTokenLoaderWorker : BackgroundService
 
                 var trueApiSettings = organisation.TrueApiIntegrationSettings;
 
-                var token = await _authService.GenerateToken(organisation.INN, trueApiSettings.Password, trueApiSettings.DigitalSignature);
-
-                _logger.LogDebug("Получен токен: \"{token}\".", token);
-
-                if (token == string.Empty)
+                var session = await _authService.GenerateToken(organisation.INN, trueApiSettings.Password, trueApiSettings.DigitalSignature);
+                if (session.IsFailure)
+                {
+                    _logger.LogWarning("Не удалось получить токен true api для {inn}: {error}", organisation.INN, session.Error);
                     continue;
+                }
 
-                var tokenLifeUntil = DateAndTime.Now.AddHours(TokenLifeInHour);
+                _applicationState.UpdateTrueApiToken(organisation.INN, session.Value.Token, session.Value.LiveUntil);
 
-                _applicationState.UpdateTrueApiToken(organisation.INN, token, tokenLifeUntil);
-
-                _logger.LogInformation("Для {inn} получен новый токен, который действует до {tokenLifeUntil}", organisation.INN, tokenLifeUntil);
+                _logger.LogInformation("Для {inn} получен новый токен, который действует до {tokenLifeUntil}", organisation.INN, session.Value.LiveUntil);
             }
 
             _nextWorkDate = DateTime.Now.AddMinutes(CheckIntervalMinutes);

@@ -3,6 +3,7 @@ using CryptoPro.Security.Cryptography.Pkcs;
 using CryptoPro.Security.Cryptography.X509Certificates;
 using CSharpFunctionalExtensions;
 using FmuApiDomain.Attributes;
+using FmuApiDomain.TrueApiIntegration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shared.Json;
@@ -16,6 +17,9 @@ using TrueApiIntegration.Models;
 
 namespace TrueApiIntegration.Services;
 
+/// <summary>
+/// Авторизация в True API: auth/key, подпись КриптоПро и simpleSignIn с единым UUID-токеном.
+/// </summary>
 [AutoRegisterService(ServiceLifetime.Singleton)]
 public class AuthService : IAuthService
 {
@@ -32,29 +36,17 @@ public class AuthService : IAuthService
         _httpClientFactory = httpClientFactory;
     }
 
-    public async Task<string> GenerateToken(string inn, string password, string signatureNaumber)
+    public async Task<Result<TrueApiSession>> GenerateToken(string inn, string password, string signatureNaumber)
     {
         var data = await DataForEncrypt();
-
         if (data.IsFailure)
-            return string.Empty;
+            return Result.Failure<TrueApiSession>(data.Error);
 
-        var dataForEncrypt = data.Value.Data;
-        var uuidHandShacke = data.Value.Uuid;
-
-        var encrypted = Encrypt(dataForEncrypt, signatureNaumber, inn, password);
-
+        var encrypted = Encrypt(data.Value.Data, signatureNaumber, inn, password);
         if (encrypted.IsFailure)
-            return string.Empty;
+            return Result.Failure<TrueApiSession>(encrypted.Error);
 
-        var encryptedData = encrypted.Value;
-
-        var tokenData = await FinishAuth(encryptedData, uuidHandShacke, inn);
-
-        if (tokenData.IsFailure)
-            return string.Empty;
-
-        return tokenData.Value;
+        return await FinishAuth(encrypted.Value, data.Value.Uuid, inn);
     }
 
     private async Task<Result<DataWithUuid>> DataForEncrypt()
@@ -176,20 +168,13 @@ public class AuthService : IAuthService
         }
     }
 
-    private async Task<Result<string>> FinishAuth(string encodedData, string requestId, string inn)
+    private async Task<Result<TrueApiSession>> FinishAuth(string encodedData, string requestId, string inn)
     {
         using var httpClient = _httpClientFactory.CreateClient("TrueApiIntegration");
 
         httpClient.BaseAddress = new Uri(URL);
 
-        DataWithUuid data = new()
-        {
-            Uuid = requestId,
-            Data = encodedData,
-        };
-
-        if (!string.IsNullOrEmpty(inn))
-            data.Inn = inn;
+        var data = TrueApiUnitedSignIn.Body(requestId, encodedData, inn);
 
         try
         {
@@ -210,14 +195,18 @@ public class AuthService : IAuthService
             if (answerData == null)
                 throw new Exception($"Ошибка преобразования ответа в {SIGNINPATH}");
 
-            return Result.Success(answerData.Token);
+            var parsed = TrueApiUnitedSignIn.Parse(answerData.UuidToken, answerData.ExpireDate);
+            if (parsed.IsFailure)
+                return Result.Failure<TrueApiSession>(
+                    string.IsNullOrEmpty(answerData.ErrorMessage) ? parsed.Error : answerData.ErrorMessage);
 
+            return parsed;
         }
         catch (Exception ex)
         {
             _logger.LogError("Ошибка получения данных авторизации в true api {err}", ex);
 
-            return Result.Failure<string>($"Ошибка получения данных авторизации в true api {ex.Message}");
+            return Result.Failure<TrueApiSession>($"Ошибка получения данных авторизации в true api {ex.Message}");
         }
     }
 

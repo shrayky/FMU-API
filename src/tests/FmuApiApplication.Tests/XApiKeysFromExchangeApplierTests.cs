@@ -107,10 +107,14 @@ public class XApiKeysFromExchangeApplierTests
         var expired = new PrintGroupData { XAPIKEY = "local-key", XApiKeyExpired = true };
         var active = new PrintGroupData { XAPIKEY = "local-key" };
 
+        var empty = new PrintGroupData { XAPIKEY = "  " };
+
         Assert.Equal("true-token", XApiKeyCredential.Resolve(expired, " true-token "));
         Assert.Equal(string.Empty, XApiKeyCredential.Resolve(expired, " "));
         Assert.Equal(string.Empty, XApiKeyCredential.Resolve(expired, null));
         Assert.Equal("local-key", XApiKeyCredential.Resolve(active, "true-token"));
+        Assert.Equal("true-token", XApiKeyCredential.Resolve(empty, " true-token "));
+        Assert.Equal(string.Empty, XApiKeyCredential.Resolve(empty, " "));
         Assert.Equal(string.Empty, XApiKeyCredential.Resolve(null, "true-token"));
     }
 
