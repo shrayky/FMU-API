@@ -3,6 +3,7 @@ using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Configuration.Options.Organization;
 using FmuApiDomain.LocalModule.Enums;
 using FmuApiDomain.State.Interfaces;
+using FmuApiDomain.TrueApiIntegration;
 using LocalModuleIntegration.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -54,9 +55,23 @@ public class InitLocaleModuleController : ControllerBase
             });
         }
 
+        var credential = XApiKeyCredential.Resolve(
+            printGroup,
+            _applicationState.TrueApiToken(printGroup.INN).Token);
+
+        if (string.IsNullOrEmpty(credential))
+        {
+            _logger.LogWarning("Инициализация ЛМ для организации {OrganizationId} не выполняется: нет действующего x-api-key и токена True API", organizationId);
+            return BadRequest(new
+            {
+                success = false,
+                message = "Нет действующего x-api-key и токена True API"
+            });
+        }
+
         try
         {
-            var initResult = await _localModuleService.InitializeAsync(printGroup.LocalModuleConnection, printGroup.XAPIKEY);
+            var initResult = await _localModuleService.InitializeAsync(printGroup.LocalModuleConnection, credential);
 
             if (!initResult)
                 return BadRequest();

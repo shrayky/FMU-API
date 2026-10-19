@@ -16,6 +16,9 @@ class OrganizationsConfigurationElement {
             inn: "ИНН организации",
             name: "Наименование",
             xapikey: "X-API key (действует до 1 октября 2026)",
+            xApiKeyStatus: "x-api-key",
+            xApiKeyExpired: "Истёк",
+            xApiKeyActive: "Действует",
             add: "Сохранить",
             close: "Закрыть",
             enable: "Используется",
@@ -163,6 +166,20 @@ class OrganizationsConfigurationElement {
                 { id: "id", header: this.LABELS.code },
                 { id: "name", header: this.LABELS.name, fillspace: true },
                 { id: "inn", header: this.LABELS.inn, fillspace: true },
+                {
+                    id: "xApiKeyExpired",
+                    header: { text: this.LABELS.xApiKeyStatus, css: { "text-align": "center" } },
+                    width: 120,
+                    template: (obj) => {
+                        if (!obj.xapikey)
+                            return `<div style="color:#95A5A6;text-align:center">—</div>`;
+
+                        if (obj.xApiKeyExpired)
+                            return `<div style="color:#E74C3C;font-weight:bold;text-align:center">${this.LABELS.xApiKeyExpired}</div>`;
+
+                        return `<div style="color:#2ECC71;text-align:center">${this.LABELS.xApiKeyActive}</div>`;
+                    }
+                },
                 {
                     id: "localModuleStatus",
                     header: { text: this.LABELS.localModuleStatusTitle, css: { "text-align": "center" } },
@@ -442,9 +459,9 @@ class OrganizationsConfigurationElement {
         // Статус «Инициализация» и сообщение об успехе показываем только после ответа сервиса:
         // при 409 (ЛМ инициализирован ТС ПИоТ) инициализация не запускается.
         fetch(`/api/lm/init/${selectedId}`, { method: 'POST' })
-            .then(response => {
+            .then(async response => {
                 if (!response.ok)
-                    throw new Error(`Ошибка инициализации локального модуля: ${response.status}`);
+                    throw new Error(await readInitError(response));
 
                 this._refreshLocalModuleStatus();
 
@@ -477,6 +494,18 @@ class OrganizationsConfigurationElement {
             console.error("Ошибка при получении статуса ЛМ после инициализации:", error);
         }
     }
+}
+
+async function readInitError(response) {
+    try {
+        const body = await response.json();
+        if (body && body.message)
+            return body.message;
+    } catch (error) {
+        console.error(error);
+    }
+
+    return `Ошибка инициализации локального модуля: ${response.status}`;
 }
 
 export default function (id, config) {

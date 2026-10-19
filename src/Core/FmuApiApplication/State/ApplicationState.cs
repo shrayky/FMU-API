@@ -80,10 +80,6 @@ public class ApplicationState : IApplicationState
         return lmStatusInfo.Status;
     }
 
-    /// <summary>
-    /// Приводит код организации к тому же виду, что используется для статуса ЛМ:
-    /// код 0 означает организацию по умолчанию с кодом 1.
-    /// </summary>
     private static int OrganizationCode(int organizationId)
     {
         return organizationId == 0 ? 1 : organizationId;
@@ -161,9 +157,6 @@ public class ApplicationState : IApplicationState
         return credential;
     }
 
-    /// <summary>
-    /// Приводит срок действия токена к UTC: срок хранится в UTC и сравнивается с <see cref="DateTime.UtcNow"/>.
-    /// </summary>
     private static DateTime? ToUtc(DateTime? expiresAtUtc)
     {
         if (!expiresAtUtc.HasValue)
@@ -359,9 +352,6 @@ public class ApplicationState : IApplicationState
         return state?.LicenseActiveTill;
     }
 
-    /// <summary>
-    /// Сохраняет HTTP-код последнего обращения к модулю ТС ПИоТ.
-    /// </summary>
     public void UpdateTsPiotLastCheckStatusCode(string address, int statusCode)
     {
         var state = _tsPiotStates.FirstOrDefault(p => p.Connection == address);
@@ -382,9 +372,6 @@ public class ApplicationState : IApplicationState
         });
     }
 
-    /// <summary>
-    /// Возвращает HTTP-код последней проверки модуля ТС ПИоТ.
-    /// </summary>
     public int? TsPiotLastCheckStatusCode(string address)
     {
         var state = _tsPiotStates.FirstOrDefault(p => p.Connection == address);

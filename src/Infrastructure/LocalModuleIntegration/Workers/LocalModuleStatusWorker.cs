@@ -4,6 +4,7 @@ using FmuApiDomain.Configuration.Options.Organization;
 using FmuApiDomain.LocalModule.Enums;
 using FmuApiDomain.LocalModule.Models;
 using FmuApiDomain.State.Interfaces;
+using FmuApiDomain.TrueApiIntegration;
 using LocalModuleIntegration.Interfaces;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -129,7 +130,17 @@ public class LocalModuleStatusWorker : BackgroundService
 
         _logger.LogInformation("Автоинициализация ЛМ для организации {OrganizationId} из-за статуса sync_error", organization.Id);
 
-        var initResult = await _localModuleService.InitializeAsync(organization.LocalModuleConnection, organization.XAPIKEY);
+        var credential = XApiKeyCredential.Resolve(
+            organization,
+            _applicationState.TrueApiToken(organization.INN).Token);
+
+        if (string.IsNullOrEmpty(credential))
+        {
+            _logger.LogInformation("Автоинициализация ЛМ для организации {OrganizationId} не выполняется: нет действующего x-api-key и токена True API", organization.Id);
+            return;
+        }
+
+        var initResult = await _localModuleService.InitializeAsync(organization.LocalModuleConnection, credential);
 
         if (!initResult)
         {

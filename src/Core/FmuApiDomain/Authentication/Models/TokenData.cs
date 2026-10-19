@@ -6,8 +6,10 @@ public class TokenData
 {
     [JsonPropertyName("token")]
     public string Token { get; private set; } = string.Empty;
+
     [JsonPropertyName("until")]
     public DateTime? Until { get; private set; }
+
     [JsonPropertyName("expired")]
     public DateTime? Expired { get; private set; }
 

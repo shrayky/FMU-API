@@ -6,6 +6,7 @@ public class PrintGroupData
 {
     public int Id { get; set; } = 0;
     public string XAPIKEY { get; set; } = string.Empty;
+    public bool XApiKeyExpired { get; set; }
     public string INN { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public LocalModuleConnection LocalModuleConnection { get; set; } = new();

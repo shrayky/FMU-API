@@ -4,6 +4,7 @@ public class OrganizationConfiguration
 {
     public List<PrintGroupData> PrintGroups { get; set; } = [];
 
+
     public void FillIfEmpty()
     {
         if (PrintGroups.Count > 0)
@@ -17,7 +18,12 @@ public class OrganizationConfiguration
         if (PrintGroups.Count == 0)
             return "";
 
-        return PrintGroups[0].XAPIKEY;
+        var group = PrintGroups[0];
+
+        if (group.XApiKeyExpired)
+            return "";
+
+        return group.XAPIKEY;
     }
 
     public string XapiKey(int id)
@@ -34,6 +40,27 @@ public class OrganizationConfiguration
             return PrintGroups[0].XAPIKEY;
 
         return row.XAPIKEY;
+    }
+
+    public PrintGroupData? PrintGroup(int id)
+    {
+        if (PrintGroups.Count == 0)
+            return null;
+
+        if (id == 0)
+            return PrintGroups[0];
+
+        return PrintGroups.FirstOrDefault(group => group.Id == id) ?? PrintGroups[0];
+    }
+
+    public PrintGroupData? PrintGroupByInn(string? inn)
+    {
+        var trimmed = (inn ?? string.Empty).Trim();
+        if (trimmed.Length == 0)
+            return null;
+
+        return PrintGroups.FirstOrDefault(group =>
+            string.Equals((group.INN ?? string.Empty).Trim(), trimmed, StringComparison.Ordinal));
     }
 
     public void SetXapiKey(string xapikey)

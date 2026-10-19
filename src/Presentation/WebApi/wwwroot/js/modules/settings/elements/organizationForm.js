@@ -112,6 +112,14 @@ function createFormBody(labels, tableId, id, formName, onSave) {
                             padding: 10,
                             rows: [
                                 Text(labels.xapikey, "XAPIKEY"),
+                                {
+                                    view: "template",
+                                    id: "XApiKeyExpiredLabel",
+                                    borderless: true,
+                                    autoheight: true,
+                                    hidden: true,
+                                    template: "<div style=\"color:#E74C3C;font-weight:bold\">Ключ истёк. В проверках и инициализации ЛМ используется токен True API, если он есть.</div>"
+                                }
                             ]
                         }
                     },
@@ -265,6 +273,14 @@ function initFormValues(tableId, id) {
     $$("EniseyConnectionAddress").setValue(item.localModuleConnection?.eniseyConnectionAddress ?? "");
     $$("XAPIKEY").setValue(item.xapikey ?? "");
 
+    const expiredLabel = $$("XApiKeyExpiredLabel");
+    if (expiredLabel) {
+        if (item.xApiKeyExpired)
+            expiredLabel.show();
+        else
+            expiredLabel.hide();
+    }
+
     const trueApi = item.trueApiIntegrationSettings ?? {};
     $$("TrueApiIntegrationEnable").setValue(!!trueApi.enable);
     $$("TrueApiIntegrationUseExternalToken").setValue(!!trueApi.useExternalToken);
@@ -278,13 +294,15 @@ function initFormValues(tableId, id) {
 export function collectOrganizationFormData(table, id) {
     const informationPortRaw = $$("TsPiotInformationPort").getValue();
     const informationPort = parseInt(informationPortRaw, 10);
-    const existingGroups = id != undefined
-        ? (table.getItem(id)?.trueApiIntegrationSettings?.productGroups ?? [])
-        : [];
+    const previous = id != undefined ? table.getItem(id) : null;
+    const existingGroups = previous?.trueApiIntegrationSettings?.productGroups ?? [];
+    const xapikey = $$("XAPIKEY").getValue();
+    const keyChanged = !previous || (previous.xapikey ?? "") !== xapikey;
 
     return {
         id: $$("OrganizationId").getValue(),
-        xapikey: $$("XAPIKEY").getValue(),
+        xapikey,
+        xApiKeyExpired: keyChanged ? false : !!previous.xApiKeyExpired,
         tsPiot: {
             host: $$("TsPiotHost").getValue(),
             port: $$("TsPiotPort").getValue(),

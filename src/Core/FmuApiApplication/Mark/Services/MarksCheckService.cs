@@ -2,9 +2,11 @@ using CSharpFunctionalExtensions;
 using FmuApiDomain.Attributes;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
+using FmuApiDomain.Configuration.Options.Organization;
 using FmuApiDomain.State.Interfaces;
 using FmuApiDomain.Mark.Interfaces;
 using FmuApiDomain.TrueApi.MarkData.Check;
+using FmuApiDomain.TrueApiIntegration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using TrueApi.Interface;
@@ -34,24 +36,30 @@ public class MarksCheckService : IOnLineMarkCheckService
         _api = api;
     }
 
-    public async Task<Result<CheckMarksDataTrueApi>> RequestMarkState(CheckMarksRequestData marks, int organizationCode)
+    public Task<Result<CheckMarksDataTrueApi>> RequestMarkState(CheckMarksRequestData marks, int organizationCode)
     {
-        string xApiKey;
+        var group = _configuration.OrganisationConfig.PrintGroup(organizationCode);
+        return RequestWithCredential(marks, group, organizationCode);
+    }
 
-        if (organizationCode == 0)
-            xApiKey = _configuration.OrganisationConfig.XapiKey() ?? "";
-        else
-            xApiKey = _configuration.OrganisationConfig.XapiKey(organizationCode) ?? "";
+    public Task<Result<CheckMarksDataTrueApi>> RequestMarkState(CheckMarksRequestData marks, PrintGroupData group)
+        => RequestWithCredential(marks, group, group.Id);
+
+    public Task<Result<CheckMarksDataTrueApi>> RequestMarkState(CheckMarksRequestData marks)
+        => RequestMarkState(marks, 0);
+
+    private async Task<Result<CheckMarksDataTrueApi>> RequestWithCredential(
+        CheckMarksRequestData marks,
+        PrintGroupData? group,
+        int organizationCode)
+    {
+        var trueApiToken = group == null
+            ? string.Empty
+            : _applicationState.TrueApiToken(group.INN).Token;
+        var xApiKey = XApiKeyCredential.Resolve(group, trueApiToken);
 
         if (string.IsNullOrEmpty(xApiKey))
             return Result.Failure<CheckMarksDataTrueApi>($"Не получен XAPIKEY для организации с кодом {organizationCode}");
-
-        return await DoRequest(marks, xApiKey!);
-    }
-
-    public async Task<Result<CheckMarksDataTrueApi>> RequestMarkState(CheckMarksRequestData marks)
-    {
-        string xApiKey = _configuration.OrganisationConfig.XapiKey();
 
         return await DoRequest(marks, xApiKey);
     }

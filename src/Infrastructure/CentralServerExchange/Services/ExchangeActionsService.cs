@@ -93,11 +93,18 @@ public class ExchangeActionsService : ICentralServerExchangeActions
                     currentSettings.GisMtSettings,
                     _applicationState);
 
+                var keysChanged = XApiKeysFromExchangeApplier.Apply(
+                    exchangeResult.Value.XApiKeys,
+                    currentSettings.OrganisationConfig.PrintGroups);
+
                 if (settingsChanged)
-                {
                     _logger.LogInformation("По токену из fmu-api-central включён режим ГИС МТ с внешним токеном");
+
+                if (keysChanged)
+                    _logger.LogInformation("По пакету fmu-api-central обновлён признак x-api-key организаций");
+
+                if (settingsChanged || keysChanged)
                     await _parametersService.UpdateAsync(currentSettings).ConfigureAwait(false);
-                }
 
                 await _softwareUpdateDownloadService.DownloadAndInstall(exchangeResult.Value, baseAddress, bearer).ConfigureAwait(false);
 

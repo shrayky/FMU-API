@@ -1,4 +1,5 @@
 using FmuApiDomain.TrueApi.Cdn;
+using FmuApiDomain.TrueApiIntegration;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.State.Interfaces;
@@ -81,7 +82,11 @@ public class CdnLoaderWorker : BackgroundService
             return;
         }
 
-        var xApiKey = configuration.OrganisationConfig.XapiKey();
+        var group = configuration.OrganisationConfig.PrintGroups.FirstOrDefault();
+        var trueApiToken = group == null
+            ? string.Empty
+            : _applicationState.TrueApiToken(group.INN).Token;
+        var xApiKey = XApiKeyCredential.Resolve(group, trueApiToken);
 
         if (xApiKey == string.Empty)
         {
