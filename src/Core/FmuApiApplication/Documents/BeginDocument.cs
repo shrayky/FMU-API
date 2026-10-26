@@ -103,6 +103,9 @@ public class BeginDocument : IFrontolDocumentService
                 // отсканируйте 0 из 0
                 if (markData.Mrp != null)
                 {
+                    // Для алтеринативной табачной продукции и никтоинсодержащей - mrp это минимальная цена.
+                    var mrpIsMinimalPrice = groupId == TrueApiGroup.Ncp || groupId == TrueApiGroup.Otp;
+
                     if (ProductGroupResolver.ShouldCheckMrp(mark.AtolItemType, groupId))
                     {
                         if (markData.Mrp != sellPrice)
@@ -112,13 +115,13 @@ public class BeginDocument : IFrontolDocumentService
                             checkResult.Marking_codes.Add(markInBase64);
                         }
                     }
-                    else if (groupId == TrueApiGroup.Ncp && markData.Mrp > sellPrice)
+                    else if (mrpIsMinimalPrice && markData.Mrp > sellPrice)
                     {
                         checkResult.Code = 3;
                         errors.Add($"{position.Text} цена ниже минимальной розничной!");
                         checkResult.Marking_codes.Add(markInBase64);
                     }
-                    else if (groupId != TrueApiGroup.Ncp && markData.Mrp < sellPrice)
+                    else if (!mrpIsMinimalPrice && markData.Mrp < sellPrice)
                     {
                         checkResult.Code = 3;
                         errors.Add($"{position.Text} цена выше максимальной розничной!");
