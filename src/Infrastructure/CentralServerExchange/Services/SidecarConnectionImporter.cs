@@ -104,7 +104,7 @@ public class SidecarConnectionImporter
     private static string? FindSidecarPath(string startDirectory)
     {
         var localSidecar = Path.Combine(startDirectory, SidecarFileName);
-        if (File.Exists(localSidecar))
+        if (IsCentralConnectionFile(localSidecar))
             return localSidecar;
 
         var current = startDirectory;
@@ -117,13 +117,34 @@ public class SidecarConnectionImporter
             if (DirectoryContainsHostExe(parent))
             {
                 var hostSidecar = Path.Combine(parent, SidecarFileName);
-                return File.Exists(hostSidecar) ? hostSidecar : null;
+                return IsCentralConnectionFile(hostSidecar) ? hostSidecar : null;
             }
 
             current = parent;
         }
 
         return null;
+    }
+
+    private static bool IsCentralConnectionFile(string path)
+    {
+        if (!File.Exists(path))
+            return false;
+
+        try
+        {
+            var sidecar = JsonSerializer.Deserialize<SidecarCentralConnection>(
+                File.ReadAllText(path),
+                JsonSerializeOptionsProvider.Default());
+
+            return sidecar != null
+                && !string.IsNullOrWhiteSpace(sidecar.ResolvedAddress())
+                && !string.IsNullOrWhiteSpace(sidecar.Token);
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 
     private static bool DirectoryContainsHostExe(string directory)

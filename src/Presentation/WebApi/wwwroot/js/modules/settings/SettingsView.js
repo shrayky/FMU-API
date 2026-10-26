@@ -1,4 +1,4 @@
-import { loadParameters, saveConfiguration } from '../../services/ConfigurationService.js';
+import { exportConfiguration, importConfiguration, loadParameters, saveConfiguration } from '../../services/ConfigurationService.js';
 
 const SETTINGS_MODULES = {
     serverConfigData: () => import("./elements/serverConfiguration.js"),
@@ -27,6 +27,7 @@ export default function SettingsView(id) {
         hidden: true,
         rows: [
             {
+                margin: 8,
                 cols: [
                     {
                         id: "saveConfigurationButton",
@@ -37,6 +38,28 @@ export default function SettingsView(id) {
                         hidden: true,
                         click: function () {
                             saveConfiguration(id);
+                        }
+                    },
+                    {
+                        id: "exportConfigurationButton",
+                        view: "button",
+                        value: "Экспорт",
+                        autowidth: false,
+                        width: 120,
+                        hidden: true,
+                        click: function () {
+                            exportConfiguration();
+                        }
+                    },
+                    {
+                        id: "importConfigurationButton",
+                        view: "button",
+                        value: "Импорт",
+                        autowidth: false,
+                        width: 120,
+                        hidden: true,
+                        click: function () {
+                            importConfiguration(id);
                         }
                     },
                     {}
@@ -80,6 +103,8 @@ export default function SettingsView(id) {
                     }
 
                     $$("saveConfigurationButton").show();
+                    $$("exportConfigurationButton").show();
+                    $$("importConfigurationButton").show();
 
                 } catch (error) {
                     if (error.name === 'AbortError') {

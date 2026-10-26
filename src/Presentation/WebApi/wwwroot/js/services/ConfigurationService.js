@@ -14,6 +14,77 @@ export function saveParameters(data) {
         .then(answer => answer.json());
 }
 
+export async function exportConfiguration() {
+    const response = await fetch(`${PARAMETERS_URL}/exchange`);
+    if (!response.ok) {
+        webix.message({ type: "error", text: "Не удалось экспортировать настройки" });
+        return;
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "config.json";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+}
+
+export function importConfiguration(formId) {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json,application/json";
+    input.onchange = () => {
+        const file = input.files && input.files[0];
+        if (!file)
+            return;
+
+        const reader = new FileReader();
+        reader.onload = () => uploadImportedSettings(formId, reader.result);
+        reader.readAsText(file);
+    };
+    input.click();
+}
+
+function uploadImportedSettings(formId, json) {
+    const form = $$(formId);
+    form.disable();
+
+    fetch(`${PARAMETERS_URL}/exchange`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: json
+    })
+        .then(async response => {
+            if (!response.ok) {
+                const text = await response.text();
+                webix.message({ type: "error", text: text || "Не удалось импортировать настройки" });
+                return;
+            }
+
+            const packet = await response.json();
+            if (packet.needToRestart) {
+                webix.message("Изменения будут применены после перезапуска службы DS:Fmu-Api (она произойдет в течение одной минуты)");
+            } else {
+                webix.message("Настройки импортированы");
+            }
+
+            const config = await loadParameters();
+            window.dispatchEvent(new CustomEvent(SETTINGS_SAVED_EVENT, {
+                detail: config
+            }));
+            form.callEvent("onViewShow");
+        })
+        .catch(() => {
+            webix.message({ type: "error", text: "Не удалось импортировать настройки" });
+        })
+        .finally(() => {
+            form.enable();
+        });
+}
+
 const INT32_MAX = 2147483647;
 
 /// Приводит значение к Int32 в диапазоне min…Int32. Иначе возвращает fallback.

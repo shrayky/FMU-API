@@ -1,3 +1,4 @@
+using FmuApiDomain.Attributes;
 using FmuApiDomain.Authentication.Models;
 using FmuApiDomain.Configuration.Options;
 using FmuApiDomain.Configuration.Options.Organization;
@@ -16,28 +17,39 @@ public class Parameters
 
     public string NodeName { get; set; } = string.Empty;
 
+    [ExchangeableSetting]
     public ServerConfig ServerConfig { get; set; } = new();
 
+    [ExchangeableSetting]
     public List<StringValue> HostsToPing { get; set; } = [];
 
+    [ExchangeableSetting]
     public MinimalPrices MinimalPrices { get; set; } = new();
 
+    [ExchangeableSetting]
     public OrganizationConfiguration OrganisationConfig { get; set; } = new();
 
+    [ExchangeableSetting]
     public AlcoUnitConfig FrontolAlcoUnit { get; set; } = new();
 
     public CouchDbConnection Database { get; set; } = new();
 
+    [ExchangeableSetting]
     public StatisticsSettings Statistics { get; set; } = new();
 
+    [ExchangeableSetting]
     public HttpRequestTimeouts HttpRequestTimeouts { get; set; } = new();
 
+    [ExchangeableSetting]
     public LogSettings Logging { get; set; } = new();
 
+    [ExchangeableSetting]
     public SaleControlConfig SaleControlConfig { get; set; } = new();
 
+    [ExchangeableSetting]
     public GisMtSettings GisMtSettings { get; set; } = new();
 
+    [ExchangeableSetting]
     public List<GisMtProductMapping> GisMtProductMappings { get; set; } = [];
 
     public CentralServerConnectionProperties FmuApiCentralServer { get; set; } = new();

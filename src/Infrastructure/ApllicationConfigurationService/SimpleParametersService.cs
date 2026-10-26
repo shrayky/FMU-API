@@ -48,10 +48,57 @@ public class SimpleParametersService : IParametersService
 
     private void InitializeConfiguration()
     {
-        if (!File.Exists(_configPath))
-            DefaultConfiguration();
-        else
+        if (File.Exists(_configPath))
+        {
             LoadConfiguration();
+            return;
+        }
+
+        var settings = DefaultConfiguration();
+        TryImportBundledSettings(settings);
+    }
+
+    private void TryImportBundledSettings(Parameters settings)
+    {
+        try
+        {
+            var sidecar = ResolveBundledSettingsPath();
+            if (sidecar is null)
+                return;
+
+            var json = File.ReadAllText(sidecar);
+            if (!SettingsExchange.TryApply(settings, json, out var changed, out var error))
+            {
+                _logger.LogError("Не удалось импортировать настройки из {Path}: {Error}", sidecar, error);
+                return;
+            }
+
+            if (!changed)
+                return;
+
+            _logger.LogInformation("Настройки импортированы из {Path}", sidecar);
+            SaveConfiguration(settings, true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Ошибка импорта config.json рядом с приложением");
+        }
+    }
+
+    private string? ResolveBundledSettingsPath()
+    {
+        var directory = Path.GetDirectoryName(Environment.ProcessPath);
+        if (string.IsNullOrWhiteSpace(directory))
+            directory = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+        var path = Path.Combine(directory, "config.json");
+        if (!File.Exists(path))
+            return null;
+
+        if (string.Equals(Path.GetFullPath(path), Path.GetFullPath(_configPath), StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        return path;
     }
 
     private Parameters DefaultConfiguration()

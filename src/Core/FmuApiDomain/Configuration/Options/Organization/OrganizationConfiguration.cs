@@ -1,7 +1,10 @@
-﻿namespace FmuApiDomain.Configuration.Options.Organization;
+﻿using FmuApiDomain.Attributes;
+
+namespace FmuApiDomain.Configuration.Options.Organization;
 
 public class OrganizationConfiguration
 {
+    [ExchangeableSetting]
     public List<PrintGroupData> PrintGroups { get; set; } = [];
 
 

@@ -176,6 +176,33 @@ public class SidecarConnectionImporterTests : IDisposable
     }
 
     [Fact]
+    public void TryImport_пропускает_файл_настроек_рядом_с_продуктом_и_читает_host()
+    {
+        var versionDir = Path.Combine(_tempDir, "fmu-api-check", "12.2");
+        Directory.CreateDirectory(versionDir);
+        File.WriteAllText(Path.Combine(_tempDir, "fmu-api.exe"), string.Empty);
+        File.WriteAllText(Path.Combine(versionDir, "config.json"), """
+            {
+              "ServerConfig": { "ApiIpPort": 2599 }
+            }
+            """);
+        WriteSidecar("""
+            {
+              "Address": "http://localhost:2590",
+              "Token": "e880fc66-93f7-43e4-b48a-3ad98016e99a"
+            }
+            """);
+
+        var settings = new Parameters();
+
+        var imported = _importer.TryImport(settings, versionDir);
+
+        Assert.True(imported);
+        Assert.Equal("http://localhost:2590", settings.FmuApiCentralServer.Address);
+        Assert.Equal(2578, settings.ServerConfig.ApiIpPort);
+    }
+
+    [Fact]
     public void TryImport_не_берёт_config_из_родителя_без_host_exe()
     {
         var versionDir = Path.Combine(_tempDir, "fmu-api-check", "12.2");
