@@ -1,12 +1,12 @@
 using FmuApiApplication.Mark.Models;
-using FmuApiDomain.Mark.Interfaces;
+using FmuApiDomain.Mark.Entities;
 using FmuApiDomain.TsPiot.Models;
 
 namespace FmuApiApplication.Mark.Interfaces
 {
     public interface IMarkChecker
     {
-        Task<MarkCheckResult> FmuApiDatabaseCheck(string sgtin, IMarkStateManager stateManager);
+        MarkCheckResult FmuApiDatabaseCheck(string sgtin, MarkEntity markInfo);
         
         Task<MarkCheckResult> OnlineCheck(string code, string sgtin, bool codeIsSgtin, int printGroupCode);
         

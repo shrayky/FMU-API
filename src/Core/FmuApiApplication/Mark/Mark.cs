@@ -5,6 +5,7 @@ using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Documents;
 using FmuApiDomain.Documents.Enums;
+using FmuApiDomain.Mark.Entities;
 using FmuApiDomain.Mark.Enums;
 using FmuApiDomain.Mark.Interfaces;
 using FmuApiDomain.ProductGroups;
@@ -43,7 +44,6 @@ public class Mark : IMark
     private bool _useTsPiot = false; 
 
     private MarkCheckResult _lastCheckResult = MarkCheckResult.Empty();
-    private delegate Task<MarkCheckResult> CheckDelegate();
 
     public Mark(
         string markCode,
@@ -84,106 +84,112 @@ public class Mark : IMark
     {
         _logger.LogInformation("Начало проверки марки {Code}", Code);
 
-        CheckDelegate[] delegates =
-        [
-            async () => await _markChecker.TsPiotCheck(Code, _tsPiotConnectionSettings),
-            async () => await _markChecker.OfflineCheck(Cis, PrintGroupCode, TrueApiGroupId),
-            async() => await _markChecker.FmuApiDatabaseCheck(SGtin, _markStateManager)
-        ];
-
-        if (!_useTsPiot)
-        {
-            delegates =
-            [
-                async () => await _markChecker.OnlineCheck(Code, SGtin, CodeIsSgtin, PrintGroupCode),
-                async () => await _markChecker.OfflineCheck(Cis, PrintGroupCode, TrueApiGroupId),
-                async() => await _markChecker.FmuApiDatabaseCheck(SGtin, _markStateManager)
-            ];
-        }
+        var currentStateTask = _markStateManager.Information(SGtin);
+        var primaryCheck = _useTsPiot
+            ? _markChecker.TsPiotCheck(Code, _tsPiotConnectionSettings)
+            : _markChecker.OnlineCheck(Code, SGtin, CodeIsSgtin, PrintGroupCode);
 
         List<string> checkErrors = [];
-        var currentState = await _markStateManager.Information(SGtin);
 
-        foreach (var check in delegates)
+        _lastCheckResult = await primaryCheck;
+        var accepted = await ApplyCheckResult(operation, currentStateTask, checkErrors);
+
+        if (!accepted)
         {
-            _lastCheckResult = await check();
-
-            if (!_lastCheckResult.IsSuccess)
-            {
-                checkErrors.Add(_lastCheckResult.ErrorDescription);
-                continue;
-            }
-            
-            if (!_lastCheckResult.HasTrueApiAnswer())
-                continue;
-
-            if (currentState.IsSold)
-                _lastCheckResult.TrueMarkData.Codes.ForEach(code => code.Sold = true);
-
-            if (_lastCheckResult.MarkInformation.State != currentState.State)
-                _lastCheckResult.MarkInformation.State = currentState.State;
-
-            if (!string.IsNullOrEmpty(_lastCheckResult.TrueMarkData.Inst) && !_lastCheckResult.FmuAnswer.OfflineRegime)
-            {
-                _lastCheckResult.FmuAnswer.OfflineRegime = true;
-            }
-
-            if (_lastCheckResult.FmuAnswer.OfflineRegime)
-                await ApplyGisMtExpireDateIfMissing();
-
-            var validationResult = ValidateMarkData(operation);
-
-            if (validationResult.IsFailure)
-            {
-                _lastCheckResult.UpdateErrorDescription(validationResult.Error);
-                ErrorDescription = _lastCheckResult.FmuAnswer.Error;
-                _lastCheckResult.SetUnsuccess();
-
-                _logger.LogWarning("При проверки данных для марки {Code} обнаружены ошибки: {Error}",
-                                   Code,
-                                   validationResult.Error);
-            }
-
-            _lastCheckResult.FmuAnswer.PrintGroupCode = PrintGroupCode;
-            _lastCheckResult.FmuAnswer.ShouldHaveExpireDate = ResolveShouldHaveExpireDate();
-            
-            if (!_lastCheckResult.FmuAnswer.Offline)
-                await _markStateManager.Save(SGtin, _lastCheckResult.TrueMarkData);
-
-            if (!_lastCheckResult.FmuAnswer.Offline && !_lastCheckResult.FmuAnswer.OfflineRegime)
-                await SaveGtinCatalogAsync();
-
-            checkErrors.Clear();
-
-            break;
+            _lastCheckResult = await _markChecker.OfflineCheck(Cis, PrintGroupCode, TrueApiGroupId);
+            accepted = await ApplyCheckResult(operation, currentStateTask, checkErrors);
         }
 
-        if (checkErrors.Count == 0)
+        if (!accepted)
         {
-            var answer = _lastCheckResult.FmuAnswer;
-            CheckSource = ResolveCheckSource(answer);
-
-            if (CheckSource == MarkCheckSource.LocalModule)
-            {
-                if (_useTsPiot)
-                    _logger.LogInformation("Проверка марки {mark} выполнена через ТС ПИоТ в локальном модуле честного знака.", Code);
-                else
-                    _logger.LogInformation("Проверка марки {mark} выполнена через локальный модуль честного знака.", Code);
-            }
-
-            if (CheckSource == MarkCheckSource.Database)
-                _logger.LogInformation("Проверка марки {mark} выполнена через базу данных fmu-api.", Code);
-
-            if (CheckSource == MarkCheckSource.OnlineXApiKey)
-                _logger.LogInformation("Проверка марки {mark} выполнена в онлайне через xapikey.", Code);
-
-            if (CheckSource == MarkCheckSource.OnlineTsPiot)
-                _logger.LogInformation("Проверка марки {mark} выполнена в онлайне через ТС ПИоТ.", Code);
-
-            return Result.Success(_lastCheckResult.FmuAnswer);
+            var currentState = await currentStateTask;
+            _lastCheckResult = _markChecker.FmuApiDatabaseCheck(SGtin, currentState);
+            accepted = await ApplyCheckResult(operation, currentStateTask, checkErrors);
         }
-            
+
+        if (accepted || checkErrors.Count == 0)
+            return CheckedAnswer();
+
         return Result.Failure<FmuAnswer>($"Проверка марки {Code} не удалась по причине: {string.Join(", ", checkErrors)}");
+    }
+
+    private async Task<bool> ApplyCheckResult(
+        OperationType operation,
+        Task<MarkEntity> currentStateTask,
+        List<string> checkErrors)
+    {
+        if (!_lastCheckResult.IsSuccess)
+        {
+            checkErrors.Add(_lastCheckResult.ErrorDescription);
+            return false;
+        }
+
+        if (!_lastCheckResult.HasTrueApiAnswer())
+            return false;
+
+        var currentState = await currentStateTask;
+
+        if (currentState.IsSold)
+            _lastCheckResult.TrueMarkData.Codes.ForEach(code => code.Sold = true);
+
+        if (_lastCheckResult.MarkInformation.State != currentState.State)
+            _lastCheckResult.MarkInformation.State = currentState.State;
+
+        if (!string.IsNullOrEmpty(_lastCheckResult.TrueMarkData.Inst) && !_lastCheckResult.FmuAnswer.OfflineRegime)
+            _lastCheckResult.FmuAnswer.OfflineRegime = true;
+
+        if (_lastCheckResult.FmuAnswer.OfflineRegime)
+            await ApplyGisMtExpireDateIfMissing();
+
+        var validationResult = ValidateMarkData(operation);
+
+        if (validationResult.IsFailure)
+        {
+            _lastCheckResult.UpdateErrorDescription(validationResult.Error);
+            ErrorDescription = _lastCheckResult.FmuAnswer.Error;
+            _lastCheckResult.SetUnsuccess();
+
+            _logger.LogWarning("При проверки данных для марки {Code} обнаружены ошибки: {Error}",
+                               Code,
+                               validationResult.Error);
+        }
+
+        _lastCheckResult.FmuAnswer.PrintGroupCode = PrintGroupCode;
+        _lastCheckResult.FmuAnswer.ShouldHaveExpireDate = ResolveShouldHaveExpireDate();
+
+        if (!_lastCheckResult.FmuAnswer.Offline)
+            await _markStateManager.Save(SGtin, _lastCheckResult.TrueMarkData);
+
+        if (!_lastCheckResult.FmuAnswer.Offline && !_lastCheckResult.FmuAnswer.OfflineRegime)
+            await SaveGtinCatalogAsync();
+
+        checkErrors.Clear();
+        return true;
+    }
+
+    private Result<FmuAnswer> CheckedAnswer()
+    {
+        var answer = _lastCheckResult.FmuAnswer;
+        CheckSource = ResolveCheckSource(answer);
+
+        if (CheckSource == MarkCheckSource.LocalModule)
+        {
+            if (_useTsPiot)
+                _logger.LogInformation("Проверка марки {mark} выполнена через ТС ПИоТ в локальном модуле честного знака.", Code);
+            else
+                _logger.LogInformation("Проверка марки {mark} выполнена через локальный модуль честного знака.", Code);
+        }
+
+        if (CheckSource == MarkCheckSource.Database)
+            _logger.LogInformation("Проверка марки {mark} выполнена через базу данных fmu-api.", Code);
+
+        if (CheckSource == MarkCheckSource.OnlineXApiKey)
+            _logger.LogInformation("Проверка марки {mark} выполнена в онлайне через xapikey.", Code);
+
+        if (CheckSource == MarkCheckSource.OnlineTsPiot)
+            _logger.LogInformation("Проверка марки {mark} выполнена в онлайне через ТС ПИоТ.", Code);
+
+        return Result.Success(answer);
     }
 
     public void SetTsPiotSettings(TsPiotConnectionSettings tsPiotConnectionSettings)

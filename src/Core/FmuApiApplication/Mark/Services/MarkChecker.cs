@@ -44,7 +44,7 @@ namespace FmuApiApplication.Mark.Services
             _tsPiotService = tsPiotService;
         }
 
-        public async Task<MarkCheckResult> FmuApiDatabaseCheck(string sgtin, IMarkStateManager stateManager)
+        public MarkCheckResult FmuApiDatabaseCheck(string sgtin, MarkEntity markInfo)
         {
             _logger.LogInformation("Начало database проверки марки {Sgtin}", sgtin);
 
@@ -53,8 +53,6 @@ namespace FmuApiApplication.Mark.Services
                 _logger.LogInformation("Database проверка отключена");
                 return MarkCheckResult.Success(new(), new(), new());
             }
-
-            var markInfo = await stateManager.Information(sgtin);
 
             if (!markInfo.HaveTrueApiAnswer)
             {
