@@ -53,7 +53,10 @@ public class DatabaseIndexes
             new ("check-day-idx", new (["data.checkDay"])),
             new (MarkCheckStatisticMangoQueryBuilder.SgtinCheckDateIndex, new CouchDbIndexBody(
             [
-                MarkCheckStatisticMangoQueryBuilder.SgtinField,
+                new Dictionary<string, string>
+                {
+                    [MarkCheckStatisticMangoQueryBuilder.SgtinField] = "desc"
+                },
                 new Dictionary<string, string>
                 {
                     [MarkCheckStatisticMangoQueryBuilder.CheckDateField] = "desc"

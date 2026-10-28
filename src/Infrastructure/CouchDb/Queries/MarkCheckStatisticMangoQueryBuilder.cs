@@ -3,10 +3,11 @@ namespace CouchDb.Queries;
 /// <summary>
 /// Запрос последней проверки марки по составному индексу sgtin и даты.
 /// CouchDB отдаёт несколько самых новых документов, а не всю историю марки.
+/// Оба поля сортируются по убыванию: JSON-индекс CouchDB не принимает смесь asc и desc.
 /// </summary>
 public static class MarkCheckStatisticMangoQueryBuilder
 {
-    public const string SgtinCheckDateIndex = "sgtin-check-date-idx";
+    public const string SgtinCheckDateIndex = "sgtin-check-date-desc-idx";
     public const string SgtinField = "data.sGtin";
     public const string CheckDateField = "data.checkDate";
     public const int LastCheckCandidateLimit = 5;
@@ -27,7 +28,7 @@ public static class MarkCheckStatisticMangoQueryBuilder
             },
             ["sort"] = new[]
             {
-                new Dictionary<string, string> { [SgtinField] = "asc" },
+                new Dictionary<string, string> { [SgtinField] = "desc" },
                 new Dictionary<string, string> { [CheckDateField] = "desc" }
             },
             ["limit"] = LastCheckCandidateLimit,

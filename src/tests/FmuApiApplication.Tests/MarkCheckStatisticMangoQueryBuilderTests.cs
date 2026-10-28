@@ -22,7 +22,7 @@ public class MarkCheckStatisticMangoQueryBuilderTests
         Assert.Equal("0001-01-01T00:00:00", checkDate["$gte"]);
 
         var sort = Assert.IsType<Dictionary<string, string>[]>(query["sort"]);
-        Assert.Equal("asc", sort[0]["data.sGtin"]);
+        Assert.Equal("desc", sort[0]["data.sGtin"]);
         Assert.Equal("desc", sort[1]["data.checkDate"]);
 
         var json = JsonSerializer.Serialize(query);

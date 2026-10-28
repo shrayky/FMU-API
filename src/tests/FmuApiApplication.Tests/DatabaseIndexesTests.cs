@@ -47,12 +47,12 @@ public class DatabaseIndexesTests
     public void StatisticIndex_сортирует_дату_проверки_по_убыванию()
     {
         var indexes = DatabaseIndexes.DatabaseIndexSchema()[DatabaseNames.MarkCheckingStatistic];
-        var index = Assert.Single(indexes, item => item.Name == "sgtin-check-date-idx");
+        var index = Assert.Single(indexes, item => item.Name == "sgtin-check-date-desc-idx");
         var json = JsonSerializer.Serialize(index);
 
         using var document = JsonDocument.Parse(json);
         var fields = document.RootElement.GetProperty("index").GetProperty("fields");
-        Assert.Equal("data.sGtin", fields[0].GetString());
+        Assert.Equal("desc", fields[0].GetProperty("data.sGtin").GetString());
         Assert.Equal("desc", fields[1].GetProperty("data.checkDate").GetString());
     }
 }
