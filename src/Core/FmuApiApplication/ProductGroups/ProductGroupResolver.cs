@@ -141,6 +141,29 @@ public class ProductGroupResolver(
         return false;
     }
 
+    public bool ShouldForbidSaleByExpireDate(int atolItemType, int trueApiGroupId)
+    {
+        var mappings = CurrentMappings();
+
+        if (atolItemType > 0)
+        {
+            var byAtol = FindByAtolCode(mappings, atolItemType);
+            if (byAtol != null)
+                return byAtol.ForbidSaleByExpireDate;
+        }
+
+        if (trueApiGroupId > 0)
+        {
+            foreach (var item in mappings)
+            {
+                if (item.TrueApiGroupId == trueApiGroupId && item.ForbidSaleByExpireDate)
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
     private List<GisMtProductMapping> CurrentMappings()
     {
         var mappings = _parametersService.Current().GisMtProductMappings;

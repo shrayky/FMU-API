@@ -18,4 +18,6 @@ public class GisMtProductMapping
     public bool CheckExpireDate { get; set; }
 
     public bool HaveExpireDate { get; set; }
+
+    public bool ForbidSaleByExpireDate { get; set; }
 }

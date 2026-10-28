@@ -51,6 +51,7 @@ public class GisMtProductMappingService(
             existing.CheckMrp = mapping.CheckMrp;
             existing.CheckExpireDate = mapping.CheckExpireDate;
             existing.HaveExpireDate = mapping.HaveExpireDate;
+            existing.ForbidSaleByExpireDate = mapping.ForbidSaleByExpireDate;
         }
 
         await _parametersService.UpdateAsync(parameters);

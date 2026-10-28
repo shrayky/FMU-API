@@ -137,6 +137,18 @@ public class BeginDocument : IFrontolDocumentService
                     checkResult.Marking_codes.Add(markInBase64);
                 }
 
+                // Запрет продажи просрочки только для групп с признаком ForbidSaleByExpireDate
+                if (ProductGroupResolver.ShouldForbidSaleByExpireDate(mark.AtolItemType, groupId)
+                    && markData.IsExpired)
+                {
+                    checkResult.Code = 3;
+                    var expiredText = markData.DaysExpired > 0
+                        ? $"срок годности истёк {markData.DaysExpired} дн. назад!"
+                        : "срок годности истёк!";
+                    errors.Add($"{position.Text} {expiredText}");
+                    checkResult.Marking_codes.Add(markInBase64);
+                }
+
             }
         }
 

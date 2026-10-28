@@ -13,6 +13,9 @@ class ProductGroupsView {
             checkMrp: "Контроль МРЦ",
             checkExpireDate: "Срок годности!",
             haveExpireDate: "Есть срок годности",
+            forbidSaleByExpireDate: "Запрет продажи по сроку",
+            help: "?",
+            helpTitle: "Флажки товарных групп",
             add: "Добавить",
             remove: "Удалить",
             refresh: "Обновить",
@@ -29,13 +32,20 @@ class ProductGroupsView {
         this.NAMES = {
             mappingTable: "pgMappingTable",
             addWindow: "pgMappingAddWindow",
-            addForm: "pgMappingAddForm"
+            addForm: "pgMappingAddForm",
+            helpWindow: "pgMappingHelpWindow"
         };
+
+        this.FLAG_COLUMNS = ["checkSmp", "checkMrp", "checkExpireDate", "haveExpireDate", "forbidSaleByExpireDate"];
 
         webix.html.addStyle(
             "#pgMappingTable .webix_ss_header .webix_hcell{line-height:48px;}" +
             ".pg-header-twoline{display:flex;flex-direction:column;justify-content:center;" +
-            "line-height:18px !important;white-space:normal;text-align:center;height:48px;box-sizing:border-box;}",
+            "line-height:18px !important;white-space:normal;text-align:center;height:48px;box-sizing:border-box;}" +
+            ".pg-help .webix_template{padding:14px 16px;line-height:1.45;}" +
+            ".pg-help-item{margin-bottom:16px;}" +
+            ".pg-help-title{font-weight:600;}" +
+            ".pg-help-when{margin:2px 0 4px;opacity:0.75;}",
             "pg-header-twoline"
         );
     }
@@ -87,6 +97,12 @@ class ProductGroupsView {
                     width: 120,
                     click: () => this._loadMapping()
                 },
+                {
+                    view: "button",
+                    value: this.LABELS.help,
+                    width: 40,
+                    click: () => this._openHelpWindow()
+                },
                 {}
             ]
         };
@@ -136,6 +152,15 @@ class ProductGroupsView {
                     template: "{common.checkbox()}",
                     checkValue: true,
                     uncheckValue: false
+                },
+                {
+                    id: "forbidSaleByExpireDate",
+                    header: { text: "Запрет продажи<br>по сроку", css: "pg-header-twoline" },
+                    width: 120,
+                    css: { "text-align": "center" },
+                    template: "{common.checkbox()}",
+                    checkValue: true,
+                    uncheckValue: false
                 }
             ],
             headerRowHeight: 56,
@@ -170,7 +195,8 @@ class ProductGroupsView {
                 checkSmp: !!row.checkSmp,
                 checkMrp: !!row.checkMrp,
                 checkExpireDate: !!row.checkExpireDate,
-                haveExpireDate: !!row.haveExpireDate
+                haveExpireDate: !!row.haveExpireDate,
+                forbidSaleByExpireDate: !!row.forbidSaleByExpireDate
             })));
             table.resize();
         } catch (error) {
@@ -188,22 +214,14 @@ class ProductGroupsView {
         if (!item)
             return;
 
-        const saved = await this._saveMapping({
-            atolCode: Number(item.atolCode),
-            trueApiGroupId: Number(item.trueApiGroupId),
-            name: item.name || "",
-            checkSmp: !!item.checkSmp,
-            checkMrp: !!item.checkMrp,
-            checkExpireDate: !!item.checkExpireDate,
-            haveExpireDate: !!item.haveExpireDate
-        });
+        const saved = await this._saveMapping(this._entityFromRow(item));
 
         if (!saved)
             this._loadMapping();
     }
 
     async _onCheckChanged(rowId, colId, state) {
-        if (colId !== "checkSmp" && colId !== "checkMrp" && colId !== "checkExpireDate" && colId !== "haveExpireDate")
+        if (!this.FLAG_COLUMNS.includes(colId))
             return;
 
         const table = $$(this.NAMES.mappingTable);
@@ -214,18 +232,23 @@ class ProductGroupsView {
         item[colId] = !!state;
         table.updateItem(rowId, item);
 
-        const saved = await this._saveMapping({
+        const saved = await this._saveMapping(this._entityFromRow(item));
+
+        if (!saved)
+            this._loadMapping();
+    }
+
+    _entityFromRow(item) {
+        return {
             atolCode: Number(item.atolCode),
             trueApiGroupId: Number(item.trueApiGroupId),
             name: item.name || "",
             checkSmp: !!item.checkSmp,
             checkMrp: !!item.checkMrp,
             checkExpireDate: !!item.checkExpireDate,
-            haveExpireDate: !!item.haveExpireDate
-        });
-
-        if (!saved)
-            this._loadMapping();
+            haveExpireDate: !!item.haveExpireDate,
+            forbidSaleByExpireDate: !!item.forbidSaleByExpireDate
+        };
     }
 
     async _saveMapping(entity) {
@@ -258,7 +281,7 @@ class ProductGroupsView {
             id: this.NAMES.addWindow,
             modal: true,
             position: "center",
-            width: 420,
+            width: 480,
             head: this.LABELS.addTitle,
             body: {
                 view: "form",
@@ -267,10 +290,11 @@ class ProductGroupsView {
                     { view: "text", name: "atolCode", label: this.LABELS.atolCode, labelWidth: 120 },
                     { view: "text", name: "trueApiGroupId", label: this.LABELS.trueApiGroupId, labelWidth: 120 },
                     { view: "text", name: "name", label: this.LABELS.name, labelWidth: 120 },
-                    { view: "checkbox", name: "checkSmp", label: this.LABELS.checkSmp, labelWidth: 150, checkValue: true, uncheckValue: false },
-                    { view: "checkbox", name: "checkMrp", label: this.LABELS.checkMrp, labelWidth: 150, checkValue: true, uncheckValue: false },
-                    { view: "checkbox", name: "checkExpireDate", label: this.LABELS.checkExpireDate, labelWidth: 150, checkValue: true, uncheckValue: false },
-                    { view: "checkbox", name: "haveExpireDate", label: this.LABELS.haveExpireDate, labelWidth: 150, checkValue: true, uncheckValue: false },
+                    { view: "checkbox", name: "checkSmp", label: this.LABELS.checkSmp, labelWidth: 220, checkValue: true, uncheckValue: false },
+                    { view: "checkbox", name: "checkMrp", label: this.LABELS.checkMrp, labelWidth: 220, checkValue: true, uncheckValue: false },
+                    { view: "checkbox", name: "checkExpireDate", label: this.LABELS.checkExpireDate, labelWidth: 220, checkValue: true, uncheckValue: false },
+                    { view: "checkbox", name: "haveExpireDate", label: this.LABELS.haveExpireDate, labelWidth: 220, checkValue: true, uncheckValue: false },
+                    { view: "checkbox", name: "forbidSaleByExpireDate", label: this.LABELS.forbidSaleByExpireDate, labelWidth: 220, checkValue: true, uncheckValue: false },
                     {
                         cols: [
                             {
@@ -293,15 +317,7 @@ class ProductGroupsView {
     async _saveNewMapping() {
         const form = $$(this.NAMES.addForm);
         const values = form.getValues();
-        const entity = {
-            atolCode: Number(values.atolCode),
-            trueApiGroupId: Number(values.trueApiGroupId),
-            name: values.name || "",
-            checkSmp: !!values.checkSmp,
-            checkMrp: !!values.checkMrp,
-            checkExpireDate: !!values.checkExpireDate,
-            haveExpireDate: !!values.haveExpireDate 
-        };
+        const entity = this._entityFromRow(values);
 
         if (!entity.atolCode || !entity.trueApiGroupId) {
             webix.message({ text: this.LABELS.saveError, type: "error" });
@@ -314,6 +330,76 @@ class ProductGroupsView {
 
         $$(this.NAMES.addWindow).close();
         this._loadMapping();
+    }
+
+    _openHelpWindow() {
+        const id = this.NAMES.helpWindow;
+        if ($$(id))
+            $$(id).close();
+
+        webix.ui({
+            view: "window",
+            id,
+            modal: true,
+            position: "center",
+            width: 560,
+            height: 640,
+            head: {
+                view: "toolbar",
+                elements: [
+                    { view: "label", label: this.LABELS.helpTitle },
+                    {
+                        view: "icon",
+                        icon: "wxi-close",
+                        click: () => $$(id).close()
+                    }
+                ]
+            },
+            body: {
+                view: "template",
+                scroll: "y",
+                css: "pg-help",
+                template: this._helpHtml()
+            }
+        }).show();
+    }
+
+    _helpHtml() {
+        const items = [
+            {
+                title: "ЕМЦ",
+                when: "Начало чека (begin) — перед добавлением оплаты",
+                text: "Признак того, что у товара нужно контролировать ЕМЦ. Если цена ниже — отказ «цена ниже минимальной розничной». По умолчанию включён у табака и никотиносодержащей продукции."
+            },
+            {
+                title: "Контроль МРЦ",
+                when: "Начало чека (begin) — перед добавлением оплаты",
+                text: "Включён: цена должна точно совпасть с МРЦ. По умолчанию включён у табака."
+            },
+            {
+                title: "Срок годности!",
+                when: "Начало чека (begin) — перед добавлением оплаты",
+                text: "Нет срока годности у марки — отказ «отсутствует срок годности». Чтобы исключить продажу товара при офлайн-проверке."
+            },
+            {
+                title: "Есть срок годности",
+                when: "Проверка марки (check) — при сканировании марки",
+                text: "Продажу не запрещает. Для Фронтола 29 и выше — признак того, что у этого товара надо показать сообщение «проверь срок годности» при офлайн-проверке."
+            },
+            {
+                title: "Запрет продажи по сроку",
+                when: "Начало чека (begin) — перед добавлением оплаты",
+                text: "Срок уже истёк — отказ продажи. Пустой срок этим флажком не проверяется."
+            }
+        ];
+
+        return items.map(item =>
+            `<div class="pg-help-item">` +
+            `<div class="pg-help-title">${item.title}</div>` +
+            `<div class="pg-help-when">${item.when}</div>` +
+            `<div>${item.text}</div>` +
+            `</div>`
+        ).join("");
     }
 
     async _deleteSelected() {

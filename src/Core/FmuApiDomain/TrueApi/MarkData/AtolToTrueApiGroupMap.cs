@@ -70,7 +70,8 @@ public static class AtolToTrueApiGroupMap
             CheckSmp = DefaultCheckSmp(trueApiGroupId),
             CheckMrp = DefaultCheckMrp(trueApiGroupId),
             CheckExpireDate = false,
-            HaveExpireDate = false
+            HaveExpireDate = false,
+            ForbidSaleByExpireDate = false
         };
 
     /// <summary>
@@ -86,7 +87,8 @@ public static class AtolToTrueApiGroupMap
                 CheckSmp = item.CheckSmp,
                 CheckMrp = item.CheckMrp,
                 CheckExpireDate = item.CheckExpireDate,
-                HaveExpireDate = item.HaveExpireDate
+                HaveExpireDate = item.HaveExpireDate,
+                ForbidSaleByExpireDate = item.ForbidSaleByExpireDate
             })
             .ToList();
 

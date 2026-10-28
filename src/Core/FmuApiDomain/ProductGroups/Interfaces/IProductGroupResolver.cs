@@ -1,7 +1,7 @@
 namespace FmuApiDomain.ProductGroups.Interfaces;
 
 /// <summary>
-/// Определяет товарную группу Честного знака и признаки проверок ЕМЦ, МРЦ и срока годности.
+/// Определяет товарную группу Честного знака и признаки проверок ЕМЦ, МРЦ, срока годности и запрета продажи по сроку.
 /// </summary>
 public interface IProductGroupResolver
 {
@@ -14,4 +14,6 @@ public interface IProductGroupResolver
     bool ShouldCheckExpireDate(int atolItemType, int trueApiGroupId);
 
     bool ShouldHaveExpireDate(int atolItemType, int trueApiGroupId);
+
+    bool ShouldForbidSaleByExpireDate(int atolItemType, int trueApiGroupId);
 }
