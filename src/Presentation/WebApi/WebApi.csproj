@@ -13,6 +13,7 @@
       <EnableTrimAnalyzer>true</EnableTrimAnalyzer>-->
 
       <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+      <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
 
       <DebugType>none</DebugType>
       <DebugSymbols>false</DebugSymbols>

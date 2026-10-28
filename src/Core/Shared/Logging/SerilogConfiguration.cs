@@ -39,6 +39,7 @@ namespace Shared.Logging
                 .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Error)
                 .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Error)
                 .MinimumLevel.Override("Microsoft.Extensions.Http", LogEventLevel.Error)
+                .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
                 .MinimumLevel.Override("System", LogEventLevel.Error);
 
             return loggerConfiguration.CreateLogger();
