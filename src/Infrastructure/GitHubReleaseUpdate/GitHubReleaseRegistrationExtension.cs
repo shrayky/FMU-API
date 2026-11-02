@@ -10,8 +10,10 @@ public static class GitHubReleaseRegistrationExtension
     public static void AddService(IServiceCollection services)
     {
         services.AddSingleton<GitHubReleaseClient>();
+        services.AddSingleton<ClientPackageCache>();
 
         services.AddHostedService<GitHubReleaseUpdateWorker>();
+        services.AddHostedService<TsdAppUpdateWorker>();
 
         // Метаданные релиза: таймаут 30 секунд.
         services.AddHttpClient(GitHubReleaseClient.HttpClientName, client =>

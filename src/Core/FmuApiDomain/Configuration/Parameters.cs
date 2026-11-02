@@ -57,6 +57,9 @@ public class Parameters
     [JsonPropertyName("githubReleaseUpdate")]
     public GitHubReleaseUpdateOptions GitHubReleaseUpdate { get; set; } = new();
 
+    [JsonPropertyName("tsdAppUpdate")]
+    public TsdAppUpdateOptions TsdAppUpdate { get; set; } = new();
+
     [JsonInclude]
     public AutoUpdateOptions AutoUpdate { get; private set; } = AutoUpdateOptions.Create();
 

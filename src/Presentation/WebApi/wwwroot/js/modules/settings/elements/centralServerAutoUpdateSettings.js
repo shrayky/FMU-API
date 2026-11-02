@@ -15,7 +15,7 @@ export default function (id, config) {
                 view: "tabview",
                 id: TABVIEW_ID,
                 tabbar: {
-                    optionWidth: 200
+                    optionWidth: 230
                 },
                 multiview: {
                     keepViews: true

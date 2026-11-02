@@ -11,7 +11,7 @@ using System.Security.Cryptography;
 
 namespace GitHubReleaseUpdate.Workers;
 
-/// Проверяет последний релиз GitHub и устанавливает обновление.
+/// Проверяет последний релиз GitHub и устанавливает обновление службы.
 public class GitHubReleaseUpdateWorker : BackgroundService
 {
     private const string ChecksumFileName = "checksum.txt";
