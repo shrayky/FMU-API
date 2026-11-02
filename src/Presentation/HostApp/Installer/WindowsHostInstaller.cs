@@ -1,12 +1,24 @@
 using System.Diagnostics;
 using System.Runtime.Versioning;
 using System.ServiceProcess;
+using Microsoft.Win32;
 
 namespace HostApp.Installer;
 
+/// <summary>
+/// Устанавливает host как службу Windows и регистрирует удаление для winget.
+/// </summary>
 [SupportedOSPlatform("windows")]
 internal sealed class WindowsHostInstaller
 {
+    /// <summary>
+    /// Имя записи совпадает с PackageName манифеста winget.
+    /// </summary>
+    private const string ArpDisplayName = "fmu-api";
+
+    private const string UninstallRegistryPath =
+        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Automation.fmu-api";
+
     private readonly string _installDirectory;
     private readonly string _logFilePath;
 
@@ -45,6 +57,7 @@ internal sealed class WindowsHostInstaller
             await InstallProductVersionsAsync(setupFolder);
 
             EnsureServiceRegistered();
+            WriteUninstallEntry();
             WriteChecksum(args);
             StartService();
 
@@ -74,6 +87,7 @@ internal sealed class WindowsHostInstaller
 
             // Остатки старой flat-схемы
             DeleteDirectoryWithRetry(Path.Combine(_installDirectory, "wwwroot"));
+            RemoveUninstallEntry();
 
             LogInfo("Удаление завершено.");
             return 0;
@@ -302,8 +316,106 @@ internal sealed class WindowsHostInstaller
         LogInfo("Регистрирую Windows-службу.");
         RunCmd($"sc create {HostConstants.ServiceName} binPath= \"{bin} --service\" DisplayName= \"{HostConstants.ServiceDisplayName}\" type= own start= auto");
         RunCmd($"sc failure \"{HostConstants.ServiceName}\" reset= 5 actions= restart/5000");
-        RunCmd($"netsh advfirewall firewall delete rule name = \"{HostConstants.ServiceName}\"");
+        EnsureFirewallRule();
+    }
+
+    /// <summary>
+    /// Отсутствие правила не ошибка: на чистой системе netsh delete возвращает код 1.
+    /// </summary>
+    private void EnsureFirewallRule()
+    {
+        var deleteCode = RunCmd(
+            $"netsh advfirewall firewall delete rule name = \"{HostConstants.ServiceName}\"",
+            throwOnError: false);
+        if (deleteCode != 0)
+            LogInfo($"Правило firewall не удалено (код {deleteCode}) — его ещё не было.");
+
         RunCmd($"netsh advfirewall firewall add rule name = \"{HostConstants.ServiceName}\" dir =in action = allow protocol = TCP localport = {HostConstants.HttpPort}");
+    }
+
+    /// <summary>
+    /// Запись в «Программы и компоненты», чтобы winget увидел пакет и смог его удалить.
+    /// </summary>
+    private void WriteUninstallEntry()
+    {
+        var hostPath = Path.Combine(_installDirectory, HostConstants.HostExeName);
+        var uninstall = $"\"{hostPath}\" --uninstall";
+
+        using var hive = OpenMachineHive();
+        using var key = hive.CreateSubKey(UninstallRegistryPath)
+            ?? throw new InvalidOperationException($"Не удалось создать ключ {UninstallRegistryPath}.");
+        key.SetValue("DisplayName", ArpDisplayName);
+        key.SetValue("Publisher", HostConstants.Manufacture);
+        key.SetValue("InstallLocation", _installDirectory);
+        key.SetValue("UninstallString", uninstall);
+        key.SetValue("QuietUninstallString", uninstall);
+        key.SetValue("NoModify", 1, RegistryValueKind.DWord);
+        key.SetValue("NoRepair", 1, RegistryValueKind.DWord);
+
+        var displayVersion = ReadProductDisplayVersion();
+        if (!string.IsNullOrWhiteSpace(displayVersion))
+            key.SetValue("DisplayVersion", displayVersion);
+
+        LogInfo($"Запись удаления: {UninstallRegistryPath}");
+    }
+
+    private void RemoveUninstallEntry()
+    {
+        using var hive = OpenMachineHive();
+        using (var existing = hive.OpenSubKey(UninstallRegistryPath))
+        {
+            if (existing is null)
+            {
+                LogInfo("Записи удаления в реестре нет.");
+                return;
+            }
+        }
+
+        hive.DeleteSubKeyTree(UninstallRegistryPath, throwOnMissingSubKey: false);
+        LogInfo("Запись удаления снята из реестра.");
+    }
+
+    private string? ReadProductDisplayVersion()
+    {
+        var productRoot = Path.Combine(_installDirectory, HostConstants.FmuProductName);
+        if (!Directory.Exists(productRoot))
+            return null;
+
+        string? exePath = null;
+        var best = new Version(0, 0);
+        foreach (var versionDir in Directory.EnumerateDirectories(productRoot))
+        {
+            if (!Version.TryParse(Path.GetFileName(versionDir), out var version))
+                continue;
+
+            var exe = Path.Combine(versionDir, $"{HostConstants.FmuProductName}.exe");
+            if (!File.Exists(exe) || version < best)
+                continue;
+
+            best = version;
+            exePath = exe;
+        }
+
+        if (exePath is null)
+            return null;
+
+        var info = FileVersionInfo.GetVersionInfo(exePath);
+        if (info.FileMajorPart == 0 && info.FileMinorPart == 0)
+            return best.ToString();
+
+        if (info.FilePrivatePart > 0)
+            return $"{info.FileMajorPart}.{info.FileMinorPart}.{info.FileBuildPart}.{info.FilePrivatePart}";
+
+        if (info.FileBuildPart > 0)
+            return $"{info.FileMajorPart}.{info.FileMinorPart}.{info.FileBuildPart}";
+
+        return $"{info.FileMajorPart}.{info.FileMinorPart}";
+    }
+
+    private static RegistryKey OpenMachineHive()
+    {
+        var view = Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Registry32;
+        return RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, view);
     }
 
     private void StartService()
@@ -558,7 +670,7 @@ internal sealed class WindowsHostInstaller
         return !Directory.Exists(path);
     }
 
-    private static void RunCmd(string command)
+    private static int RunCmd(string command, bool throwOnError = true)
     {
         using var process = Process.Start(new ProcessStartInfo
         {
@@ -578,9 +690,11 @@ internal sealed class WindowsHostInstaller
         process.WaitForExit(60_000);
 
         // sc/netsh часто пишут в stdout даже при успехе
-        if (process.ExitCode != 0)
+        if (process.ExitCode != 0 && throwOnError)
             throw new InvalidOperationException(
                 $"Команда завершилась с кодом {process.ExitCode}: {command}. {stdout} {stderr}");
+
+        return process.ExitCode;
     }
 
     private void StartLog(string operation)
