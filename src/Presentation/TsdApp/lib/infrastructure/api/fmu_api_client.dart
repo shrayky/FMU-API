@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../../application/mark/mark_card_mapper.dart';
+import '../../domain/mark/mark_check_result.dart';
 import 'fmu_requests.dart';
 
 /// HTTP-клиент проверки марки через Fmu-Api.
@@ -38,6 +39,14 @@ class FmuApiClient {
     required String inn,
     required String mark,
   }) async {
+    final result = await checkMarkResult(inn: inn, mark: mark);
+    return result.rows;
+  }
+
+  Future<MarkCheckResult> checkMarkResult({
+    required String inn,
+    required String mark,
+  }) async {
     final documentFuture = _postJson('/api/fmu/document', FmuRequests.documentCheck(inn: inn, mark: mark));
     final trueApiFuture = _postJson('/api/ts/cises/info', FmuRequests.cisesInfo(inn: inn, mark: mark));
 
@@ -56,7 +65,11 @@ class FmuApiClient {
       trueApi = {'status': 'error', 'reason': error.toString()};
     }
 
-    return MarkCardMapper.fromResponses(trueApi: trueApi, permissive: permissive);
+    return MarkCardMapper.checkResult(
+      trueApi: trueApi,
+      permissive: permissive,
+      organisationInn: inn,
+    );
   }
 
   Future<Map<String, dynamic>> _postJson(String path, Map<String, dynamic> body) async {

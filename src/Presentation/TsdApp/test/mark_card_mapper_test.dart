@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tsd_app/application/mark/mark_card_mapper.dart';
+import 'package:tsd_app/domain/mark/mark_check_result.dart';
 
 void main() {
   test('собирает строки карточки и пропускает пустые поля', () {
@@ -116,4 +117,63 @@ void main() {
     expect(rows.last.value, 'Разрешительный режим: сеть недоступна');
     expect(rows.last.tone, MarkCardTone.none);
   });
+
+  test('индикаторы зелёные, когда марка в обороте у своей организации и срок не вышел', () {
+    final result = MarkCardMapper.checkResult(
+      trueApi: _cis({
+        'productName': 'Молоко',
+        'status': 'INTRODUCED',
+        'expireDate': '2027-01-15T00:00:00',
+        'ownerInn': '7701234567',
+      }),
+      permissive: null,
+      organisationInn: ' 7701234567 ',
+    );
+
+    expect(result.name, 'Молоко');
+    expect(result.status, MarkSignalTone.ok);
+    expect(result.owner, MarkSignalTone.ok);
+    expect(result.expiry, MarkSignalTone.ok);
+    expect(result.rows.firstWhere((row) => row.label == 'Название').value, 'Молоко');
+  });
+
+  test('чужой владелец, выбытие и просрочка дают красные индикаторы', () {
+    final result = MarkCardMapper.checkResult(
+      trueApi: _cis({
+        'productName': 'Сыр',
+        'status': 'RETIRED',
+        'expireDate': '2020-01-01',
+        'ownerInn': '7701234567',
+      }),
+      permissive: null,
+      organisationInn: '0000000000',
+    );
+
+    expect(result.name, 'Сыр');
+    expect(result.status, MarkSignalTone.bad);
+    expect(result.owner, MarkSignalTone.bad);
+    expect(result.expiry, MarkSignalTone.bad);
+  });
+
+  test('ошибка True API красит все индикаторы', () {
+    final result = MarkCardMapper.checkResult(
+      trueApi: {'status': 'error', 'reason': 'нет токена'},
+      permissive: null,
+      organisationInn: '7701234567',
+    );
+
+    expect(result.name, 'True API: нет токена');
+    expect(result.status, MarkSignalTone.bad);
+    expect(result.owner, MarkSignalTone.bad);
+    expect(result.expiry, MarkSignalTone.bad);
+  });
+}
+
+Map<String, dynamic> _cis(Map<String, dynamic> info) {
+  return {
+    'status': 'ok',
+    'data': [
+      {'cisInfo': info},
+    ],
+  };
 }

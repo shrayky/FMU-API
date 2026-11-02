@@ -1,4 +1,5 @@
 import '../../domain/mark/mark_card_row.dart';
+import '../../domain/mark/mark_check_result.dart';
 
 export '../../domain/mark/mark_card_row.dart';
 
@@ -44,6 +45,32 @@ class MarkCardMapper {
 
     _addPermissiveError(rows, permissive);
     return rows;
+  }
+
+  static MarkCheckResult checkResult({
+    required Map<String, dynamic>? trueApi,
+    required Map<String, dynamic>? permissive,
+    required String organisationInn,
+  }) {
+    final rows = fromResponses(trueApi: trueApi, permissive: permissive);
+    final info = _cisInfo(trueApi);
+    if (info == null) {
+      return MarkCheckResult(
+        rows: rows,
+        name: _signalName(rows),
+        status: MarkSignalTone.bad,
+        owner: MarkSignalTone.bad,
+        expiry: MarkSignalTone.bad,
+      );
+    }
+
+    return MarkCheckResult(
+      rows: rows,
+      name: _text(info['productName']),
+      status: _signal(_statusTone(info)),
+      owner: _ownerSignal(info, organisationInn),
+      expiry: _signal(_expireTone(info['expireDate'] ?? info['expirationDate'])),
+    );
   }
 
   static void _add(List<MarkCardRow> rows, String label, String value, [MarkCardTone tone = MarkCardTone.none]) {
@@ -202,6 +229,30 @@ class MarkCardMapper {
     }
 
     return '$raw г';
+  }
+
+  static MarkSignalTone _signal(MarkCardTone tone) {
+    return tone == MarkCardTone.ok ? MarkSignalTone.ok : MarkSignalTone.bad;
+  }
+
+  static MarkSignalTone _ownerSignal(Map<String, dynamic> info, String organisationInn) {
+    final owner = _text(info['ownerInn']);
+    final organisation = organisationInn.trim();
+    if (owner.isNotEmpty && organisation.isNotEmpty && owner == organisation) {
+      return MarkSignalTone.ok;
+    }
+
+    return MarkSignalTone.bad;
+  }
+
+  static String _signalName(List<MarkCardRow> rows) {
+    for (final row in rows) {
+      if (row.value.trim().isNotEmpty) {
+        return row.value;
+      }
+    }
+
+    return 'Нет данных';
   }
 
   static MarkCardTone _expireTone(Object? value) {
