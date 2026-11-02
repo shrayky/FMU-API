@@ -4,16 +4,21 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
+import android.provider.Settings
+import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import java.io.File
 
 class MainActivity : FlutterActivity() {
     private val scanChannelName = "ru.fmuapi.tsd/scan"
     private val monitorChannelName = "ru.fmuapi.tsd/broadcast-monitor"
+    private val updateChannelName = "ru.fmuapi.tsd/update"
     private var scanChannel: MethodChannel? = null
     private var monitorChannel: MethodChannel? = null
     private var scanReceiver: BroadcastReceiver? = null
@@ -39,6 +44,20 @@ class MainActivity : FlutterActivity() {
             }
         }
         registerScanReceiver("")
+
+        val updateChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, updateChannelName)
+        updateChannel.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "abi" -> result.success(preferredAbi())
+                "updatesDirectory" -> {
+                    val directory = File(cacheDir, "updates")
+                    directory.mkdirs()
+                    result.success(directory.absolutePath)
+                }
+                "install" -> installPackage(call.argument<String>("path").orEmpty(), result)
+                else -> result.notImplemented()
+            }
+        }
 
         monitorChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, monitorChannelName)
         monitorChannel?.setMethodCallHandler { call, result ->
@@ -199,6 +218,41 @@ class MainActivity : FlutterActivity() {
         lastScanAt = now
 
         scanChannel?.invokeMethod("onScan", code)
+    }
+
+    private fun preferredAbi(): String {
+        if (Build.SUPPORTED_ABIS.any { it.equals("arm64-v8a", ignoreCase = true) }) {
+            return "arm64-v8a"
+        }
+        return "armeabi-v7a"
+    }
+
+    private fun installPackage(path: String, result: MethodChannel.Result) {
+        val file = File(path)
+        if (!file.isFile) {
+            result.error("file", "Файл обновления не найден", null)
+            return
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !packageManager.canRequestPackageInstalls()) {
+            startActivity(
+                Intent(
+                    Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                    Uri.parse("package:$packageName"),
+                ),
+            )
+            result.error("permission", "Разрешите установку из этого приложения", null)
+            return
+        }
+
+        val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/vnd.android.package-archive")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        startActivity(intent)
+        result.success(null)
     }
 
     private fun extrasMap(incoming: Intent): Map<String, String> {

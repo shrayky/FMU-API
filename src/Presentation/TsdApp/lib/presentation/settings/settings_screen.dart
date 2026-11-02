@@ -3,21 +3,26 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../infrastructure/discovery/lan_fmu_scanner.dart';
 import '../../infrastructure/settings/app_settings.dart';
+import '../../infrastructure/update/app_update.dart';
+import '../../infrastructure/update/app_update_flow.dart';
 import '../../theme/webix_dark_theme.dart';
+import '../update/update_offer.dart';
 import 'broadcast_monitor_screen.dart';
 
-/// Адрес Fmu-Api и параметры broadcast-интента сканера.
+/// Адрес Fmu-Api, параметры сканера и проверка обновления.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
     super.key,
     required this.settings,
     this.lanScanner,
     this.appVersion,
+    this.updates,
   });
 
   final AppSettings settings;
   final LanFmuScanner? lanScanner;
   final String? appVersion;
+  final AppUpdateFlow? updates;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -27,9 +32,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late final TextEditingController _api;
   late final TextEditingController _action;
   late final TextEditingController _extra;
+  late final TextEditingController _interval;
   late final LanFmuScanner _lan;
+  late final AppUpdateFlow _updates;
   late bool _camera;
+  late bool _continuous;
   bool _searching = false;
+  bool _checkingUpdate = false;
+  bool _updating = false;
+  AppUpdate? _offer;
   String? _version;
 
   @override
@@ -38,8 +49,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _api = TextEditingController(text: widget.settings.apiBaseUrl);
     _action = TextEditingController(text: widget.settings.intentAction);
     _extra = TextEditingController(text: widget.settings.intentExtra);
+    _interval = TextEditingController(text: '${widget.settings.updateCheckIntervalMinutes}');
     _camera = widget.settings.cameraScanEnabled;
+    _continuous = widget.settings.continuousScanEnabled;
     _lan = widget.lanScanner ?? LanFmuScanner();
+    _updates = widget.updates ?? AppUpdateFlow();
     _version = widget.appVersion;
     if (_version == null) {
       _loadVersion();
@@ -62,6 +76,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _api.dispose();
     _action.dispose();
     _extra.dispose();
+    _interval.dispose();
     super.dispose();
   }
 
@@ -72,8 +87,68 @@ class _SettingsScreenState extends State<SettingsScreen> {
         intentAction: _action.text.trim(),
         intentExtra: _extra.text.trim().isEmpty ? 'barcode' : _extra.text.trim(),
         cameraScanEnabled: _camera,
+        continuousScanEnabled: _continuous,
+        updateCheckIntervalMinutes: _intervalMinutes(),
       ),
     );
+  }
+
+  int _intervalMinutes() {
+    final parsed = int.tryParse(_interval.text.trim());
+    if (parsed == null || parsed < 1) {
+      return 60;
+    }
+    return parsed;
+  }
+
+  Future<void> _checkUpdate() async {
+    if (_checkingUpdate || _updating) {
+      return;
+    }
+
+    setState(() => _checkingUpdate = true);
+    try {
+      final offer = await _updates.check(_api.text);
+      if (!mounted) {
+        return;
+      }
+      setState(() => _offer = offer);
+      if (offer == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Обновление не найдено')),
+        );
+      }
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
+    } finally {
+      if (mounted) {
+        setState(() => _checkingUpdate = false);
+      }
+    }
+  }
+
+  Future<void> _installUpdate() async {
+    final offer = _offer;
+    if (offer == null || _updating) {
+      return;
+    }
+
+    setState(() => _updating = true);
+    try {
+      await _updates.install(_api.text, offer);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
+    } finally {
+      if (mounted) {
+        setState(() => _updating = false);
+      }
+    }
   }
 
   Future<void> _findApi() async {
@@ -152,6 +227,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             value: _camera,
             onChanged: (value) => setState(() => _camera = value),
           ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Непрерывное сканирование'),
+            subtitle: const Text('Марки копятся в таблице, проверка идёт в фоне'),
+            value: _continuous,
+            onChanged: (value) => setState(() => _continuous = value),
+          ),
           const SizedBox(height: 8),
           TextField(
             controller: _action,
@@ -183,6 +265,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: const TextStyle(color: WebixDarkTheme.muted, fontSize: 13),
             ),
           ],
+          const SizedBox(height: 12),
+          TextField(
+            controller: _interval,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'Проверка обновления, мин',
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: _checkingUpdate ? null : _checkUpdate,
+              child: Text(_checkingUpdate ? 'Проверка…' : 'Проверить обновление'),
+            ),
+          ),
+          if (_offer != null)
+            UpdateOffer(
+              versionName: _offer!.versionName,
+              busy: _updating,
+              onUpdate: _installUpdate,
+            ),
         ],
       ),
     );
