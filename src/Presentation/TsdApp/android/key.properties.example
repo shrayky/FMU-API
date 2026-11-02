@@ -1,0 +1,4 @@
+storePassword=
+keyPassword=
+keyAlias=fmu-api-tsd
+storeFile=upload-keystore.jks
