@@ -48,7 +48,7 @@ public class SimpleParametersService : IParametersService
 
     private void InitializeConfiguration()
     {
-        if (File.Exists(_configPath))
+        if (!BundledSettingsImporter.NeedsBundledImport(File.Exists(_configPath)))
         {
             LoadConfiguration();
             return;
@@ -62,43 +62,25 @@ public class SimpleParametersService : IParametersService
     {
         try
         {
-            var sidecar = ResolveBundledSettingsPath();
-            if (sidecar is null)
-                return;
+            var directory = Path.GetDirectoryName(Environment.ProcessPath);
+            if (string.IsNullOrWhiteSpace(directory))
+                directory = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
-            var json = File.ReadAllText(sidecar);
-            if (!SettingsExchange.TryApply(settings, json, out var changed, out var error))
+            if (!BundledSettingsImporter.TryImport(settings, directory, _configPath, out var error))
             {
-                _logger.LogError("Не удалось импортировать настройки из {Path}: {Error}", sidecar, error);
+                if (error != null)
+                    _logger.LogError("Не удалось импортировать настройки из settings.json: {Error}", error);
+
                 return;
             }
 
-            if (!changed)
-                return;
-
-            _logger.LogInformation("Настройки импортированы из {Path}", sidecar);
+            _logger.LogInformation("Настройки импортированы из settings.json");
             SaveConfiguration(settings, true);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка импорта config.json рядом с приложением");
+            _logger.LogError(ex, "Ошибка импорта settings.json рядом с приложением");
         }
-    }
-
-    private string? ResolveBundledSettingsPath()
-    {
-        var directory = Path.GetDirectoryName(Environment.ProcessPath);
-        if (string.IsNullOrWhiteSpace(directory))
-            directory = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-
-        var path = Path.Combine(directory, "config.json");
-        if (!File.Exists(path))
-            return null;
-
-        if (string.Equals(Path.GetFullPath(path), Path.GetFullPath(_configPath), StringComparison.OrdinalIgnoreCase))
-            return null;
-
-        return path;
     }
 
     private Parameters DefaultConfiguration()
