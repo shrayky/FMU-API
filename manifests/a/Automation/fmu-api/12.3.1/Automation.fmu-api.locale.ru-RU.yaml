@@ -11,7 +11,7 @@ PackageName: fmu-api
 PackageUrl: https://github.com/shrayky/FMU-API
 License: MIT
 ShortDescription: Служба проверки марок по протоколу Атол MarkUnit
-ReleaseNotesUrl: https://github.com/shrayky/FMU-API/releases/tag/fmuapi12-3-1
+ReleaseNotesUrl: https://github.com/shrayky/FMU-API/releases/tag/fmuapi12-3
 Documentations:
 - DocumentLabel: Wiki
   DocumentUrl: https://github.com/shrayky/FMU-API/wiki
