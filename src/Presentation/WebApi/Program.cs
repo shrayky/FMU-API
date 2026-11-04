@@ -81,7 +81,10 @@ bool RunHttpApiService()
         options.JsonSerializerOptions.Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
     });
     services.AddScoped<FmuDocumentResponseService>();
-    services.AddRazorPages();
+    services.AddRazorPages(options =>
+    {
+        options.Conventions.AddPageRoute("/Index", "scan");
+    });
     services.AddEndpointsApiExplorer();
     services.AddSwaggerGen();
     builder.Services.AddMemoryCache();

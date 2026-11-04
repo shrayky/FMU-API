@@ -46,3 +46,17 @@ function isTouchOnlyDevice() {
 export function isNarrowScreen(threshold = NARROW_SCREEN_WIDTH) {
     return window.innerWidth <= threshold;
 }
+
+/**
+ * Упрощённый экран сканирования на телефоне.
+ * Включается только по адресу с сегментом scan, чтобы обычный заход
+ * с телефона открывал полное меню.
+ */
+export function isMobileScanMode() {
+    return isMobileDevice() && hasScanSegment();
+}
+
+function hasScanSegment() {
+    const path = window.location.pathname || "";
+    return path.split("/").some((part) => part.toLowerCase() === "scan");
+}

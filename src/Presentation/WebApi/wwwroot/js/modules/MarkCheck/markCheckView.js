@@ -2,7 +2,7 @@
 import { ServerAdres } from '../../utils/net.js';
 import { ScannerWedge } from '../../utils/scannerWedge.js';
 import { ClipboardMarkWatcher } from '../../utils/clipboardMarkWatcher.js';
-import { isMobileDevice } from '../../utils/device.js';
+import { isMobileScanMode } from '../../utils/device.js';
 import { buildMarkCardsHtml, buildCheckingHtml, buildScanHintHtml, ensureMarkCheckStyles } from './markCheckCards.js';
 
 class MarkCheckView {
@@ -11,7 +11,7 @@ class MarkCheckView {
         this.id = id;
         this.apiAddress = "/api/fmu/document";
         this.trueApiAddress = "/api/ts/cises/info";
-        this.isMobile = isMobileDevice();
+        this.isMobile = isMobileScanMode();
 
         this.LABELS = {
             formTitle: this.isMobile ? "Проверка марки" : "FMU-API: Проверка маркировки",

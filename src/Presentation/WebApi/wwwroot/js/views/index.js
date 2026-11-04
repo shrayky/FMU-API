@@ -6,7 +6,7 @@ import { loadParameters, SETTINGS_SAVED_EVENT } from '../services/ConfigurationS
 import { createLayout, createToolbar, setToolbarNodeName } from '../components/Layout.js';
 import { Sidebar } from '../components/Sidebar.js';
 import { buildMenuItems } from '../config/menu.js';
-import { isMobileDevice } from '../utils/device.js';
+import { isMobileScanMode } from '../utils/device.js';
 
 import SettingsView from '../modules/settings/SettingsView.js';
 import InformationView from '../modules/Information/informationView.js';
@@ -43,16 +43,12 @@ class App {
         this.router.register("beerTapsView", async () => (await import("../modules/BeerTaps/beerTapsView.js")).default);
     }
 
-    isMobile() {
-        return isMobileDevice();
-    }
-
     defaultPage() {
-        return this.isMobile() ? "markCheckView" : "monitorView";
+        return isMobileScanMode() ? "markCheckView" : "monitorView";
     }
 
     createMainLayout(config) {
-        if (this.isMobile()) {
+        if (isMobileScanMode()) {
             return createLayout({
                 type: "clean",
                 rows: [{ id: this.bodyId }]
@@ -78,7 +74,7 @@ class App {
     }
 
     refreshMenu(config) {
-        if (this.isMobile())
+        if (isMobileScanMode())
             return;
 
         this.config = config;

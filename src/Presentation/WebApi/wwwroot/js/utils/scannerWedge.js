@@ -1,3 +1,26 @@
+// Пока хотя бы один сканер слушает ввод, браузер спрашивает подтверждение
+// перед уходом на другой сайт: скан может попасть в адресную строку и открыть поиск.
+let activeScannerCount = 0;
+
+function holdPageOnLeave() {
+    activeScannerCount += 1;
+
+    if (activeScannerCount === 1)
+        window.addEventListener("beforeunload", confirmPageLeave);
+}
+
+function releasePageOnLeave() {
+    activeScannerCount = Math.max(0, activeScannerCount - 1);
+
+    if (activeScannerCount === 0)
+        window.removeEventListener("beforeunload", confirmPageLeave);
+}
+
+function confirmPageLeave(event) {
+    event.preventDefault();
+    event.returnValue = "Сканирование прервётся. Уйти со страницы?";
+}
+
 /**
  * Захват ввода клавиатурного сканера (wedge) с сохранением спецсимволов (включая GS).
  * На ТСД Chrome часто даёт keydown Unidentified без символа — тогда берём keypress/input/textInput.
@@ -75,6 +98,7 @@ export class ScannerWedge {
         }
         this._bindInput(inputNode);
         this.active = true;
+        holdPageOnLeave();
         this._log("start() — слушатели включены");
     }
 
@@ -95,6 +119,7 @@ export class ScannerWedge {
         this._unbindInput();
         this._reset();
         this.active = false;
+        releasePageOnLeave();
         this._log("stop() — слушатели выключены");
     }
 
@@ -368,6 +393,12 @@ export class ScannerWedge {
 
     _onKeyPress(e) {
         this._armInput();
+
+        // Ввод в обычное поле не перехватываем: Enter должен доходить до обработчика поля.
+        const intoField = this._isTypingTarget(e.target);
+        if (intoField && e.target !== this._inputNode && !this.completeOnIdle)
+            return;
+
         const code = e.charCode || e.which || 0;
         if (code === 13) {
             this._blockBrowser(e);
