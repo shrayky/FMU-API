@@ -1,6 +1,5 @@
-import { TableToolbar } from "../../../utils/ui.js";
-
-const TIME_FORMAT_24H = "%H:%i";
+import { TableToolbar, TimePicker } from "../../../utils/ui.js";
+import { formatTime, parseTime } from "../../../utils/time.js";
 
 const DEFAULT_LABELS = {
     title: "Расписание установки обновлений",
@@ -108,57 +107,6 @@ class UpdateInstallScheduleElement {
         };
     }
 
-    /// Преобразует строку времени в объект Date для datepicker.
-    _parseTimeString(timeStr) {
-        if (!timeStr)
-            return new Date(2000, 0, 1, 0, 0, 0);
-
-        const parts = String(timeStr).split(":");
-        const hours = parseInt(parts[0], 10) || 0;
-        const minutes = parseInt(parts[1], 10) || 0;
-        const seconds = parseInt(parts[2], 10) || 0;
-
-        return new Date(2000, 0, 1, hours, minutes, seconds);
-    }
-
-    /// Создаёт поле выбора времени в 24-часовом формате.
-    _createTimePicker(id, label, defaultValue) {
-        return {
-            view: "datepicker",
-            type: "time",
-            format: TIME_FORMAT_24H,
-            editable: true,
-            suggest: {
-                type: "calendar",
-                padding: 0,
-                body: {
-                    type: "time",
-                    calendarTime: TIME_FORMAT_24H,
-                    width: 250,
-                    height: 240,
-                }
-            },
-            label: label,
-            labelPosition: "top",
-            id: id,
-            name: id,
-            value: defaultValue,
-        };
-    }
-
-    /// Форматирует время для сохранения в формате TimeOnly.
-    _formatTimeForSave(value) {
-        if (!value)
-            return "00:00:00";
-
-        const date = value instanceof Date ? value : new Date(value);
-        const hours = date.getHours().toString().padStart(2, "0");
-        const minutes = date.getMinutes().toString().padStart(2, "0");
-        const seconds = date.getSeconds().toString().padStart(2, "0");
-
-        return `${hours}:${minutes}:${seconds}`;
-    }
-
     _showForm(label, id) {
         const windowInnerWidth = window.innerWidth;
 
@@ -200,15 +148,15 @@ class UpdateInstallScheduleElement {
             rows: [
                 {
                     cols:
-                        [this._createTimePicker(
-                            this.BEGIN_TIME_ID,
+                        [TimePicker(
                             this.labels.beginTime,
-                            new Date(2000, 0, 1, 0, 0, 0)
+                            this.BEGIN_TIME_ID,
+                            parseTime("00:00")
                         ),
-                        this._createTimePicker(
-                            this.END_TIME_ID,
+                        TimePicker(
                             this.labels.endTime,
-                            new Date(2000, 0, 1, 23, 59, 0)
+                            this.END_TIME_ID,
+                            parseTime("23:59")
                         ),
                         ]
                 },
@@ -257,8 +205,8 @@ class UpdateInstallScheduleElement {
             return;
         }
 
-        const beginTime = this._formatTimeForSave(beginTimeValue);
-        const endTime = this._formatTimeForSave(endTimeValue);
+        const beginTime = formatTime(beginTimeValue);
+        const endTime = formatTime(endTimeValue);
 
         if (beginTime >= endTime) {
             webix.message({
@@ -294,8 +242,8 @@ class UpdateInstallScheduleElement {
         const table = $$(this.TABLE_ID);
         const item = table.getItem(rowId);
 
-        $$(this.BEGIN_TIME_ID).setValue(this._parseTimeString(item.beginTime));
-        $$(this.END_TIME_ID).setValue(this._parseTimeString(item.endTime));
+        $$(this.BEGIN_TIME_ID).setValue(parseTime(item.beginTime));
+        $$(this.END_TIME_ID).setValue(parseTime(item.endTime));
         $$(this.ROW_ID).setValue(item.id);
     }
 }
