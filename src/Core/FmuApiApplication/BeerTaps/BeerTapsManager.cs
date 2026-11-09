@@ -77,7 +77,82 @@ public class BeerTapsManager : IBeerOnTapManager
     {
         var result = await _tapsRepository.BeerKegVolume(sGtin);
 
-        return result.IsSuccess ? result.Value : 0;
+        if (result.IsSuccess && result.Value > 0)
+            return result.Value;
+
+        return await VolumeFromFrontolCard(sGtin);
+    }
+
+    /// <summary>
+    /// Ищет ёмкость кеги по марке в карточках кранов подключённых баз Frontol.
+    /// </summary>
+    private async Task<int> VolumeFromFrontolCard(string sGtin)
+    {
+        var settings = await _parametersService.CurrentAsync();
+
+        foreach (var connection in settings.ConnectedFrontolSettings.ConnectionSettings)
+        {
+            if (!connection.ConnectionEnable())
+                continue;
+
+            IDisposableBeerTapsRepository? repo = null;
+
+            try
+            {
+                repo = _frontolBeerTapsFactory.Create(connection.ConnectionStringBuild());
+
+                var tapsResult = await repo.All();
+
+                if (tapsResult.IsFailure)
+                {
+                    _logger.LogDebug("Поиск ёмкости кеги {Sgtin}: ошибка чтения базы Frontol {Name} ({Path}): {Error}",
+                        sGtin,
+                        connection.Name,
+                        connection.Path,
+                        tapsResult.Error);
+
+                    continue;
+                }
+
+                foreach (var tap in tapsResult.Value)
+                {
+                    if (string.IsNullOrWhiteSpace(tap.MarkCode))
+                        continue;
+
+                    var mark = _markParser.EncodeMark(tap.MarkCode);
+                    var tapSgtin = _markParser.CalculateSGtin(mark);
+
+                    if (!string.Equals(tapSgtin, sGtin, StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    var volume = Convert.ToInt32(Math.Round(tap.Volume));
+
+                    if (volume <= 0)
+                        continue;
+
+                    _logger.LogInformation("Ёмкость кеги {Sgtin} взята из карточки крана {TapName} базы Frontol {Name}: {Volume}",
+                        sGtin,
+                        tap.TapName,
+                        connection.Name,
+                        volume);
+
+                    return volume;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Поиск ёмкости кеги {Sgtin}: ошибка чтения базы Frontol {Name} ({Path})",
+                    sGtin,
+                    connection.Name,
+                    connection.Path);
+            }
+            finally
+            {
+                repo?.Dispose();
+            }
+        }
+
+        return 0;
     }
 
     public async Task<List<BeerOnTap>> List()

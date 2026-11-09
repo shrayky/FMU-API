@@ -25,31 +25,35 @@ public class FrontolDocumentMarkStateService(IMarkFabric markFabric, IMarkStateM
     {
         var state = beginDocument.Type == SaleDocumentType ? MarkState.Sold : MarkState.Returned;
 
-        Dictionary<string, decimal> quantityByMark = beginDocument.Positions
+        var positionsByMark = beginDocument.Positions
             .SelectMany(p => p.Marking_codes.Select(code => new
             {
                 code = Convert.FromBase64String(code),
-                Quantity = p.Volume > 0 ? (decimal)p.Volume : (decimal)p.Quantity
+                Quantity = p.Volume > 0 ? (decimal)p.Volume : (decimal)p.Quantity,
+                p.ItemType
             }))
+            .GroupBy(x => Encoding.UTF8.GetString(x.code))
             .ToDictionary(
-                x => Encoding.UTF8.GetString(x.code),
-                x => x.Quantity);
+                g => g.Key,
+                g => (Quantity: g.Sum(x => x.Quantity), ItemType: g.Last().ItemType));
 
         var marks = await Task.WhenAll(
-            quantityByMark.Keys.Select(code => _markFabric.Create(new(), code)));
+            positionsByMark.Keys.Select(code => _markFabric.Create(new(), code)));
 
         foreach (var mark in marks)
         {
+            var position = positionsByMark[mark.Code];
+
             SaleData saleData = new()
             {
                 CheckNumber = beginDocument.Number,
                 SaleDate = DateTime.Now,
                 Pos = beginDocument.Pos,
                 IsSale = beginDocument.Type == SaleDocumentType,
-                Quantity = quantityByMark[mark.Code]
+                Quantity = position.Quantity
             };
 
-            await _markStateManager.ChangeState(mark.SGtin, state, saleData);
+            await _markStateManager.ChangeState(mark.SGtin, state, saleData, position.ItemType);
         }
     }
 }

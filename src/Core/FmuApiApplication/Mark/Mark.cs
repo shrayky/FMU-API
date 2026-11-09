@@ -10,6 +10,7 @@ using FmuApiDomain.Mark.Enums;
 using FmuApiDomain.Mark.Interfaces;
 using FmuApiDomain.ProductGroups;
 using FmuApiDomain.ProductGroups.Interfaces;
+using FmuApiDomain.TrueApi.MarkData;
 using FmuApiDomain.TrueApi.MarkData.Check;
 using FmuApiDomain.TsPiot.Models;
 using Microsoft.Extensions.Logging;
@@ -44,6 +45,8 @@ public class Mark : IMark
     private bool _useTsPiot = false; 
 
     private MarkCheckResult _lastCheckResult = MarkCheckResult.Empty();
+
+    private bool _soldStateNeedsReset;
 
     public Mark(
         string markCode,
@@ -118,6 +121,8 @@ public class Mark : IMark
         Task<MarkEntity> currentStateTask,
         List<string> checkErrors)
     {
+        _soldStateNeedsReset = false;
+
         if (!_lastCheckResult.IsSuccess)
         {
             checkErrors.Add(_lastCheckResult.ErrorDescription);
@@ -141,7 +146,7 @@ public class Mark : IMark
         if (_lastCheckResult.FmuAnswer.OfflineRegime)
             await ApplyGisMtExpireDateIfMissing();
 
-        var validationResult = ValidateMarkData(operation);
+        var validationResult = await ValidateMarkData(operation);
 
         if (validationResult.IsFailure)
         {
@@ -156,6 +161,14 @@ public class Mark : IMark
 
         _lastCheckResult.FmuAnswer.PrintGroupCode = PrintGroupCode;
         _lastCheckResult.FmuAnswer.ShouldHaveExpireDate = ResolveShouldHaveExpireDate();
+
+        if (validationResult.IsSuccess && _soldStateNeedsReset)
+        {
+            _logger.LogInformation("Марка {Code}: остаток количества есть, сбрасываю состояние sold на stock", Code);
+
+            await _markStateManager.UpdateMarkState(SGtin, MarkState.Stock);
+            _soldStateNeedsReset = false;
+        }
 
         if (!_lastCheckResult.FmuAnswer.Offline)
             await _markStateManager.Save(SGtin, _lastCheckResult.TrueMarkData);
@@ -204,7 +217,7 @@ public class Mark : IMark
             _tsPiotConnectionSettings.Host = $"https://{_tsPiotConnectionSettings.Host}";
     }
 
-    public Result ValidateMarkData(OperationType operation)
+    public async Task<Result> ValidateMarkData(OperationType operation)
     {
         var trueMarkData = _lastCheckResult.TrueMarkData;
         var markData = trueMarkData.MarkData();
@@ -236,9 +249,28 @@ public class Mark : IMark
             if (trueMarkData.AllMarksIsExpire())
                 validationErrors.Add($"Срок годности истек {markData.DaysExpired} дней назад");
 
-            // Проверка продажи
+            // Проверка продажи. Весовой товар (в том числе разливное пиво) продаётся частями, пока остаётся количество.
             if (trueMarkData.AllMarksIsSold() || markDbInfo.State == MarkState.Sold)
-                validationErrors.Add("Марка продана");
+            {
+                if (await HasRemainingVolume(markData, markDbInfo))
+                {
+                    trueMarkData.Codes.ForEach(code => code.Sold = false);
+
+                    if (markDbInfo.State == MarkState.Sold)
+                    {
+                        markDbInfo.State = MarkState.Stock;
+                        _soldStateNeedsReset = true;
+                    }
+
+                    markDbInfo.TrueApiCisData.Sold = false;
+
+                    _logger.LogInformation("Марка {Code}: в товаре осталось количество, продажа разрешена", Code);
+                }
+                else
+                {
+                    validationErrors.Add("Марка продана");
+                }
+            }
 
             // Проверка продажи возвращенного товара
             if (_lastCheckResult.MarkInformation.State == MarkState.Returned &&
@@ -344,6 +376,44 @@ public class Mark : IMark
             gtin = markData.Gtin;
 
         await _gtinCatalogService.SaveFromOnlineCheck(gtin, groupId);
+    }
+
+    private async Task<bool> HasRemainingVolume(CodeDataTrueApi markData, MarkEntity markDbInfo)
+    {
+        if (_lastCheckResult.TrueMarkData.Codes.Count != 1)
+            return false;
+
+        var innerUnitCount = markData.InnerUnitCount
+            ?? markDbInfo.TrueApiCisData.InnerUnitCount
+            ?? 0;
+
+        var soldUnitCount = markData.SoldUnitCount
+            ?? markDbInfo.TrueApiCisData.SoldUnitCount;
+
+        if (innerUnitCount > 0)
+            return innerUnitCount - (soldUnitCount ?? SoldVolume(markDbInfo)) > 0;
+
+        // Объёма нет в данных марки. Для разливного пива пробуем карточку крана Frontol.
+        if (AtolItemType != AtolToTrueApiGroupMap.DraftBeerAtolCode)
+            return false;
+
+        innerUnitCount = await _markStateManager.KegVolume(SGtin);
+
+        if (innerUnitCount <= 0)
+        {
+            // Ёмкость кеги неизвестна: запрещать продажу нельзя, иначе разливное пиво блокируется навсегда.
+            _logger.LogWarning("Ёмкость кеги для марки {Code} неизвестна, марка считается доступной для продажи", Code);
+            return true;
+        }
+
+        return innerUnitCount - (soldUnitCount ?? SoldVolume(markDbInfo)) > 0;
+    }
+
+    private static int SoldVolume(MarkEntity markEntity)
+    {
+        var volume = markEntity.Sales.Sum(sale => sale.IsSale ? sale.Quantity : -sale.Quantity);
+
+        return Math.Max(0, (int)Math.Round(volume));
     }
 
     private MarkCheckSource ResolveCheckSource(FmuAnswer answer)

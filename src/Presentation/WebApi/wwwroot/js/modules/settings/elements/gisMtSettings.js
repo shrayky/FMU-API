@@ -1,6 +1,5 @@
-import { Number, padding, CheckBox } from "../../../utils/ui.js";
-
-const TIME_FORMAT_24H = "%H:%i";
+import { Number, padding, CheckBox, TimePicker } from "../../../utils/ui.js";
+import { parseTime } from "../../../utils/time.js";
 
 class GisMtSettingsElement {
     constructor(id) {
@@ -14,48 +13,13 @@ class GisMtSettingsElement {
         };
     }
 
-    _parseTimeString(timeStr) {
-        if (!timeStr)
-            return new Date(2000, 0, 1, 3, 0, 0);
-
-        const parts = String(timeStr).split(":");
-        const hours = parseInt(parts[0], 10) || 0;
-        const minutes = parseInt(parts[1], 10) || 0;
-        const seconds = parseInt(parts[2], 10) || 0;
-
-        return new Date(2000, 0, 1, hours, minutes, seconds);
-    }
-
-    _createTimePicker(name, label, defaultValue) {
-        return {
-            view: "datepicker",
-            type: "time",
-            format: TIME_FORMAT_24H,
-            editable: true,
-            suggest: {
-                type: "calendar",
-                padding: 0,
-                body: {
-                    type: "timeboard",
-                    button: true,
-                    twelve: false
-                }
-            },
-            label,
-            labelPosition: "top",
-            id: name,
-            name,
-            value: defaultValue,
-        };
-    }
-
     loadConfig(config) {
         const settings = config?.gisMtSettings ?? {};
         this.mtDocumentsPollIntervalMinutes = settings.mtDocumentsPollIntervalMinutes ?? 10;
         this.markRetentionDays = settings.markRetentionDays ?? 365;
         this.documentsSyncDays = settings.documentsSyncDays ?? 1;
         this.stockLoadEnabled = settings.stockLoadEnabled ?? false;
-        this.stockLoadTime = this._parseTimeString(settings.stockLoadTime ?? "03:00:00");
+        this.stockLoadTime = parseTime(settings.stockLoadTime || "03:00:00");
         return this;
     }
 
@@ -89,9 +53,9 @@ class GisMtSettingsElement {
                             "gisMtSettings.stockLoadEnabled",
                             { value: this.stockLoadEnabled }
                         ),
-                        this._createTimePicker(
-                            "gisMtSettings.stockLoadTime",
+                        TimePicker(
                             this.LABELS.stockLoadTime,
+                            "gisMtSettings.stockLoadTime",
                             this.stockLoadTime
                         )
                     ]

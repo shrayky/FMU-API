@@ -11,6 +11,7 @@ using FmuApiDomain.Mark.Enums;
 using FmuApiDomain.Mark.Interfaces;
 using FmuApiDomain.Mark.Models;
 using FmuApiDomain.State.Interfaces;
+using FmuApiDomain.TrueApi.MarkData;
 using FmuApiDomain.TrueApi.MarkData.Check;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -165,31 +166,42 @@ public class MarkStateManager : IMarkStateManager
         return Result.Success();
     }
 
-    public async Task<MarkEntity> ChangeState(string sGtin, string newState, SaleData saleData)
+    public async Task<MarkEntity> ChangeState(string sGtin, string newState, SaleData saleData, int atolItemType = 0)
     {
-        // для больщинства видов товаров после продажи статус станет sold, кроме тех у кого есть innerUnitCount
+        // для большинства видов товаров после продажи статус станет sold, кроме тех у кого есть innerUnitCount
         bool isSold = newState == MarkState.Sold;
 
         var existMark = await _markCrud.GetAsync(sGtin);
         var markInfo = existMark.TrueApiCisData;
 
+        var isDraftBeer = atolItemType == AtolToTrueApiGroupMap.DraftBeerAtolCode;
+
         var innerUnitCount = markInfo.InnerUnitCount ?? 0;
 
-        // если нет групп, то высокая вероятность что это оффлайн режим
-        if (markInfo.GroupIds == null)
-        {
-            // тогда проверим - может это стоящая на крану кега
+        // если в данных марки нет ёмкости, а марка разливного пива - берём ёмкость кеги из карточки крана Frontol
+        if (innerUnitCount <= 0 && isDraftBeer)
             innerUnitCount = await _beerOnTapManager.Volume(sGtin);
-        }
 
-        if (innerUnitCount != 0)
+        var soldUnitCount = markInfo.SoldUnitCount ?? SoldVolume(existMark);
+        var saleVolume = (int)Math.Round(saleData.Quantity);
+        var signedVolume = saleData.IsSale ? saleVolume : -saleVolume;
+
+        if (innerUnitCount > 0)
         {
-            var reaminWithSale = innerUnitCount - (markInfo.SoldUnitCount ?? 0) - saleData.Quantity;
+            var remainWithSale = innerUnitCount - soldUnitCount - signedVolume;
 
-            newState = reaminWithSale > 0 ? MarkState.Stock : MarkState.Sold;
+            newState = remainWithSale > 0 ? MarkState.Stock : MarkState.Sold;
             isSold = newState == MarkState.Sold;
 
-            markInfo.SoldUnitCount += (int)saleData.Quantity;
+            markInfo.SoldUnitCount = Math.Max(0, soldUnitCount + signedVolume);
+        }
+        else if (isDraftBeer)
+        {
+            // ёмкость кеги неизвестна: не помечаем марку проданной, иначе следующая порция не пробьётся
+            newState = MarkState.Stock;
+            isSold = false;
+
+            _logger.LogWarning("Не удалось определить ёмкость кеги для марки {Sgtin}, марка оставлена в продаже", sGtin);
         }
 
         existMark.State = newState;
@@ -201,7 +213,7 @@ public class MarkStateManager : IMarkStateManager
 
         if (innerUnitCount > 0)
         {
-            await _beerOnTapManager.AddSale(sGtin, (int)saleData.Quantity);
+            await _beerOnTapManager.AddSale(sGtin, signedVolume);
         }
 
         var savedMark = await _markCrud.AddAsync(markEntity);
@@ -209,6 +221,18 @@ public class MarkStateManager : IMarkStateManager
         await SyncGisMtSoldState(sGtin, isSold);
 
         return savedMark;
+    }
+
+    public async Task<int> KegVolume(string sGtin)
+    {
+        return await _beerOnTapManager.Volume(sGtin);
+    }
+
+    private static int SoldVolume(MarkEntity markEntity)
+    {
+        var volume = markEntity.Sales.Sum(sale => sale.IsSale ? sale.Quantity : -sale.Quantity);
+
+        return Math.Max(0, (int)Math.Round(volume));
     }
 
     /// <summary>

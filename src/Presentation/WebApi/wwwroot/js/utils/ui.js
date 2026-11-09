@@ -1,4 +1,5 @@
 import { OnDeleteAllRows, OnDeleteRow, OnAddRow } from "./tables.js";
+import { TIME_FORMAT_24H } from "./time.js";
 
 export const padding = {
     top: 5,
@@ -161,6 +162,36 @@ export function CheckBox(label, name, prms = {}) {
         labelPosition: "left",
         id: id,
         name: name,
+    }
+
+    return applyParameters(newElement, prms);
+}
+
+export function TimePicker(label, name, value, prms = {}) {
+    let id = name;
+
+    // В suggest тип calendar, а type "time" переключает календарь на выбор
+    // часов и минут. С timeboard в body календарь остаётся выбором даты.
+    let newElement = {
+        view: "datepicker",
+        type: "time",
+        format: TIME_FORMAT_24H,
+        editable: true,
+        suggest: {
+            type: "calendar",
+            padding: 0,
+            body: {
+                type: "time",
+                calendarTime: TIME_FORMAT_24H,
+                width: 250,
+                height: 240,
+            }
+        },
+        label: label,
+        labelPosition: "top",
+        id: id,
+        name: name,
+        value: value,
     }
 
     return applyParameters(newElement, prms);

@@ -7,6 +7,11 @@ namespace FmuApiDomain.TrueApi.MarkData;
 /// </summary>
 public static class AtolToTrueApiGroupMap
 {
+    /// <summary>
+    /// Код вида товара Frontol для разливного пива.
+    /// </summary>
+    public const int DraftBeerAtolCode = 18;
+
     public static IReadOnlyDictionary<int, GisMtProductMapping> Defaults { get; } =
         new Dictionary<int, GisMtProductMapping>
         {
