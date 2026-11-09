@@ -12,9 +12,13 @@ namespace FmuApiDomain.Mark.Interfaces
         Task<List<MarkEntity>> InformationBulk(List<string> sGtins);
         
         Task<Result> Save(string sGtin, CheckMarksDataTrueApi trueMarkData);
+
+        Task<Result> UpdateMarkState(string sgtin, string newState);
         
-        Task<MarkEntity> ChangeState(string sGtin, string newState, SaleData saleData);
+        Task<MarkEntity> ChangeState(string sGtin, string newState, SaleData saleData, int atolItemType = 0);
 
         Task<DateTime?> ExpireDateFromGisMtStock(string sGtin);
+
+        Task<int> KegVolume(string sGtin);
     }
 }
