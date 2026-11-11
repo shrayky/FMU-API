@@ -37,4 +37,19 @@ public class GisMtDocInfoResponse
 
     [JsonPropertyName("cisesList")]
     public List<string>? CisesList { get; set; }
+
+    [JsonPropertyName("errors")]
+    public List<string>? Errors { get; set; }
+
+    /// <summary>
+    /// Ошибки обработки документа; пустой список, если ГИС МТ вернула null или не вернула поле.
+    /// </summary>
+    [JsonIgnore]
+    public IReadOnlyList<string> ErrorMessages => Errors ?? [];
+
+    /// <summary>
+    /// Ответ doc/info как пришёл от True API: сохраняется в документе целиком.
+    /// </summary>
+    [JsonIgnore]
+    public string RawJson { get; set; } = string.Empty;
 }

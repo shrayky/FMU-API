@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -20,6 +20,10 @@
     <ProjectReference Include="..\..\Infrastructure\LocalModuleIntegration\LocalModuleIntegration.csproj" />
     <ProjectReference Include="..\..\Infrastructure\TrueApiCdn\TrueApi.csproj" />
     <ProjectReference Include="..\FmuApiDomain\FmuApiDomain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="FmuApiApplication.Tests" />
   </ItemGroup>
 
 </Project>

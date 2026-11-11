@@ -129,10 +129,10 @@ public class MarkCheckTrueApiService(
 
     private static void ApplyProductInfo(List<CisInfoResponseItem> items, ProductsInformationTrueApi products)
     {
-        if (products.Results.Count == 0)
+        if (products.Items.Count == 0)
             return;
 
-        var byGtin = products.Results
+        var byGtin = products.Items
             .Where(product => !string.IsNullOrWhiteSpace(product.Gtin))
             .GroupBy(product => product.Gtin, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);

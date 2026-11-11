@@ -85,6 +85,9 @@ public class CisInfoData
     [JsonPropertyName("productWeight")]
     public double? ProductWeight { get; set; }
 
+    [JsonPropertyName("productWeightGr")]
+    public int? ProductWeightGr { get; set; }
+
     [JsonPropertyName("volumeWeight")]
     public string? VolumeWeight { get; set; }
 }

@@ -2,6 +2,7 @@ using CSharpFunctionalExtensions;
 using FmuApiDomain.Attributes;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Configuration.Options.Organization;
+using FmuApiDomain.GisMt;
 using FmuApiDomain.GisMt.Interfaces;
 using FmuApiDomain.GisMt.Models;
 using FmuApiDomain.State.Interfaces;
@@ -20,11 +21,11 @@ public class GisMtStockLoadService(
     IApplicationState applicationState,
     IGisMtCisesClient cisesClient,
     IGisMtProductGroupsService productGroupsService,
-    IGisMtCisInfoSaver cisInfoSaver) : IGisMtStockLoadService
+    IGisMtCisInfoSaver cisInfoSaver,
+    IGisMtWithdrawnMarksService withdrawnMarksService) : IGisMtStockLoadService
 {
     private const int SearchPageSize = 1000;
     private const string IntroducedStatus = "INTRODUCED";
-    private const string StockSourceId = "stock";
 
     private readonly ILogger<GisMtStockLoadService> _logger = logger;
     private readonly IParametersService _parametersService = parametersService;
@@ -32,6 +33,7 @@ public class GisMtStockLoadService(
     private readonly IGisMtCisesClient _cisesClient = cisesClient;
     private readonly IGisMtProductGroupsService _productGroupsService = productGroupsService;
     private readonly IGisMtCisInfoSaver _cisInfoSaver = cisInfoSaver;
+    private readonly IGisMtWithdrawnMarksService _withdrawnMarksService = withdrawnMarksService;
 
     /// <summary>
     /// Загружает марки со статусом INTRODUCED для организации.
@@ -66,6 +68,7 @@ public class GisMtStockLoadService(
     {
         var errors = new List<string>();
         var marksSaved = 0;
+        var marksWithdrawn = 0;
         var organisationsProcessed = 0;
 
         try
@@ -97,10 +100,11 @@ public class GisMtStockLoadService(
                 }
 
                 marksSaved += loadResult.Value.MarksSaved;
+                marksWithdrawn += loadResult.Value.MarksWithdrawn;
                 errors.AddRange(loadResult.Value.Errors);
             }
 
-            return Result.Success(new GisMtStockLoadAllResult(organisationsProcessed, marksSaved, errors));
+            return Result.Success(new GisMtStockLoadAllResult(organisationsProcessed, marksSaved, marksWithdrawn, errors));
         }
         catch (Exception ex)
         {
@@ -116,6 +120,7 @@ public class GisMtStockLoadService(
     {
         var errors = new List<string>();
         var marksSaved = 0;
+        var marksWithdrawn = 0;
 
         var groupsResult = await _productGroupsService.GetOrRefresh(organisation.INN, cancellationToken);
         if (groupsResult.IsFailure)
@@ -128,13 +133,14 @@ public class GisMtStockLoadService(
 
             var loadGroup = await LoadForProductGroup(organisation, token, productGroup, cancellationToken);
             marksSaved += loadGroup.MarksSaved;
+            marksWithdrawn += loadGroup.MarksWithdrawn;
             errors.AddRange(loadGroup.Errors);
         }
 
-        return Result.Success(new GisMtStockLoadResult(marksSaved, errors));
+        return Result.Success(new GisMtStockLoadResult(marksSaved, marksWithdrawn, errors));
     }
 
-    private async Task<(int MarksSaved, List<string> Errors)> LoadForProductGroup(
+    private async Task<(int MarksSaved, int MarksWithdrawn, List<string> Errors)> LoadForProductGroup(
         PrintGroupData organisation,
         string token,
         string productGroup,
@@ -142,6 +148,9 @@ public class GisMtStockLoadService(
     {
         var errors = new List<string>();
         var marksSaved = 0;
+        var marksWithdrawn = 0;
+        var loadStartedAt = DateTime.UtcNow;
+        var freshCodes = new HashSet<string>(StringComparer.Ordinal);
         string? lastEmissionDate = null;
         string? lastSgtin = null;
         var isLastPage = false;
@@ -174,6 +183,15 @@ public class GisMtStockLoadService(
             var page = search.Value;
             isLastPage = page.IsLastPage || page.Result.Count == 0;
 
+            foreach (var item in page.Result)
+            {
+                if (!string.IsNullOrWhiteSpace(item.Cis))
+                    freshCodes.Add(item.Cis!);
+
+                if (!string.IsNullOrWhiteSpace(item.Sgtin))
+                    freshCodes.Add(item.Sgtin!);
+            }
+
             var cises = page.Result
                 .Select(x => x.Cis ?? x.Sgtin)
                 .Where(x => !string.IsNullOrWhiteSpace(x))
@@ -186,7 +204,7 @@ public class GisMtStockLoadService(
                 token,
                 productGroup,
                 cises,
-                StockSourceId,
+                GisMtMarkSources.Stock,
                 cancellationToken);
 
             if (saved.IsFailure)
@@ -202,6 +220,17 @@ public class GisMtStockLoadService(
             }
         }
 
-        return (marksSaved, errors);
+        if (isLastPage && errors.Count == 0 && !cancellationToken.IsCancellationRequested)
+        {
+            marksWithdrawn = await _withdrawnMarksService.Reconcile(
+                organisation,
+                token,
+                productGroup,
+                freshCodes,
+                loadStartedAt,
+                cancellationToken);
+        }
+
+        return (marksSaved, marksWithdrawn, errors);
     }
 }

@@ -20,6 +20,10 @@ public class PrintGroupData
     [ExchangeableSetting]
     public string Name { get; set; } = string.Empty;
 
+    public string Kpp { get; set; } = string.Empty;
+
+    public string FiasId { get; set; } = string.Empty;
+
     [ExchangeableSetting]
     public LocalModuleConnection LocalModuleConnection { get; set; } = new();
 

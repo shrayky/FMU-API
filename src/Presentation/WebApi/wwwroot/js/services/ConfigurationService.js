@@ -138,31 +138,56 @@ function normalizeFormValues(values) {
     return values;
 }
 
-export function saveConfiguration(formId) {
+/// Сохраняет форму настроек. Разделы, которых на странице нет, остаются прежними:
+/// служба заменяет конфигурацию целиком, а форма присылает только свои поля.
+export async function saveConfiguration(formId) {
     const form = $$(formId);
     const values = normalizeFormValues(form.getValues());
-    const data = JSON.stringify(values);
 
     form.disable();
 
-    return saveParameters(data)
-        .then(packet => {
-            if (!packet.isSuccess) {
-                webix.message(packet);
-                return packet;
-            }
+    try {
+        const config = await loadParameters();
+        return await saveValues({ ...config, ...values });
+    } finally {
+        form.enable();
+    }
+}
 
-            if (packet.needToRestart) {
-                webix.message("Изменения будут применены после перезапуска службы DS:Fmu-Api (она произойдет в течение одной минуты)");
-            }
+/// Сохраняет один раздел отдельной страницы, не меняя остальные разделы конфигурации.
+export async function saveConfigurationSection(formId, sectionName) {
+    const form = $$(formId);
+    const values = normalizeFormValues(form.getValues());
 
-            window.dispatchEvent(new CustomEvent(SETTINGS_SAVED_EVENT, {
-                detail: values
-            }));
+    form.disable();
 
-            return packet;
-        })
-        .finally(() => {
-            form.enable();
-        });
+    try {
+        const config = await loadParameters();
+
+        if (values?.[sectionName] !== undefined)
+            config[sectionName] = values[sectionName];
+
+        return await saveValues(config);
+    } finally {
+        form.enable();
+    }
+}
+
+async function saveValues(values) {
+    const packet = await saveParameters(JSON.stringify(values));
+
+    if (!packet.isSuccess) {
+        webix.message(packet);
+        return packet;
+    }
+
+    if (packet.needToRestart) {
+        webix.message("Изменения будут применены после перезапуска службы DS:Fmu-Api (она произойдет в течение одной минуты)");
+    }
+
+    window.dispatchEvent(new CustomEvent(SETTINGS_SAVED_EVENT, {
+        detail: values
+    }));
+
+    return packet;
 }

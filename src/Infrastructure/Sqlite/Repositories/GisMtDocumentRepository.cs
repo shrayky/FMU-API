@@ -1,8 +1,11 @@
 using CouchDb.DatabaseScheme;
+using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.GisMt.Entities;
 using FmuApiDomain.GisMt.Interfaces;
+using FmuApiDomain.GisMt.Models;
 using FmuApiDomain.State.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Sqlite.Documents;
 using System.Text.Json;
@@ -48,6 +51,45 @@ public class GisMtDocumentRepository(
             entity.Id = entity.Number;
 
         return await base.Save(entity);
+    }
+
+    /// <summary>
+    /// Страница загруженных входящих документов по убыванию даты загрузки.
+    /// </summary>
+    public async Task<Result<GisMtDocumentPage>> List(int page, int pageSize)
+    {
+        return await ExecuteSafetyDbOperation(
+            async () =>
+            {
+                var query = _rows.AsNoTracking();
+                var count = await query.CountAsync();
+
+                var rows = await query
+                    .OrderByDescending(row => row.LoadedAt)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                var documents = rows
+                    .Select(ToEntity)
+                    .Where(document => document != null)
+                    .Cast<GisMtDocumentEntity>()
+                    .ToList();
+
+                foreach (var document in documents)
+                    document.Body = string.Empty;
+
+                return Result.Success(new GisMtDocumentPage
+                {
+                    Documents = documents,
+                    Count = count,
+                    CurrentPage = page,
+                    PageSize = pageSize,
+                    TotalPages = count == 0 ? 1 : (int)Math.Ceiling(count / (double)pageSize)
+                });
+            },
+            "List",
+            Result.Failure<GisMtDocumentPage>(DatabaseUnavailable));
     }
 
     protected override GisMtDocumentRow CreateRow(GisMtDocumentEntity entity, string id) => new()

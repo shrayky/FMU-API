@@ -19,6 +19,7 @@ public class CouchDbContext
     public ICouchDatabase<CouchDoc<GisMtDocumentEntity>> GisMtDocuments { get; }
     public ICouchDatabase<CouchDoc<GisMtMarkEntity>> GisMtMarks { get; }
     public ICouchDatabase<CouchDoc<GtinCatalogEntity>> GtinCatalog { get; }
+    public ICouchDatabase<CouchDoc<GisMtJournalEntity>> GisMtJournal { get; }
 
     public CouchDbContext(CouchClient client)
     {
@@ -29,5 +30,6 @@ public class CouchDbContext
         GisMtDocuments = client.GetDatabase<CouchDoc<GisMtDocumentEntity>>(DatabaseNames.GisMtDocumentsDbName);
         GisMtMarks = client.GetDatabase<CouchDoc<GisMtMarkEntity>>(DatabaseNames.GisMtMarksDbName);
         GtinCatalog = client.GetDatabase<CouchDoc<GtinCatalogEntity>>(DatabaseNames.GtinCatalogDbName);
+        GisMtJournal = client.GetDatabase<CouchDoc<GisMtJournalEntity>>(DatabaseNames.GisMtJournalDbName);
     }
 }

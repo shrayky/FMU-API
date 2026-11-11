@@ -44,6 +44,37 @@ public class DatabaseIndexesTests
     }
 
     [Fact]
+    public void Журнал_документов_ГИС_МТ_есть_в_схеме_индексов_и_в_переносе()
+    {
+        var schema = DatabaseIndexes.DatabaseIndexSchema();
+
+        Assert.Contains(DatabaseNames.GisMtJournalDbName, schema.Keys);
+        Assert.Contains("gis-mt-journal-uid-idx",
+            schema[DatabaseNames.GisMtJournalDbName].Select(index => index.Name));
+        Assert.Contains("gis-mt-journal-submitted-idx",
+            schema[DatabaseNames.GisMtJournalDbName].Select(index => index.Name));
+        Assert.Contains(DatabaseNames.GisMtJournalDbName, DatabaseNames.Names());
+    }
+
+    [Fact]
+    public void Индекс_выборки_КИ_журнала_покрывает_ИНН_группу_статус_и_дату_отправки()
+    {
+        var index = Assert.Single(
+            DatabaseIndexes.DatabaseIndexSchema()[DatabaseNames.GisMtJournalDbName],
+            item => item.Name == "gis-mt-journal-submitted-idx");
+
+        var json = JsonSerializer.Serialize(index);
+
+        using var document = JsonDocument.Parse(json);
+        var fields = document.RootElement.GetProperty("index").GetProperty("fields")
+            .EnumerateArray()
+            .Select(field => field.GetString())
+            .ToList();
+
+        Assert.Equal(["data.inn", "data.productGroup", "data.status", "data.sentAt"], fields);
+    }
+
+    [Fact]
     public void StatisticIndex_сортирует_дату_проверки_по_убыванию()
     {
         var indexes = DatabaseIndexes.DatabaseIndexSchema()[DatabaseNames.MarkCheckingStatistic];

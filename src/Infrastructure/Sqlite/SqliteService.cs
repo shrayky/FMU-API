@@ -41,6 +41,7 @@ public static class SqliteService
         AddRepository<IGisMtDocumentRepository, GisMtDocumentRepository>(services);
         AddRepository<IGisMtMarkRepository, GisMtMarkRepository>(services);
         AddRepository<IGtinCatalogRepository, GtinCatalogRepository>(services);
+        AddRepository<IGisMtJournalRepository, GisMtJournalRepository>(services);
 
         services.AddHostedService<SqliteStatusWorker>();
 
@@ -82,7 +83,19 @@ public static class SqliteService
         try
         {
             CreateDatabaseFolder(database);
-            startupScope.ServiceProvider.GetRequiredService<SqliteDbContext>().Database.EnsureCreated();
+
+            var context = startupScope.ServiceProvider.GetRequiredService<SqliteDbContext>();
+            context.Database.EnsureCreated();
+
+            context.Database.ExecuteSqlRaw(GisMtJournalSchema.TableSql);
+
+            // Сначала колонки: на старой базе индекс по ним ещё нельзя создать.
+            GisMtJournalSchema.Upgrade(context);
+
+            foreach (var indexSql in GisMtJournalSchema.IndexesSql)
+                context.Database.ExecuteSqlRaw(indexSql);
+
+            GisMtMarksSchema.Upgrade(context);
         }
         catch (Exception ex)
         {

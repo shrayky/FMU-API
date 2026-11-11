@@ -79,6 +79,8 @@ public class GisMtMarkRow : ISqliteDocumentRow
     public string SGtin { get; set; } = string.Empty;
     public string Cis { get; set; } = string.Empty;
     public string ProductGroup { get; set; } = string.Empty;
+    public string OrganisationInn { get; set; } = string.Empty;
+    public string SourceDocumentId { get; set; } = string.Empty;
     public DateTime InfoLoadedAt { get; set; }
     public bool Sold { get; set; }
     public DateTime? ExpireDate { get; set; }
@@ -92,6 +94,23 @@ public class GtinCatalogRow : ISqliteDocumentRow
     public string Id { get; set; } = string.Empty;
     public string Json { get; set; } = string.Empty;
     public string Gtin { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Строка журнала исходящих документов ГИС МТ.
+/// </summary>
+public class GisMtJournalRow : ISqliteDocumentRow
+{
+    public string Id { get; set; } = string.Empty;
+    public string Json { get; set; } = string.Empty;
+    public string? Uid { get; set; }
+    public string Kind { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public string Inn { get; set; } = string.Empty;
+    public string ProductGroup { get; set; } = string.Empty;
+    public DateTime? SentAt { get; set; }
+    public string CrptStatus { get; set; } = string.Empty;
 }
 
 /// <summary>

@@ -1,4 +1,4 @@
-﻿using CSharpFunctionalExtensions;
+using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Frontol.Interfaces;
 using FmuApiDomain.Frontol.Models;
@@ -168,6 +168,35 @@ public class FrontolSprTRepo : IFrontolSprTService, IDisposableFrontolSprTServic
         catch (Exception e)
         {
             return Result.Failure<Dictionary<int, FrontolWare>>(e.Message);
+        }
+    }
+
+    public async Task<Result<decimal?>> RetailPriceByBarcode(string barcode)
+    {
+        if (string.IsNullOrWhiteSpace(barcode))
+            return Result.Success<decimal?>(null);
+
+        try
+        {
+            var code = await _db.Barcodes
+                .AsNoTracking()
+                .FirstOrDefaultAsync(item => item.WareBarcode == barcode);
+
+            if (code == null)
+                return Result.Success<decimal?>(null);
+
+            var sprt = await _db.Sprts
+                .AsNoTracking()
+                .FirstOrDefaultAsync(item => item.Id == code.WareId);
+
+            if (sprt?.Price is null || sprt.Price.Value <= 0)
+                return Result.Success<decimal?>(null);
+
+            return Result.Success<decimal?>((decimal)sprt.Price.Value);
+        }
+        catch (Exception e)
+        {
+            return Result.Failure<decimal?>(e.Message);
         }
     }
 

@@ -114,6 +114,49 @@ public class GisMtMarkRepository(
     }
 
     /// <summary>
+    /// Непроданные марки организации по товарной группе, сведения о которых загружены раньше указанного момента.
+    /// </summary>
+    public async Task<List<GisMtMarkEntity>> GetUnsoldLoadedBefore(
+        string organisationInn,
+        string productGroup,
+        DateTime loadedBeforeUtc,
+        int limit)
+    {
+        var rows = await ExecuteSafetyDbOperation(
+            async () => await _rows
+                .Where(row => !row.Sold
+                    && row.OrganisationInn == organisationInn
+                    && row.ProductGroup == productGroup
+                    && row.InfoLoadedAt < loadedBeforeUtc)
+                .OrderBy(row => row.InfoLoadedAt)
+                .ThenBy(row => row.Id)
+                .Take(limit)
+                .ToListAsync(),
+            "GetUnsoldLoadedBefore",
+            (List<GisMtMarkRow>?)null);
+
+        return ToEntities(rows);
+    }
+
+    /// <summary>
+    /// Марки, загруженные из указанного документа ГИС МТ.
+    /// </summary>
+    public async Task<List<GisMtMarkEntity>> GetBySourceDocument(string sourceDocumentId, int limit)
+    {
+        var rows = await ExecuteSafetyDbOperation(
+            async () => await _rows
+                .Where(row => row.SourceDocumentId == sourceDocumentId)
+                .OrderByDescending(row => row.InfoLoadedAt)
+                .ThenBy(row => row.Id)
+                .Take(limit)
+                .ToListAsync(),
+            "GetBySourceDocument",
+            (List<GisMtMarkRow>?)null);
+
+        return ToEntities(rows);
+    }
+
+    /// <summary>
     /// Удаляет марку остатка по идентификатору.
     /// </summary>
     public override async Task<bool> Delete(string id)
@@ -122,18 +165,25 @@ public class GisMtMarkRepository(
     }
 
     /// <summary>
-    /// Поиск марок остатка с пагинацией и опциональным отбором по товарной группе.
+    /// Поиск марок остатка с пагинацией и отбором по организации, товарной группе, просроченному сроку годности и признаку продажи.
     /// </summary>
     public async Task<Result<GisMtMarkSearchResult>> Search(
         string searchTerm,
         int page,
         int pageSize,
-        string? productGroup = null)
+        string? productGroup = null,
+        bool expiredOnly = false,
+        bool? sold = null,
+        string? organisationInn = null)
     {
         if (!IsOnline())
             return Result.Failure<GisMtMarkSearchResult>(DatabaseUnavailable);
 
-        var hasFilters = !string.IsNullOrWhiteSpace(searchTerm) || !string.IsNullOrWhiteSpace(productGroup);
+        var hasFilters = !string.IsNullOrWhiteSpace(searchTerm)
+            || !string.IsNullOrWhiteSpace(productGroup)
+            || expiredOnly
+            || sold.HasValue
+            || !string.IsNullOrWhiteSpace(organisationInn);
 
         var query = _rows.AsQueryable();
 
@@ -142,6 +192,21 @@ public class GisMtMarkRepository(
 
         if (!string.IsNullOrWhiteSpace(productGroup))
             query = query.Where(row => row.ProductGroup == productGroup);
+
+        if (!string.IsNullOrWhiteSpace(organisationInn))
+            query = query.Where(row => row.OrganisationInn == organisationInn);
+
+        if (expiredOnly)
+        {
+            var nowUtc = DateTime.UtcNow;
+            query = query.Where(row => row.ExpireDate != null && row.ExpireDate < nowUtc);
+        }
+
+        if (sold.HasValue)
+        {
+            var soldValue = sold.Value;
+            query = query.Where(row => row.Sold == soldValue);
+        }
 
         int totalCount;
 
@@ -194,6 +259,33 @@ public class GisMtMarkRepository(
         });
     }
 
+    /// <summary>
+    /// Товарные группы, по которым у организации есть непроданные марки.
+    /// </summary>
+    public async Task<List<string>> GetProductGroups(string organisationInn, int limit)
+    {
+        var inn = (organisationInn ?? string.Empty).Trim();
+
+        if (inn.Length == 0)
+            return [];
+
+        var groups = await ExecuteSafetyDbOperation(
+            async () => await _rows
+                .AsNoTracking()
+                .Where(row => !row.Sold
+                    && row.OrganisationInn == inn
+                    && row.ProductGroup != string.Empty)
+                .Select(row => row.ProductGroup)
+                .Distinct()
+                .OrderBy(group => group)
+                .Take(limit)
+                .ToListAsync(),
+            "GetProductGroups",
+            (List<string>?)null);
+
+        return groups ?? [];
+    }
+
     protected override GisMtMarkRow CreateRow(GisMtMarkEntity entity, string id) => new()
     {
         Id = id,
@@ -201,6 +293,8 @@ public class GisMtMarkRepository(
         SGtin = entity.SGtin,
         Cis = entity.Cis,
         ProductGroup = entity.ProductGroup,
+        OrganisationInn = entity.OrganisationInn,
+        SourceDocumentId = entity.SourceDocumentId,
         InfoLoadedAt = entity.InfoLoadedAt,
         Sold = entity.Sold,
         ExpireDate = entity.ExpireDate

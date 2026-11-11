@@ -1,6 +1,9 @@
+using CSharpFunctionalExtensions;
+using CouchDb.Queries;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.GisMt.Entities;
 using FmuApiDomain.GisMt.Interfaces;
+using FmuApiDomain.GisMt.Models;
 using FmuApiDomain.State.Interfaces;
 using Microsoft.Extensions.Logging;
 
@@ -56,5 +59,37 @@ public class GisMtDocumentRepository : BaseCouchDbRepository<GisMtDocumentEntity
             return await CreateAsync(entity);
 
         return await UpdateAsync(entity.Id, entity);
+    }
+
+    /// <summary>
+    /// Страница загруженных входящих документов по убыванию даты загрузки.
+    /// </summary>
+    public async Task<Result<GisMtDocumentPage>> List(int page, int pageSize)
+    {
+        if (_context == null)
+            return Result.Failure<GisMtDocumentPage>(DatabaseUnavailable);
+
+        var documents = await ExecuteMangoQueryAsync(
+            GisMtDocumentsMangoQueryBuilder.BuildPageQuery(page, pageSize));
+
+        if (documents.IsFailure)
+            return Result.Failure<GisMtDocumentPage>(documents.Error);
+
+        var totalCount = await GetDocumentsCountAsync();
+
+        if (totalCount == null)
+            return Result.Failure<GisMtDocumentPage>("Не удалось получить число документов");
+
+        foreach (var document in documents.Value)
+            document.Body = string.Empty;
+
+        return Result.Success(new GisMtDocumentPage
+        {
+            Documents = documents.Value,
+            Count = totalCount.Value,
+            CurrentPage = page,
+            PageSize = pageSize,
+            TotalPages = totalCount.Value == 0 ? 1 : (int)Math.Ceiling((double)totalCount.Value / pageSize)
+        });
     }
 }

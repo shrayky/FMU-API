@@ -119,18 +119,28 @@ public class GisMtDocumentsClient : IGisMtDocumentsClient
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
             using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
 
-            var info = document.RootElement.ValueKind switch
-            {
-                JsonValueKind.Array when document.RootElement.GetArrayLength() > 0
-                    => document.RootElement[0].Deserialize<GisMtDocInfoResponse>(JsonOptions),
-                JsonValueKind.Object
-                    => document.RootElement.Deserialize<GisMtDocInfoResponse>(JsonOptions),
-                _ => null
-            };
+            JsonElement element;
 
-            return info is null
-                ? Result.Failure<GisMtDocInfoResponse>("Пустой ответ doc/info")
-                : Result.Success(info);
+            switch (document.RootElement.ValueKind)
+            {
+                case JsonValueKind.Array when document.RootElement.GetArrayLength() > 0:
+                    element = document.RootElement[0];
+                    break;
+                case JsonValueKind.Object:
+                    element = document.RootElement;
+                    break;
+                default:
+                    return Result.Failure<GisMtDocInfoResponse>("Пустой ответ doc/info");
+            }
+
+            var info = element.Deserialize<GisMtDocInfoResponse>(JsonOptions);
+
+            if (info is null)
+                return Result.Failure<GisMtDocInfoResponse>("Пустой ответ doc/info");
+
+            info.RawJson = element.GetRawText();
+
+            return Result.Success(info);
         }
         catch (OperationCanceledException)
         {

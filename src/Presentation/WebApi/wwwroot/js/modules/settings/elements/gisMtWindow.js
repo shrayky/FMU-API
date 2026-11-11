@@ -136,7 +136,9 @@ export async function openGisMtWindow({ item, selectedId, labels, onSaveConfigur
                                             });
                                             return;
                                         }
-                                        webix.message(`Загружено марок остатка: ${data.marksSaved ?? 0}`);
+                                        webix.message(
+                                            `Загружено марок остатка: ${data.marksSaved ?? 0}, выбыло из оборота: ${data.marksWithdrawn ?? 0}`
+                                        );
                                     } catch (e) {
                                         webix.message({
                                             text: e?.message || "Ошибка загрузки остатков",

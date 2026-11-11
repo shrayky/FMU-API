@@ -9,6 +9,7 @@ namespace CouchDb.DatabaseScheme
         public const string GisMtDocumentsDbName = "fmu-api-gis-mt-documents";
         public const string GisMtMarksDbName = "fmu-api-gis-mt-marks";
         public const string GtinCatalogDbName = "fmu-api-gtin-catalog";
+        public const string GisMtJournalDbName = "fmu-api-gis-mt-journal";
         public static string[] Names() =>
         [
             MarksDbName,
@@ -17,7 +18,8 @@ namespace CouchDb.DatabaseScheme
             BeerOnTaps,
             GisMtDocumentsDbName,
             GisMtMarksDbName,
-            GtinCatalogDbName
+            GtinCatalogDbName,
+            GisMtJournalDbName
         ];
     }
 }

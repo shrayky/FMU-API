@@ -27,11 +27,12 @@ public class GisMtMarkRepository(
         return await GetByIdAsync(id);
     }
 
+    public Task<List<GisMtMarkEntity>> GetListById(List<string> ids) => GetListByIdAsync(ids);
+
     /// <summary>
     /// Сохраняет одну марку остатка.
     /// </summary>
-    public async Task<bool> Save(GisMtMarkEntity entity)
-    {
+    public async Task<bool> Save(GisMtMarkEntity entity)    {
         if (_context == null)
             return false;
 
@@ -147,6 +148,68 @@ public class GisMtMarkRepository(
     }
 
     /// <summary>
+    /// Непроданные марки организации по товарной группе, сведения о которых загружены раньше указанного момента.
+    /// </summary>
+    public async Task<List<GisMtMarkEntity>> GetUnsoldLoadedBefore(
+        string organisationInn,
+        string productGroup,
+        DateTime loadedBeforeUtc,
+        int limit)
+    {
+        if (_context == null || !_appState.CouchDbOnline())
+            return [];
+
+        var query = new
+        {
+            selector = new
+            {
+                data = new
+                {
+                    sold = false,
+                    organisationInn,
+                    productGroup,
+                    infoLoadedAt = new Dictionary<string, object>
+                    {
+                        ["$lt"] = loadedBeforeUtc
+                    }
+                }
+            },
+            sort = new[] { new Dictionary<string, object> { ["data.infoLoadedAt"] = "asc" } },
+            limit
+        };
+
+        var result = await ExecuteMangoQueryAsync(query);
+
+        return result.IsSuccess ? result.Value : [];
+    }
+
+    /// <summary>
+    /// Марки, загруженные из указанного документа ГИС МТ.
+    /// </summary>
+    public async Task<List<GisMtMarkEntity>> GetBySourceDocument(string sourceDocumentId, int limit)
+    {
+        if (_context == null || !_appState.CouchDbOnline())
+            return [];
+
+        var query = new
+        {
+            selector = new
+            {
+                data = new
+                {
+                    sourceDocumentId
+                }
+            },
+            sort = new[] { new Dictionary<string, object> { ["data.infoLoadedAt"] = "desc" } },
+            limit
+        };
+
+        var result = await ExecuteMangoQueryAsync(query);
+
+        return result.IsSuccess ? result.Value : [];
+    }
+
+    /// <summary>
     /// Удаляет марку остатка по идентификатору.
     /// </summary>
     public async Task<bool> Delete(string id)
@@ -158,13 +221,16 @@ public class GisMtMarkRepository(
     }
 
     /// <summary>
-    /// Поиск марок остатка с пагинацией и опциональным отбором по товарной группе.
+    /// Поиск марок остатка с пагинацией и отбором по организации, товарной группе, просроченному сроку годности и признаку продажи.
     /// </summary>
     public async Task<Result<GisMtMarkSearchResult>> Search(
         string searchTerm,
         int page,
         int pageSize,
-        string? productGroup = null)
+        string? productGroup = null,
+        bool expiredOnly = false,
+        bool? sold = null,
+        string? organisationInn = null)
     {
         if (_context == null)
             return Result.Failure<GisMtMarkSearchResult>(DatabaseUnavailable);
@@ -172,16 +238,62 @@ public class GisMtMarkRepository(
         if (!_appState.CouchDbOnline())
             return Result.Failure<GisMtMarkSearchResult>(DatabaseUnavailable);
 
-        return await QueryWithPagination(searchTerm, productGroup, page, pageSize);
+        return await QueryWithPagination(searchTerm, productGroup, expiredOnly, sold, organisationInn, page, pageSize);
+    }
+
+    /// <summary>
+    /// Товарные группы, по которым у организации есть непроданные марки.
+    /// </summary>
+    public async Task<List<string>> GetProductGroups(string organisationInn, int limit)
+    {
+        var inn = (organisationInn ?? string.Empty).Trim();
+
+        if (_context == null || inn.Length == 0)
+            return [];
+
+        var query = new
+        {
+            selector = new
+            {
+                data = new
+                {
+                    sold = false,
+                    organisationInn = inn
+                }
+            },
+            fields = new[] { "data.productGroup" },
+            limit = Math.Max(limit, 1) * 100
+        };
+
+        var result = await ExecuteMangoQueryAsync(query);
+
+        return result.IsSuccess
+            ? result.Value
+                .Select(mark => (mark.ProductGroup ?? string.Empty).Trim())
+                .Where(group => group.Length > 0)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(group => group, StringComparer.OrdinalIgnoreCase)
+                .Take(limit)
+                .ToList()
+            : [];
     }
 
     private async Task<Result<GisMtMarkSearchResult>> QueryWithPagination(
         string searchTerm,
         string? productGroup,
+        bool expiredOnly,
+        bool? sold,
+        string? organisationInn,
         int page,
         int pageSize)
     {
-        var hasFilters = !string.IsNullOrWhiteSpace(searchTerm) || !string.IsNullOrWhiteSpace(productGroup);
+        var hasFilters = !string.IsNullOrWhiteSpace(searchTerm)
+            || !string.IsNullOrWhiteSpace(productGroup)
+            || expiredOnly
+            || sold.HasValue
+            || !string.IsNullOrWhiteSpace(organisationInn);
+
+        var expiredBeforeUtc = expiredOnly ? DateTime.UtcNow : (DateTime?)null;
 
         int totalCount;
         if (!hasFilters)
@@ -197,7 +309,10 @@ public class GisMtMarkRepository(
             var countQuery = GisMtMarkMangoQueryBuilder.BuildCountQuery(
                 searchTerm,
                 productGroup,
-                await QueryLimitAsync());
+                await QueryLimitAsync(),
+                expiredBeforeUtc,
+                sold,
+                organisationInn);
 
             var countResult = await ExecuteMangoCountAsync(countQuery);
             if (countResult.IsFailure)
@@ -206,7 +321,14 @@ public class GisMtMarkRepository(
             totalCount = countResult.Value;
         }
 
-        var pageQuery = GisMtMarkMangoQueryBuilder.BuildPageQuery(searchTerm, productGroup, page, pageSize);
+        var pageQuery = GisMtMarkMangoQueryBuilder.BuildPageQuery(
+            searchTerm,
+            productGroup,
+            page,
+            pageSize,
+            expiredBeforeUtc,
+            sold,
+            organisationInn);
         var pageResult = await ExecuteMangoQueryAsync(pageQuery);
         if (pageResult.IsFailure)
             return Result.Failure<GisMtMarkSearchResult>(pageResult.Error);

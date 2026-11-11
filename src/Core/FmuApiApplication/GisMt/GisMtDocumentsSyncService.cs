@@ -114,6 +114,44 @@ public class GisMtDocumentsSyncService(
         }
     }
 
+    /// <summary>
+    /// Заново загружает doc/info одного документа и сохраняет его марки.
+    /// </summary>
+    public async Task<Result<int>> ReloadDocument(string number, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(number))
+            return Result.Failure<int>("Номер документа обязателен");
+
+        var parameters = await _parametersService.CurrentAsync();
+        var document = await _documentRepository.Get(number);
+
+        if (document == null)
+            return Result.Failure<int>($"Документ {number} не найден");
+
+        var organisation = parameters.OrganisationConfig.PrintGroups
+            .FirstOrDefault(group => string.Equals(group.INN, document.OrganisationInn, StringComparison.Ordinal));
+
+        if (organisation == null)
+            return Result.Failure<int>($"Организация с ИНН {document.OrganisationInn} не найдена");
+
+        var token = _applicationState.TrueApiToken(organisation.INN).Token;
+        if (string.IsNullOrWhiteSpace(token))
+            return Result.Failure<int>($"Нет Bearer-токена для ИНН {organisation.INN}");
+
+        var item = new GisMtDocListItem
+        {
+            Number = document.Number,
+            DocDate = document.DocDate,
+            Type = document.Type,
+            Status = document.Status,
+            SenderInn = document.SenderInn,
+            ReceiverInn = document.ReceiverInn,
+            ProductGroup = document.ProductGroup
+        };
+
+        return await ProcessDocument(organisation, token, document.ProductGroup, item, cancellationToken);
+    }
+
     private async Task<(int DocumentsLoaded, int MarksSaved, List<string> Errors)> SyncOrganisationProductGroup(
         PrintGroupData organisation,
         string token,
@@ -150,7 +188,7 @@ public class GisMtDocumentsSyncService(
             }
 
             var page = listResult.Value;
-            var incoming = page.Results.Where(x => x.Input).ToList();
+            var incoming = page.Items.Where(x => x.Input).ToList();
 
             foreach (var item in incoming)
             {
@@ -171,10 +209,10 @@ public class GisMtDocumentsSyncService(
                 marksSaved += process.Value;
             }
 
-            hasNext = page.NextPage && page.Results.Count > 0;
+            hasNext = page.NextPage && page.Items.Count > 0;
             if (hasNext)
             {
-                var last = page.Results[^1];
+                var last = page.Items[^1];
                 did = last.Number;
                 orderedColumnValue = (last.DocDate ?? last.ReceivedAt ?? periodStart)
                     .ToUniversalTime()
@@ -202,6 +240,10 @@ public class GisMtDocumentsSyncService(
             return Result.Failure<int>(infoResult.Error);
 
         var cises = GisMtCisExtractor.Extract(infoResult.Value);
+
+        if (cises.Count == 0)
+            _logger.LogWarning("Документ {Number}: в ответе doc/info нет кодов маркировки", item.Number);
+
         var marksSaved = await _cisInfoSaver.SaveBatches(
             organisation,
             token,
@@ -212,6 +254,12 @@ public class GisMtDocumentsSyncService(
 
         if (marksSaved.IsFailure)
             return Result.Failure<int>(marksSaved.Error);
+
+        if (marksSaved.Value == 0 && cises.Count > 0)
+            _logger.LogWarning(
+                "Документ {Number}: из {Cises} кодов маркировки не сохранено ни одной марки",
+                item.Number,
+                cises.Count);
 
         var documentEntity = new GisMtDocumentEntity
         {
@@ -225,7 +273,8 @@ public class GisMtDocumentsSyncService(
             ProductGroup = string.IsNullOrWhiteSpace(item.ProductGroup) ? productGroup : item.ProductGroup,
             OrganisationInn = organisation.INN,
             MarksCount = marksSaved.Value,
-            LoadedAt = DateTime.UtcNow
+            LoadedAt = DateTime.UtcNow,
+            Body = infoResult.Value.RawJson
         };
 
         if (!await _documentRepository.Save(documentEntity))

@@ -1,4 +1,4 @@
-﻿using CouchDb.Queries;
+using CouchDb.Queries;
 
 namespace CouchDb.DatabaseScheme;
 
@@ -17,6 +17,7 @@ public class DatabaseIndexes
                 { DatabaseNames.GisMtDocumentsDbName, GisMtDocumentsDbIndexes() },
                 { DatabaseNames.GisMtMarksDbName, GisMtMarksDbIndexes() },
                 { DatabaseNames.GtinCatalogDbName, GtinCatalogDbIndexes() },
+                { DatabaseNames.GisMtJournalDbName, GisMtJournalDbIndexes() },
             };
     }
 
@@ -84,10 +85,20 @@ public class DatabaseIndexes
             new("gis-mt-mark-product-group-loaded-at-idx", new(["data.productGroup", "data.infoLoadedAt"])),
             new("gis-mt-mark-info-loaded-at-idx", new(["data.infoLoadedAt"])),
             new("gis-mt-mark-cleanup-idx", new(["data.infoLoadedAt", "data.sold"])),
+            new("gis-mt-mark-source-document-idx", new(["data.sourceDocumentId", "data.infoLoadedAt"])),
         ];
 
     private static CouchDbIndexDefinition[] GtinCatalogDbIndexes() =>
         [
             new("gtin-catalog-gtin-idx", new(["data.gtin"])),
+        ];
+
+    private static CouchDbIndexDefinition[] GisMtJournalDbIndexes() =>
+        [
+            new("gis-mt-journal-uid-idx", new(["data.uid"])),
+            new("gis-mt-journal-created-at-idx", new(["data.createdAt"])),
+            new("gis-mt-journal-kind-created-at-idx", new(["data.kind", "data.createdAt"])),
+            new("gis-mt-journal-submitted-idx",
+                new(["data.inn", "data.productGroup", "data.status", "data.sentAt"])),
         ];
 }

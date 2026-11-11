@@ -22,6 +22,8 @@ public class SqliteDbContext(DbContextOptions<SqliteDbContext> options) : DbCont
 
     public DbSet<GtinCatalogRow> GtinCatalog => Set<GtinCatalogRow>();
 
+    public DbSet<GisMtJournalRow> GisMtJournal => Set<GisMtJournalRow>();
+
     public DbSet<ImportProgressRow> ImportProgress => Set<ImportProgressRow>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -73,6 +75,8 @@ public class SqliteDbContext(DbContextOptions<SqliteDbContext> options) : DbCont
             entity.HasIndex(row => row.InfoLoadedAt);
             entity.HasIndex(row => row.Sold);
             entity.HasIndex(row => row.ExpireDate);
+            entity.HasIndex(row => new { row.OrganisationInn, row.ProductGroup, row.Sold });
+            entity.HasIndex(row => row.SourceDocumentId);
         });
 
         modelBuilder.Entity<GtinCatalogRow>(entity =>
@@ -80,6 +84,16 @@ public class SqliteDbContext(DbContextOptions<SqliteDbContext> options) : DbCont
             entity.ToTable("GtinCatalog");
             entity.HasKey(row => row.Id);
             entity.HasIndex(row => row.Gtin);
+        });
+
+        modelBuilder.Entity<GisMtJournalRow>(entity =>
+        {
+            entity.ToTable("GisMtJournal");
+            entity.HasKey(row => row.Id);
+            entity.HasIndex(row => row.Uid).IsUnique();
+            entity.HasIndex(row => row.CreatedAt);
+            entity.HasIndex(row => new { row.Kind, row.Status });
+            entity.HasIndex(row => new { row.Inn, row.ProductGroup, row.Status, row.SentAt });
         });
 
         modelBuilder.Entity<ImportProgressRow>(entity =>

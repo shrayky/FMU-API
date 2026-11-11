@@ -5,10 +5,16 @@ namespace FmuApiDomain.GisMt.Models;
 public class GisMtDocListResponse
 {
     [JsonPropertyName("results")]
-    public List<GisMtDocListItem> Results { get; set; } = [];
+    public List<GisMtDocListItem>? Results { get; set; }
 
     [JsonPropertyName("nextPage")]
     public bool NextPage { get; set; }
+
+    /// <summary>
+    /// Документы страницы; пустой список, если ГИС МТ вернула null или не вернула поле.
+    /// </summary>
+    [JsonIgnore]
+    public IReadOnlyList<GisMtDocListItem> Items => Results ?? [];
 }
 
 public class GisMtDocListItem

@@ -29,18 +29,14 @@ public static class GisMtMarkMapper
         DateTime infoLoadedAtUtc)
     {
         var cis = !string.IsNullOrWhiteSpace(info.Cis) ? info.Cis! : info.RequestedCis ?? string.Empty;
-        var gtin = info.Gtin ?? string.Empty;
-        // printView из TrueAPI — предпочтительный sGTIN; иначе считаем из КИ
-        var sgtin = !string.IsNullOrWhiteSpace(info.PrintView)
-            ? info.PrintView!
-            : GisMtSgtinCalculator.Calculate(cis, gtin);
+        var sgtin = Sgtin(info);
 
         return new GisMtMarkEntity
         {
             Id = sgtin,
             SGtin = sgtin,
             Cis = cis,
-            Gtin = gtin,
+            Gtin = info.Gtin ?? string.Empty,
             OwnerInn = info.OwnerInn ?? string.Empty,
             OwnerName = info.OwnerName ?? string.Empty,
             ProducerInn = info.ProducerInn ?? string.Empty,
@@ -57,6 +53,19 @@ public static class GisMtMarkMapper
     }
 
     /// <summary>
+    /// sGTIN марки: printView из TrueAPI, иначе рассчитанный из КИ и GTIN.
+    /// </summary>
+    public static string Sgtin(CisInfoData info)
+    {
+        if (!string.IsNullOrWhiteSpace(info.PrintView))
+            return info.PrintView!;
+
+        var cis = !string.IsNullOrWhiteSpace(info.Cis) ? info.Cis! : info.RequestedCis ?? string.Empty;
+
+        return GisMtSgtinCalculator.Calculate(cis, info.Gtin ?? string.Empty);
+    }
+
+    /// <summary>
     /// Определяет признак продажи/выбытия по статусу КИ.
     /// </summary>
     public static bool IsSold(CisInfoData info)
@@ -68,6 +77,22 @@ public static class GisMtMarkMapper
             return false;
 
         return SoldStatuses.Contains(info.Status);
+    }
+
+    /// <summary>
+    /// Обновляет марку остатка свежими сведениями о КИ; возвращает true, если марка стала проданной.
+    /// </summary>
+    public static bool ApplyCisInfo(GisMtMarkEntity mark, CisInfoData info)
+    {
+        var wasSold = mark.Sold;
+        var sold = IsSold(info);
+
+        mark.Sold = sold;
+
+        if (!string.IsNullOrWhiteSpace(info.Status))
+            mark.Status = info.Status!;
+
+        return sold && !wasSold;
     }
 
     private static DateTime? ParseExpireDate(CisInfoData info)

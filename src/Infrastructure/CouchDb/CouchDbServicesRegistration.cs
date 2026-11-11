@@ -73,6 +73,7 @@ public static class CouchDbServicesRegistration
         services.AddScoped<IGisMtDocumentRepository, GisMtDocumentRepository>();
         services.AddScoped<IGisMtMarkRepository, GisMtMarkRepository>();
         services.AddScoped<IGtinCatalogRepository, GtinCatalogRepository>();
+        services.AddScoped<IGisMtJournalRepository, GisMtJournalRepository>();
         services.AddSingleton<DataBaseMaintenanceService>();
 
         services.AddHttpClient("CouchDbState", client =>

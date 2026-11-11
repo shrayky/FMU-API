@@ -7,6 +7,7 @@ using FmuApiDomain.BeerTaps.Entities;
 using FmuApiDomain.BeerTaps.Interfaces;
 using FmuApiDomain.BeerTaps.Models;
 using FmuApiDomain.Frontol.Interfaces;
+using FmuApiDomain.GisMt.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -21,6 +22,7 @@ public class BeerTapsManager : IBeerOnTapManager
     private readonly IBeerTapsRepositoryFactory _frontolBeerTapsFactory;
     private readonly IFrontolSprTServiceFactory _frontolSprTFactory;
     private readonly IParametersService _parametersService;
+    private readonly IGisMtConnectTapService _connectTapService;
 
     public BeerTapsManager(
         ILogger<BeerTapsManager> logger,
@@ -28,7 +30,8 @@ public class BeerTapsManager : IBeerOnTapManager
         IMarkParser markParser,
         IBeerTapsRepositoryFactory frontolBeerTapsFactory,
         IFrontolSprTServiceFactory frontolSprTFactory,
-        IParametersService parametersService)
+        IParametersService parametersService,
+        IGisMtConnectTapService connectTapService)
     {
         _logger = logger;
         _tapsRepository = tapsRepository;
@@ -36,6 +39,7 @@ public class BeerTapsManager : IBeerOnTapManager
         _frontolBeerTapsFactory = frontolBeerTapsFactory;
         _frontolSprTFactory = frontolSprTFactory;
         _parametersService = parametersService;
+        _connectTapService = connectTapService;
     }
 
     public async Task<Result> TapOperation(TapBeerOperation document)
@@ -69,6 +73,14 @@ public class BeerTapsManager : IBeerOnTapManager
             return Result.Failure($"Неизвестный тип операции постановки/снятия на кран {document.Type}");
 
         var syncResult = await SyncFrontolBeerTaps(settings.ConnectedFrontolSettings.ConnectionSettings);
+
+        if (operationResult.IsSuccess && document.Type == "connect_tap")
+        {
+            var journalResult = await _connectTapService.CreateFromTap(document);
+
+            if (journalResult.IsFailure)
+                _logger.LogWarning("Акт постановки на кран не создан: {Error}", journalResult.Error);
+        }
 
         return operationResult.IsSuccess ? Result.Success() : Result.Failure(operationResult.Error);
     }

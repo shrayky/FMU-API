@@ -3,7 +3,7 @@ using FmuApiDomain.Templates.Tables;
 namespace FmuApiDomain.GisMt.Entities;
 
 /// <summary>
-/// Загруженный входящий документ ГИС МТ (для исключения повторной загрузки).
+/// Загруженный входящий документ ГИС МТ: шапка, тело ответа doc/info и признак загрузки.
 /// </summary>
 public class GisMtDocumentEntity : IHaveStringId
 {
@@ -28,4 +28,9 @@ public class GisMtDocumentEntity : IHaveStringId
     public int MarksCount { get; set; }
 
     public DateTime LoadedAt { get; set; }
+
+    /// <summary>
+    /// Сырой ответ doc/info: по нему карточка показывает тело документа и можно заново извлечь марки.
+    /// </summary>
+    public string Body { get; set; } = string.Empty;
 }

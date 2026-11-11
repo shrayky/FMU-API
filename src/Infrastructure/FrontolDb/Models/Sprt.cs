@@ -1,4 +1,4 @@
-﻿using FmuApiDomain.Templates.Tables;
+using FmuApiDomain.Templates.Tables;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FrontolDb.Models;
@@ -20,6 +20,9 @@ public class Sprt : NameCodeFields
 
     [Column("WARETYPE")]
     public int WareType { get; set; } = 0;
+
+    [Column("PRICE")]
+    public double? Price { get; set; }
 
     public bool IsWare() => IsWareI == 1;
 

@@ -2,6 +2,7 @@
  * Форма редактирования организации (группы печати).
  */
 import { Text, Number, PasswordBox, CheckBox } from "../../../utils/ui.js";
+import openGisMtModsWindow from "./gisMtModsWindow.js";
 
 export function showOrganizationForm({ labels, formName, tableId, id, onSave }) {
     const windowInnerWidth = window.innerWidth;
@@ -35,19 +36,37 @@ export function showOrganizationForm({ labels, formName, tableId, id, onSave }) 
 }
 
 function createFormBody(labels, tableId, id, formName, onSave) {
+    function openFiasWindow() {
+        const inn = String($$("OrganizationInn").getValue() || "").trim();
+
+        if (!inn) {
+            webix.message({ text: "Укажите ИНН организации", type: "error" });
+            return;
+        }
+
+        openGisMtModsWindow({
+            inn,
+            onSelect: ({ fiasId, kpp }) => {
+                $$("OrganizationFiasId").setValue(fiasId);
+                $$("OrganizationKpp").setValue(kpp);
+            }
+        });
+    }
+
     return {
         padding: 10,
         rows: [
             Number(labels.code, "OrganizationId", "1111"),
+            Text(labels.name, "OrganizationName"),
             {
                 cols: [
-                    Text(labels.name, "OrganizationName"),
                     Text(labels.inn, "OrganizationInn"),
+                    Text("КПП", "OrganizationKpp"),
                 ]
             },
             {
                 view: "tabview",
-                height: 340,
+                height: 440,
                 cells: [
                     {
                         header: "ТСПИоТ",
@@ -128,7 +147,16 @@ function createFormBody(labels, tableId, id, formName, onSave) {
                         body: {
                             padding: 10,
                             rows: [
-                                CheckBox(labels.enable, "TrueApiIntegrationEnable"),
+                                CheckBox(labels.enable, "TrueApiIntegrationEnable", {
+                                    on: {
+                                        onChange: (enabled) => {
+                                            const block = $$("OrganizationFiasBlock");
+
+                                            if (block)
+                                                enabled ? block.show() : block.hide();
+                                        }
+                                    }
+                                }),
                                 CheckBox(labels.useExternalToken, "TrueApiIntegrationUseExternalToken"),
                                 {
                                     view: "richselect",
@@ -167,6 +195,28 @@ function createFormBody(labels, tableId, id, formName, onSave) {
                                     }
                                 },
                                 Text(labels.signPassword, "TrueApiIntegrationPassword"),
+                                {
+                                    id: "OrganizationFiasBlock",
+                                    hidden: true,
+                                    rows: [
+                                        {
+                                            cols: [
+                                                { view: "text", id: "OrganizationFiasId", label: "ФИАС", labelPosition: "top", labelWidth: 120 },
+                                                {
+                                                    rows: [
+                                                        {},
+                                                        {
+                                                            cols: [
+                                                                { view: "button", value: "Выбрать", width: 120, click: () => openFiasWindow() },
+                                                                {}
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
                                 {
                                     cols: [
                                         {
@@ -286,6 +336,17 @@ function initFormValues(tableId, id) {
     $$("TrueApiIntegrationUseExternalToken").setValue(!!trueApi.useExternalToken);
     $$("TrueApiIntegrationPassword").setValue(trueApi.password ?? "");
     $$("TrueApiIntegrationDigitalSignature").setValue(trueApi.digitalSignature ?? "");
+
+    $$("OrganizationKpp").setValue(item.kpp ?? "");
+    $$("OrganizationFiasId").setValue(item.fiasId ?? "");
+
+    const fiasBlock = $$("OrganizationFiasBlock");
+    if (fiasBlock) {
+        if (!!trueApi.enable)
+            fiasBlock.show();
+        else
+            fiasBlock.hide();
+    }
 }
 
 /**
@@ -311,6 +372,8 @@ export function collectOrganizationFormData(table, id) {
         },
         inn: String($$("OrganizationInn").getValue() || "").trim(),
         name: $$("OrganizationName").getValue(),
+        kpp: String($$("OrganizationKpp").getValue() || "").trim(),
+        fiasId: String($$("OrganizationFiasId").getValue() || "").trim(),
         localModuleConnection: {
             enable: !!$$("LocalModuleEnable").getValue(),
             connectionAddress: $$("LocalModuleConnectionAddress").getValue(),

@@ -12,4 +12,9 @@ public interface IGisMtDocumentsSyncService
     /// Синхронизирует входящие документы за настроенный период (DocumentsSyncDays).
     /// </summary>
     Task<Result<GisMtDocumentsSyncResult>> Sync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Заново загружает doc/info одного документа и сохраняет его марки.
+    /// </summary>
+    Task<Result<int>> ReloadDocument(string number, CancellationToken cancellationToken = default);
 }

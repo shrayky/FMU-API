@@ -125,11 +125,11 @@ public class CouchDbImportState
 | `MarkCheckingStatistic` | `SGtin`, `CheckDay`, `CheckDate` | последние проверки и срезы по дню |
 | `BeerOnTap` | — | чтение по `Id` |
 | `GisMtDocuments` | `Number`, `LoadedAt` | отбор по номеру и дате загрузки |
-| `GisMtMarks` | `SGtin`, `Cis`, `ProductGroup`, `InfoLoadedAt`, `Sold`, `ExpireDate` | поиск, страница по `InfoLoadedAt` и очистка проданных или просроченных |
+| `GisMtMarks` | `SGtin`, `Cis`, `ProductGroup`, `OrganisationInn`, `InfoLoadedAt`, `Sold`, `ExpireDate` | поиск, страница по `InfoLoadedAt`, сверка выбывших по ИНН и очистка проданных или просроченных |
 | `GtinCatalog` | `Gtin` | поиск по GTIN |
 | `ImportProgress` | `LastId`, `Completed` | ключ — имя базы CouchDB |
 
-`ReqTimestamp`, `CheckDay`, `LoadedAt`, `InfoLoadedAt`, `Sold`, `ExpireDate` заполняются из сущности при записи, чтобы запрос не разбирал JSON.
+`ReqTimestamp`, `CheckDay`, `LoadedAt`, `InfoLoadedAt`, `Sold`, `ExpireDate` заполняются из сущности при записи, чтобы запрос не разбирал JSON. Колонки, добавленные после первого выпуска, догоняются в `GisMtMarksSchema` — `Database.EnsureCreated` не меняет существующую таблицу: `ALTER TABLE` под проверкой `PRAGMA table_info` и заполнение новой колонки из `Json`.
 
 Семь репозиториев реализуют те же интерфейсы, что CouchDB:
 
@@ -141,7 +141,7 @@ public class CouchDbImportState
 - `IGisMtMarkRepository`
 - `IGtinCatalogRepository`
 
-Поиск марки без строки — страница по `ReqTimestamp` по убыванию. Со строкой — `MarkId`, который начинается с введённого текста, разбор страницы через `MarkMangoQueryBuilder.ResolveSearchPagination`. Поиск марок ГИС МТ — вхождение строки в `SGtin` или `Cis` и точное совпадение `ProductGroup`, сортировка по `InfoLoadedAt` по убыванию. Очистка марок ГИС МТ — `InfoLoadedAt` старше порога и (`Sold` либо `ExpireDate` раньше текущего UTC), с тем же лимитом, что `GetExpiredForCleanup`.
+Поиск марки без строки — страница по `ReqTimestamp` по убыванию. Со строкой — `MarkId`, который начинается с введённого текста, разбор страницы через `MarkMangoQueryBuilder.ResolveSearchPagination`. Поиск марок ГИС МТ — вхождение строки в `SGtin` или `Cis`, точное совпадение `OrganisationInn` и `ProductGroup`, при включённом отборе просроченных — `ExpireDate` раньше текущего UTC, отбор по `Sold` — отдельно; сортировка по `InfoLoadedAt` по убыванию. Непроданные марки группы для сверки выбывших — `Sold = false`, `OrganisationInn` и `ProductGroup` точным совпадением, `InfoLoadedAt` раньше старта загрузки, по возрастанию `InfoLoadedAt`. Очистка марок ГИС МТ — `InfoLoadedAt` старше порога и (`Sold` либо `ExpireDate` раньше текущего UTC), с тем же лимитом, что `GetExpiredForCleanup`.
 
 Недоступная база возвращает те же пустые результаты и тексты ошибок, что текущие репозитории CouchDB. Признак доступности — `CouchDbOnline()`.
 

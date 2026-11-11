@@ -1,4 +1,4 @@
-﻿using FmuApiDomain.Attributes;
+using FmuApiDomain.Attributes;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Headers;
 using System.Reflection;
@@ -32,6 +32,7 @@ public static class TrueApiIntegrationRegistration
         services.AddHostedService<TrueApiTokenLoaderWorker>();
         services.AddHostedService<GisMtDocumentsSyncWorker>();
         services.AddHostedService<GisMtStockLoadWorker>();
+        services.AddHostedService<GisMtJournalStatusWorker>();
     }
 
 }

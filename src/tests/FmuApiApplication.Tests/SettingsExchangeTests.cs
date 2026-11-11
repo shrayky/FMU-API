@@ -122,6 +122,56 @@ public class SettingsExchangeTests
         Assert.Equal(2599, current.ServerConfig.ApiIpPort);
     }
 
+    [Fact]
+    public void Export_не_отдаёт_флаги_журнала()
+    {
+        var source = Sample();
+        source.GisMtSettings.DocumentsEnabled = true;
+        source.GisMtSettings.AutoSendConnectTap = true;
+
+        var json = SettingsExchange.Export(source);
+        var gisMt = JsonNode.Parse(json)!.AsObject()["GisMtSettings"]!.AsObject();
+
+        Assert.False(gisMt.ContainsKey("DocumentsEnabled"));
+        Assert.False(gisMt.ContainsKey("AutoCreateConnectTap"));
+        Assert.False(gisMt.ContainsKey("AutoSendConnectTap"));
+        Assert.Equal(3, gisMt["DocumentsSyncDays"]!.GetValue<int>());
+    }
+
+    [Fact]
+    public void TryApply_не_меняет_флаги_журнала()
+    {
+        var current = Sample();
+        current.GisMtSettings.DocumentsEnabled = true;
+        current.GisMtSettings.AutoCreateConnectTap = false;
+
+        var applied = SettingsExchange.TryApply(current, """
+            { "gisMtSettings": { "documentsSyncDays": 5, "documentsEnabled": false, "autoCreateConnectTap": true } }
+            """, out var changed, out var error);
+
+        Assert.True(applied, error);
+        Assert.True(changed);
+        Assert.Equal(5, current.GisMtSettings.DocumentsSyncDays);
+        Assert.True(current.GisMtSettings.DocumentsEnabled);
+        Assert.False(current.GisMtSettings.AutoCreateConnectTap);
+    }
+
+    [Fact]
+    public void TryApply_сохраняет_КПП_и_ФИАС_организации()
+    {
+        var current = Sample();
+        current.OrganisationConfig.PrintGroups[0].Kpp = "246401001";
+        current.OrganisationConfig.PrintGroups[0].FiasId = "fias-local";
+
+        var applied = SettingsExchange.TryApply(current, """
+            { "organisationConfig": { "printGroups": [ { "id": 5, "inn": "246412218294" } ] } }
+            """, out _, out var error);
+
+        Assert.True(applied, error);
+        Assert.Equal("246401001", current.OrganisationConfig.PrintGroups[0].Kpp);
+        Assert.Equal("fias-local", current.OrganisationConfig.PrintGroups[0].FiasId);
+    }
+
     private static Parameters Sample()
     {
         return new Parameters

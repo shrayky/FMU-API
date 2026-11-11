@@ -7,7 +7,12 @@ public static class GisMtMarkMangoQueryBuilder
 {
     private const int DefaultQueryLimit = 1_000_000;
 
-    public static Dictionary<string, object> BuildSelector(string searchTerm, string? productGroup)
+    public static Dictionary<string, object> BuildSelector(
+        string searchTerm,
+        string? productGroup,
+        DateTime? expiredBeforeUtc = null,
+        bool? sold = null,
+        string? organisationInn = null)
     {
         var conditions = new List<object>();
 
@@ -37,6 +42,30 @@ public static class GisMtMarkMangoQueryBuilder
             });
         }
 
+        if (expiredBeforeUtc.HasValue)
+        {
+            conditions.Add(new Dictionary<string, object>
+            {
+                ["data.expireDate"] = new Dictionary<string, object> { ["$lt"] = expiredBeforeUtc.Value }
+            });
+        }
+
+        if (sold.HasValue)
+        {
+            conditions.Add(new Dictionary<string, object>
+            {
+                ["data.sold"] = sold.Value
+            });
+        }
+
+        if (!string.IsNullOrWhiteSpace(organisationInn))
+        {
+            conditions.Add(new Dictionary<string, object>
+            {
+                ["data.organisationInn"] = organisationInn
+            });
+        }
+
         if (conditions.Count == 0)
         {
             return new Dictionary<string, object>
@@ -58,11 +87,14 @@ public static class GisMtMarkMangoQueryBuilder
         string searchTerm,
         string? productGroup,
         int page,
-        int pageSize)
+        int pageSize,
+        DateTime? expiredBeforeUtc = null,
+        bool? sold = null,
+        string? organisationInn = null)
     {
         return new Dictionary<string, object>
         {
-            ["selector"] = BuildSelector(searchTerm, productGroup),
+            ["selector"] = BuildSelector(searchTerm, productGroup, expiredBeforeUtc, sold, organisationInn),
             ["sort"] = new[] { new Dictionary<string, string> { ["data.infoLoadedAt"] = "desc" } },
             ["limit"] = pageSize,
             ["skip"] = (page - 1) * pageSize
@@ -72,11 +104,14 @@ public static class GisMtMarkMangoQueryBuilder
     public static Dictionary<string, object> BuildCountQuery(
         string searchTerm,
         string? productGroup,
-        int queryLimit)
+        int queryLimit,
+        DateTime? expiredBeforeUtc = null,
+        bool? sold = null,
+        string? organisationInn = null)
     {
         return new Dictionary<string, object>
         {
-            ["selector"] = BuildSelector(searchTerm, productGroup),
+            ["selector"] = BuildSelector(searchTerm, productGroup, expiredBeforeUtc, sold, organisationInn),
             ["fields"] = new[] { "_id" },
             ["limit"] = queryLimit
         };
