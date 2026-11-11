@@ -15,10 +15,12 @@ import LogsView from '../modules/LogsPage/logsView.js';
 import MonitorView from '../modules/Monitoring/monitorView.js';
 import MarksView from '../modules/Marks/marksView.js';
 import GisMtMarksView from '../modules/GisMtMarks/gisMtMarksView.js';
+import GisMtJournalView from '../modules/GisMtJournal/gisMtJournalView.js';
 import MarkCheckView from '../modules/MarkCheck/markCheckView.js';
 import ProductGroupsView from '../modules/ProductGroups/productGroupsView.js';
 import GtinCatalogView from '../modules/GtinCatalog/gtinCatalogView.js';
 import ServiceView from '../modules/Service/serviceView.js';
+import TsdView from '../modules/Tsd/tsdView.js';
 
 class App {
     constructor() {
@@ -36,10 +38,12 @@ class App {
         this.router.register("monitorView", () => MonitorView);
         this.router.register("marksView", () => MarksView);
         this.router.register("gisMtMarksView", () => GisMtMarksView);
+        this.router.register("gisMtJournalView", () => GisMtJournalView);
         this.router.register("markCheckView", () => MarkCheckView);
         this.router.register("productGroupsView", () => ProductGroupsView);
         this.router.register("gtinCatalogView", () => GtinCatalogView);
         this.router.register("serviceView", () => ServiceView);
+        this.router.register("tsdView", () => TsdView);
         this.router.register("beerTapsView", async () => (await import("../modules/BeerTaps/beerTapsView.js")).default);
     }
 

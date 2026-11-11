@@ -62,6 +62,12 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2,10.96C1.5,10.68 1.35,10.09 1.62,9.59L3.13,7C3.24,6.8 3.41,6.66 3.6,6.58L11.79,2.18C12.08,2.06 12.43,2.06 12.72,2.18L20.91,6.58C21.1,6.66 21.27,6.8 21.38,7L22.88,9.59C23.16,10.09 23,10.68 22.5,10.96L21,11.81V19C21,20.11 20.11,21 19,21H5C3.89,21 3,20.11 3,19V11.81L2,10.96M12,4.15V10L20.22,8.39L18.94,6.3L12,4.15M5,19H19V12.5L12,16L5,12.5V19Z' fill='%2394A1B3'/%3E%3C/svg%3E");
 }
 
+.webix_tree_item .mdi-honest-sign,
+.webix_list_item .mdi-honest-sign,
+.mdi-honest-sign {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Cpath d='M9.82 27.82h3.92v3.27H9.82c-2.72 0-4.91-2.19-4.91-4.91v-3.93h3.27v3.93c0 .92.72 1.64 1.64 1.64zM8.18 9.82c0-.92.72-1.64 1.64-1.64h3.92V4.91H9.82c-2.72 0-4.91 2.19-4.91 4.91v3.93h3.27V9.82zm19.64 16.36c0 .92-.72 1.64-1.64 1.64h-3.92v3.27h3.92c2.72 0 4.91-2.19 4.91-4.91v-3.93h-3.27v3.93zM26.18 4.91h-3.92v3.27h3.92c.92 0 1.64.72 1.64 1.64v3.93h3.27V9.82c0-2.72-2.19-4.91-4.91-4.91zM24.51 12.67l-8.44 8.44-4.68-4.68-2.32 2.32 7 7 10.77-10.77-2.33-2.31z' fill='%2394A1B3'/%3E%3C/svg%3E");
+}
+
 .webix_tree_item .mdi-qrcode-scan,
 .webix_list_item .mdi-qrcode-scan,
 .mdi-qrcode-scan {
@@ -84,6 +90,12 @@
 .webix_list_item .mdi-information,
 .mdi-information {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z' fill='%2394A1B3'/%3E%3C/svg%3E");
+}
+
+.webix_tree_item .mdi-cellphone-arrow-down,
+.webix_list_item .mdi-cellphone-arrow-down,
+.mdi-cellphone-arrow-down {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M17,1H7A2,2 0 0,0 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3A2,2 0 0,0 17,1M17,19H7V5H17V19M16,13H13V8H11V13H8L12,17L16,13Z' fill='%2394A1B3'/%3E%3C/svg%3E");
 }
 
 .webix_sidebar_selected .mdi-menu,
@@ -149,6 +161,13 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2,10.96C1.5,10.68 1.35,10.09 1.62,9.59L3.13,7C3.24,6.8 3.41,6.66 3.6,6.58L11.79,2.18C12.08,2.06 12.43,2.06 12.72,2.18L20.91,6.58C21.1,6.66 21.27,6.8 21.38,7L22.88,9.59C23.16,10.09 23,10.68 22.5,10.96L21,11.81V19C21,20.11 20.11,21 19,21H5C3.89,21 3,20.11 3,19V11.81L2,10.96M12,4.15V10L20.22,8.39L18.94,6.3L12,4.15M5,19H19V12.5L12,16L5,12.5V19Z' fill='%231CA1C1'/%3E%3C/svg%3E") !important;
 }
 
+.webix_sidebar_selected .mdi-honest-sign,
+.webix_selected .mdi-honest-sign,
+.webix_tree_item.webix_selected .mdi-honest-sign,
+.webix_tree_item.webix_sidebar_selected .mdi-honest-sign {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Cpath d='M9.82 27.82h3.92v3.27H9.82c-2.72 0-4.91-2.19-4.91-4.91v-3.93h3.27v3.93c0 .92.72 1.64 1.64 1.64zM8.18 9.82c0-.92.72-1.64 1.64-1.64h3.92V4.91H9.82c-2.72 0-4.91 2.19-4.91 4.91v3.93h3.27V9.82zm19.64 16.36c0 .92-.72 1.64-1.64 1.64h-3.92v3.27h3.92c2.72 0 4.91-2.19 4.91-4.91v-3.93h-3.27v3.93zM26.18 4.91h-3.92v3.27h3.92c.92 0 1.64.72 1.64 1.64v3.93h3.27V9.82c0-2.72-2.19-4.91-4.91-4.91zM24.51 12.67l-8.44 8.44-4.68-4.68-2.32 2.32 7 7 10.77-10.77-2.33-2.31z' fill='%231CA1C1'/%3E%3C/svg%3E") !important;
+}
+
 .webix_sidebar_selected .mdi-qrcode-scan,
 .webix_selected .mdi-qrcode-scan,
 .webix_tree_item.webix_selected .mdi-qrcode-scan,
@@ -175,4 +194,11 @@
 .webix_tree_item.webix_selected .mdi-information,
 .webix_tree_item.webix_sidebar_selected .mdi-information {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z' fill='%231CA1C1'/%3E%3C/svg%3E") !important;
+}
+
+.webix_sidebar_selected .mdi-cellphone-arrow-down,
+.webix_selected .mdi-cellphone-arrow-down,
+.webix_tree_item.webix_selected .mdi-cellphone-arrow-down,
+.webix_tree_item.webix_sidebar_selected .mdi-cellphone-arrow-down {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M17,1H7A2,2 0 0,0 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3A2,2 0 0,0 17,1M17,19H7V5H17V19M16,13H13V8H11V13H8L12,17L16,13Z' fill='%231CA1C1'/%3E%3C/svg%3E") !important;
 }

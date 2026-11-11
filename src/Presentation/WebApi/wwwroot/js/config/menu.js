@@ -10,6 +10,11 @@ export const MENU_ITEMS = {
         value: "Настройка",
         icon: "mdi mdi-cog"
     },
+    TSD: {
+        id: "tsdView",
+        value: "Fmu-Api-TSD",
+        icon: "mdi mdi-cellphone-arrow-down"
+    },
     PRODUCT_GROUPS: {
         id: "productGroupsView",
         value: "Товарные группы",
@@ -40,6 +45,11 @@ export const MENU_ITEMS = {
         value: "Остатки марок ГИС МТ",
         icon: "mdi mdi-package-variant"
     },
+    GIS_MT_JOURNAL: {
+        id: "gisMtJournalView",
+        value: "Документы ГИС МТ",
+        icon: "mdi mdi-honest-sign"
+    },
     MARK_CHECK: {
         id: "markCheckView",
         value: "Проверка маркировки",
@@ -66,11 +76,13 @@ export function buildMenuItems(config) {
     const items = [
         MENU_ITEMS.MONITOR,
         MENU_ITEMS.CONFIG,
+        MENU_ITEMS.TSD,
         MENU_ITEMS.PRODUCT_GROUPS,
     ];
 
     const tsPiotEnabled = config?.serverConfig?.tsPiotEnabled ?? false;
     const useBeerTaps = config?.saleControlConfig?.useBeerTaps ?? false;
+    const gisMtDocuments = config?.gisMtSettings?.documentsEnabled ?? false;
 
     if (!tsPiotEnabled) {
         items.push(MENU_ITEMS.CDN);
@@ -78,6 +90,10 @@ export function buildMenuItems(config) {
 
     if (useBeerTaps) {
         items.push(MENU_ITEMS.BEER_TAPS);
+    }
+
+    if (gisMtDocuments) {
+        items.push(MENU_ITEMS.GIS_MT_JOURNAL);
     }
 
     items.push(
