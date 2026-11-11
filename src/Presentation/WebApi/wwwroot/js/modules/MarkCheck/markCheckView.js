@@ -80,12 +80,40 @@ class MarkCheckView {
                     const innInput = $$(this.NAMES.innInput);
                     if (innInput) {
                         innInput.setValue(this.defaultInn);
+                        this._hideInnOnMobile(innInput);
                     }
                 }
             }
         } catch (error) {
             console.warn("Ошибка при загрузке настроек организаций:", error);
         }
+    }
+
+    /**
+     * ИНН из конфигурации на телефоне освобождает место: поле прячется.
+     */
+    _hideInnOnMobile(innInput) {
+        if (!this.isMobile || !innInput)
+            return;
+
+        innInput.hide();
+        $$(this.id)?.resize();
+    }
+
+    /**
+     * Введённый вручную ИНН запоминается на время сеанса.
+     */
+    _rememberMobileInn(value) {
+        const inn = (value || "").trim();
+        if (inn)
+            this.defaultInn = inn;
+    }
+
+    /**
+     * После ручного ввода фокус возвращается ловушке сканера.
+     */
+    _focusScanCapture() {
+        this._scanCaptureNode()?.focus();
     }
 
     render() {
@@ -136,25 +164,29 @@ class MarkCheckView {
     }
 
     _inputBlock() {
+        const innField = {
+            view: "text",
+            id: this.NAMES.innInput,
+            label: this.LABELS.innLabel,
+            labelWidth: this.isMobile ? 140 : 180,
+            placeholder: this.LABELS.innPlaceholder,
+            value: this.defaultInn || ""
+        };
+
+        // На телефоне поле прячется только после загрузки ИНН из конфигурации.
+        // Без ИНН в конфигурации его нечем заменить: проверка просила бы ввести
+        // ИНН, а ввести его было бы некуда.
         if (this.isMobile) {
-            return {
-                view: "text",
-                id: this.NAMES.innInput,
-                hidden: true,
-                value: this.defaultInn || ""
+            innField.on = {
+                onChange: (value) => this._rememberMobileInn(value),
+                onBlur: () => this._focusScanCapture()
             };
+            return innField;
         }
 
         return {
             rows: [
-                {
-                    view: "text",
-                    id: this.NAMES.innInput,
-                    label: this.LABELS.innLabel,
-                    labelWidth: 180,
-                    placeholder: this.LABELS.innPlaceholder,
-                    value: this.defaultInn || ""
-                },
+                innField,
                 {
                     view: "text",
                     id: this.NAMES.markInput,
@@ -529,7 +561,7 @@ class MarkCheckView {
         let inn = (innInput?.getValue() || this.defaultInn || "").trim();
         if (!inn) {
             await this._loadInnFromConfig();
-            inn = (innInput.getValue() || this.defaultInn || "").trim();
+            inn = (innInput?.getValue() || this.defaultInn || "").trim();
         }
 
         const markingCode = this._currentMark().trim();

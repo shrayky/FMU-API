@@ -343,6 +343,12 @@ export class ScannerWedge {
         return tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable;
     }
 
+    // Поле-ловушка сканера и другие поля ввода различаются: ручной ввод в поле
+    // (например, ИНН на телефоне) сканер не перехватывает и фокус не переносит.
+    _isForeignTypingTarget(target) {
+        return this._isTypingTarget(target) && target !== this._inputNode;
+    }
+
     _armInput() {
         if (!this._inputNode)
             return;
@@ -352,6 +358,9 @@ export class ScannerWedge {
     }
 
     _onBeforeInput(e) {
+        if (this._isForeignTypingTarget(e.target))
+            return;
+
         if (e.inputType === "insertLineBreak" || e.inputType === "insertParagraph") {
             this._blockBrowser(e);
             this._handleEnter();
@@ -363,6 +372,9 @@ export class ScannerWedge {
     }
 
     _onInput(e) {
+        if (this._isForeignTypingTarget(e.target))
+            return;
+
         const target = e.target;
         const value = (target && target.value) || e.data || "";
         if (!value)
@@ -372,6 +384,9 @@ export class ScannerWedge {
     }
 
     _onPaste(e) {
+        if (this._isForeignTypingTarget(e.target))
+            return;
+
         const text = (e.clipboardData || window.clipboardData)?.getData("text") || "";
         if (!text)
             return;
@@ -382,22 +397,26 @@ export class ScannerWedge {
     }
 
     _onTextInput(e) {
+        if (this._isForeignTypingTarget(e.target))
+            return;
+
         if (e.data)
             this._ingestChunk(e.data);
     }
 
     _onCompositionEnd(e) {
+        if (this._isForeignTypingTarget(e.target))
+            return;
+
         if (e.data)
             this._ingestChunk(e.data);
     }
 
     _onKeyPress(e) {
-        this._armInput();
-
-        // Ввод в обычное поле не перехватываем: Enter должен доходить до обработчика поля.
-        const intoField = this._isTypingTarget(e.target);
-        if (intoField && e.target !== this._inputNode && !this.completeOnIdle)
+        if (this._isForeignTypingTarget(e.target))
             return;
+
+        this._armInput();
 
         const code = e.charCode || e.which || 0;
         if (code === 13) {
@@ -433,6 +452,9 @@ export class ScannerWedge {
     }
 
     _onKeyDown(e) {
+        if (this._isForeignTypingTarget(e.target))
+            return;
+
         this._armInput();
 
         if (!this.capsLock && typeof e.getModifierState === "function") {
@@ -443,10 +465,6 @@ export class ScannerWedge {
         this._fromKeyDown = ch !== null;
         const scanning = this.buffer.length > 0;
         const intoField = this._isTypingTarget(e.target);
-        const inOtherField = intoField && e.target !== this._inputNode && !this.completeOnIdle;
-
-        if (inOtherField)
-            return;
 
         if (ch === "\r" || ch === "\x1d") {
             this._blockBrowser(e);

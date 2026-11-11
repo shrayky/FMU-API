@@ -49,14 +49,14 @@ export function isNarrowScreen(threshold = NARROW_SCREEN_WIDTH) {
 
 /**
  * Упрощённый экран сканирования на телефоне.
- * Включается только по адресу с сегментом scan, чтобы обычный заход
- * с телефона открывал полное меню.
+ * Включается только на адресе страницы `/scan`: остальные маршруты со словом
+ * scan в пути открывают полное меню.
  */
 export function isMobileScanMode() {
-    return isMobileDevice() && hasScanSegment();
+    return isMobileDevice() && isScanPage();
 }
 
-function hasScanSegment() {
-    const path = window.location.pathname || "";
-    return path.split("/").some((part) => part.toLowerCase() === "scan");
+function isScanPage() {
+    const path = (window.location.pathname || "").replace(/\/+$/, "").toLowerCase();
+    return path === "/scan";
 }
