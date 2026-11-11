@@ -3,12 +3,25 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-import '../../infrastructure/scan/camera_data_matrix.dart';
+import '../../domain/scan/barcode_kind.dart';
+import '../../infrastructure/scan/camera_code.dart';
 import '../../theme/webix_dark_theme.dart';
 
-/// Полноэкранное сканирование только Data Matrix камерой устройства.
+/// Формат камеры для вида штрихкода.
+BarcodeFormat cameraFormatOf(BarcodeKind kind) {
+  return switch (kind) {
+    BarcodeKind.document => BarcodeFormat.qrCode,
+    BarcodeKind.mark => BarcodeFormat.dataMatrix,
+    BarcodeKind.ean13 => BarcodeFormat.ean13,
+  };
+}
+
+/// Полноэкранное сканирование камерой устройства только заданных видов штрихкода.
 class CameraScanPage extends StatefulWidget {
-  const CameraScanPage({super.key});
+  const CameraScanPage({super.key, required this.kinds}) : assert(kinds.length != 0);
+
+  /// Какие виды штрихкода считывать. Ошибку типа решает экран, а не камера.
+  final List<BarcodeKind> kinds;
 
   @override
   State<CameraScanPage> createState() => _CameraScanPageState();
@@ -18,11 +31,17 @@ class _CameraScanPageState extends State<CameraScanPage> {
   late final MobileScannerController _controller;
   var _done = false;
 
+  List<BarcodeFormat> get _formats {
+    return [for (final kind in widget.kinds) cameraFormatOf(kind)];
+  }
+
+  String get _label => widget.kinds.map((kind) => kind.title).join(', ');
+
   @override
   void initState() {
     super.initState();
     _controller = MobileScannerController(
-      formats: const [BarcodeFormat.dataMatrix],
+      formats: _formats,
       detectionSpeed: DetectionSpeed.normal,
     );
   }
@@ -39,11 +58,7 @@ class _CameraScanPageState extends State<CameraScanPage> {
     }
 
     for (final barcode in capture.barcodes) {
-      if (barcode.format != BarcodeFormat.dataMatrix) {
-        continue;
-      }
-
-      final code = CameraDataMatrix.codeFrom(
+      final code = CameraCode.codeFrom(
         rawValue: barcode.rawValue,
         rawBytes: _bytes(barcode),
       );
@@ -97,7 +112,7 @@ class _CameraScanPageState extends State<CameraScanPage> {
     return Scaffold(
       backgroundColor: WebixDarkTheme.background,
       appBar: AppBar(
-        title: const Text('Data Matrix'),
+        title: Text(_label),
       ),
       body: Stack(
         fit: StackFit.expand,
@@ -118,13 +133,13 @@ class _CameraScanPageState extends State<CameraScanPage> {
               );
             },
           ),
-          const Align(
+          Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
-              padding: EdgeInsets.only(bottom: 32),
+              padding: const EdgeInsets.only(bottom: 32),
               child: Text(
-                'Наведите камеру на Data Matrix',
-                style: TextStyle(color: WebixDarkTheme.text),
+                'Наведите камеру на $_label',
+                style: const TextStyle(color: WebixDarkTheme.text),
               ),
             ),
           ),

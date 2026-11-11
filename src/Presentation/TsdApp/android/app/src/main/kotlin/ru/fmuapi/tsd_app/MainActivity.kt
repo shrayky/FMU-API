@@ -12,6 +12,7 @@ import android.provider.Settings
 import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
 
@@ -19,6 +20,7 @@ class MainActivity : FlutterActivity() {
     private val scanChannelName = "ru.fmuapi.tsd/scan"
     private val monitorChannelName = "ru.fmuapi.tsd/broadcast-monitor"
     private val updateChannelName = "ru.fmuapi.tsd/update"
+    private val exportChannelName = "ru.fmuapi.tsd/export"
     private var scanChannel: MethodChannel? = null
     private var monitorChannel: MethodChannel? = null
     private var scanReceiver: BroadcastReceiver? = null
@@ -75,6 +77,53 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+
+        val exportChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, exportChannelName)
+        exportChannel.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "exportsDirectory" -> {
+                    val directory = File(cacheDir, "exports")
+                    directory.mkdirs()
+                    result.success(directory.absolutePath)
+                }
+                "share" -> shareFiles(call, result)
+                else -> result.notImplemented()
+            }
+        }
+    }
+
+    /// Системное меню «Поделиться»: файл копии базы уходит в выбранное приложение.
+    private fun shareFiles(call: MethodCall, result: MethodChannel.Result) {
+        val paths = call.argument<List<String>>("paths").orEmpty()
+        if (paths.isEmpty()) {
+            result.error("empty", "Нет файлов для отправки", null)
+            return
+        }
+
+        val uris = ArrayList<Uri>()
+        for (path in paths) {
+            val file = File(path)
+            if (!file.isFile) {
+                result.error("file", "Файл не найден: $path", null)
+                return
+            }
+            uris.add(FileProvider.getUriForFile(this, "$packageName.fileprovider", file))
+        }
+
+        val intent = if (uris.size == 1) {
+            Intent(Intent.ACTION_SEND).apply { putExtra(Intent.EXTRA_STREAM, uris[0]) }
+        } else {
+            Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+            }
+        }
+        intent.type = call.argument<String>("type")?.ifBlank { "*/*" } ?: "*/*"
+        call.argument<String>("subject")?.takeIf { it.isNotBlank() }?.let {
+            intent.putExtra(Intent.EXTRA_SUBJECT, it)
+        }
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        startActivity(Intent.createChooser(intent, "Поделиться базой документов"))
+        result.success(null)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -14,7 +14,7 @@ void main() {
   runApp(const TsdApp());
 }
 
-/// Клиент проверки марки для ТСД.
+/// Клиент ТСД: меню задач, сбор и проверка марок.
 class TsdApp extends StatelessWidget {
   const TsdApp({super.key, this.home = const HomeScreen()});
 
@@ -23,7 +23,7 @@ class TsdApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Fmu-Api: Проверка марки',
+      title: 'Fmu-Api',
       debugShowCheckedModeBanner: false,
       theme: WebixDarkTheme.data(),
       home: home,

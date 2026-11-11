@@ -3,6 +3,9 @@ import 'exchange_cancellation.dart';
 import 'exchange_server.dart';
 
 const markCollectionDocumentCommand = 'СборМарокПоДокументу';
+const markStatusCommand = 'СтатусСбораМарки';
+const trueApiTokenCommand = 'ТокенТруАпи';
+const exchangeServerMissing = 'Не выбран сервер обмена';
 const exchangeAddressMissing = 'Не задан адрес сервера обмена';
 const exchangeTimeoutMissing = 'Не задан таймаут запроса';
 const exchangeProtocolUnknown = 'Неизвестный протокол обмена';

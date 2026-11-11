@@ -66,7 +66,16 @@ void main() {
 
     expect(result.success, isFalse);
     expect(result.body, isEmpty);
-    expect(result.error, 'Код состяния ответа 503.\nнет');
+    expect(result.error, 'Сервер ответил кодом 503: нет');
+    expect(result.details, 'нет');
+  });
+
+  test('таймаут показывается в секундах, сырой текст остаётся в подробности', () async {
+    final result = await DsTsdProtocol(httpClient: TimeoutClient()).probe(_server(), ExchangeCancellation());
+
+    expect(result.success, isFalse);
+    expect(result.error, 'Сервер не ответил за 10 сек');
+    expect(result.details, contains('TimeoutException'));
   });
 
   test('сбой соединения обрабатывается один раз', () async {
@@ -92,6 +101,55 @@ void main() {
     expect(client.sent, 0);
   });
 
+  test('документ по штрихкоду собирает URL с публикацией, командой и штрихкодом', () async {
+    final client = RecordingClient(200, body: '{}');
+    final protocol = DsTsdProtocol(httpClient: client);
+
+    final result = await protocol.documentByBarcode(
+      _server(publication: 'ideal1/hs'),
+      ExchangeCancellation(),
+      command: markCollectionDocumentCommand,
+      barcode: '4600000000001',
+    );
+
+    expect(result.success, isTrue);
+    expect(client.request?.method, 'GET');
+    expect(client.request?.url.path, '/ideal1/hs/dstsdapi/get');
+    expect(client.request?.url.queryParameters['Команда'], markCollectionDocumentCommand);
+    expect(client.request?.url.queryParameters['Штрихкод'], '4600000000001');
+    expect(
+      client.request?.headers['authorization'],
+      'Basic ${base64Encode(utf8.encode('user:secret'))}',
+    );
+  });
+
+  test('документ по штрихкоду возвращает ошибку кода и не отдаёт тело', () async {
+    final client = RecordingClient(503, body: 'нет');
+    final result = await DsTsdProtocol(httpClient: client).documentByBarcode(
+      _server(),
+      ExchangeCancellation(),
+      command: markCollectionDocumentCommand,
+      barcode: '1',
+    );
+
+    expect(result.success, isFalse);
+    expect(result.body, isEmpty);
+    expect(result.error, 'Сервер ответил кодом 503: нет');
+  });
+
+  test('документ по штрихкоду при пустом адресе в сеть не уходит', () async {
+    final client = RecordingClient(200);
+    final result = await DsTsdProtocol(httpClient: client).documentByBarcode(
+      _server(host: ''),
+      ExchangeCancellation(),
+      command: markCollectionDocumentCommand,
+      barcode: '1',
+    );
+
+    expect(result.error, exchangeAddressMissing);
+    expect(client.sent, 0);
+  });
+
   test('остальные команды ds-tsd сеть не вызывают', () async {
     final client = RecordingClient(200);
     final protocol = DsTsdProtocol(httpClient: client);
@@ -99,15 +157,67 @@ void main() {
     final server = _server(host: '');
 
     final results = await Future.wait([
-      protocol.documentByBarcode(server, cancellation, command: markCollectionDocumentCommand, barcode: '1'),
-      protocol.markStatus(server, cancellation, mark: '1'),
-      protocol.trueApiToken(server, cancellation),
       protocol.loadGoods(server, cancellation),
-      protocol.uploadDocument(server, cancellation, packet: const {}),
       protocol.setPrice(server, cancellation, nomenclature: '1', price: 10),
     ]);
 
     expect(results.map((result) => result.error), everyElement(exchangeCommandPending));
+    expect(client.sent, 0);
+  });
+
+  test('статус марки собирает URL с командой и маркой', () async {
+    final client = RecordingClient(200, body: '{"Данные": {"Успех": true}}');
+    final protocol = DsTsdProtocol(httpClient: client);
+
+    final result = await protocol.markStatus(
+      _server(publication: 'ideal1/hs'),
+      ExchangeCancellation(),
+      mark: '010460000000001521abc',
+    );
+
+    expect(result.success, isTrue);
+    expect(client.request?.method, 'GET');
+    expect(client.request?.url.path, '/ideal1/hs/dstsdapi/get');
+    expect(client.request?.url.queryParameters['Команда'], markStatusCommand);
+    expect(client.request?.url.queryParameters['Марка'], '010460000000001521abc');
+  });
+
+  test('токен True API запрашивается командой ТокенТруАпи', () async {
+    final client = RecordingClient(200, body: '{"Токен": "t", "ДействуетДо": "2027-01-01"}');
+    final protocol = DsTsdProtocol(httpClient: client);
+
+    final result = await protocol.trueApiToken(_server(), ExchangeCancellation());
+
+    expect(result.success, isTrue);
+    expect(client.request?.url.queryParameters, {'Команда': trueApiTokenCommand});
+  });
+
+  test('выгрузка отправляет пакет телом POST на dstsdapi/post', () async {
+    final client = RecordingClient(200, body: '{"Пакет": {"Результат": true}}');
+    final protocol = DsTsdProtocol(httpClient: client);
+
+    final result = await protocol.uploadDocument(
+      _server(publication: 'ideal1/hs'),
+      ExchangeCancellation(),
+      packet: {'Команда': 'СборМарок'},
+    );
+
+    expect(result.success, isTrue);
+    expect(client.request?.method, 'POST');
+    expect(client.request?.url.path, '/ideal1/hs/dstsdapi/post');
+    expect(client.request?.headers['content-type'], contains('application/json'));
+    expect(client.bodies.single, contains('СборМарок'));
+  });
+
+  test('выгрузка без адреса не уходит в сеть', () async {
+    final client = RecordingClient(200);
+    final result = await DsTsdProtocol(httpClient: client).uploadDocument(
+      _server(host: ''),
+      ExchangeCancellation(),
+      packet: const {},
+    );
+
+    expect(result.error, exchangeAddressMissing);
     expect(client.sent, 0);
   });
 
@@ -173,11 +283,15 @@ class RecordingClient extends http.BaseClient {
   final String body;
   var sent = 0;
   http.BaseRequest? request;
+  final bodies = <String>[];
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     sent += 1;
     this.request = request;
+    if (request is http.Request) {
+      bodies.add(request.body);
+    }
     return http.StreamedResponse(Stream.value(utf8.encode(body)), status);
   }
 
@@ -192,6 +306,16 @@ class ThrowingClient extends http.BaseClient {
   Future<http.StreamedResponse> send(http.BaseRequest request) {
     sent += 1;
     throw http.ClientException('socket', request.url);
+  }
+
+  @override
+  void close() {}
+}
+
+class TimeoutClient extends http.BaseClient {
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) {
+    throw TimeoutException('Future not completed', const Duration(seconds: 10));
   }
 
   @override

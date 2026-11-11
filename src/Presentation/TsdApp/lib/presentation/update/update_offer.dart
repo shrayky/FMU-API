@@ -34,23 +34,3 @@ class UpdateOffer extends StatelessWidget {
     );
   }
 }
-
-/// Строка на главном экране, когда нода не ответила на проверку обновления.
-class UpdateCheckFailure extends StatelessWidget {
-  const UpdateCheckFailure({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Material(
-      color: WebixDarkTheme.surface,
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        child: Row(
-          children: [
-            Expanded(child: Text('Не удалось проверить обновление')),
-          ],
-        ),
-      ),
-    );
-  }
-}

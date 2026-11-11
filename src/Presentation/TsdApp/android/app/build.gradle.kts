@@ -11,6 +11,9 @@ val keyProperties = Properties()
 if (keyPropertiesFile.exists())
     keyPropertiesFile.inputStream().use { keyProperties.load(it) }
 
+// build-apk-debug-sign.bat выставляет TSD_APK_SIGNING=debug: release-APK подписывается debug-ключом.
+val signWithDebugKey = System.getenv("TSD_APK_SIGNING") == "debug"
+
 fun requireKeyProperty(name: String): String {
     val value = keyProperties.getProperty(name)?.trim().orEmpty()
     if (value.isEmpty())
@@ -40,7 +43,7 @@ android {
             enableV1Signing = true
             enableV2Signing = true
         }
-        if (keyPropertiesFile.exists()) {
+        if (!signWithDebugKey && keyPropertiesFile.exists()) {
             create("release") {
                 keyAlias = requireKeyProperty("keyAlias")
                 keyPassword = requireKeyProperty("keyPassword")
@@ -54,7 +57,7 @@ android {
 
     buildTypes {
         release {
-            signingConfig = if (keyPropertiesFile.exists())
+            signingConfig = if (!signWithDebugKey && keyPropertiesFile.exists())
                 signingConfigs.getByName("release")
             else
                 signingConfigs.getByName("debug")
@@ -80,7 +83,7 @@ flutter {
 
 gradle.taskGraph.whenReady {
     val releaseRequested = allTasks.any { task -> task.name.contains("Release") }
-    if (releaseRequested && !keyPropertiesFile.exists()) {
+    if (releaseRequested && !signWithDebugKey && !keyPropertiesFile.exists()) {
         throw GradleException(
             "Для release нужен android/key.properties. Образец: android/key.properties.example.")
     }

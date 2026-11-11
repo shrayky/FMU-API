@@ -1,45 +1,76 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
-import '../../domain/exchange/exchange_call_result.dart';
 import '../../domain/exchange/exchange_cancellation.dart';
 import '../../theme/webix_dark_theme.dart';
 import '../shell/screen_commands.dart';
 
-/// Ожидание проверки связи. Ответ возвращает результат, отмена — ничего.
-class ExchangeProbeScreen extends StatefulWidget {
+/// Ожидание запроса к серверу обмена. Ответ возвращает результат, отмена — ничего.
+class ExchangeProbeScreen<T> extends StatefulWidget {
   const ExchangeProbeScreen({
     super.key,
     required this.addressLine,
-    required this.probe,
+    required this.run,
+    this.caption = 'Проверка связи с сервером',
+    this.timeout,
   });
 
   final String addressLine;
-  final Future<ExchangeCallResult> Function(ExchangeCancellation cancellation) probe;
+  final String caption;
+
+  /// Таймаут запроса: по нему идёт обратный отсчёт в окне ожидания.
+  final Duration? timeout;
+
+  final Future<T> Function(ExchangeCancellation cancellation) run;
 
   @override
-  State<ExchangeProbeScreen> createState() => _ExchangeProbeScreenState();
+  State<ExchangeProbeScreen<T>> createState() => _ExchangeProbeScreenState<T>();
 }
 
-class _ExchangeProbeScreenState extends State<ExchangeProbeScreen> {
+class _ExchangeProbeScreenState<T> extends State<ExchangeProbeScreen<T>> {
   final _cancellation = ExchangeCancellation();
-  var _left = false;
+  var _left = 0;
+  Timer? _ticker;
+  var _leftAt = false;
 
   @override
   void initState() {
     super.initState();
+    final timeout = widget.timeout;
+    _left = timeout == null ? 0 : timeout.inSeconds;
+    if (timeout != null && _left > 0) {
+      _ticker = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (!mounted || _left <= 1) {
+          timer.cancel();
+          if (mounted) {
+            setState(() => _left = 0);
+          }
+          return;
+        }
+        setState(() => _left -= 1);
+      });
+    }
     _run();
   }
 
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
   Future<void> _run() async {
-    final result = await widget.probe(_cancellation);
-    if (!mounted || _left) {
+    final result = await widget.run(_cancellation);
+    if (!mounted || _leftAt) {
       return;
     }
     Navigator.of(context).pop(result);
   }
 
   void _cancel() {
-    _left = true;
+    _leftAt = true;
+    _ticker?.cancel();
     _cancellation.cancel();
     if (mounted) {
       Navigator.of(context).pop();
@@ -48,6 +79,7 @@ class _ExchangeProbeScreenState extends State<ExchangeProbeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final timeout = widget.timeout;
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -59,9 +91,22 @@ class _ExchangeProbeScreenState extends State<ExchangeProbeScreen> {
           child: Column(
             children: [
               const SizedBox(height: 32),
-              const Text('Проверка связи с сервером'),
+              Text(widget.caption),
               const SizedBox(height: 8),
               Text(widget.addressLine),
+              const SizedBox(height: 32),
+              const SizedBox(
+                width: 48,
+                height: 48,
+                child: CircularProgressIndicator(strokeWidth: 4),
+              ),
+              if (timeout != null) ...[
+                const SizedBox(height: 16),
+                Text(
+                  'Осталось: $_left сек',
+                  style: const TextStyle(color: WebixDarkTheme.muted),
+                ),
+              ],
             ],
           ),
         ),

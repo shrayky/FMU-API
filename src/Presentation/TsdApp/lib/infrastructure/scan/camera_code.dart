@@ -1,5 +1,5 @@
-/// Собирает код Data Matrix с камеры, сохраняя разделитель GS.
-class CameraDataMatrix {
+/// Собирает код с камеры, сохраняя разделитель GS: Data Matrix марок и QR документа.
+class CameraCode {
   static String? codeFrom({String? rawValue, List<int>? rawBytes}) {
     final fromBytes = rawBytes == null || rawBytes.isEmpty ? null : String.fromCharCodes(rawBytes);
     if (fromBytes != null && fromBytes.contains('\x1d')) {

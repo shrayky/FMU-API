@@ -6,6 +6,7 @@ import '../../domain/exchange/exchange_call_result.dart';
 import '../../domain/exchange/exchange_cancellation.dart';
 import '../../domain/exchange/exchange_protocol.dart';
 import '../../domain/exchange/exchange_server.dart';
+import '../../domain/message/failure_text.dart';
 
 /// Запросы DS TСД к публикации учётной базы. Один экземпляр обслуживает одну проверку связи.
 class DsTsdProtocol implements ExchangeProtocol {
@@ -15,30 +16,8 @@ class DsTsdProtocol implements ExchangeProtocol {
   var _closed = false;
 
   @override
-  Future<ExchangeCallResult> probe(ExchangeServer server, ExchangeCancellation cancellation) async {
-    final blocked = probeTransportBlocked(server);
-    if (blocked != null) {
-      return blocked;
-    }
-
-    cancellation.onCancel(_closeClient);
-    try {
-      final response = await _http
-          .get(_pingUri(server), headers: {'Authorization': _basicAuthorization(server.user, server.password)})
-          .timeout(Duration(seconds: server.timeoutSeconds));
-      final text = utf8.decode(response.bodyBytes);
-      if (response.statusCode == 200) {
-        return ExchangeCallResult(success: true, body: text);
-      }
-      return ExchangeCallResult(
-        success: false,
-        error: 'Код состяния ответа ${response.statusCode}.\n$text',
-      );
-    } catch (error) {
-      return ExchangeCallResult(success: false, error: error.toString());
-    } finally {
-      _closeClient();
-    }
+  Future<ExchangeCallResult> probe(ExchangeServer server, ExchangeCancellation cancellation) {
+    return _get(server, cancellation, _apiUri(server, 'ping'));
   }
 
   @override
@@ -48,7 +27,11 @@ class DsTsdProtocol implements ExchangeProtocol {
     required String command,
     required String barcode,
   }) {
-    return _pending();
+    return _get(
+      server,
+      cancellation,
+      _apiUri(server, 'get', query: {'Команда': command, 'Штрихкод': barcode}),
+    );
   }
 
   @override
@@ -57,12 +40,20 @@ class DsTsdProtocol implements ExchangeProtocol {
     ExchangeCancellation cancellation, {
     required String mark,
   }) {
-    return _pending();
+    return _get(
+      server,
+      cancellation,
+      _apiUri(server, 'get', query: {'Команда': markStatusCommand, 'Марка': mark}),
+    );
   }
 
   @override
   Future<ExchangeCallResult> trueApiToken(ExchangeServer server, ExchangeCancellation cancellation) {
-    return _pending();
+    return _get(
+      server,
+      cancellation,
+      _apiUri(server, 'get', query: {'Команда': trueApiTokenCommand}),
+    );
   }
 
   @override
@@ -76,7 +67,7 @@ class DsTsdProtocol implements ExchangeProtocol {
     ExchangeCancellation cancellation, {
     required Map<String, Object?> packet,
   }) {
-    return _pending();
+    return _post(server, cancellation, _apiUri(server, 'post'), packet);
   }
 
   @override
@@ -93,6 +84,82 @@ class DsTsdProtocol implements ExchangeProtocol {
     return const ExchangeCallResult(success: false, error: exchangeCommandPending);
   }
 
+  /// Команда, которая есть в сети. Пустой адрес, порт 0 и таймаут 0 её не отправляют.
+  Future<ExchangeCallResult> _get(ExchangeServer server, ExchangeCancellation cancellation, Uri uri) async {
+    final blocked = probeTransportBlocked(server);
+    if (blocked != null) {
+      return blocked;
+    }
+
+    cancellation.onCancel(_closeClient);
+    try {
+      final response = await _http
+          .get(uri, headers: {'Authorization': _basicAuthorization(server.user, server.password)})
+          .timeout(Duration(seconds: server.timeoutSeconds));
+      final text = utf8.decode(response.bodyBytes);
+      if (response.statusCode == 200) {
+        return ExchangeCallResult(success: true, body: text);
+      }
+      return ExchangeCallResult(
+        success: false,
+        error: describeHttpStatus(response.statusCode, text),
+        details: text,
+      );
+    } catch (error) {
+      return ExchangeCallResult(
+        success: false,
+        error: describeFailure(error),
+        details: '$error',
+      );
+    } finally {
+      _closeClient();
+    }
+  }
+
+  /// Выгрузка отправляет JSON пакета телом запроса; успех — тот же код 200.
+  Future<ExchangeCallResult> _post(
+    ExchangeServer server,
+    ExchangeCancellation cancellation,
+    Uri uri,
+    Map<String, Object?> packet,
+  ) async {
+    final blocked = probeTransportBlocked(server);
+    if (blocked != null) {
+      return blocked;
+    }
+
+    cancellation.onCancel(_closeClient);
+    try {
+      final response = await _http
+          .post(
+            uri,
+            headers: {
+              'Authorization': _basicAuthorization(server.user, server.password),
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode(packet),
+          )
+          .timeout(Duration(seconds: server.timeoutSeconds));
+      final text = utf8.decode(response.bodyBytes);
+      if (response.statusCode == 200) {
+        return ExchangeCallResult(success: true, body: text);
+      }
+      return ExchangeCallResult(
+        success: false,
+        error: describeHttpStatus(response.statusCode, text),
+        details: text,
+      );
+    } catch (error) {
+      return ExchangeCallResult(
+        success: false,
+        error: describeFailure(error),
+        details: '$error',
+      );
+    } finally {
+      _closeClient();
+    }
+  }
+
   void _closeClient() {
     if (_closed) {
       return;
@@ -101,11 +168,13 @@ class DsTsdProtocol implements ExchangeProtocol {
     _http.close();
   }
 
-  Uri _pingUri(ExchangeServer server) {
+  /// Адрес команды ds-tsd: сегмент публикации ставится между портом и `dstsdapi`.
+  Uri _apiUri(ExchangeServer server, String path, {Map<String, String>? query}) {
     final scheme = server.secure ? 'https' : 'http';
     final publication = server.publication.trim().replaceAll(RegExp(r'^/+|/+$'), '');
     final prefix = publication.isEmpty ? '' : '/$publication';
-    return Uri.parse('$scheme://${server.host}:${server.port}$prefix/dstsdapi/ping');
+    final uri = Uri.parse('$scheme://${server.host}:${server.port}$prefix/dstsdapi/$path');
+    return query == null ? uri : uri.replace(queryParameters: query);
   }
 
   String _basicAuthorization(String user, String password) {

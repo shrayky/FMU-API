@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:tsd_app/infrastructure/update/app_update.dart';
 import 'package:tsd_app/infrastructure/update/app_update_client.dart';
 import 'package:tsd_app/infrastructure/update/app_update_flow.dart';
 import 'package:tsd_app/infrastructure/update/app_update_installer.dart';

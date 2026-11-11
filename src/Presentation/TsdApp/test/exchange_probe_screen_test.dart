@@ -2,15 +2,21 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tsd_app/application/journal/work_log.dart';
+import 'package:tsd_app/application/message/message_center.dart';
 import 'package:tsd_app/domain/exchange/exchange_call_result.dart';
 import 'package:tsd_app/domain/exchange/exchange_cancellation.dart';
 import 'package:tsd_app/domain/exchange/exchange_protocol.dart';
 import 'package:tsd_app/domain/exchange/exchange_server.dart';
+import 'package:tsd_app/domain/journal/work_log_entry.dart';
+import 'package:tsd_app/domain/journal/work_log_storage.dart';
 import 'package:tsd_app/presentation/settings/exchange_server_form_screen.dart';
 import 'package:tsd_app/theme/webix_dark_theme.dart';
 
-void main() {
-  testWidgets('пустой адрес показывает ошибку без экрана ожидания', (tester) async {
+const _noLinkError = 'нет связи';
+const _timeoutError = 'Сервер не ответил за 10 сек';
+
+void main() {  testWidgets('пустой адрес показывает ошибку без экрана ожидания', (tester) async {
     await _open(tester);
 
     await tester.tap(find.text('Проверить'));
@@ -60,7 +66,8 @@ void main() {
     await _fill(tester, publication: 'erp');
 
     await tester.tap(find.text('Проверить'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('10.0.0.5:80/erp'), findsOneWidget);
 
     gate.complete(const ExchangeCallResult(success: true, body: 'pong'));
@@ -73,14 +80,58 @@ void main() {
     await _open(
       tester,
       protocols: (name) => ScriptedProtocol(
-        (server, cancellation) async => const ExchangeCallResult(success: false, error: 'нет связи'),
+        (server, cancellation) async => const ExchangeCallResult(success: false, error: _noLinkError),
       ),
     );
     await _fill(tester);
 
     await tester.tap(find.text('Проверить'));
     await tester.pumpAndSettle();
-    expect(find.text('${exchangeProbeFailedPrefix}нет связи'), findsOneWidget);
+    expect(find.text('$exchangeProbeFailedPrefix$_noLinkError'), findsOneWidget);
+  });
+
+  testWidgets('ошибка проверки пишется в журнал и получает иконку', (tester) async {
+    final log = WorkLog(storage: MemoryWorkLogStorage());
+    await _open(
+      tester,
+      messages: MessageCenter(log: log),
+      protocols: (name) => ScriptedProtocol(
+        (server, cancellation) async => const ExchangeCallResult(
+          success: false,
+          error: _timeoutError,
+          details: 'TimeoutException after 0:00:10.000000: Future not completed',
+        ),
+      ),
+    );
+    await _fill(tester);
+
+    await tester.tap(find.text('Проверить'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('$exchangeProbeFailedPrefix$_timeoutError'), findsOneWidget);
+    expect(find.byIcon(Icons.error_outline), findsOneWidget);
+    expect(log.entries.single.level, WorkLogLevel.error);
+    expect(log.entries.single.data['raw'], contains('TimeoutException'));
+    expect(log.entries.single.data['endpoint'], '10.0.0.5:80/');
+  });
+
+  testWidgets('успех проверки пишется в журнал', (tester) async {
+    final log = WorkLog(storage: MemoryWorkLogStorage());
+    await _open(
+      tester,
+      messages: MessageCenter(log: log),
+      protocols: (name) => ScriptedProtocol(
+        (server, cancellation) async => const ExchangeCallResult(success: true, body: 'pong'),
+      ),
+    );
+    await _fill(tester);
+
+    await tester.tap(find.text('Проверить'));
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
+    expect(log.entries.single.text, exchangeProbeSuccess);
+    expect(log.entries.single.level, WorkLogLevel.info);
   });
 
   testWidgets('отмена закрывает ожидание без сообщения', (tester) async {
@@ -99,7 +150,8 @@ void main() {
     await _fill(tester);
 
     await tester.tap(find.text('Проверить'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('Ожидание...'), findsOneWidget);
 
     await tester.tap(find.text('Отмена'));
@@ -134,11 +186,16 @@ Future<void> _open(
   WidgetTester tester, {
   String initialProtocol = defaultExchangeProtocol,
   ExchangeProtocol? Function(String name)? protocols,
+  MessageCenter? messages,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
       theme: WebixDarkTheme.data(),
-      home: ExchangeServerFormScreen(initialProtocol: initialProtocol, protocols: protocols),
+      home: ExchangeServerFormScreen(
+        initialProtocol: initialProtocol,
+        protocols: protocols,
+        messages: messages,
+      ),
     ),
   );
 }
@@ -215,5 +272,28 @@ class ScriptedProtocol implements ExchangeProtocol {
     required num price,
   }) async {
     return const ExchangeCallResult(success: false, error: exchangeCommandPending);
+  }
+}
+
+class MemoryWorkLogStorage implements WorkLogStorage {
+  final entries = <WorkLogEntry>[];
+
+  @override
+  Future<List<WorkLogEntry>> recent({required int limit}) async {
+    final sorted = [...entries]..sort((left, right) => right.at.compareTo(left.at));
+    return sorted.take(limit).toList();
+  }
+
+  @override
+  Future<void> add(WorkLogEntry entry) async {
+    entries.add(entry);
+  }
+
+  @override
+  Future<void> trim({required Duration age, required int limit}) async {}
+
+  @override
+  Future<void> clear() async {
+    entries.clear();
   }
 }

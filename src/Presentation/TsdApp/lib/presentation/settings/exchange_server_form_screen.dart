@@ -1,43 +1,70 @@
 import 'package:flutter/material.dart';
 
 import '../../application/exchange/exchange_protocols.dart';
+import '../../application/message/message_center.dart';
 import '../../domain/exchange/exchange_call_result.dart';
 import '../../domain/exchange/exchange_protocol.dart';
 import '../../domain/exchange/exchange_server.dart';
-import '../../theme/webix_dark_theme.dart';
 import '../shell/screen_commands.dart';
 import 'exchange_probe_screen.dart';
 
-/// Карточка создания сервера обмена.
+/// Результат карточки сервера: запись или удаление существующей строки.
+class ExchangeServerFormResult {
+  const ExchangeServerFormResult.save(this.server) : deleted = false;
+
+  const ExchangeServerFormResult.delete()
+      : server = null,
+        deleted = true;
+
+  final ExchangeServer? server;
+  final bool deleted;
+}
+
+/// Карточка сервера обмена. Без сервера создаёт строку, с сервером меняет её.
 class ExchangeServerFormScreen extends StatefulWidget {
   const ExchangeServerFormScreen({
     super.key,
+    this.server,
     this.initialProtocol = defaultExchangeProtocol,
     this.protocols,
+    this.messages,
   });
 
+  final ExchangeServer? server;
   final String initialProtocol;
   final ExchangeProtocol? Function(String name)? protocols;
+  final MessageCenter? messages;
 
   @override
   State<ExchangeServerFormScreen> createState() => _ExchangeServerFormScreenState();
 }
 
 class _ExchangeServerFormScreenState extends State<ExchangeServerFormScreen> {
-  final _name = TextEditingController();
-  final _host = TextEditingController();
-  final _port = TextEditingController();
-  final _publication = TextEditingController();
-  final _user = TextEditingController();
-  final _password = TextEditingController();
-  final _timeout = TextEditingController();
+  late final TextEditingController _name;
+  late final TextEditingController _host;
+  late final TextEditingController _port;
+  late final TextEditingController _publication;
+  late final TextEditingController _user;
+  late final TextEditingController _password;
+  late final TextEditingController _timeout;
+  late final MessageCenter _messages;
   var _secure = false;
   var _protocol = defaultExchangeProtocol;
 
   @override
   void initState() {
     super.initState();
-    _protocol = widget.initialProtocol;
+    _messages = widget.messages ?? MessageCenter();
+    final source = widget.server;
+    _name = TextEditingController(text: source?.name ?? '');
+    _host = TextEditingController(text: source?.host ?? '');
+    _port = TextEditingController(text: source == null ? '' : '${source.port}');
+    _publication = TextEditingController(text: source?.publication ?? '');
+    _user = TextEditingController(text: source?.user ?? '');
+    _password = TextEditingController(text: source?.password ?? '');
+    _timeout = TextEditingController(text: source == null ? '' : '${source.timeoutSeconds}');
+    _secure = source?.secure ?? false;
+    _protocol = source?.protocol ?? widget.initialProtocol;
   }
 
   @override
@@ -59,7 +86,7 @@ class _ExchangeServerFormScreenState extends State<ExchangeServerFormScreen> {
     }
 
     return ExchangeServer(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      id: widget.server?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
       name: name,
       host: _host.text.trim(),
       port: int.tryParse(_port.text.trim()) ?? 0,
@@ -73,7 +100,16 @@ class _ExchangeServerFormScreenState extends State<ExchangeServerFormScreen> {
   }
 
   void _close() {
-    Navigator.of(context).pop(_server());
+    final server = _server();
+    if (server == null) {
+      Navigator.of(context).pop();
+      return;
+    }
+    Navigator.of(context).pop(ExchangeServerFormResult.save(server));
+  }
+
+  void _delete() {
+    Navigator.of(context).pop(const ExchangeServerFormResult.delete());
   }
 
   ExchangeProtocol? _protocolFor(String name) {
@@ -99,46 +135,35 @@ class _ExchangeServerFormScreenState extends State<ExchangeServerFormScreen> {
     );
     final blocked = probeBlocked(server);
     if (blocked != null) {
-      await _showProbe(blocked);
+      await _messages.show(context, _messages.exchangeBlocked(server, blocked));
       return;
     }
 
     final protocol = _protocolFor(server.protocol);
     if (protocol == null) {
-      await _showProbe(const ExchangeCallResult(success: false, error: exchangeProtocolUnknown));
+      await _messages.show(
+        context,
+        _messages.exchangeBlocked(
+          server,
+          const ExchangeCallResult(success: false, error: exchangeProtocolUnknown),
+        ),
+      );
       return;
     }
 
     final result = await Navigator.of(context).push<ExchangeCallResult>(
       MaterialPageRoute(
-        builder: (_) => ExchangeProbeScreen(
+        builder: (_) => ExchangeProbeScreen<ExchangeCallResult>(
           addressLine: server.endpoint,
-          probe: (cancellation) => protocol.probe(server, cancellation),
+          timeout: Duration(seconds: server.timeoutSeconds),
+          run: (cancellation) => protocol.probe(server, cancellation),
         ),
       ),
     );
     if (!mounted || result == null) {
       return;
     }
-    await _showProbe(result);
-  }
-
-  Future<void> _showProbe(ExchangeCallResult result) {
-    final text = result.success ? exchangeProbeSuccess : '$exchangeProbeFailedPrefix${result.error}';
-    return showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          content: Text(text),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Ок', style: TextStyle(color: WebixDarkTheme.accent)),
-            ),
-          ],
-        );
-      },
-    );
+    await _messages.show(context, _messages.exchangeProbe(server, result));
   }
 
   @override
@@ -146,7 +171,7 @@ class _ExchangeServerFormScreenState extends State<ExchangeServerFormScreen> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text('Сервер обмена (создание)'),
+        title: Text(widget.server == null ? 'Сервер обмена (создание)' : 'Сервер обмена'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -196,6 +221,7 @@ class _ExchangeServerFormScreenState extends State<ExchangeServerFormScreen> {
       ),
       bottomNavigationBar: ScreenCommands(
         commands: [
+          if (widget.server != null) ScreenCommand(label: 'Удалить', onPressed: _delete),
           ScreenCommand(label: 'Проверить', accent: true, onPressed: _probe),
           ScreenCommand(label: 'Закрыть', onPressed: _close),
         ],

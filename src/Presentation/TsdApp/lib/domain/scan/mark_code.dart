@@ -1,14 +1,41 @@
 /// Нормализация и распознавание кода марки: GS1 и штучный табак.
 class MarkCode {
   static String normalize(String value) {
-    return value.replaceAll('\u241d', '\x1d').replaceAll(RegExp(r'[\r\n\t]+'), '').trim();
+    final text = value
+        .replaceAll('\u241d', '\x1d')
+        .replaceAll(r'\u001d', '\x1d')
+        .replaceAll(RegExp(r'[\r\n\t]+'), '')
+        .trim();
+    return _trimInsignificant(_stripSymbology(text));
   }
 
-  static bool looksLikeMark(String code) {
-    var normalized = normalize(code);
-    if (normalized.startsWith('\x1d')) {
-      normalized = normalized.substring(1);
+  /// Сканеры ставят перед кодом идентификатор символики `]d2`, `]C1`, `]Q3`.
+  static String _stripSymbology(String code) {
+    final prefix = RegExp(r'^\][A-Za-z]\d').firstMatch(code);
+    if (prefix == null) {
+      return code;
     }
+    return code.substring(prefix.end).trim();
+  }
+
+  /// По краям кода стоят служебные символы: GS, STX/RS, пробел, неразрывный пробел.
+  /// Значимая часть марки начинается с идентификатора `01` или GTIN.
+  static String _trimInsignificant(String code) {
+    var start = 0;
+    var end = code.length;
+    while (start < end && _insignificant(code.codeUnitAt(start))) {
+      start += 1;
+    }
+    while (end > start && _insignificant(code.codeUnitAt(end - 1))) {
+      end -= 1;
+    }
+    return code.substring(start, end);
+  }
+
+  static bool _insignificant(int unit) => unit <= 0x20 || unit == 0x7f || unit == 0xa0;
+
+  static bool looksLikeMark(String code) {
+    final normalized = normalize(code);
 
     if (normalized.isEmpty) {
       return false;

@@ -2,100 +2,113 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
-import '../../application/mark/scan_queue.dart';
-import '../../domain/mark/mark_card_row.dart';
-import '../../domain/mark/mark_check_result.dart';
-import '../../domain/scan/mark_code.dart';
-import '../../domain/scan/scan_buffer.dart';
-import '../../infrastructure/api/fmu_api_client.dart';
+import '../../application/message/message_center.dart';
+import '../../application/shell/task_buttons.dart';
+import '../../application/shell/task_registry.dart';
+import '../../domain/message/app_message.dart';
+import '../../domain/message/failure_text.dart';
+import '../../domain/task/task_button.dart';
+import '../../domain/task/task_section.dart';
+import '../../domain/task/tsd_task.dart';
 import '../../infrastructure/discovery/lan_fmu_scanner.dart';
-import '../../infrastructure/scan/clipboard_scan_watcher.dart';
-import '../../infrastructure/scan/intent_scan_channel.dart';
 import '../../infrastructure/settings/app_settings.dart';
 import '../../infrastructure/settings/settings_store.dart';
 import '../../infrastructure/update/app_update.dart';
 import '../../infrastructure/update/app_update_flow.dart';
 import '../../theme/webix_dark_theme.dart';
-import '../cards/mark_cards_view.dart';
-import '../cards/mark_detail_page.dart';
-import '../scan/camera_scan_page.dart';
-import '../scan/continuous_scan_table.dart';
+import '../settings/settings_pin_screen.dart';
 import '../settings/settings_screen.dart';
+import '../shell/journal_icon.dart';
+import '../shell/shell_bottom_bar.dart';
 import '../update/update_offer.dart';
 
-/// Главный экран ТСД: одиночная карточка или непрерывное сканирование.
+/// Меню задач ТСД.
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, this.lanScanner, this.clipboard, this.updates});
+  const HomeScreen({
+    super.key,
+    this.lanScanner,
+    this.updates,
+    this.appVersion,
+  });
 
   final LanFmuScanner? lanScanner;
-  final ClipboardScanWatcher? clipboard;
   final AppUpdateFlow? updates;
+  final String? appVersion;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
+enum _MenuArea { tasks, exchange }
+
+enum _AddressNotice { none, searching, missing }
+
+class _HomeScreenState extends State<HomeScreen> {
   final _focus = FocusNode();
-  final _buffer = ScanBuffer();
-  final _queue = ScanQueue();
   final _settingsStore = SettingsStore();
-  final _intent = IntentScanChannel();
-  late final ClipboardScanWatcher _clipboard;
+  final _messages = MessageCenter();
+  final _registry = const TaskRegistry();
   late final LanFmuScanner _lan;
+  late final AppUpdateFlow _updates;
+  late final List<TsdTask> _tasks;
 
   AppSettings _settings = const AppSettings();
-  List<MarkCardRow> _rows = const [];
-  String _placeholder = 'Сканируйте марку';
-  bool _checking = false;
-  String? _inn;
-  bool _clipboardOnHome = true;
+  List<TaskButton> _buttons = const [];
+  _MenuArea _area = _MenuArea.tasks;
+  TaskSection? _section = TaskSection.documents;
+  _AddressNotice _address = _AddressNotice.none;
   Timer? _updateTimer;
   AppUpdate? _offer;
   bool _updating = false;
-  bool _updateCheckFailed = false;
-  late final AppUpdateFlow _updates;
+  String? _version;
+  var _opening = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _lan = widget.lanScanner ?? LanFmuScanner();
-    _clipboard = widget.clipboard ?? ClipboardScanWatcher();
     _updates = widget.updates ?? AppUpdateFlow();
-    _intent.onScan = _onReadyCode;
-    _clipboard.onCode = (code) => _accept(_buffer.completeRaw(code));
-    _intent.start();
-    _clipboard.start();
-    _loadSettings();
+    _tasks = _registry.tasks();
+    _version = widget.appVersion;
+    _buttons = TaskButtons.resolve(_tasks, null);
+    _showTasks();
+    if (_version == null) {
+      unawaited(_loadVersion());
+    }
+    unawaited(_loadSettings());
     WidgetsBinding.instance.addPostFrameCallback((_) => _focus.requestFocus());
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     _updateTimer?.cancel();
     _lan.cancel();
-    _intent.stop();
-    _clipboard.stop();
     _focus.dispose();
     super.dispose();
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      if (_clipboardOnHome) {
-        _clipboard.start();
+  Future<void> _loadVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (!mounted) {
+        return;
       }
-      return;
-    }
+      setState(() => _version = info.version);
+    } catch (_) {}
+  }
 
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.hidden ||
-        state == AppLifecycleState.detached) {
-      _clipboard.stop();
+  void _showTasks() {
+    final documents = TaskButtons.visible(_buttons, TaskSection.documents);
+    final service = TaskButtons.visible(_buttons, TaskSection.service);
+    _area = _MenuArea.tasks;
+    if (documents.isNotEmpty) {
+      _section = TaskSection.documents;
+    } else if (service.isNotEmpty) {
+      _section = TaskSection.service;
+    } else {
+      _section = null;
     }
   }
 
@@ -105,33 +118,24 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       return;
     }
 
-    setState(() => _settings = settings);
-    unawaited(_configureIntent(settings));
+    setState(() {
+      _settings = settings;
+      _buttons = TaskButtons.resolve(_tasks, settings.taskButtons);
+      _showTasks();
+    });
     if (settings.apiBaseUrl.isEmpty) {
       await _discoverApi();
       return;
     }
 
-    await _refreshInn();
+    setState(() => _address = _AddressNotice.none);
     _armUpdateChecks();
   }
 
-  Future<void> _configureIntent(AppSettings settings) async {
-    try {
-      await _intent.configure(action: settings.intentAction, extra: settings.intentExtra);
-    } catch (_) {}
-  }
-
-  void _clearUpdateFailure() {
-    if (!_updateCheckFailed || !mounted) {
-      return;
-    }
-    setState(() => _updateCheckFailed = false);
-  }
-
   Future<void> _discoverApi() async {
-    _clearUpdateFailure();
-    setState(() => _placeholder = 'Поиск Fmu-Api в сети…');
+    if (mounted) {
+      setState(() => _address = _AddressNotice.searching);
+    }
     final found = await _lan.findFirst();
     if (!mounted) {
       return;
@@ -139,8 +143,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     if (found == null) {
       _updateTimer?.cancel();
-      _clearUpdateFailure();
-      setState(() => _placeholder = 'Укажите адрес Fmu-Api в настройках');
+      _updateTimer = null;
+      setState(() => _address = _AddressNotice.missing);
       return;
     }
 
@@ -152,9 +156,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     setState(() {
       _settings = settings;
-      _placeholder = 'Найден $found';
+      _address = _AddressNotice.none;
     });
-    await _refreshInn();
     _armUpdateChecks();
   }
 
@@ -162,7 +165,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _updateTimer?.cancel();
     _updateTimer = null;
     if (_settings.apiBaseUrl.isEmpty) {
-      _clearUpdateFailure();
       return;
     }
 
@@ -174,7 +176,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Future<void> _checkForUpdate() async {
     if (_settings.apiBaseUrl.isEmpty) {
-      _clearUpdateFailure();
       return;
     }
 
@@ -187,15 +188,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (!mounted) {
         return;
       }
-      setState(() {
-        _offer = offer;
-        _updateCheckFailed = false;
-      });
+      setState(() => _offer = offer);
     } catch (_) {
-      if (!mounted) {
-        return;
-      }
-      setState(() => _updateCheckFailed = _offer == null);
+      // Сбой проверки обновления не показываем: меню остаётся рабочим.
     }
   }
 
@@ -212,7 +207,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
+      _messages.showSnack(
+        context,
+        AppMessage(
+          kind: MessageKind.failure,
+          text: describeFailure(error),
+          data: {'error': '$error'},
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() => _updating = false);
@@ -220,54 +222,63 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _refreshInn() async {
-    if (_settings.apiBaseUrl.isEmpty) {
-      _inn = null;
-      return;
-    }
-
-    try {
-      _inn = await FmuApiClient(baseUrl: _settings.apiBaseUrl).organisationInn();
-    } catch (_) {
-      _inn = null;
-    }
-  }
-
   Future<void> _openSettings() async {
-    _clipboardOnHome = false;
-    _clipboard.stop();
-    final result = await Navigator.of(context).push<AppSettings>(
-      MaterialPageRoute(builder: (_) => SettingsScreen(settings: _settings, updates: _updates)),
-    );
-    _clipboardOnHome = true;
-    if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
-      _clipboard.start();
-    }
-    _focus.requestFocus();
-    if (result == null) {
-      return;
+    final pin = _settings.settingsPin.trim();
+    if (pin.isNotEmpty) {
+      final allowed = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(builder: (_) => SettingsPinScreen(pin: pin)),
+      );
+      if (!mounted || allowed != true) {
+        _focus.requestFocus();
+        return;
+      }
     }
 
-    await _settingsStore.save(result);
+    final result = await Navigator.of(context).push<AppSettings>(
+      MaterialPageRoute(builder: (_) => SettingsScreen(settings: _settings)),
+    );
+    if (!mounted) {
+      return;
+    }
+    if (result != null) {
+      await _settingsStore.save(result);
+    }
     await _loadSettings();
+    if (!mounted) {
+      return;
+    }
+    _focus.requestFocus();
   }
 
-  Future<void> _openCamera() async {
-    _clipboardOnHome = false;
-    _clipboard.stop();
-    final code = await Navigator.of(context).push<String>(
-      MaterialPageRoute(builder: (_) => const CameraScanPage()),
-    );
-    _clipboardOnHome = true;
-    if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
-      _clipboard.start();
+  TsdTask? _task(String id) {
+    for (final task in _tasks) {
+      if (task.id == id) {
+        return task;
+      }
     }
-    _focus.requestFocus();
-    if (code == null || code.isEmpty) {
+    return null;
+  }
+
+  Future<void> _openButton(TaskButton button, {required bool journal}) async {
+    if (_opening) {
+      return;
+    }
+    final task = _task(button.taskId);
+    if (task == null) {
+      return;
+    }
+    final screen = journal ? task.openJournal?.call(_settings) : task.open(_settings);
+    if (screen == null) {
       return;
     }
 
-    _onReadyCode(code);
+    _opening = true;
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
+    _opening = false;
+    if (!mounted) {
+      return;
+    }
+    _focus.requestFocus();
   }
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
@@ -275,219 +286,33 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       return KeyEventResult.ignored;
     }
 
-    final control = HardwareKeyboard.instance.isControlPressed;
-    if (control && event.logicalKey == LogicalKeyboardKey.keyV) {
-      _paste();
-      return KeyEventResult.handled;
-    }
-
-    if (control &&
-        (event.logicalKey == LogicalKeyboardKey.bracketRight || event.character == ']')) {
-      _accept(_buffer.pushChar('\x1d'));
-      return KeyEventResult.handled;
-    }
-
-    final isEnter = event.logicalKey == LogicalKeyboardKey.enter ||
-        event.logicalKey == LogicalKeyboardKey.numpadEnter ||
-        event.character == '\r' ||
-        event.character == '\n';
-    if (isEnter) {
-      _accept(_buffer.pushChar('\r'));
-      return KeyEventResult.handled;
-    }
-
     final character = event.character;
-    if (character != null && character.isNotEmpty) {
-      _accept(_buffer.pushChar(character));
-      return KeyEventResult.handled;
+    if (character == null) {
+      return KeyEventResult.ignored;
     }
 
-    return KeyEventResult.ignored;
+    final button = TaskButtons.matchHotkey(_buttons, character);
+    if (button == null) {
+      return KeyEventResult.ignored;
+    }
+
+    unawaited(_openButton(button, journal: false));
+    return KeyEventResult.handled;
   }
 
-  Future<void> _paste() async {
-    final data = await Clipboard.getData(Clipboard.kTextPlain);
-    final text = data?.text ?? '';
-    _onReadyCode(text);
-    await Clipboard.setData(const ClipboardData(text: ''));
-  }
-
-  void _onReadyCode(String code) {
-    _clipboard.remember(code);
-    _accept(_buffer.completeRaw(code));
-  }
-
-  void _accept(ScanPushResult result) {
-    final code = result.code;
-    if (code == null) {
-      return;
+  String get _title {
+    final version = _version;
+    if (version == null || version.isEmpty) {
+      return 'Fmu-Api';
     }
-
-    if (!MarkCode.looksLikeMark(code)) {
-      _rejectNotMark();
-      return;
-    }
-
-    if (_settings.continuousScanEnabled) {
-      _enqueue(code);
-      return;
-    }
-
-    if (_checking) {
-      return;
-    }
-
-    _check(code);
-  }
-
-  void _rejectNotMark() {
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Это не марка')));
-    setState(() {
-      if (!_settings.continuousScanEnabled) {
-        _rows = const [];
-      }
-      _placeholder = 'Это не марка';
-    });
-  }
-
-  void _enqueue(String code) {
-    if (_queue.add(code) == null) {
-      return;
-    }
-
-    setState(() {});
-    _pump();
-  }
-
-  void _pump() {
-    for (final item in _queue.takeForRequest()) {
-      unawaited(_checkQueued(item));
-    }
-  }
-
-  Future<void> _checkQueued(ScanQueueItem item) async {
-    try {
-      final result = await _requestQueued(item);
-      if (!mounted || result == null) {
-        return;
-      }
-
-      _queue.complete(item, result);
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-
-      _queue.fail(item, error.toString());
-    } finally {
-      if (mounted) {
-        setState(() {});
-        _pump();
-      }
-    }
-  }
-
-  Future<MarkCheckResult?> _requestQueued(ScanQueueItem item) async {
-    if (_settings.apiBaseUrl.isEmpty) {
-      _queue.fail(item, 'Укажите адрес Fmu-Api в настройках');
-      return null;
-    }
-
-    var inn = _inn;
-    if (inn == null || inn.isEmpty) {
-      inn = await FmuApiClient(baseUrl: _settings.apiBaseUrl).organisationInn();
-      _inn = inn;
-    }
-
-    if (inn.isEmpty) {
-      _queue.fail(item, 'В Fmu-Api не задан ИНН организации');
-      return null;
-    }
-
-    return FmuApiClient(baseUrl: _settings.apiBaseUrl).checkMarkResult(inn: inn, mark: item.mark);
-  }
-
-  Future<void> _openDetail(ScanQueueItem item) async {
-    if (!item.canOpen) {
-      return;
-    }
-
-    _clipboardOnHome = false;
-    _clipboard.stop();
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => MarkDetailPage(rows: item.rows)),
-    );
-    if (!mounted) {
-      return;
-    }
-
-    _clipboardOnHome = true;
-    if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
-      _clipboard.start();
-    }
-    _focus.requestFocus();
-  }
-
-  Future<void> _check(String mark) async {
-    if (_settings.apiBaseUrl.isEmpty) {
-      setState(() {
-        _rows = const [];
-        _placeholder = 'Укажите адрес Fmu-Api в настройках';
-      });
-      return;
-    }
-
-    setState(() {
-      _checking = true;
-      _rows = const [];
-      _placeholder = 'Проверка марки…';
-    });
-
-    try {
-      var inn = _inn;
-      if (inn == null || inn.isEmpty) {
-        inn = await FmuApiClient(baseUrl: _settings.apiBaseUrl).organisationInn();
-        _inn = inn;
-      }
-
-      if (inn.isEmpty) {
-        setState(() {
-          _rows = const [];
-          _placeholder = 'В Fmu-Api не задан ИНН организации';
-        });
-        return;
-      }
-
-      final rows = await FmuApiClient(baseUrl: _settings.apiBaseUrl).checkMark(inn: inn, mark: mark);
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _rows = rows;
-        _placeholder = rows.isEmpty ? 'Нет данных' : 'Сканируйте марку';
-      });
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _rows = [
-          MarkCardRow(label: '', value: error.toString(), tone: MarkCardTone.error),
-        ];
-      });
-    } finally {
-      if (mounted) {
-        setState(() => _checking = false);
-        _focus.requestFocus();
-      }
-    }
+    return 'Fmu-Api v $version';
   }
 
   @override
   Widget build(BuildContext context) {
+    final documents = TaskButtons.visible(_buttons, TaskSection.documents);
+    final service = TaskButtons.visible(_buttons, TaskSection.service);
+    final showExchange = _settings.exchangeVariants.isNotEmpty;
     return Scaffold(
       appBar: AppBar(
         leadingWidth: 48,
@@ -495,60 +320,175 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           padding: EdgeInsets.all(10),
           child: Image(image: AssetImage('assets/logo_fmuapi.png')),
         ),
-        title: const Text('Fmu-Api: Проверка марки'),
-        actions: [
-          if (_settings.continuousScanEnabled && _queue.items.isNotEmpty)
-            IconButton(
-              tooltip: 'Очистить',
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () => setState(_queue.clear),
-            ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: _openSettings,
-          ),
-        ],
+        title: Text(_title),
       ),
       body: Column(
         children: [
-          if (_offer == null && _updateCheckFailed)
-            const UpdateCheckFailure(),
           if (_offer != null)
             UpdateOffer(
               versionName: _offer!.versionName,
               busy: _updating,
               onUpdate: _installUpdate,
             ),
+          if (_address == _AddressNotice.searching) const _MenuBanner(text: 'Поиск Fmu-Api в сети…'),
+          if (_address == _AddressNotice.missing)
+            const _MenuBanner(text: 'Укажите адрес Fmu-Api в настройках'),
           Expanded(
             child: Focus(
               focusNode: _focus,
               autofocus: true,
+              descendantsAreFocusable: false,
               onKeyEvent: _onKey,
               child: ColoredBox(
                 color: WebixDarkTheme.background,
-                child: _settings.continuousScanEnabled
-                    ? ContinuousScanTable(
-                        items: _queue.items,
-                        placeholder: _placeholder,
-                        onOpen: _openDetail,
-                      )
-                    : GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () => _focus.requestFocus(),
-                        child: MarkCardsView(rows: _rows, placeholder: _placeholder),
-                      ),
+                child: _body(),
               ),
             ),
           ),
         ],
       ),
-      floatingActionButton: _settings.cameraScanEnabled
-          ? FloatingActionButton(
-              onPressed: _openCamera,
-              backgroundColor: WebixDarkTheme.accent,
-              child: const Icon(Icons.qr_code_scanner),
-            )
-          : null,
+      bottomNavigationBar: ShellBottomBar(
+        items: [
+          if (documents.isNotEmpty)
+            ShellBarItem(
+              label: 'Документы',
+              icon: Icons.article_outlined,
+              selected: _area == _MenuArea.tasks && _section == TaskSection.documents,
+              onTap: () {
+                setState(() {
+                  _area = _MenuArea.tasks;
+                  _section = TaskSection.documents;
+                });
+                _focus.requestFocus();
+              },
+            ),
+          if (service.isNotEmpty)
+            ShellBarItem(
+              label: 'Сервис',
+              icon: Icons.handyman_outlined,
+              selected: _area == _MenuArea.tasks && _section == TaskSection.service,
+              onTap: () {
+                setState(() {
+                  _area = _MenuArea.tasks;
+                  _section = TaskSection.service;
+                });
+                _focus.requestFocus();
+              },
+            ),
+          if (showExchange)
+            ShellBarItem(
+              label: 'Обмен',
+              icon: Icons.sync_alt,
+              selected: _area == _MenuArea.exchange,
+              onTap: () {
+                setState(() => _area = _MenuArea.exchange);
+                _focus.requestFocus();
+              },
+            ),
+          ShellBarItem(
+            label: 'Настройки',
+            icon: Icons.settings_outlined,
+            onTap: _openSettings,
+          ),
+          const ShellBarItem(
+            label: 'Выход',
+            icon: Icons.logout,
+            onTap: SystemNavigator.pop,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _body() {
+    if (_area == _MenuArea.exchange && _settings.exchangeVariants.isNotEmpty) {
+      return const SizedBox.expand();
+    }
+
+    final section = _section;
+    if (section == null) {
+      return const Center(child: Text('Все задачи выключены'));
+    }
+
+    final buttons = TaskButtons.visible(_buttons, section);
+    if (buttons.isEmpty) {
+      return const Center(child: Text('Все задачи выключены'));
+    }
+
+    return ListView(
+      children: [
+        for (final button in buttons) _TaskRow(
+          button: button,
+          showJournal: _showsJournal(button),
+          onOpen: () => _openButton(button, journal: false),
+          onJournal: () => _openButton(button, journal: true),
+        ),
+      ],
+    );
+  }
+
+  bool _showsJournal(TaskButton button) {
+    final task = _task(button.taskId);
+    if (task == null) {
+      return false;
+    }
+    return TaskButtons.journalVisible(task, button);
+  }
+}
+
+/// Строка задачи на меню: подпись и, если нужно, журнал.
+class _TaskRow extends StatelessWidget {
+  const _TaskRow({
+    required this.button,
+    required this.showJournal,
+    required this.onOpen,
+    required this.onJournal,
+  });
+
+  final TaskButton button;
+  final bool showJournal;
+  final VoidCallback onOpen;
+  final VoidCallback onJournal;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: TextButton(
+            onPressed: onOpen,
+            style: TextButton.styleFrom(
+              foregroundColor: WebixDarkTheme.accent,
+              alignment: Alignment.centerLeft,
+            ),
+            child: Text(button.title, style: const TextStyle(color: WebixDarkTheme.accent, fontSize: 18)),
+          ),
+        ),
+        if (showJournal)
+          IconButton(
+            tooltip: 'Журнал',
+            onPressed: onJournal,
+            icon: const JournalIcon(),
+          ),
+      ],
+    );
+  }
+}
+
+/// Баннер поиска адреса или пустого адреса.
+class _MenuBanner extends StatelessWidget {
+  const _MenuBanner({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: WebixDarkTheme.surface,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: Align(alignment: Alignment.centerLeft, child: Text(text)),
+      ),
     );
   }
 }

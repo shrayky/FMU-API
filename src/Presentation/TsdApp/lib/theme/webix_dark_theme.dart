@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 class WebixDarkTheme {
   static const background = Color(0xFF2A2B2D);
   static const surface = Color(0xFF20262B);
+  static const dialogSurface = Color(0xFF3A3B3D);
   static const border = Color(0x14FFFFFF);
   static const text = Color(0xE6FFFFFF);
   static const muted = Color(0xFF9CA3AF);
   static const ok = Color(0xFF4ADE80);
   static const warn = Color(0xFFF87171);
+  static const warning = Color(0xFFFBBF24);
   static const accent = Color(0xFF60A5FA);
 
   static ThemeData data() {
@@ -30,6 +32,10 @@ class WebixDarkTheme {
         backgroundColor: surface,
         foregroundColor: text,
         elevation: 0,
+      ),
+      iconTheme: const IconThemeData(color: text),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(foregroundColor: text),
       ),
       inputDecorationTheme: const InputDecorationTheme(
         labelStyle: TextStyle(color: muted),
