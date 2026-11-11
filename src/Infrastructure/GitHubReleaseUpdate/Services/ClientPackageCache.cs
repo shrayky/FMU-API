@@ -6,11 +6,9 @@ using System.Security.Cryptography;
 
 namespace GitHubReleaseUpdate.Services;
 
-/// Скачивает пакет указанного клиентского приложения из последнего релиза GitHub в каталог ноды.
+/// Скачивает пакет указанного клиентского приложения из последнего релиза GitHub и принимает APK с диска.
 public class ClientPackageCache
 {
-    private const long MaxPackageBytes = 80L * 1024 * 1024;
-
     private readonly GitHubReleaseClient _releaseClient;
     private readonly ILogger<ClientPackageCache> _logger;
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
@@ -36,6 +34,48 @@ public class ClientPackageCache
         try
         {
             return await DownloadSelected(application, metadataUrl, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _refreshLock.Release();
+        }
+    }
+
+    public async Task<Result<ClientPackageRefreshResult>> Store(
+        string application,
+        IReadOnlyList<ClientPackageUpload> uploads,
+        CancellationToken cancellationToken)
+    {
+        if (!ClientPackageName.IsApplicationId(application))
+            return Result.Failure<ClientPackageRefreshResult>("Некорректное имя приложения");
+
+        if (uploads.Count == 0)
+            return Result.Failure<ClientPackageRefreshResult>("Не выбран файл APK");
+
+        if (uploads.Count > 2)
+            return Result.Failure<ClientPackageRefreshResult>("Можно загрузить не больше двух APK");
+
+        var folder = ClientPackageCatalog.ApplicationFolder(application);
+        if (folder is null)
+            return Result.Failure<ClientPackageRefreshResult>("Некорректное имя приложения");
+
+        await _refreshLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            Directory.CreateDirectory(folder);
+            var downloaded = 0;
+            var errors = new List<string>();
+
+            foreach (var upload in uploads)
+            {
+                var error = await SaveUpload(folder, application, upload, cancellationToken).ConfigureAwait(false);
+                if (error is null)
+                    downloaded++;
+                else
+                    errors.Add(error);
+            }
+
+            return Result.Success(new ClientPackageRefreshResult(downloaded, errors));
         }
         finally
         {
@@ -85,7 +125,7 @@ public class ClientPackageCache
 
             var incomingPath = Path.Combine(folder, Path.GetFileName(asset.Name) + ".incoming");
             var downloadResult = await _releaseClient
-                .DownloadTo(asset, incomingPath, MaxPackageBytes, cancellationToken)
+                .DownloadTo(asset, incomingPath, ClientPackageStore.MaxPackageBytes, cancellationToken)
                 .ConfigureAwait(false);
 
             if (downloadResult.IsFailure)
@@ -126,7 +166,7 @@ public class ClientPackageCache
             await File.WriteAllTextAsync(destinationPath + ".sha256", sha256, cancellationToken)
                 .ConfigureAwait(false);
 
-            DeleteOlder(folder, package, destinationPath);
+            ClientPackageStore.DeleteOthers(folder, package, destinationPath);
             downloaded++;
 
             _logger.LogInformation(
@@ -174,26 +214,76 @@ public class ClientPackageCache
         return false;
     }
 
-    private static void DeleteOlder(string folder, ClientPackage kept, string keptPath)
+    private async Task<string?> SaveUpload(
+        string folder,
+        string application,
+        ClientPackageUpload upload,
+        CancellationToken cancellationToken)
     {
-        foreach (var path in Directory.EnumerateFiles(folder, "*.apk"))
+        var safeName = Path.GetFileName(upload.FileName);
+        if (string.IsNullOrWhiteSpace(safeName))
+            safeName = "apk";
+
+        var incoming = Path.Combine(folder, Guid.NewGuid().ToString("N") + ".incoming");
+        try
         {
-            if (string.Equals(path, keptPath, StringComparison.OrdinalIgnoreCase))
-                continue;
+            var copyError = await CopyLimited(upload.Content, incoming, upload.Length, cancellationToken)
+                .ConfigureAwait(false);
+            if (copyError is not null)
+                return $"{safeName}: {copyError}";
 
-            if (!ClientPackageName.TryParse(Path.GetFileName(path), out var package))
-                continue;
+            var stored = ClientPackageStore.Accept(folder, incoming, safeName, application);
+            if (stored.IsFailure)
+                return $"{safeName}: {stored.Error}";
 
-            if (!string.Equals(package.Application, kept.Application, StringComparison.OrdinalIgnoreCase)
-                || !string.Equals(package.Abi, kept.Abi, StringComparison.OrdinalIgnoreCase))
-                continue;
-
-            File.Delete(path);
-
-            var shaPath = path + ".sha256";
-            if (File.Exists(shaPath))
-                File.Delete(shaPath);
+            _logger.LogInformation(
+                "Пакет {FileName} версии {VersionName} сборки {VersionCode} сохранён с диска",
+                stored.Value.FileName,
+                stored.Value.VersionName,
+                stored.Value.VersionCode);
+            return null;
         }
+        finally
+        {
+            if (File.Exists(incoming))
+                File.Delete(incoming);
+        }
+    }
+
+    private static async Task<string?> CopyLimited(
+        Stream source,
+        string destination,
+        long declaredLength,
+        CancellationToken cancellationToken)
+    {
+        if (declaredLength <= 0)
+            return "Файл APK пустой";
+
+        if (declaredLength > ClientPackageStore.MaxPackageBytes)
+            return "APK больше 80 МБ";
+
+        await using (var output = File.Create(destination))
+        {
+            var buffer = new byte[81920];
+            long total = 0;
+            while (true)
+            {
+                var read = await source.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+                if (read == 0)
+                    break;
+
+                total += read;
+                if (total > ClientPackageStore.MaxPackageBytes)
+                    return "APK больше 80 МБ";
+
+                await output.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
+            }
+
+            if (total == 0)
+                return "Файл APK пустой";
+        }
+
+        return null;
     }
 
     private static async Task<string> ComputeSha256(string filePath, CancellationToken cancellationToken)

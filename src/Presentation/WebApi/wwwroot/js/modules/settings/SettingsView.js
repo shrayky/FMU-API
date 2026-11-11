@@ -11,7 +11,6 @@ const SETTINGS_MODULES = {
     markUnit: () => import("./elements/markUnit.js"),
     timeoutConfig: () => import("./elements/timeouts.js"),
     loggingConfigData: () => import("./elements/loggingConfiguration.js"),
-    tsdAppUpdate: () => import("./elements/tsdAppUpdate.js"),
     centralServerAutoUpdateSettings: () => import("./elements/centralServerAutoUpdateSettings.js"),
 };
 
