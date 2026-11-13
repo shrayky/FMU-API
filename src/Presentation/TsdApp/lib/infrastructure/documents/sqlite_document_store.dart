@@ -169,6 +169,7 @@ class SqliteDocumentStore implements DocumentStore {
       {
         'document_id': documentId,
         'mark': mark.mark,
+        'cis': mark.cis,
         'nomenclature_uid': mark.nomenclatureUid,
         'units': mark.units,
       },
@@ -181,8 +182,8 @@ class SqliteDocumentStore implements DocumentStore {
     final database = await _db();
     final removed = await database.delete(
       'marks',
-      where: 'document_id = ? AND mark = ?',
-      whereArgs: [documentId, mark],
+      where: 'document_id = ? AND cis = ?',
+      whereArgs: [documentId, markCis(mark)],
     );
     return removed > 0;
   }

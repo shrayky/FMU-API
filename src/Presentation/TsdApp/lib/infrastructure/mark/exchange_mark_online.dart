@@ -107,6 +107,24 @@ class ExchangeMarkOnline implements MarkOnline {
   }
 
   @override
+  Future<MarkPackageAnswer> composition(
+    String mark,
+    String token,
+    ExchangeCancellation cancellation,
+  ) async {
+    if (cancellation.isCancelled) {
+      return const MarkPackageAnswer(error: markCheckCancelled);
+    }
+
+    final answer = await _trueApi.compositionOf(mark, token);
+    return MarkPackageAnswer(
+      package: answer.package,
+      marks: answer.marks,
+      error: answer.error,
+    );
+  }
+
+  @override
   Future<TrueApiTokenAnswer> token(ExchangeCancellation cancellation, {String inn = ''}) async {
     final base = settings.apiBaseUrl.trim();
     if (base.isNotEmpty) {

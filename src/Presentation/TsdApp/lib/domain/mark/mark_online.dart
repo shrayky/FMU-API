@@ -77,4 +77,11 @@ abstract interface class MarkOnline {
     String token,
     ExchangeCancellation cancellation,
   );
+
+  /// Марки внутри упаковки по True API: история агрегации `cises/history/list`.
+  Future<MarkPackageAnswer> composition(
+    String mark,
+    String token,
+    ExchangeCancellation cancellation,
+  );
 }

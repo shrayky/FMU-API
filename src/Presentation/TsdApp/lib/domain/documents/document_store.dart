@@ -33,10 +33,11 @@ abstract interface class DocumentStore {
   /// Марки документа в порядке подбора.
   Future<List<StoredMark>> marks(String documentId);
 
-  /// Пишет марку. Повтор того же ключа `document_id` и `mark` строку не плодит.
+  /// Пишет марку. Повтор того же ключа `document_id` и `cis` строку не плодит,
+  /// даже если у марки другой криптохвост.
   Future<void> addMark(String documentId, StoredMark mark);
 
-  /// Удаляет марку документа; `false`, если такой марки в документе не было.
+  /// Удаляет марку документа по её КИ без хвоста; `false`, если такой марки не было.
   Future<bool> removeMark(String documentId, String mark);
 
   /// Отметка выгрузки документа: журнал пишет по ней «Выгружен».

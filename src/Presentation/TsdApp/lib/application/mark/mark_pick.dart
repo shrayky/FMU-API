@@ -26,6 +26,13 @@ const markDocumentUploaded = 'Документ уже выгружен';
 /// Все строки состава закрыты.
 const markAllPicked = 'Все марки подобраны!';
 
+/// Все марки упаковки уже есть в документе.
+const markPackageAllPicked = 'Все марки упаковки уже подобраны';
+
+/// Часть марок упаковки уже есть в документе: записаны только новые.
+String markPackagePartlyPicked({required int skipped, required int added}) =>
+    'Часть марок упаковки уже подобрана: пропущено $skipped, записано $added';
+
 /// Режим «Единицы и упаковки»: индивидуальные марки тоже пишутся.
 const unitsAndPackagesMode = 'Единицы и упаковки';
 
@@ -202,7 +209,7 @@ class MarkPick {
     );
   }
 
-  /// Удаление марки: `marks` находит строку по тексту, позиция закрывается.
+  /// Удаление марки: `marks` находит строку по КИ без криптохвоста, позиция закрывается.
   Future<MarkScanResult> delete(String code) async {
     if (document.uploaded) {
       return const MarkScanResult(messages: [markDocumentUploaded]);
@@ -213,7 +220,8 @@ class MarkPick {
       return const MarkScanResult();
     }
 
-    final index = _marks.indexWhere((mark) => mark.mark == text);
+    final cis = markCis(text);
+    final index = _marks.indexWhere((mark) => mark.cis == cis);
     var removed = false;
     try {
       removed = await store.removeMark(document.id, text);
@@ -258,8 +266,9 @@ class MarkPick {
       return const MarkScanResult();
     }
 
-    final pallet = text.startsWith('000');
-    final package = !pallet && text.startsWith('00');
+    final kind = _packKind(text);
+    final pallet = kind.pallet;
+    final package = kind.package;
     final barcodes = _barcodesFromMark(text, package: package, pallet: pallet);
     _trace('Скан марки', {
       'марка': text,
@@ -301,11 +310,20 @@ class MarkPick {
 
     final line = lines[selected.clamp(0, lines.length - 1)];
 
-    if (_marks.any((mark) => mark.mark == text)) {
+    final cis = markCis(text);
+    if (_marks.any((mark) => mark.cis == cis)) {
       return const MarkScanResult(messages: [markAlreadyScanned]);
     }
 
     final units = await _units(line, barcode: barcode, pallet: pallet, package: package);
+
+    // Упаковка `00…` разбирается на составляющие, пока True API отдаёт её историю.
+    if (packageLookup && package && packages && settings.requestPackageViaTrueApi && _usesTrueApi) {
+      final composed = await _packComposition(text, line, cancellation: cancellation);
+      if (composed != null) {
+        return composed;
+      }
+    }
 
     final substitute = packageLookup &&
         packages &&
@@ -336,7 +354,7 @@ class MarkPick {
         return MarkScanResult(messages: [pack.error]);
       }
       if (pack.marks.isNotEmpty) {
-        return _addPackage(pack.marks, line, cancellation: cancellation);
+        return _addComposition(pack.marks, line, cancellation: cancellation);
       }
       if (pack.hasPackage) {
         return _scan(
@@ -375,30 +393,76 @@ class MarkPick {
     return MarkScanResult(changed: true, allPicked: allPicked);
   }
 
-  /// Пишет марки упаковки по одной: сколько влезет в строку состава.
-  Future<MarkScanResult> _addPackage(
+  /// Состав упаковки `00…` по True API: пишет вложения вместо групповой строки.
+  ///
+  /// `null` — состава нет или True API недоступен: вызывающий пишет упаковку одной строкой.
+  Future<MarkScanResult?> _packComposition(
+    String text,
+    PickLine line, {
+    required ExchangeCancellation cancellation,
+  }) async {
+    final token = await online.token(cancellation, inn: document.organization.inn);
+    if (!token.passed) {
+      _trace('Токен True API не получен', {'ошибка': token.error});
+      return null;
+    }
+
+    final pack = await online.composition(text, token.token, cancellation);
+    _trace('Ответ True API о составе упаковки', {
+      'упаковка': text,
+      'марок': pack.marks.length,
+      'ошибка': pack.error,
+    });
+    if (cancellation.isCancelled) {
+      return const MarkScanResult();
+    }
+    if (!pack.passed || pack.marks.isEmpty) {
+      return null;
+    }
+
+    return _addComposition(pack.marks, line, cancellation: cancellation);
+  }
+
+  /// Пишет марки состава по одной: уже подобранные пропускает, лишние не влезают.
+  Future<MarkScanResult> _addComposition(
     List<String> codes,
     PickLine line, {
     required ExchangeCancellation cancellation,
   }) async {
     final accepted = <StoredMark>[];
-    var message = '';
+    var acceptedUnits = 0;
+    var skipped = 0;
+    var overflow = false;
     for (final code in codes) {
       final text = markStorageText(code);
-      if (text.isEmpty ||
-          _marks.any((mark) => mark.mark == text) ||
-          accepted.any((mark) => mark.mark == text)) {
+      if (text.isEmpty) {
         continue;
       }
-      if (line.picked + accepted.length + 1 > line.quantity) {
-        message = markOverflow;
+      final cis = markCis(text);
+      if (_marks.any((mark) => mark.cis == cis) || accepted.any((mark) => mark.cis == cis)) {
+        skipped += 1;
+        continue;
+      }
+      final units = await _compositionUnits(text, line);
+      if (line.picked + acceptedUnits + units > line.quantity) {
+        overflow = true;
         break;
       }
-      accepted.add(StoredMark(mark: text, nomenclatureUid: line.nomenclatureUid));
+      accepted.add(StoredMark(mark: text, nomenclatureUid: line.nomenclatureUid, units: units));
+      acceptedUnits += units;
     }
 
+    final messages = <String>[];
     if (accepted.isEmpty) {
-      return MarkScanResult(messages: [message.isEmpty ? markOverflow : message]);
+      return MarkScanResult(
+        messages: [overflow || skipped == 0 ? markOverflow : markPackageAllPicked],
+      );
+    }
+    if (skipped > 0) {
+      messages.add(markPackagePartlyPicked(skipped: skipped, added: accepted.length));
+    }
+    if (overflow) {
+      messages.add(markOverflow);
     }
     if (cancellation.isCancelled) {
       return const MarkScanResult();
@@ -411,7 +475,7 @@ class MarkPick {
         return MarkScanResult(messages: ['Марка не записалась: $error']);
       }
       _marks.add(mark);
-      line.picked += 1;
+      line.picked += mark.units;
     }
 
     final allPicked = lines.every((item) => item.complete);
@@ -421,7 +485,21 @@ class MarkPick {
     return MarkScanResult(
       changed: true,
       allPicked: allPicked,
-      messages: message.isEmpty ? const [] : [message],
+      messages: messages,
+    );
+  }
+
+  /// Единиц в марке состава: упаковка берёт размер, штучная — коэффициент штрихкода.
+  Future<int> _compositionUnits(String text, PickLine line) async {
+    final kind = _packKind(text);
+    final pallet = kind.pallet;
+    final package = kind.package;
+    final barcodes = _barcodesFromMark(text, package: package, pallet: pallet);
+    return _units(
+      line,
+      barcode: barcodes.isEmpty ? '' : barcodes.first,
+      pallet: pallet,
+      package: package,
     );
   }
 
@@ -533,9 +611,21 @@ class MarkPick {
   static bool _sameUid(String left, String right) =>
       left.trim().toLowerCase() == right.trim().toLowerCase();
 
-  /// Штрихкоды товара из марки: тринадцать символов GTIN и полный четырнадцатизначный.
+  /// Код с `000` — палета, с `00` — упаковка. Штучная марка длиной 29 палетой не считается:
+  /// у сигарет GTIN сам начинается с нулей.
+  static ({bool pallet, bool package}) _packKind(String text) {
+    if (text.length == 29) {
+      return (pallet: false, package: false);
+    }
+
+    final pallet = text.startsWith('000');
+    return (pallet: pallet, package: !pallet && text.startsWith('00'));
+  }
+
+  /// Штрихкоды товара из марки: 13 цифр GTIN без первой, полный GTIN и он же без ведущих нулей.
   ///
   /// У кода `01` GTIN стоит с третьего символа, у штучной марки длиной 29 — с первого.
+  /// Несколько нулей слева бывают у короткого штрихкода сигарет: в справочнике он лежит без них.
   /// Код из одних цифр длиной 12–14 считается самим штрихкодом товара.
   static List<String> _barcodesFromMark(
     String mark, {
@@ -553,11 +643,21 @@ class MarkPick {
       return _barcodePair(mark.substring(1, 14), mark.substring(0, 14));
     }
     if (RegExp(r'^\d{12,14}$').hasMatch(mark)) {
-      return [mark];
+      return _barcodePair(mark, mark);
     }
     return const [];
   }
 
-  static List<String> _barcodePair(String short, String full) =>
-      short == full ? [short] : [short, full];
+  /// Сначала короткий ключ, затем полный GTIN. Если слева несколько нулей, третьим идёт код без них.
+  static List<String> _barcodePair(String short, String full) {
+    final codes = <String>[short];
+    if (full != short) {
+      codes.add(full);
+    }
+    final stripped = full.replaceFirst(RegExp(r'^0+'), '');
+    if (stripped.isNotEmpty && !codes.contains(stripped)) {
+      codes.add(stripped);
+    }
+    return codes;
+  }
 }

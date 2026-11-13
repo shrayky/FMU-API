@@ -234,7 +234,7 @@ class FakeDocumentStore implements DocumentStore {
     }
 
     final marks = marksByDocument.putIfAbsent(documentId, () => []);
-    marks.removeWhere((item) => item.mark == mark.mark);
+    marks.removeWhere((item) => item.cis == mark.cis);
     marks.add(mark);
   }
 
@@ -244,8 +244,9 @@ class FakeDocumentStore implements DocumentStore {
     if (marks == null) {
       return false;
     }
+    final key = markCis(mark);
     final before = marks.length;
-    marks.removeWhere((item) => item.mark == mark);
+    marks.removeWhere((item) => item.cis == key);
     return marks.length != before;
   }
 
@@ -274,10 +275,13 @@ class FakeMarkOnline implements MarkOnline {
   final packages = <String>[];
   final tokenInns = <String>[];
   final packageByMark = <String, MarkPackageAnswer>{};
+  final compositions = <String>[];
+  final compositionByMark = <String, MarkPackageAnswer>{};
   var ownerAnswer = const MarkCheckAnswer.passed();
   var statusAnswer = const MarkStatusAnswer.passed();
   var tokenAnswer = const TrueApiTokenAnswer(token: 'token');
   var packageAnswer = const MarkPackageAnswer();
+  var compositionAnswer = const MarkPackageAnswer();
   var tokens = 0;
 
   /// Задержка владельца: по ней тест держит окно ожидания.
@@ -311,6 +315,16 @@ class FakeMarkOnline implements MarkOnline {
   ) async {
     packages.add(mark);
     return packageByMark[mark] ?? packageAnswer;
+  }
+
+  @override
+  Future<MarkPackageAnswer> composition(
+    String mark,
+    String token,
+    ExchangeCancellation cancellation,
+  ) async {
+    compositions.add(mark);
+    return compositionByMark[mark] ?? compositionAnswer;
   }
 }
 

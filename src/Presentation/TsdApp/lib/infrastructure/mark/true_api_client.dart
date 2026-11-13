@@ -68,6 +68,24 @@ class TrueApiClient {
         .trim();
   }
 
+  /// Марки упаковки: история агрегации отдаёт вложения любого кода, не только штучного.
+  Future<TrueApiPackage> compositionOf(String mark, String token) async {
+    final head = markHead(mark);
+    if (head.isEmpty || token.isEmpty) {
+      return const TrueApiPackage();
+    }
+
+    try {
+      final marks = [
+        for (final item in await _marksOf(head, token))
+          if (markHead(item) != head) item,
+      ];
+      return TrueApiPackage(package: head, marks: marks);
+    } catch (error) {
+      return TrueApiPackage(error: describeFailure(error));
+    }
+  }
+
   Future<String> _parent(String cis, String token) async {
     final events = _events(await _post(_historyPath, {'cis': cis}, token));
     var parent = '';

@@ -8,6 +8,7 @@ import 'package:tsd_app/domain/exchange/exchange_protocol.dart';
 import 'package:tsd_app/domain/exchange/exchange_server.dart';
 import 'package:tsd_app/domain/mark/mark_online.dart';
 import 'package:tsd_app/infrastructure/mark/exchange_mark_online.dart';
+import 'package:tsd_app/infrastructure/mark/true_api_client.dart';
 import 'package:tsd_app/infrastructure/settings/app_settings.dart';
 
 import 'documents_support.dart';
@@ -192,6 +193,40 @@ void main() {
 
     expect(answer.passed, isFalse);
     expect(answer.error, dataMobileReserved);
+  });
+
+  test('состав упаковки читается историей агрегации', () async {
+    final client = _Client(
+      200,
+      body: '{"cisAggregation": [{"childs": [{"cis": "010460000000000121A1"}, '
+          '{"cis": "010460000000000121A2"}]}]}',
+    );
+    final online = ExchangeMarkOnline(
+      settings: const AppSettings(apiBaseUrl: 'http://10.0.0.5:2578'),
+      httpClient: client,
+      trueApi: TrueApiClient(httpClient: client),
+    );
+
+    final answer = await online.composition('0012345678905', 'token', ExchangeCancellation());
+
+    expect(answer.passed, isTrue);
+    expect(answer.package, '0012345678905');
+    expect(answer.marks, ['010460000000000121A1', '010460000000000121A2']);
+    expect(client.request?.url.path, '/api/v3/true-api/cises/history/list');
+  });
+
+  test('состав упаковки без токена в сеть не идёт', () async {
+    final client = _Client(200, body: '{}');
+    final online = ExchangeMarkOnline(
+      settings: const AppSettings(apiBaseUrl: 'http://10.0.0.5:2578'),
+      httpClient: client,
+      trueApi: TrueApiClient(httpClient: client),
+    );
+
+    final answer = await online.composition('0012345678905', '', ExchangeCancellation());
+
+    expect(answer.marks, isEmpty);
+    expect(client.sent, 0);
   });
 }
 

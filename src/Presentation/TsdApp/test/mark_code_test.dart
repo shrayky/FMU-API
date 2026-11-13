@@ -46,6 +46,15 @@ void main() {
     );
   });
 
+  test('ключ марки обрезает криптохвост по GS', () {
+    expect(MarkCode.cis('010460071404010521AB\x1d93abcd'), '010460071404010521AB');
+    expect(MarkCode.cis(r'010460071404010521AB\u001d93abcd'), '010460071404010521AB');
+    expect(MarkCode.cis('\x1d010460071404010521AB\x1d93abcd'), '010460071404010521AB');
+    expect(MarkCode.cis('010460071404010521AB'), '010460071404010521AB');
+    expect(MarkCode.cis('0012345678905'), '0012345678905');
+    expect(MarkCode.cis(' '), '');
+  });
+
   test('без серийного номера оставляет код до GS и обрезает длинный', () {
     expect(MarkCode.shortMark('46071180000011'), '46071180000011');
     expect(MarkCode.shortMark('1234567890123456789012345\x1d93abcd'), '1234567890123456…');

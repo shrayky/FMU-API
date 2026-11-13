@@ -199,6 +199,39 @@ void main() {
     expect(await store.marks(saved.id), isEmpty);
   });
 
+  test('марка с хвостом и без него — одна строка по ключу cis', () async {
+    final saved = await store.save(packet);
+    final tailed = markStorageText('010460000000001521a\x1d93qmRP');
+
+    await store.addMark(saved.id, StoredMark(mark: tailed, nomenclatureUid: sampleGoodsUid));
+    await store.addMark(
+      saved.id,
+      const StoredMark(mark: '010460000000001521a', nomenclatureUid: sampleGoodsUid, units: 6),
+    );
+
+    final marks = await store.marks(saved.id);
+    expect(marks, hasLength(1));
+    expect(marks.single.cis, '010460000000001521a');
+    expect(marks.single.units, 6);
+
+    expect(await store.removeMark(saved.id, '010460000000001521a'), isTrue);
+    expect(await store.marks(saved.id), isEmpty);
+  });
+
+  test('удаление по короткому коду убирает марку с хвостом', () async {
+    final saved = await store.save(packet);
+    await store.addMark(
+      saved.id,
+      StoredMark(
+        mark: markStorageText('010460000000001521a\x1d93qmRP'),
+        nomenclatureUid: sampleGoodsUid,
+      ),
+    );
+
+    expect(await store.removeMark(saved.id, '010460000000001521a'), isTrue);
+    expect(await store.marks(saved.id), isEmpty);
+  });
+
   test('отметка выгрузки читается журналом', () async {
     final saved = await store.save(packet);
     expect((await store.documents()).single.uploaded, isFalse);
@@ -318,6 +351,57 @@ void main() {
     expect(documents.single['uploaded'], 0);
     expect(packs, hasLength(1));
     expect(packs.single['pallet'], 0);
+  });
+
+  test('база версии 3 получает ключ cis и схлопывает повторы', () async {
+    final path = '${Directory.systemTemp.path}/main_v3_${DateTime.now().microsecondsSinceEpoch}.db';
+    final old = await databaseFactoryFfi.openDatabase(
+      path,
+      options: OpenDatabaseOptions(
+        version: 3,
+        onCreate: (db, _) async {
+          await db.execute('''
+            CREATE TABLE marks (
+              document_id TEXT NOT NULL,
+              mark TEXT NOT NULL,
+              nomenclature_uid TEXT NOT NULL DEFAULT '',
+              units INTEGER NOT NULL DEFAULT 1,
+              PRIMARY KEY (document_id, mark)
+            )
+          ''');
+        },
+      ),
+    );
+    await old.insert('marks', {
+      'document_id': 'doc-1',
+      'mark': markStorageText('010460000000001521a\x1d93qmRP'),
+      'nomenclature_uid': sampleGoodsUid,
+      'units': 1,
+    });
+    await old.insert('marks', {
+      'document_id': 'doc-1',
+      'mark': '010460000000001521a',
+      'nomenclature_uid': sampleGoodsUid,
+      'units': 6,
+    });
+    await old.close();
+
+    final upgraded = await MainDatabase(factory: databaseFactoryFfi, path: path).open();
+    addTearDown(() async {
+      await upgraded.close();
+      await File(path).delete();
+    });
+
+    final marks = await upgraded.query('marks');
+    final indexes = await upgraded.rawQuery("PRAGMA index_list('marks')");
+
+    expect(marks, hasLength(1));
+    expect(marks.single['cis'], '010460000000001521a');
+    expect(marks.single['units'], 1);
+    expect(
+      indexes.any((row) => row['name'] == 'marks_document_cis' && row['unique'] == 1),
+      isTrue,
+    );
   });
 }
 

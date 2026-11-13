@@ -1,5 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 
+import '../../domain/documents/stored_mark.dart';
+
 /// База документов ТСД отдельным файлом `main.db`: журнал работы остаётся в `journal.db`.
 class MainDatabase {
   MainDatabase({this.factory, this.path});
@@ -10,8 +12,10 @@ class MainDatabase {
   /// Путь к файлу базы; по умолчанию `main.db` в каталоге баз приложения.
   final String? path;
 
-  /// Схема документов, марок и справочников: версия 3 добавила `marks`, `uploaded` и палету.
-  static const version = 3;
+  /// Схема документов, марок и справочников.
+  ///
+  /// Версия 3 добавила `marks`, `uploaded` и палету, версия 4 — ключ марки `cis`.
+  static const version = 4;
 
   /// Тот же путь, что у [open]: по нему копируется файл базы.
   Future<String> filePath() async => path ?? '${await getDatabasesPath()}/main.db';
@@ -31,6 +35,10 @@ class MainDatabase {
             await _rebuildDocuments(database);
             await _rebuildPackSizes(database);
             await database.execute(_marksTable);
+            await database.execute(_marksKeyIndex);
+          }
+          if (oldVersion == 3) {
+            await _addMarkCis(database);
           }
         },
       ),
@@ -75,6 +83,7 @@ class MainDatabase {
     ''');
     await database.execute(_packSizesTable);
     await database.execute(_marksTable);
+    await database.execute(_marksKeyIndex);
   }
 
   /// Палета и упаковка одного товара — две строки, флаг `pallet` их различает.
@@ -87,16 +96,51 @@ class MainDatabase {
     )
   ''';
 
-  /// Ключ марки — документ и текст марки; `units` — сколько единиц она закрыла.
+  /// Ключ марки — документ и код идентификации без криптохвоста; `units` — сколько единиц она закрыла.
+  ///
+  /// Текст марки хранится отдельно: по нему выгружается пакет, а `cis` сравнивает
+  /// марку со сканера и марку из True API — у них разный хвост.
   static const _marksTable = '''
     CREATE TABLE marks (
       document_id TEXT NOT NULL,
       mark TEXT NOT NULL,
+      cis TEXT NOT NULL DEFAULT '',
       nomenclature_uid TEXT NOT NULL DEFAULT '',
       units INTEGER NOT NULL DEFAULT 1,
       PRIMARY KEY (document_id, mark)
     )
   ''';
+
+  /// Один КИ на документ: марка с хвостом и без него — одна строка.
+  static const _marksKeyIndex =
+      'CREATE UNIQUE INDEX IF NOT EXISTS marks_document_cis ON marks(document_id, cis)';
+
+  /// Добавляет ключ `cis` базе версии 3: заполняет его и схлопывает повторы.
+  static Future<void> _addMarkCis(Database database) async {
+    await database.execute("ALTER TABLE marks ADD COLUMN cis TEXT NOT NULL DEFAULT ''");
+
+    final rows = await database.query(
+      'marks',
+      columns: const ['rowid', 'document_id', 'mark'],
+      orderBy: 'rowid',
+    );
+    final kept = <String>{};
+    for (final row in rows) {
+      final key = markCis('${row['mark'] ?? ''}');
+      if (!kept.add('${row['document_id']}\n$key')) {
+        await database.delete('marks', where: 'rowid = ?', whereArgs: [row['rowid']]);
+        continue;
+      }
+      await database.update(
+        'marks',
+        {'cis': key},
+        where: 'rowid = ?',
+        whereArgs: [row['rowid']],
+      );
+    }
+
+    await database.execute(_marksKeyIndex);
+  }
 
   /// Пересобирает `documents` без поисковой копии и с отметкой выгрузки.
   static Future<void> _rebuildDocuments(Database database) async {

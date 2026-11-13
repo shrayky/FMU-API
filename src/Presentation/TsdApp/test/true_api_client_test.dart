@@ -51,6 +51,26 @@ void main() {
     expect(answer.marks, ['010460000000000121A1', '010460000000000121A2']);
   });
 
+  test('состав упаковки берётся из истории и не содержит саму упаковку', () async {
+    final client = _RouteClient({
+      '/api/v3/true-api/cises/history/list': '''
+        {"cisAggregation": [{
+          "parent": "0012345678905",
+          "childs": ["0012345678905", "010460000000000121A1"]
+        }]}
+      ''',
+    });
+    final api = TrueApiClient(httpClient: client);
+
+    final answer = await api.compositionOf('0012345678905', 'token-1');
+
+    expect(answer.error, isEmpty);
+    expect(answer.package, '0012345678905');
+    expect(answer.marks, ['010460000000000121A1']);
+    expect(client.requests, hasLength(1));
+    expect(client.requests.first.url.path, '/api/v3/true-api/cises/history/list');
+  });
+
   test('код ответа не 200 даёт текст протокола', () async {
     final client = _RouteClient({});
     final api = TrueApiClient(httpClient: client);

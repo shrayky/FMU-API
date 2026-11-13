@@ -34,6 +34,11 @@ class MarkCode {
 
   static bool _insignificant(int unit) => unit <= 0x20 || unit == 0x7f || unit == 0xa0;
 
+  /// Ключ марки: код идентификации до разделителя GS, без криптохвоста.
+  ///
+  /// True API знает только эту часть, поэтому по ней сравниваются и хранятся марки.
+  static String cis(String code) => normalize(code).split('\x1d').first;
+
   static bool looksLikeMark(String code) {
     final normalized = normalize(code);
 

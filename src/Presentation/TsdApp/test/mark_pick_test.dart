@@ -488,6 +488,180 @@ void main() {
     expect(await store.marks('doc-1'), hasLength(2));
   });
 
+  test('марка с хвостом и та же марка из состава не пишутся дважды', () async {
+    final store = FakeDocumentStore()..barcodeToUid = {sampleBarcode: 'uid-1'};
+    final online = FakeMarkOnline()
+      ..packageByMark['01${waterGtin}21B1'] = MarkPackageAnswer(
+        package: '0012345678905',
+        marks: ['01${waterGtin}21A1', '01${waterGtin}21B1', '01${waterGtin}21C1'],
+      );
+    final pick = await _pick(
+      store,
+      lines: [('uid-1', sampleGoodsName, 3)],
+      settings: const AppSettings(
+        registerPackageBarcode: true,
+        requestPackageViaTrueApi: true,
+      ),
+      online: online,
+    );
+
+    pick.packages = false;
+    await pick.scan('01${waterGtin}21A1\x1d93qmRP');
+    expect(pick.lines.single.picked, 1);
+
+    pick.packages = true;
+    final result = await pick.scan('01${waterGtin}21B1');
+
+    final marks = await store.marks('doc-1');
+    expect(marks, hasLength(3));
+    expect(marks.where((mark) => mark.cis == '01${waterGtin}21A1'), hasLength(1));
+    expect(pick.lines.single.picked, 3);
+    expect(result.allPicked, isTrue);
+    expect(result.messages, [markPackagePartlyPicked(skipped: 1, added: 2)]);
+  });
+
+  test('марка упаковки 00 разбирается на составляющие', () async {
+    final store = FakeDocumentStore()..barcodeToUid = {sampleBarcode: 'uid-1'};
+    final online = FakeMarkOnline()
+      ..compositionByMark['0012345678905'] = MarkPackageAnswer(
+        package: '0012345678905',
+        marks: ['01${waterGtin}21A1', '01${waterGtin}21A2'],
+      );
+    final pick = await _pick(
+      store,
+      lines: [('uid-1', sampleGoodsName, 2)],
+      settings: const AppSettings(
+        registerPackageBarcode: true,
+        requestPackageViaTrueApi: true,
+      ),
+      online: online,
+    );
+    pick.productOpen = true;
+
+    final result = await pick.scan('0012345678905');
+
+    final marks = await store.marks('doc-1');
+    expect(marks, hasLength(2));
+    expect(marks.every((mark) => mark.units == 1), isTrue);
+    expect(marks.any((mark) => mark.mark.startsWith('00')), isFalse);
+    expect(online.compositions, ['0012345678905']);
+    expect(result.allPicked, isTrue);
+  });
+
+  test('часть марок упаковки уже подобрана — записываются остальные', () async {
+    final store = FakeDocumentStore()
+      ..barcodeToUid = {sampleBarcode: 'uid-1'}
+      ..marksByDocument['doc-1'] = [
+        StoredMark(mark: '01${waterGtin}21A1', nomenclatureUid: 'uid-1'),
+      ];
+    final online = FakeMarkOnline()
+      ..compositionByMark['0012345678905'] = MarkPackageAnswer(
+        package: '0012345678905',
+        marks: ['01${waterGtin}21A1', '01${waterGtin}21A2'],
+      );
+    final pick = await _pick(
+      store,
+      lines: [('uid-1', sampleGoodsName, 2)],
+      settings: const AppSettings(
+        registerPackageBarcode: true,
+        requestPackageViaTrueApi: true,
+      ),
+      online: online,
+    );
+    pick.productOpen = true;
+
+    final result = await pick.scan('0012345678905');
+
+    expect(await store.marks('doc-1'), hasLength(2));
+    expect(pick.lines.single.picked, 2);
+    expect(result.changed, isTrue);
+    expect(result.messages, [markPackagePartlyPicked(skipped: 1, added: 1)]);
+  });
+
+  test('все марки упаковки уже подобраны — упаковка не пишется', () async {
+    final store = FakeDocumentStore()
+      ..barcodeToUid = {sampleBarcode: 'uid-1'}
+      ..marksByDocument['doc-1'] = [
+        StoredMark(mark: '01${waterGtin}21A1', nomenclatureUid: 'uid-1'),
+      ];
+    final online = FakeMarkOnline()
+      ..compositionByMark['0012345678905'] = MarkPackageAnswer(
+        package: '0012345678905',
+        marks: ['01${waterGtin}21A1'],
+      );
+    final pick = await _pick(
+      store,
+      lines: [('uid-1', sampleGoodsName, 1)],
+      settings: const AppSettings(
+        registerPackageBarcode: true,
+        requestPackageViaTrueApi: true,
+      ),
+      online: online,
+    );
+    pick.productOpen = true;
+
+    final result = await pick.scan('0012345678905');
+
+    expect(result.changed, isFalse);
+    expect(result.messages, [markPackageAllPicked]);
+    expect(await store.marks('doc-1'), hasLength(1));
+  });
+
+  test('состав упаковки недоступен — пишется групповая строка', () async {
+    final store = FakeDocumentStore()
+      ..barcodeToUid = {sampleBarcode: 'uid-1'}
+      ..packSizes[FakeDocumentStore.sizeKey('uid-1', pallet: false)] = 6;
+    final online = FakeMarkOnline()
+      ..compositionAnswer = const MarkPackageAnswer(error: 'Нет связи');
+    final pick = await _pick(
+      store,
+      lines: [('uid-1', sampleGoodsName, 6)],
+      settings: const AppSettings(
+        registerPackageBarcode: true,
+        requestPackageViaTrueApi: true,
+      ),
+      online: online,
+    );
+    pick.productOpen = true;
+
+    final result = await pick.scan('0012345678905');
+
+    final marks = await store.marks('doc-1');
+    expect(marks.single.mark, '0012345678905');
+    expect(marks.single.units, 6);
+    expect(result.changed, isTrue);
+  });
+
+  test('повтор короткой марки после марки с хвостом не пишется', () async {
+    final store = FakeDocumentStore()..barcodeToUid = {sampleBarcode: 'uid-1'};
+    final pick = await _pick(store, lines: [('uid-1', sampleGoodsName, 2)]);
+
+    await pick.scan('01${waterGtin}21A1\x1d93qmRP');
+    final again = await pick.scan('01${waterGtin}21A1');
+
+    expect(again.changed, isFalse);
+    expect(again.messages, [markAlreadyScanned]);
+    expect(await store.marks('doc-1'), hasLength(1));
+  });
+
+  test('удаление по короткому коду убирает марку с хвостом', () async {
+    final store = FakeDocumentStore()
+      ..barcodeToUid = {sampleBarcode: 'uid-1'}
+      ..marksByDocument['doc-1'] = [
+        StoredMark(
+          mark: markStorageText('01${waterGtin}21A1\x1d93qmRP'),
+          nomenclatureUid: 'uid-1',
+        ),
+      ];
+    final pick = await _pick(store);
+
+    final result = await pick.delete('01${waterGtin}21A1');
+
+    expect(result.changed, isTrue);
+    expect(await store.marks('doc-1'), isEmpty);
+    expect(pick.lines.single.picked, 0);
+  });
+
   test('ведущий GS от сканера не мешает найти товар', () async {
     final store = FakeDocumentStore()..barcodeToUid = {sampleBarcode: 'uid-1'};
     final pick = await _pick(store);
@@ -533,6 +707,17 @@ void main() {
 
     expect(result.changed, isTrue);
     expect(pick.productOpen, isTrue);
+  });
+
+  test('сигаретный GTIN с несколькими нулями слева ищется без них', () async {
+    final store = FakeDocumentStore()..barcodeToUid = {'46123457': 'uid-1'};
+    final pick = await _pick(store);
+
+    final result = await pick.scan('00000046123457ABCDEFGHIJKLMNO');
+
+    expect(result.changed, isTrue);
+    expect(pick.productOpen, isTrue);
+    expect((await store.marks('doc-1')).single.nomenclatureUid, 'uid-1');
   });
 
   test('штучная марка длиной 29 находит товар по GTIN', () async {
