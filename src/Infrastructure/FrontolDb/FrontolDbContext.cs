@@ -10,6 +10,8 @@ public class FrontolDbContext : DbContext
 
     public DbSet<Sprt> Sprts { get; set; }
     public DbSet<Barcode> Barcodes { get; set; }
+    public DbSet<Remain> Remains { get; set; }
+    public DbSet<PriceData> PriceDatas { get; set; }
     public DbSet<PrintGroup> PrintGroups { get; set; }
     public DbSet<BeerTapEntity> BeerTaps { get; set; }
 
@@ -50,6 +52,12 @@ public class FrontolDbContext : DbContext
             .HasKey(c => new { c.Id });
 
         modelBuilder.Entity<Barcode>()
+            .HasKey(c => new { c.Id });
+
+        modelBuilder.Entity<Remain>()
+            .HasKey(c => new { c.Id });
+
+        modelBuilder.Entity<PriceData>()
             .HasKey(c => new { c.Id });
 
         modelBuilder.Entity<PrintGroup>()

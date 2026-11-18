@@ -2,6 +2,7 @@ using CSharpFunctionalExtensions;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.Frontol.Interfaces;
 using FmuApiDomain.Frontol.Models;
+using FrontolDb.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
@@ -180,24 +181,69 @@ public class FrontolSprTRepo : IFrontolSprTService, IDisposableFrontolSprTServic
         {
             var code = await _db.Barcodes
                 .AsNoTracking()
-                .FirstOrDefaultAsync(item => item.WareBarcode == barcode);
+                .FirstOrDefaultAsync(item => item.WareBarcode == barcode && item.Deleted == 0);
 
             if (code == null)
                 return Result.Success<decimal?>(null);
 
-            var sprt = await _db.Sprts
-                .AsNoTracking()
-                .FirstOrDefaultAsync(item => item.Id == code.WareId);
-
-            if (sprt?.Price is null || sprt.Price.Value <= 0)
+            var remain = await CurrentRemain(code);
+            if (remain == null)
                 return Result.Success<decimal?>(null);
 
-            return Result.Success<decimal?>((decimal)sprt.Price.Value);
+            var price = await CurrentPrice(remain.Id);
+            if (price is null or <= 0)
+                return Result.Success<decimal?>(null);
+
+            var factor = code.Factor == 0 ? 1d : code.Factor;
+            var value = Math.Round((decimal)price.Value * (decimal)factor, 2, MidpointRounding.AwayFromZero);
+            if (value <= 0)
+                return Result.Success<decimal?>(null);
+
+            return Result.Success<decimal?>(value);
         }
         catch (Exception e)
         {
             return Result.Failure<decimal?>(e.Message);
         }
+    }
+
+    /// <summary>
+    /// Остаток с теми же разрезами, что у штрихкода: сначала предприятие 0 и пустой тип цены.
+    /// </summary>
+    private async Task<Remain?> CurrentRemain(Barcode code)
+    {
+        var remains = await _db.Remains
+            .AsNoTracking()
+            .Where(item => item.WareId == code.WareId
+                && item.Deleted == 0
+                && item.AspectValue1Id == code.AspectValue1Id
+                && item.AspectValue2Id == code.AspectValue2Id
+                && item.AspectValue3Id == code.AspectValue3Id
+                && item.AspectValue4Id == code.AspectValue4Id
+                && item.AspectValue5Id == code.AspectValue5Id)
+            .ToListAsync();
+
+        return remains
+            .OrderBy(item => item.EnterpriseId == 0 ? 0 : 1)
+            .ThenBy(item => item.PriceType == null ? 0 : 1)
+            .ThenBy(item => item.EnterpriseId)
+            .FirstOrDefault();
+    }
+
+    /// <summary>
+    /// Цена остатка с наибольшей датой начала, которая уже наступила.
+    /// </summary>
+    private async Task<double?> CurrentPrice(int remainId)
+    {
+        // Frontol хранит ActDateTime без часового пояса.
+        var now = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Unspecified);
+
+        return await _db.PriceDatas
+            .AsNoTracking()
+            .Where(item => item.RemainId == remainId && item.ActDateTime <= now)
+            .OrderByDescending(item => item.ActDateTime)
+            .Select(item => (double?)item.Price)
+            .FirstOrDefaultAsync();
     }
 
     public void Dispose()
