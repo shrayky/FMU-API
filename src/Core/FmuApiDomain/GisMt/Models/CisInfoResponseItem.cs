@@ -61,6 +61,9 @@ public class CisInfoData
     [JsonPropertyName("markWithdraw")]
     public bool MarkWithdraw { get; set; }
 
+    [JsonPropertyName("isMultipleSales")]
+    public bool IsMultipleSales { get; set; }
+
     [JsonPropertyName("packageType")]
     public string? PackageType { get; set; }
 

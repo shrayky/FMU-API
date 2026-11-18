@@ -1,3 +1,4 @@
+using System.Globalization;
 using FmuApiDomain.Attributes;
 using FmuApiDomain.Configuration.Interfaces;
 using FmuApiDomain.GisMt;
@@ -11,19 +12,23 @@ using Microsoft.Extensions.Logging;
 namespace FmuApiApplication.GisMt;
 
 /// <summary>
-/// Проверка марки через True API cises/info с добором карточки товара.
+/// Проверка марки через True API: cises/info, карточка товара, история кода и свой чек.
 /// </summary>
 [AutoRegisterService(ServiceLifetime.Scoped)]
 public class MarkCheckTrueApiService(
     ILogger<MarkCheckTrueApiService> logger,
     IParametersService parametersService,
     IApplicationState applicationState,
-    IGisMtCisesClient cisesClient) : IMarkCheckTrueApiService
+    IGisMtCisesClient cisesClient,
+    IGisMtCisHistoryClient historyClient,
+    IGisMtReceiptClient receiptClient) : IMarkCheckTrueApiService
 {
     private readonly ILogger<MarkCheckTrueApiService> _logger = logger;
     private readonly IParametersService _parametersService = parametersService;
     private readonly IApplicationState _applicationState = applicationState;
     private readonly IGisMtCisesClient _cisesClient = cisesClient;
+    private readonly IGisMtCisHistoryClient _historyClient = historyClient;
+    private readonly IGisMtReceiptClient _receiptClient = receiptClient;
 
     public async Task<MarkCheckTrueApiResult> CisesInfo(
         string inn,
@@ -84,7 +89,11 @@ public class MarkCheckTrueApiService(
 
             await EnrichWithProductInfo(token, cisInfo.Value, cancellationToken);
 
-            return MarkCheckTrueApiResult.Success(cisInfo.Value);
+            var movements = await LoadMovements(token, cisList, cancellationToken);
+            var result = MarkCheckTrueApiResult.Success(cisInfo.Value);
+            result.Movements = movements.Items.Count == 0 ? null : movements.Items;
+            result.HistoryReason = movements.Reason;
+            return result;
         }
         catch (OperationCanceledException)
         {
@@ -98,6 +107,78 @@ public class MarkCheckTrueApiService(
                 ex.Message);
         }
     }
+
+    /// <summary>
+    /// История кода и свои чеки. Чужой документ и сбой истории не отменяют карточку марки.
+    /// </summary>
+    private async Task<MovementLoad> LoadMovements(
+        string token,
+        IReadOnlyList<string> cises,
+        CancellationToken cancellationToken)
+    {
+        var items = new List<MarkCheckMovement>();
+        var reasons = new List<string>();
+        var receipts = new Dictionary<string, MarkCheckReceipt?>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var cis in cises)
+        {
+            var history = await _historyClient.History(token, cis, cancellationToken);
+            if (history.IsFailure)
+            {
+                reasons.Add(history.Error);
+                continue;
+            }
+
+            foreach (var record in history.Value)
+            {
+                var movement = new MarkCheckMovement
+                {
+                    Cis = string.IsNullOrWhiteSpace(record.Cis) ? cis : record.Cis,
+                    OperationDate = record.OperationDate,
+                    DocId = record.DocId,
+                    OwnerInn = record.OwnerInn,
+                    OwnerName = record.OwnerName,
+                    Status = record.Status
+                };
+
+                if (!string.IsNullOrWhiteSpace(record.DocId))
+                    movement.Receipt = await OpenReceipt(token, record.DocId, receipts, cancellationToken);
+
+                items.Add(movement);
+            }
+        }
+
+        var reason = reasons.Count == 0 ? null : string.Join("; ", reasons.Distinct());
+        return new MovementLoad(items, reason);
+    }
+
+    private async Task<MarkCheckReceipt?> OpenReceipt(
+        string token,
+        string docId,
+        Dictionary<string, MarkCheckReceipt?> receipts,
+        CancellationToken cancellationToken)
+    {
+        if (receipts.TryGetValue(docId, out var cached))
+            return cached;
+
+        var receipt = await _receiptClient.ReceiptInfo(token, docId, cancellationToken);
+        var value = receipt.IsSuccess && receipt.Value.HasDetails
+            ? ToReceipt(receipt.Value)
+            : null;
+
+        receipts[docId] = value;
+        return value;
+    }
+
+    private static MarkCheckReceipt ToReceipt(GisMtReceiptInfo receipt) => new()
+    {
+        RetailAddress = receipt.RetailAddress,
+        SoldAt = receipt.SoldAt?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture),
+        UserInn = receipt.UserInn,
+        KktRegId = receipt.KktRegId
+    };
+
+    private sealed record MovementLoad(List<MarkCheckMovement> Items, string? Reason);
 
     /// <summary>
     /// Дополняет сведения о КИ карточкой товара из product/info.

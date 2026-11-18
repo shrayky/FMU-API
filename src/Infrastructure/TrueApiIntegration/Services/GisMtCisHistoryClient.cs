@@ -15,7 +15,7 @@ namespace TrueApiIntegration.Services;
 [AutoRegisterService(ServiceLifetime.Scoped)]
 public class GisMtCisHistoryClient : IGisMtCisHistoryClient
 {
-    private const string HistoryPath = "/api/v4/true-api/cises/history";
+    private const string HistoryPath = "/api/v3/true-api/cises/history";
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {

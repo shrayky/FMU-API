@@ -115,11 +115,13 @@ export function buildMarkCardsHtml(combined) {
     const errors = collectErrors(combined);
     const info = extractCisInfo(combined.trueApi);
 
-    if (!info) {
-        if (errors.length > 0)
-            return `<div class="mark-cards">${errors.map(errorHtml).join("")}</div>`;
+    const movements = movementRows(combined.trueApi);
 
-        return emptyHtml("Нет данных");
+    if (!info) {
+        if (errors.length === 0 && movements.length === 0)
+            return emptyHtml("Нет данных");
+
+        return `<div class="mark-cards">${errors.map(errorHtml).join("")}${movements.join("")}</div>`;
     }
 
     const expire = formatDate(info.expireDate || info.expirationDate);
@@ -128,8 +130,11 @@ export function buildMarkCardsHtml(combined) {
     const rows = [
         row("Название", info.productName),
         row("Статус", statusValue(info), statusTone(info)),
+        row("Повторные продажи", info.isMultipleSales ? "Да" : "", "warn"),
+        row("Продажа не владельцем", info.markWithdraw ? "Да" : "", "warn"),
         row("Срок годности", expire, expireTone),
         row("Владелец", ownerValue(info)),
+        ...movements,
         row("Бренд", info.brand),
         row("Производитель", producerValue(info)),
         row("Дата производства", formatDate(info.producedDate || info.productionDate)),
@@ -180,6 +185,45 @@ function collectErrors(combined) {
         errors.push(item.errorMessage);
 
     return errors;
+}
+
+function movementRows(trueApi) {
+    const rows = [];
+
+    if (trueApi?.historyReason)
+        rows.push(row("История кода", trueApi.historyReason, "warn"));
+
+    const movements = Array.isArray(trueApi?.movements) ? trueApi.movements : [];
+    const many = movements.length > 1;
+
+    movements.forEach((movement, index) => {
+        const suffix = many ? ` ${index + 1}` : "";
+        const receipt = movement?.receipt;
+
+        rows.push(row(`Дата операции${suffix}`, formatDateTime(movement?.operationDate)));
+        rows.push(row(`Документ${suffix}`, movement?.docId));
+        rows.push(row(`Владелец в операции${suffix}`, movementOwner(movement)));
+
+        if (!receipt)
+            return;
+
+        rows.push(row(`Адрес продажи${suffix}`, receipt.retailAddress));
+        rows.push(row(`Время чека${suffix}`, formatDateTime(receipt.soldAt)));
+        rows.push(row(`ИНН в чеке${suffix}`, receipt.userInn));
+        rows.push(row(`ККТ${suffix}`, receipt.kktRegId));
+    });
+
+    return rows.filter(Boolean);
+}
+
+function movementOwner(movement) {
+    if (!movement)
+        return "";
+
+    if (movement.ownerName && movement.ownerInn)
+        return `${movement.ownerName}, ИНН ${movement.ownerInn}`;
+
+    return movement.ownerName || movement.ownerInn || "";
 }
 
 function producerValue(info) {
@@ -255,6 +299,20 @@ function formatDate(value) {
         return value ? String(value) : "";
 
     return date.toLocaleDateString("ru-RU");
+}
+
+function formatDateTime(value) {
+    const date = parseDate(value);
+    if (!date)
+        return value ? String(value) : "";
+
+    return date.toLocaleString("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+    });
 }
 
 function parseDate(value) {

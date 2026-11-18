@@ -15,7 +15,7 @@ public static class MarkCheckTrueApiStatuses
 }
 
 /// <summary>
-/// Результат запроса cises/info для экрана проверки марки.
+/// Результат проверки марки: cises/info, история кода и открывшиеся чеки.
 /// </summary>
 public class MarkCheckTrueApiResult
 {
@@ -29,6 +29,14 @@ public class MarkCheckTrueApiResult
     [JsonPropertyName("data")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<CisInfoResponseItem>? Data { get; set; }
+
+    [JsonPropertyName("movements")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<MarkCheckMovement>? Movements { get; set; }
+
+    [JsonPropertyName("historyReason")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? HistoryReason { get; set; }
 
     /// <summary>
     /// Создаёт результат с указанным статусом и причиной без данных.
