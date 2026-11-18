@@ -25,6 +25,7 @@ using TrueApiIntegration;
 using TsPiotClinet;
 using WebApi;
 using WebApi.Extensions;
+using WebApi.Middleware;
 using WebApi.Services;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -177,6 +178,7 @@ bool RunHttpApiService()
     });
     
     app.UseRouting();
+    app.UseMiddleware<FrontolDocumentRequestLogMiddleware>();
 
     app.MapRazorPages();
     app.MapControllers();
