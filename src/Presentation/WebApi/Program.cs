@@ -178,7 +178,7 @@ bool RunHttpApiService()
     });
     
     app.UseRouting();
-    app.UseMiddleware<FrontolDocumentRequestLogMiddleware>();
+    app.UseMiddleware<FrontolRequestContentTypeMiddleware>();
 
     app.MapRazorPages();
     app.MapControllers();
