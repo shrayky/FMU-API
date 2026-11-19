@@ -154,6 +154,72 @@ export default function openGisMtJournalReceipt(options = {}) {
             webix.message({ text: warnings.join(". "), type: "error", expire: 5000 });
     };
 
+    const hasFilledNumber = (value) => value != null && value !== "" && Number(value) > 0;
+
+    // Заполненное количество и цена остаются. Иконка строки заменяет их ответом preview.
+    const applyPreviewItem = (line, item, replace) => {
+        line.cis = item.cis || line.cis || "";
+        line.gtin = item.gtin || line.gtin || "";
+
+        if (item.productName)
+            line.productName = item.productName;
+
+        const keepQuantity = !replace && hasFilledNumber(line.quantityKg);
+        const keepPrice = !replace && hasFilledNumber(line.pricePerKg);
+
+        if (!keepQuantity)
+            line.quantityKg = item.quantityKg ?? null;
+
+        if (!keepPrice)
+            line.pricePerKg = item.pricePerKg ?? null;
+
+        if (!keepQuantity || !keepPrice) {
+            const quantity = Number(line.quantityKg);
+            const price = Number(line.pricePerKg);
+
+            line.amountKop = quantity > 0 && price > 0
+                ? Math.round(price * quantity * 100)
+                : (item.amountKop ?? null);
+        }
+
+        line.error = line.cis ? "" : (item.error || "");
+    };
+
+    const refreshLine = async (rowId) => {
+        const index = Number(rowId) - 1;
+        const line = lines[index];
+        const organisation = $$(INN_ID);
+
+        if (!line || expiration || !organisation || !organisation.getValue())
+            return;
+
+        setBusy(true);
+
+        try {
+            const response = await fetch(`${JOURNAL_URL}/receipt/preview`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ inn: organisation.getValue(), marks: [line.mark] })
+            });
+
+            const body = await response.json();
+
+            if (!response.ok) {
+                webix.message({ text: body?.error || "Строка не обновлена", type: "error", expire: 8000 });
+                return;
+            }
+
+            if (body?.[0])
+                applyPreviewItem(line, body[0], true);
+
+            refreshLines();
+        } catch (error) {
+            webix.message({ text: error?.message || "Строка не обновлена", type: "error" });
+        } finally {
+            setBusy(false);
+        }
+    };
+
     const preview = async () => {
         const organisation = $$(INN_ID);
 
@@ -180,13 +246,7 @@ export default function openGisMtJournalReceipt(options = {}) {
                 if (!line)
                     return;
 
-                line.cis = item.cis ?? "";
-                line.gtin = item.gtin ?? "";
-                line.productName = item.productName ?? "";
-                line.quantityKg = item.quantityKg ?? null;
-                line.pricePerKg = item.pricePerKg ?? null;
-                line.amountKop = item.amountKop ?? null;
-                line.error = item.error ?? "";
+                applyPreviewItem(line, item, false);
             });
 
             refreshLines();
@@ -383,7 +443,15 @@ export default function openGisMtJournalReceipt(options = {}) {
 
         const payload = expiration
             ? { inn: organisation, productGroup, lines: lines.map(line => ({ mark: line.mark, cis: line.cis })) }
-            : { inn: organisation, marks: lines.map(line => line.mark) };
+            : {
+                inn: organisation,
+                marks: lines.map(line => line.mark),
+                lines: lines.map(line => ({
+                    mark: line.mark,
+                    quantity: line.quantityKg,
+                    price: line.pricePerKg
+                }))
+            };
 
         setBusy(true);
 
@@ -501,6 +569,13 @@ export default function openGisMtJournalReceipt(options = {}) {
                     id: LINES_TABLE_ID,
                     columns: [
                         {
+                            id: "refresh",
+                            header: "",
+                            width: 44,
+                            hidden: expiration,
+                            template: () => "<span class=\"webix_icon wxi-sync\" style=\"cursor: pointer;\" title=\"Обновить количество и цену\"></span>"
+                        },
+                        {
                             id: "delete",
                             header: "",
                             width: 44,
@@ -533,6 +608,14 @@ export default function openGisMtJournalReceipt(options = {}) {
                     on: {
                         onItemClick: (rowId, event) => {
                             const className = String((event?.target?.className) || "");
+
+                            if (className.includes("wxi-sync")) {
+                                if (event?.preventDefault)
+                                    event.preventDefault();
+
+                                refreshLine(rowId);
+                                return;
+                            }
 
                             if (!className.includes("wxi-trash"))
                                 return;

@@ -118,6 +118,9 @@ class GisMtJournalView {
             status: "Статус",
             all: "*",
             date: "Дата",
+            number: "Номер",
+            terminal: "Терминал",
+            organisation: "Организация",
             inn: "ИНН",
             kpp: "КПП / ФИАС",
             marks: "Марок",
@@ -329,6 +332,9 @@ class GisMtJournalView {
             id: this.NAMES.table,
             columns: [
                 { id: "docDate", header: this.LABELS.date, width: 110, sort: "string" },
+                { id: "number", header: this.LABELS.number, width: 110 },
+                { id: "organisationName", header: this.LABELS.organisation, width: 180 },
+                { id: "terminalId", header: this.LABELS.terminal, width: 140 },
                 {
                     id: "kind",
                     header: this.LABELS.kind,
@@ -707,6 +713,9 @@ class GisMtJournalView {
         const rows = (data.documents || []).map(document => ({
             id: document.id,
             docDate: document.docDate ?? "",
+            number: document.number || "",
+            organisationName: document.organisationName || "",
+            terminalId: document.terminalId || "",
             kind: document.kind,
             productGroup: document.productGroup || "",
             reason: document.reason ?? "",
