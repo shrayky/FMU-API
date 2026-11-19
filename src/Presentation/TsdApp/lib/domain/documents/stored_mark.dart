@@ -6,6 +6,9 @@ class StoredMark {
     required this.mark,
     required this.nomenclatureUid,
     this.units = 1,
+    this.quantity = 1,
+    this.price,
+    this.name = '',
   });
 
   /// Текст марки в виде базы и обмена: разделитель GS записан как `\u001d`.
@@ -17,8 +20,28 @@ class StoredMark {
   /// Сколько единиц товара принесла марка: палета, упаковка или штучная.
   final int units;
 
+  /// Количество к списанию: килограммы весового товара или штуки.
+  final num quantity;
+
+  /// Цена из Frontol: оператор может поправить её перед выгрузкой.
+  final num? price;
+
+  /// Название товара из Честного знака: хранится, чтобы не спрашивать снова.
+  final String name;
+
   /// Код идентификации без криптохвоста: по нему марка сравнивается и удаляется.
   String get cis => markCis(mark);
+
+  StoredMark copyWith({num? quantity, num? price, String? name}) {
+    return StoredMark(
+      mark: mark,
+      nomenclatureUid: nomenclatureUid,
+      units: units,
+      quantity: quantity ?? this.quantity,
+      price: price ?? this.price,
+      name: name ?? this.name,
+    );
+  }
 }
 
 /// Текст марки для записи: символ GS (код 29) заменяется на `\u001d`.

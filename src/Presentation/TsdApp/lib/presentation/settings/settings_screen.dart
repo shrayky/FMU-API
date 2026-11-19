@@ -46,6 +46,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late final TextEditingController _api;
   late final TextEditingController _pin;
   late final TextEditingController _retention;
+  late final TextEditingController _writeOffPrefix;
   late AppSettings _base;
   late bool _camera;
   late bool _continuous;
@@ -74,6 +75,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _api = TextEditingController(text: settings.apiBaseUrl);
     _pin = TextEditingController(text: settings.settingsPin);
     _retention = TextEditingController(text: '${settings.documentRetentionDays}');
+    _writeOffPrefix = TextEditingController(text: settings.writeOffNumberPrefix);
     _camera = settings.cameraScanEnabled;
     _continuous = settings.continuousScanEnabled;
     _registerPackage = settings.registerPackageBarcode;
@@ -93,6 +95,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _api.dispose();
     _pin.dispose();
     _retention.dispose();
+    _writeOffPrefix.dispose();
     super.dispose();
   }
 
@@ -112,6 +115,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       markCheckApi: _markApi,
       exchangeServerId: _serverId,
       documentRetentionDays: _retentionDays,
+      writeOffNumberPrefix: _writeOffPrefix.text.trim(),
       exchangeServers: _servers,
       exchangeVariants: _variants,
       taskButtons: _buttons,
@@ -371,6 +375,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           controller: _retention,
           keyboardType: TextInputType.number,
           decoration: const InputDecoration(labelText: 'Сколько дней хранить документы'),
+          onChanged: (_) => unawaited(_publish()),
+        ),
+        _group('Списание марок'),
+        TextField(
+          controller: _writeOffPrefix,
+          decoration: const InputDecoration(labelText: 'Префикс номера списания'),
           onChanged: (_) => unawaited(_publish()),
         ),
         _group('Документ Сбор марок'),

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -23,6 +24,9 @@ class SettingsStore {
   static const _markApiKey = 'markCheckApi';
   static const _serverIdKey = 'exchangeServerId';
   static const _retentionKey = 'documentRetentionDays';
+  static const _writeOffPrefixKey = 'writeOffNumberPrefix';
+  static const _writeOffNumberKey = 'writeOffNumber';
+  static const _terminalKey = 'terminalId';
   static const _serversKey = 'exchangeServers';
   static const _variantsKey = 'exchangeVariants';
   static const _taskButtonsKey = 'taskButtons';
@@ -44,6 +48,7 @@ class SettingsStore {
       markCheckApi: _markApi(prefs.getString(_markApiKey)),
       exchangeServerId: prefs.getString(_serverIdKey) ?? '',
       documentRetentionDays: _days(prefs.getInt(_retentionKey)),
+      writeOffNumberPrefix: prefs.getString(_writeOffPrefixKey) ?? '',
       exchangeServers: _readServers(prefs.getString(_serversKey)),
       exchangeVariants: _readVariants(prefs.getString(_variantsKey)),
       taskButtons: _readButtons(prefs.getString(_taskButtonsKey)),
@@ -69,12 +74,42 @@ class SettingsStore {
     await prefs.setString(_markApiKey, _markApi(settings.markCheckApi));
     await prefs.setString(_serverIdKey, settings.exchangeServerId);
     await prefs.setInt(_retentionKey, _days(settings.documentRetentionDays));
+    await prefs.setString(_writeOffPrefixKey, settings.writeOffNumberPrefix.trim());
     await prefs.setString(_serversKey, jsonEncode([for (final server in settings.exchangeServers) server.toJson()]));
     await prefs.setString(_variantsKey, jsonEncode([for (final variant in settings.exchangeVariants) variant.toJson()]));
     final buttons = settings.taskButtons;
     if (buttons != null) {
       await prefs.setString(_taskButtonsKey, jsonEncode([for (final button in buttons) button.toJson()]));
     }
+  }
+
+  /// Следующий номер списания: счётчик этого терминала, с префиксом из настроек.
+  Future<String> takeWriteOffNumber(String prefix) async {
+    final prefs = await SharedPreferences.getInstance();
+    final next = (prefs.getInt(_writeOffNumberKey) ?? 0) + 1;
+    await prefs.setInt(_writeOffNumberKey, next);
+    final head = prefix.trim();
+    return head.isEmpty ? '$next' : '$head-$next';
+  }
+
+  /// Постоянный id терминала: создаётся один раз и уходит в акт при выгрузке.
+  Future<String> terminalId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final existing = prefs.getString(_terminalKey)?.trim() ?? '';
+    if (existing.isNotEmpty) {
+      return existing;
+    }
+
+    final created = _newTerminalId();
+    await prefs.setString(_terminalKey, created);
+    return created;
+  }
+
+  static String _newTerminalId() {
+    final random = Random.secure();
+    final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+    final hex = bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
+    return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
   }
 
   static int _minutes(int? value) {

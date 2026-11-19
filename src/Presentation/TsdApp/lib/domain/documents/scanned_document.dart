@@ -1,4 +1,17 @@
-/// Документ сбора марок, сохранённый в `main.db`. Один скан — одна строка журнала.
+/// Вид документа в колонке `kind`: сбор марок или списание.
+const markCollectionKind = 'markCollection';
+const writeOffKind = 'writeOff';
+
+/// Причина выбытия документа списания.
+const packingReason = 'PACKING';
+const expirationReason = 'EXPIRATION';
+
+/// Подпись причины выбытия на экране документа.
+String writeOffReasonLabel(String reason) {
+  return reason == expirationReason ? 'Истечение срока' : 'Фасовка';
+}
+
+/// Документ ТСД в `main.db`: сбор марок или списание. Один скан — одна строка журнала.
 class ScannedDocument {
   const ScannedDocument({
     required this.id,
@@ -9,6 +22,7 @@ class ScannedDocument {
     this.erpUid = '',
     this.body = const {},
     this.uploaded = false,
+    this.kind = markCollectionKind,
   });
 
   final String id;
@@ -33,6 +47,24 @@ class ScannedDocument {
 
   /// Отметка выгрузки: пакет ушёл на сервер обмена.
   final bool uploaded;
+
+  /// Вид документа: сбор марок или списание.
+  final String kind;
+
+  /// Причина выбытия из тела документа; без ключа считается фасовкой.
+  String get reason {
+    final value = textOf(body['reason']).toUpperCase();
+    return value.isEmpty ? packingReason : value;
+  }
+
+  /// ИНН организации, выбранной в документе списания.
+  String get inn => textOf(body['inn']);
+
+  /// Название организации, выбранной в документе списания.
+  String get organisationName => textOf(body['organisation']);
+
+  /// Id печатной группы: у организаций с одним ИНН разные КПП.
+  int get printGroupId => numberOf(body['printGroupId']).toInt();
 
   /// `БезПроверкиВладельца`: при истине марки документа проверок владельца не проходят.
   bool get skipsOwnerCheck => flagOf(body['БезПроверкиВладельца']);

@@ -14,8 +14,10 @@ class MainDatabase {
 
   /// Схема документов, марок и справочников.
   ///
-  /// Версия 3 добавила `marks`, `uploaded` и палету, версия 4 — ключ марки `cis`.
-  static const version = 4;
+  /// Версия 3 добавила `marks`, `uploaded` и палету, версия 4 — ключ марки `cis`,
+  /// версия 5 — вид документа `kind`, версия 6 — количество и цену марки,
+  /// версия 7 — название товара марки.
+  static const version = 7;
 
   /// Тот же путь, что у [open]: по нему копируется файл базы.
   Future<String> filePath() async => path ?? '${await getDatabasesPath()}/main.db';
@@ -40,6 +42,15 @@ class MainDatabase {
           if (oldVersion == 3) {
             await _addMarkCis(database);
           }
+          if (oldVersion == 3 || oldVersion == 4) {
+            await _addDocumentKind(database);
+          }
+          if (oldVersion >= 3 && oldVersion < 6) {
+            await _addMarkValues(database);
+          }
+          if (oldVersion >= 3 && oldVersion < 7) {
+            await _addMarkName(database);
+          }
         },
       ),
     );
@@ -55,7 +66,8 @@ class MainDatabase {
         presentation TEXT NOT NULL DEFAULT '',
         erp_uid TEXT NOT NULL DEFAULT '',
         body TEXT NOT NULL DEFAULT '{}',
-        uploaded INTEGER NOT NULL DEFAULT 0
+        uploaded INTEGER NOT NULL DEFAULT 0,
+        kind TEXT NOT NULL DEFAULT 'markCollection'
       )
     ''');
     await _createDocumentIndexes(database);
@@ -107,6 +119,9 @@ class MainDatabase {
       cis TEXT NOT NULL DEFAULT '',
       nomenclature_uid TEXT NOT NULL DEFAULT '',
       units INTEGER NOT NULL DEFAULT 1,
+      quantity REAL NOT NULL DEFAULT 1,
+      price REAL,
+      name TEXT NOT NULL DEFAULT '',
       PRIMARY KEY (document_id, mark)
     )
   ''';
@@ -142,6 +157,22 @@ class MainDatabase {
     await database.execute(_marksKeyIndex);
   }
 
+  /// Добавляет старым базам вид документа: прежние строки остаются сбором марок.
+  static Future<void> _addDocumentKind(Database database) async {
+    await database.execute("ALTER TABLE documents ADD COLUMN kind TEXT NOT NULL DEFAULT 'markCollection'");
+  }
+
+  /// Добавляет маркам количество и цену: старые строки считаются одной штукой без цены.
+  static Future<void> _addMarkValues(Database database) async {
+    await database.execute('ALTER TABLE marks ADD COLUMN quantity REAL NOT NULL DEFAULT 1');
+    await database.execute('ALTER TABLE marks ADD COLUMN price REAL');
+  }
+
+  /// Добавляет маркам название товара: старые строки остаются без названия.
+  static Future<void> _addMarkName(Database database) async {
+    await database.execute("ALTER TABLE marks ADD COLUMN name TEXT NOT NULL DEFAULT ''");
+  }
+
   /// Пересобирает `documents` без поисковой копии и с отметкой выгрузки.
   static Future<void> _rebuildDocuments(Database database) async {
     await database.execute('DROP TABLE IF EXISTS documents_new');
@@ -154,7 +185,8 @@ class MainDatabase {
         presentation TEXT NOT NULL DEFAULT '',
         erp_uid TEXT NOT NULL DEFAULT '',
         body TEXT NOT NULL DEFAULT '{}',
-        uploaded INTEGER NOT NULL DEFAULT 0
+        uploaded INTEGER NOT NULL DEFAULT 0,
+        kind TEXT NOT NULL DEFAULT 'markCollection'
       )
     ''');
     await database.execute('''

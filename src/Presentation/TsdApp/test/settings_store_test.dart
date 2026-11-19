@@ -86,13 +86,13 @@ void main() {
     final broken = await SettingsStore().load();
     final fromBroken = TaskButtons.resolve(const TaskRegistry().tasks(), broken.taskButtons);
 
-    expect(fromBroken.map((button) => button.taskId), ['markCollection', 'markCheck']);
+    expect(fromBroken.map((button) => button.taskId), ['markCollection', 'markCheck', 'markWriteOff']);
 
     SharedPreferences.setMockInitialValues({'taskButtons': ''});
     final empty = await SettingsStore().load();
     final fromEmpty = TaskButtons.resolve(const TaskRegistry().tasks(), empty.taskButtons);
 
-    expect(fromEmpty.map((button) => button.taskId), ['markCollection', 'markCheck']);
+    expect(fromEmpty.map((button) => button.taskId), ['markCollection', 'markCheck', 'markWriteOff']);
   });
 
   test('сохраняет кнопку задачи', () async {
@@ -117,5 +117,23 @@ void main() {
     expect(loaded.taskButtons!.single.title, 'Своя');
     expect(loaded.taskButtons!.single.order, 4);
     expect(loaded.taskButtons!.single.hotkey, 'p');
+  });
+
+  test('префикс номера списания сохраняется, счётчик и id терминала живут отдельно', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = SettingsStore();
+
+    await store.save(const AppSettings(writeOffNumberPrefix: 'Скл'));
+    final loaded = await store.load();
+    final first = await store.takeWriteOffNumber(loaded.writeOffNumberPrefix);
+    final second = await store.takeWriteOffNumber(loaded.writeOffNumberPrefix);
+    final terminal = await store.terminalId();
+    final again = await store.terminalId();
+
+    expect(loaded.writeOffNumberPrefix, 'Скл');
+    expect(first, 'Скл-1');
+    expect(second, 'Скл-2');
+    expect(terminal, again);
+    expect(terminal, isNotEmpty);
   });
 }

@@ -69,6 +69,24 @@ class MarkCode {
     return !code.substring(18).startsWith('\x1d');
   }
 
+  /// GTIN марки: 14 цифр сразу после `01`, у штучного табака — 14 цифр с начала.
+  static String gtin(String code) {
+    final normalized = normalize(code);
+
+    if (normalized.startsWith('01') && normalized.length >= 16) {
+      final digits = normalized.substring(2, 16);
+      if (RegExp(r'^\d{14}$').hasMatch(digits)) {
+        return digits;
+      }
+    }
+
+    if (normalized.length == 29 && RegExp(r'^\d{14}').hasMatch(normalized)) {
+      return normalized.substring(0, 14);
+    }
+
+    return '';
+  }
+
   static String shortMark(String code) {
     final head = normalize(code).split('\x1d').first;
     final serial = _serial(head);

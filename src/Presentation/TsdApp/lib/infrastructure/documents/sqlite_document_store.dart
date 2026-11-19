@@ -8,7 +8,7 @@ import '../../domain/documents/scanned_document.dart';
 import '../../domain/documents/stored_mark.dart';
 import 'main_database.dart';
 
-/// Документы сбора марок в `main.db`: таблица `documents`, марки `marks` и справочники пакета.
+/// Документы ТСД в `main.db`: таблица `documents`, марки `marks` и справочники пакета.
 class SqliteDocumentStore implements DocumentStore {
   SqliteDocumentStore({Future<Database> Function()? open}) : _open = open ?? MainDatabase().open;
 
@@ -42,14 +42,41 @@ class SqliteDocumentStore implements DocumentStore {
         'presentation': document.presentation,
         'erp_uid': document.erpUid,
         'body': jsonEncode(packet.document),
+        'kind': markCollectionKind,
       });
     });
     return document;
   }
 
   @override
-  Future<List<ScannedDocument>> documents({String query = ''}) async {
+  Future<ScannedDocument> createWriteOff({required DateTime scannedAt, String number = ''}) async {
     final database = await _db();
+    final document = ScannedDocument(
+      id: '${scannedAt.microsecondsSinceEpoch}-${_sequence++}',
+      scannedAt: scannedAt,
+      number: number.trim(),
+      presentation: 'Списание',
+      body: const {'reason': packingReason},
+      kind: writeOffKind,
+    );
+
+    await database.insert('documents', {
+      'id': document.id,
+      'scanned_at': scannedAt.millisecondsSinceEpoch,
+      'number': document.number,
+      'counterparty': document.counterparty,
+      'presentation': document.presentation,
+      'erp_uid': document.erpUid,
+      'body': jsonEncode(document.body),
+      'kind': document.kind,
+    });
+    return document;
+  }
+
+  @override
+  Future<List<ScannedDocument>> documents({String query = '', String kind = ''}) async {
+    final database = await _db();
+    final view = kind.trim();
     final rows = await database.query(
       'documents',
       columns: const [
@@ -60,7 +87,10 @@ class SqliteDocumentStore implements DocumentStore {
         'presentation',
         'erp_uid',
         'uploaded',
+        'kind',
       ],
+      where: view.isEmpty ? "kind = ? OR kind = ''" : 'kind = ?',
+      whereArgs: [view.isEmpty ? markCollectionKind : view],
       orderBy: 'scanned_at DESC',
     );
     final text = query.trim().toLowerCase();
@@ -75,6 +105,44 @@ class SqliteDocumentStore implements DocumentStore {
     final database = await _db();
     final rows = await database.query('documents', where: 'id = ?', whereArgs: [id], limit: 1);
     return rows.isEmpty ? null : _document(rows.first);
+  }
+
+  @override
+  Future<void> setReason(String documentId, {required String reason}) {
+    return _setBody(documentId, {'reason': reason});
+  }
+
+  @override
+  Future<void> setOrganisation(
+    String documentId, {
+    required String inn,
+    required String name,
+    int printGroupId = 0,
+  }) {
+    return _setBody(documentId, {'inn': inn, 'organisation': name, 'printGroupId': printGroupId});
+  }
+
+  /// Дописывает поля в тело документа: остальные ключи и марки не трогает.
+  Future<void> _setBody(String documentId, Map<String, Object?> values) async {
+    final database = await _db();
+    final rows = await database.query(
+      'documents',
+      columns: const ['body'],
+      where: 'id = ?',
+      whereArgs: [documentId],
+      limit: 1,
+    );
+    if (rows.isEmpty) {
+      return;
+    }
+
+    final body = Map<String, Object?>.from(_body(rows.first))..addAll(values);
+    await database.update(
+      'documents',
+      {'body': jsonEncode(body)},
+      where: 'id = ?',
+      whereArgs: [documentId],
+    );
   }
 
   @override
@@ -146,7 +214,7 @@ class SqliteDocumentStore implements DocumentStore {
     final database = await _db();
     final rows = await database.query(
       'marks',
-      columns: const ['mark', 'nomenclature_uid', 'units'],
+      columns: const ['mark', 'nomenclature_uid', 'units', 'quantity', 'price', 'name'],
       where: 'document_id = ?',
       whereArgs: [documentId],
       orderBy: 'rowid',
@@ -157,6 +225,9 @@ class SqliteDocumentStore implements DocumentStore {
           mark: '${row['mark'] ?? ''}',
           nomenclatureUid: '${row['nomenclature_uid'] ?? ''}',
           units: (row['units'] as int?) ?? 1,
+          quantity: (row['quantity'] as num?) ?? 1,
+          price: row['price'] as num?,
+          name: '${row['name'] ?? ''}',
         ),
     ];
   }
@@ -172,8 +243,29 @@ class SqliteDocumentStore implements DocumentStore {
         'cis': mark.cis,
         'nomenclature_uid': mark.nomenclatureUid,
         'units': mark.units,
+        'quantity': mark.quantity,
+        'price': mark.price,
+        'name': mark.name,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  @override
+  Future<void> updateMark(String documentId, StoredMark mark) async {
+    final database = await _db();
+    await database.update(
+      'marks',
+      {
+        'mark': mark.mark,
+        'nomenclature_uid': mark.nomenclatureUid,
+        'units': mark.units,
+        'quantity': mark.quantity,
+        'price': mark.price,
+        'name': mark.name,
+      },
+      where: 'document_id = ? AND cis = ?',
+      whereArgs: [documentId, mark.cis],
     );
   }
 
@@ -319,6 +411,7 @@ class SqliteDocumentStore implements DocumentStore {
       erpUid: '${row['erp_uid'] ?? ''}',
       body: _body(row),
       uploaded: (row['uploaded'] as int? ?? 0) != 0,
+      kind: '${row['kind'] ?? markCollectionKind}',
     );
   }
 

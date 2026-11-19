@@ -106,6 +106,9 @@ class FakeDocumentStore implements DocumentStore {
   final uploads = <(String, bool)>[];
   final packSizes = <String, num>{};
   final coefficients = <String, num>{};
+  final writeOffs = <DateTime>[];
+  final reasons = <(String, String)>[];
+  final savedOrganisations = <(String, String, String)>[];
   var names = <String, String>{};
   var barcodeToUid = <String, String>{};
 
@@ -123,6 +126,9 @@ class FakeDocumentStore implements DocumentStore {
 
   /// Сбой очистки срока хранения.
   Object? trimError;
+
+  /// Сбой создания пустого списания.
+  Object? createWriteOffError;
 
   /// Сколько первых вызовов `setUploaded` падает.
   var setUploadedFailures = 0;
@@ -152,15 +158,37 @@ class FakeDocumentStore implements DocumentStore {
   }
 
   @override
-  Future<List<ScannedDocument>> documents({String query = ''}) async {
+  Future<ScannedDocument> createWriteOff({required DateTime scannedAt, String number = ''}) async {
+    writeOffs.add(scannedAt);
+    final error = createWriteOffError;
+    if (error != null) {
+      throw error;
+    }
+
+    final document = ScannedDocument(
+      id: 'write-off-${writeOffs.length}',
+      scannedAt: scannedAt,
+      number: number,
+      presentation: 'Списание',
+      body: const {'reason': packingReason},
+      kind: writeOffKind,
+    );
+    rows.insert(0, document);
+    return document;
+  }
+
+  @override
+  Future<List<ScannedDocument>> documents({String query = '', String kind = ''}) async {
     queries.add(query);
+    final view = kind.trim();
     final text = query.trim().toLowerCase();
     return [
       for (final document in rows)
-        if (text.isEmpty ||
-            document.presentation.toLowerCase().contains(text) ||
-            document.number.toLowerCase().contains(text) ||
-            document.counterparty.toLowerCase().contains(text))
+        if ((view.isEmpty ? document.kind == markCollectionKind || document.kind.isEmpty : document.kind == view) &&
+            (text.isEmpty ||
+                document.presentation.toLowerCase().contains(text) ||
+                document.number.toLowerCase().contains(text) ||
+                document.counterparty.toLowerCase().contains(text)))
           ScannedDocument(
             id: document.id,
             scannedAt: document.scannedAt,
@@ -169,6 +197,7 @@ class FakeDocumentStore implements DocumentStore {
             presentation: document.presentation,
             erpUid: document.erpUid,
             uploaded: document.uploaded,
+            kind: document.kind,
           ),
     ];
   }
@@ -181,6 +210,43 @@ class FakeDocumentStore implements DocumentStore {
       }
     }
     return null;
+  }
+
+  @override
+  Future<void> setReason(String documentId, {required String reason}) async {
+    reasons.add((documentId, reason));
+    _setBody(documentId, {'reason': reason});
+  }
+
+  @override
+  Future<void> setOrganisation(
+    String documentId, {
+    required String inn,
+    required String name,
+    int printGroupId = 0,
+  }) async {
+    savedOrganisations.add((documentId, inn, name));
+    _setBody(documentId, {'inn': inn, 'organisation': name, 'printGroupId': printGroupId});
+  }
+
+  void _setBody(String documentId, Map<String, Object?> values) {
+    final index = rows.indexWhere((document) => document.id == documentId);
+    if (index < 0) {
+      return;
+    }
+
+    final document = rows[index];
+    rows[index] = ScannedDocument(
+      id: document.id,
+      scannedAt: document.scannedAt,
+      number: document.number,
+      counterparty: document.counterparty,
+      presentation: document.presentation,
+      erpUid: document.erpUid,
+      body: {...document.body, ...values},
+      uploaded: document.uploaded,
+      kind: document.kind,
+    );
   }
 
   @override
@@ -236,6 +302,19 @@ class FakeDocumentStore implements DocumentStore {
     final marks = marksByDocument.putIfAbsent(documentId, () => []);
     marks.removeWhere((item) => item.cis == mark.cis);
     marks.add(mark);
+  }
+
+  @override
+  Future<void> updateMark(String documentId, StoredMark mark) async {
+    final marks = marksByDocument[documentId];
+    if (marks == null) {
+      return;
+    }
+
+    final index = marks.indexWhere((item) => item.cis == mark.cis);
+    if (index >= 0) {
+      marks[index] = mark;
+    }
   }
 
   @override

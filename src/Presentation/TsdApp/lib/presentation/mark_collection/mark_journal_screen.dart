@@ -56,7 +56,7 @@ class _MarkJournalScreenState extends State<MarkJournalScreen> {
       if (trim) {
         await _store.trim(days: widget.settings.documentRetentionDays);
       }
-      documents = await _store.documents(query: _search.text);
+      documents = await _store.documents(query: _search.text, kind: markCollectionKind);
     } catch (_) {
       documents = <ScannedDocument>[];
     }

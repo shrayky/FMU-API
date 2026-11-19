@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:tsd_app/domain/documents/document_packet.dart';
+import 'package:tsd_app/domain/documents/scanned_document.dart';
 import 'package:tsd_app/domain/documents/stored_mark.dart';
 import 'package:tsd_app/infrastructure/documents/main_database.dart';
 import 'package:tsd_app/infrastructure/documents/sqlite_document_store.dart';
@@ -242,6 +243,91 @@ void main() {
     expect((await store.document(saved.id))?.uploaded, isTrue);
   });
 
+  test('пустое списание не видно в сборе, а сбор не виден в списании', () async {
+    await store.save(packet);
+    final writeOff = await store.createWriteOff(scannedAt: DateTime(2026, 11, 5, 11));
+
+    final collection = await store.documents();
+    final writeOffs = await store.documents(kind: writeOffKind);
+
+    expect(collection, hasLength(1));
+    expect(collection.single.kind, markCollectionKind);
+    expect(writeOffs, hasLength(1));
+    expect(writeOffs.single.id, writeOff.id);
+    expect(await store.documents(kind: markCollectionKind), hasLength(1));
+  });
+
+  test('пустое списание пишется с причиной фасовки и без марок', () async {
+    final document = await store.createWriteOff(scannedAt: DateTime(2026, 11, 5, 11));
+    final stored = await store.document(document.id);
+
+    expect(stored?.kind, writeOffKind);
+    expect(stored?.presentation, 'Списание');
+    expect(stored?.reason, packingReason);
+    expect(stored?.number, isEmpty);
+    expect(stored?.counterparty, isEmpty);
+    expect(stored?.erpUid, isEmpty);
+    expect(stored?.uploaded, isFalse);
+    expect(await store.marks(document.id), isEmpty);
+  });
+
+  test('марка хранит количество и цену, правка не сдвигает строку', () async {
+    final document = await store.createWriteOff(scannedAt: DateTime(2026, 11, 5, 11));
+    await store.addMark(document.id, const StoredMark(mark: 'm1', nomenclatureUid: ''));
+    await store.addMark(document.id, const StoredMark(mark: 'm2', nomenclatureUid: ''));
+
+    await store.updateMark(
+      document.id,
+      const StoredMark(
+        mark: 'm1',
+        nomenclatureUid: '',
+        quantity: 0.75,
+        price: 300,
+        name: 'Вода питьевая',
+      ),
+    );
+
+    final marks = await store.marks(document.id);
+    expect(marks.map((mark) => mark.cis), ['m1', 'm2']);
+    expect(marks.first.quantity, 0.75);
+    expect(marks.first.price, 300);
+    expect(marks.first.name, 'Вода питьевая');
+    expect(marks.last.quantity, 1);
+    expect(marks.last.price, isNull);
+    expect(marks.last.name, isEmpty);
+  });
+
+  test('организация сохраняется в теле списания', () async {
+    final document = await store.createWriteOff(scannedAt: DateTime(2026, 11, 5, 11));
+
+    await store.setOrganisation(
+      document.id,
+      inn: '2464122182',
+      name: 'ООО Ромашка',
+      printGroupId: 5,
+    );
+
+    final stored = await store.document(document.id);
+    expect(stored?.inn, '2464122182');
+    expect(stored?.organisationName, 'ООО Ромашка');
+    expect(stored?.printGroupId, 5);
+    expect(stored?.reason, packingReason);
+  });
+
+  test('смена типа пишет причину в тело и не трогает марки', () async {
+    final document = await store.createWriteOff(scannedAt: DateTime(2026, 11, 5, 11));
+    await store.addMark(
+      document.id,
+      const StoredMark(mark: '010460000000001521a', nomenclatureUid: ''),
+    );
+
+    await store.setReason(document.id, reason: expirationReason);
+
+    final stored = await store.document(document.id);
+    expect(stored?.reason, expirationReason);
+    expect(await store.marks(document.id), hasLength(1));
+  });
+
   test('палета и упаковка лежат разными строками размера', () async {
     await store.save(
       DocumentPacket(
@@ -361,6 +447,18 @@ void main() {
         version: 3,
         onCreate: (db, _) async {
           await db.execute('''
+            CREATE TABLE documents (
+              id TEXT PRIMARY KEY,
+              scanned_at INTEGER NOT NULL,
+              number TEXT NOT NULL DEFAULT '',
+              counterparty TEXT NOT NULL DEFAULT '',
+              presentation TEXT NOT NULL DEFAULT '',
+              erp_uid TEXT NOT NULL DEFAULT '',
+              body TEXT NOT NULL DEFAULT '{}',
+              uploaded INTEGER NOT NULL DEFAULT 0
+            )
+          ''');
+          await db.execute('''
             CREATE TABLE marks (
               document_id TEXT NOT NULL,
               mark TEXT NOT NULL,
@@ -402,6 +500,112 @@ void main() {
       indexes.any((row) => row['name'] == 'marks_document_cis' && row['unique'] == 1),
       isTrue,
     );
+  });
+
+  test('база версии 4 получает вид документа, прежние строки остаются сбором', () async {
+    final path = '${Directory.systemTemp.path}/main_v4_${DateTime.now().microsecondsSinceEpoch}.db';
+    final old = await databaseFactoryFfi.openDatabase(
+      path,
+      options: OpenDatabaseOptions(
+        version: 4,
+        onCreate: (db, _) async {
+          await db.execute('''
+            CREATE TABLE documents (
+              id TEXT PRIMARY KEY,
+              scanned_at INTEGER NOT NULL,
+              number TEXT NOT NULL DEFAULT '',
+              counterparty TEXT NOT NULL DEFAULT '',
+              presentation TEXT NOT NULL DEFAULT '',
+              erp_uid TEXT NOT NULL DEFAULT '',
+              body TEXT NOT NULL DEFAULT '{}',
+              uploaded INTEGER NOT NULL DEFAULT 0
+            )
+          ''');
+          await db.execute('''
+            CREATE TABLE marks (
+              document_id TEXT NOT NULL,
+              mark TEXT NOT NULL,
+              cis TEXT NOT NULL DEFAULT '',
+              nomenclature_uid TEXT NOT NULL DEFAULT '',
+              units INTEGER NOT NULL DEFAULT 1,
+              PRIMARY KEY (document_id, mark)
+            )
+          ''');
+        },
+      ),
+    );
+    await old.insert('documents', {
+      'id': 'old-1',
+      'scanned_at': DateTime(2026, 11, 5).millisecondsSinceEpoch,
+      'presentation': 'Старый сбор',
+      'body': '{}',
+    });
+    await old.close();
+
+    final upgraded = await MainDatabase(factory: databaseFactoryFfi, path: path).open();
+    addTearDown(() async {
+      await upgraded.close();
+      await File(path).delete();
+    });
+
+    final columns = (await upgraded.rawQuery('PRAGMA table_info(documents)'))
+        .map((column) => '${column['name']}')
+        .toList();
+    final documents = await upgraded.query('documents');
+    final upgradedStore = SqliteDocumentStore(open: () async => upgraded);
+
+    expect(columns, contains('kind'));
+    expect(documents, hasLength(1));
+    expect(documents.single['kind'], markCollectionKind);
+    expect(await upgradedStore.documents(), hasLength(1));
+    expect(await upgradedStore.documents(kind: writeOffKind), isEmpty);
+  });
+
+  test('база версии 5 получает количество, цену и название марки', () async {
+    final path = '${Directory.systemTemp.path}/main_v5_${DateTime.now().microsecondsSinceEpoch}.db';
+    final old = await databaseFactoryFfi.openDatabase(
+      path,
+      options: OpenDatabaseOptions(
+        version: 5,
+        onCreate: (db, _) async {
+          await db.execute('''
+            CREATE TABLE marks (
+              document_id TEXT NOT NULL,
+              mark TEXT NOT NULL,
+              cis TEXT NOT NULL DEFAULT '',
+              nomenclature_uid TEXT NOT NULL DEFAULT '',
+              units INTEGER NOT NULL DEFAULT 1,
+              PRIMARY KEY (document_id, mark)
+            )
+          ''');
+        },
+      ),
+    );
+    await old.insert('marks', {
+      'document_id': 'doc-1',
+      'mark': '010460000000001521a',
+      'cis': '010460000000001521a',
+      'nomenclature_uid': sampleGoodsUid,
+      'units': 1,
+    });
+    await old.close();
+
+    final upgraded = await MainDatabase(factory: databaseFactoryFfi, path: path).open();
+    addTearDown(() async {
+      await upgraded.close();
+      await File(path).delete();
+    });
+
+    final columns = (await upgraded.rawQuery('PRAGMA table_info(marks)'))
+        .map((column) => '${column['name']}')
+        .toList();
+    final marks = await upgraded.query('marks');
+
+    expect(columns, containsAll(['quantity', 'price', 'name']));
+    expect(marks, hasLength(1));
+    expect(marks.single['quantity'], 1);
+    expect(marks.single['price'], isNull);
+    expect(marks.single['name'], isEmpty);
   });
 }
 

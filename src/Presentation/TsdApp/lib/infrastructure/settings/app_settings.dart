@@ -19,6 +19,7 @@ class AppSettings {
     this.markCheckApi = 'True api',
     this.exchangeServerId = '',
     this.documentRetentionDays = 30,
+    this.writeOffNumberPrefix = '',
     this.exchangeServers = const [],
     this.exchangeVariants = const [],
     this.taskButtons,
@@ -40,6 +41,9 @@ class AppSettings {
 
   /// Сколько дней хранить документы сбора марок. Ноль документы не удаляет.
   final int documentRetentionDays;
+
+  /// Префикс номера списания на этом терминале. Пустой префикс оставляет только счётчик.
+  final String writeOffNumberPrefix;
 
   final List<ExchangeServer> exchangeServers;
   final List<ExchangeVariant> exchangeVariants;
@@ -72,6 +76,7 @@ class AppSettings {
     String? markCheckApi,
     String? exchangeServerId,
     int? documentRetentionDays,
+    String? writeOffNumberPrefix,
     List<ExchangeServer>? exchangeServers,
     List<ExchangeVariant>? exchangeVariants,
     List<TaskButton>? taskButtons,
@@ -91,6 +96,7 @@ class AppSettings {
       markCheckApi: markCheckApi ?? this.markCheckApi,
       exchangeServerId: exchangeServerId ?? this.exchangeServerId,
       documentRetentionDays: documentRetentionDays ?? this.documentRetentionDays,
+      writeOffNumberPrefix: writeOffNumberPrefix ?? this.writeOffNumberPrefix,
       exchangeServers: exchangeServers ?? this.exchangeServers,
       exchangeVariants: exchangeVariants ?? this.exchangeVariants,
       taskButtons: taskButtons ?? this.taskButtons,

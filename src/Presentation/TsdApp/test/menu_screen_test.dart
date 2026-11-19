@@ -14,12 +14,13 @@ import 'package:tsd_app/presentation/scan/continuous_scan_table.dart';
 import 'package:tsd_app/presentation/shell/journal_icon.dart';
 
 void main() {
-  testWidgets('на документах обе задачи, журнал у сбора, сервис скрыт', (tester) async {
+  testWidgets('на документах три задачи, журнал у сбора и списания, сервис скрыт', (tester) async {
     await _pumpMenu(tester, {'cameraScanEnabled': true, 'continuousScanEnabled': true});
 
     expect(find.text('Сбор марок'), findsOneWidget);
     expect(find.text('Проверка марки'), findsOneWidget);
-    expect(find.byType(JournalIcon), findsOneWidget);
+    expect(find.text('Списание марок'), findsOneWidget);
+    expect(find.byType(JournalIcon), findsNWidgets(2));
     expect(find.text('Сервис'), findsNothing);
     expect(find.text('Обмен'), findsNothing);
     expect(find.byType(ContinuousScanTable), findsNothing);
