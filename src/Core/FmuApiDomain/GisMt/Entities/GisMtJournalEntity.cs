@@ -23,9 +23,29 @@ public class GisMtJournalEntity : IHaveStringId
 
     public string Inn { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Печатная группа, выбранная при создании: у организаций с одним ИНН разные КПП.
+    /// </summary>
+    public int PrintGroupId { get; set; }
+
     public string Kpp { get; set; } = string.Empty;
 
     public string FiasId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Название организации на момент создания: остаётся, если печатную группу удалили.
+    /// </summary>
+    public string OrganisationName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Номер документа на ТСД.
+    /// </summary>
+    public string Number { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Терминал, с которого выгружен акт.
+    /// </summary>
+    public string TerminalId { get; set; } = string.Empty;
 
     public string Uid { get; set; } = string.Empty;
 

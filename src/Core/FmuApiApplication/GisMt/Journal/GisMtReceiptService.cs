@@ -3,6 +3,7 @@ using FmuApiApplication.Mark.Interfaces;
 using FmuApiDomain.Attributes;
 using FmuApiDomain.Configuration;
 using FmuApiDomain.Configuration.Interfaces;
+using FmuApiDomain.Configuration.Options.Organization;
 using FmuApiDomain.Frontol.Interfaces;
 using FmuApiDomain.GisMt;
 using FmuApiDomain.GisMt.Entities;
@@ -24,6 +25,7 @@ public class GisMtReceiptService : IGisMtReceiptService
     private const string MilkProductGroup = "milk";
     private const int SubmittedCisDays = 30;
     private const int SubmittedActsLimit = 500;
+    private const string ExpirationGroupError = "Товарную группу марок определить нельзя";
 
     private readonly ILogger<GisMtReceiptService> _logger;
     private readonly IParametersService _parametersService;
@@ -71,15 +73,46 @@ public class GisMtReceiptService : IGisMtReceiptService
         return Result.Success(await BuildPreview(organisation.INN, parameters, marks, cancellationToken));
     }
 
-    public async Task<Result<GisMtReceiptCreateResult>> Create(string inn, IReadOnlyList<string> marks, CancellationToken cancellationToken = default)
+    public Task<Result<GisMtReceiptCreateResult>> Create(string inn, IReadOnlyList<string> marks, string? reason = null, CancellationToken cancellationToken = default)
     {
+        var values = (marks ?? [])
+            .Select(mark => new GisMtReceiptMark(mark ?? string.Empty))
+            .ToList();
+
+        return CreateWithValues(inn, values, reason, cancellationToken: cancellationToken);
+    }
+
+    public async Task<Result<GisMtReceiptCreateResult>> CreateWithValues(string inn, IReadOnlyList<GisMtReceiptMark> marks, string? reason = null, int? printGroupId = null, string? uid = null, string? number = null, string? terminalId = null, CancellationToken cancellationToken = default)
+    {
+        var writeOffReason = GisMtWriteOffReasons.Resolve(reason);
+
+        if (!GisMtWriteOffReasons.IsKnown(writeOffReason))
+            return Result.Failure<GisMtReceiptCreateResult>("Неизвестная причина списания");
+
         var parameters = await _parametersService.CurrentAsync();
-        var organisation = GisMtOrganisationResolver.Find(parameters, inn ?? string.Empty);
+        PrintGroupData? organisation;
 
-        if (organisation is null)
-            return Result.Failure<GisMtReceiptCreateResult>($"Организация с ИНН {inn} не найдена");
+        if (printGroupId is > 0)
+        {
+            organisation = GisMtOrganisationResolver.FindById(parameters, printGroupId.Value);
 
-        var preview = await BuildPreview(organisation.INN, parameters, marks, cancellationToken);
+            if (organisation is null)
+                return Result.Failure<GisMtReceiptCreateResult>("Печатная группа не найдена");
+        }
+        else
+        {
+            organisation = GisMtOrganisationResolver.Find(parameters, inn ?? string.Empty);
+
+            if (organisation is null)
+                return Result.Failure<GisMtReceiptCreateResult>($"Организация с ИНН {inn} не найдена");
+        }
+
+        if (writeOffReason == GisMtWriteOffReasons.Expiration)
+            return await CreateExpirationFromMarks(organisation, marks ?? [], uid, number, terminalId, cancellationToken);
+
+        var texts = (marks ?? []).Select(mark => mark.Mark).ToList();
+        var preview = await BuildPreview(organisation.INN, parameters, texts, cancellationToken, parseTailLess: true);
+        ApplyProvidedValues(preview, marks ?? []);
         var lines = ToLines(preview);
 
         var lineErrors = preview
@@ -100,8 +133,13 @@ public class GisMtReceiptService : IGisMtReceiptService
             ProductGroup = MilkProductGroup,
             Status = GisMtJournalStatuses.Draft,
             Inn = organisation.INN,
+            PrintGroupId = organisation.Id,
             Kpp = organisation.Kpp,
             FiasId = organisation.FiasId,
+            OrganisationName = organisation.Name,
+            Number = (number ?? string.Empty).Trim(),
+            TerminalId = (terminalId ?? string.Empty).Trim(),
+            Uid = (uid ?? string.Empty).Trim(),
             DocDate = DateOnly.FromDateTime(DateTime.Now),
             CreatedAt = DateTime.Now,
             Lines = lines
@@ -115,7 +153,240 @@ public class GisMtReceiptService : IGisMtReceiptService
         return Result.Success(new GisMtReceiptCreateResult(created.Value, lineErrors));
     }
 
-    public async Task<Result<GisMtReceiptCreateResult>> Update(string id, string inn, IReadOnlyList<string> marks, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Количество и цена с ТСД важнее расчётных: оператор поправляет вес и цену перед выгрузкой.
+    /// </summary>
+    private static void ApplyProvidedValues(List<GisMtReceiptLinePreview> preview, IReadOnlyList<GisMtReceiptMark> marks)
+    {
+        var byMark = new Dictionary<string, GisMtReceiptMark>(StringComparer.OrdinalIgnoreCase);
+        var byCis = new Dictionary<string, GisMtReceiptMark>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var mark in marks)
+        {
+            var value = (mark.Mark ?? string.Empty).Trim();
+
+            if (value.Length == 0)
+                continue;
+
+            byMark.TryAdd(value, mark);
+
+            var cis = GisMtCisNormalizer.ToCis(value);
+
+            if (cis.Length > 0)
+                byCis.TryAdd(cis, mark);
+        }
+
+        for (var index = 0; index < preview.Count; index++)
+        {
+            var item = preview[index];
+
+            if (item.Cis.Length == 0)
+                continue;
+
+            if (!byMark.TryGetValue(item.Mark, out var source) && !byCis.TryGetValue(item.Cis, out source))
+                continue;
+
+            var quantity = Positive(source.Quantity, 3) ?? item.QuantityKg;
+            var price = Positive(source.Price, 2) ?? item.PricePerKg;
+
+            preview[index] = item with
+            {
+                QuantityKg = quantity,
+                PricePerKg = price,
+                AmountKop = GisMtReceiptAmount.Calculate(price, quantity),
+                Error = MissingDataWarning(quantity, price)
+            };
+        }
+    }
+
+    private static decimal? Positive(decimal? value, int digits)
+    {
+        if (value is null || value.Value <= 0)
+            return null;
+
+        var rounded = Math.Round(value.Value, digits, MidpointRounding.AwayFromZero);
+
+        return rounded > 0 ? rounded : null;
+    }
+
+    /// <summary>
+    /// Организация акта: сохранённая печатная группа важнее поиска по ИНН.
+    /// </summary>
+    private static PrintGroupData? ResolveOrganisation(
+        Parameters parameters,
+        GisMtJournalEntity document,
+        string? inn)
+    {
+        if (document.PrintGroupId > 0)
+            return GisMtOrganisationResolver.FindById(parameters, document.PrintGroupId);
+
+        return GisMtOrganisationResolver.Find(
+            parameters,
+            string.IsNullOrWhiteSpace(inn) ? document.Inn : inn);
+    }
+
+    /// <summary>
+    /// Черновик выбытия по истечении срока годности: присланные марки без цены,
+    /// товарная группа берётся из сведений КИ.
+    /// </summary>
+    private async Task<Result<GisMtReceiptCreateResult>> CreateExpirationFromMarks(
+        PrintGroupData organisation,
+        IReadOnlyList<GisMtReceiptMark> marks,
+        string? uid,
+        string? number,
+        string? terminalId,
+        CancellationToken cancellationToken)
+    {
+        var (lines, lineErrors) = BuildLinesFromMarks(marks);
+
+        if (lines.Count == 0)
+            return Result.Failure<GisMtReceiptCreateResult>(lineErrors.Count == 0
+                ? "В документе нет ни одной марки"
+                : string.Join("; ", lineErrors));
+
+        var token = _applicationState.TrueApiToken(organisation.INN).Token;
+
+        if (string.IsNullOrWhiteSpace(token))
+            return Result.Failure<GisMtReceiptCreateResult>(ExpirationGroupError);
+
+        var info = await _cisesClient.CisesInfo(
+            token,
+            lines.Select(line => line.Cis).ToList(),
+            productGroup: null,
+            cancellationToken);
+
+        if (info.IsFailure)
+        {
+            _logger.LogWarning("Товарные группы марок списания не получены: {Error}", info.Error);
+
+            return Result.Failure<GisMtReceiptCreateResult>(ExpirationGroupError);
+        }
+
+        var details = new Dictionary<string, CisInfoData>(StringComparer.OrdinalIgnoreCase);
+        var groupByCis = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var item in info.Value)
+        {
+            var cis = item.CisInfo?.Cis ?? item.CisInfo?.RequestedCis;
+
+            if (item.CisInfo is null || string.IsNullOrWhiteSpace(cis))
+                continue;
+
+            var key = GisMtCisNormalizer.ToCis(cis);
+            var group = (item.CisInfo.ProductGroup ?? string.Empty).Trim();
+
+            details[key] = item.CisInfo;
+
+            if (group.Length > 0)
+                groupByCis[key] = group;
+        }
+
+        if (groupByCis.Count == 0 || lines.Any(line => !groupByCis.ContainsKey(line.Cis)))
+            return Result.Failure<GisMtReceiptCreateResult>(ExpirationGroupError);
+
+        var groups = groupByCis.Values
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (groups.Count > 1)
+            return Result.Failure<GisMtReceiptCreateResult>("Марки разных товарных групп");
+
+        foreach (var line in lines)
+        {
+            if (details.TryGetValue(line.Cis, out var detail) && !string.IsNullOrWhiteSpace(detail.ProductName))
+                line.ProductName = detail.ProductName;
+        }
+
+        ApplyExpirationValues(lines, marks);
+
+        var document = new GisMtJournalEntity
+        {
+            Id = Guid.NewGuid().ToString(),
+            Kind = GisMtJournalKinds.LkReceipt,
+            Reason = GisMtWriteOffReasons.Expiration,
+            ProductGroup = groups[0],
+            Status = GisMtJournalStatuses.Draft,
+            Inn = organisation.INN,
+            PrintGroupId = organisation.Id,
+            Kpp = organisation.Kpp,
+            FiasId = organisation.FiasId,
+            OrganisationName = organisation.Name,
+            Number = (number ?? string.Empty).Trim(),
+            TerminalId = (terminalId ?? string.Empty).Trim(),
+            Uid = (uid ?? string.Empty).Trim(),
+            DocDate = DateOnly.FromDateTime(DateTime.Now),
+            CreatedAt = DateTime.Now,
+            Lines = lines
+        };
+
+        var created = await _journalService.Create(document);
+
+        if (created.IsFailure)
+            return Result.Failure<GisMtReceiptCreateResult>(created.Error);
+
+        return Result.Success(new GisMtReceiptCreateResult(created.Value, lineErrors));
+    }
+
+    /// <summary>
+    /// Количество и цена с ТСД для строк истечения срока: сумма в акт не передаётся.
+    /// </summary>
+    private static void ApplyExpirationValues(List<GisMtJournalLine> lines, IReadOnlyList<GisMtReceiptMark> marks)
+    {
+        var byCis = new Dictionary<string, GisMtReceiptMark>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var mark in marks)
+        {
+            var value = (mark.Mark ?? string.Empty).Trim();
+            var cis = GisMtCisNormalizer.ToCis(value);
+
+            if (cis.Length > 0)
+                byCis.TryAdd(cis, mark);
+        }
+
+        foreach (var line in lines)
+        {
+            if (!byCis.TryGetValue(line.Cis, out var source))
+                continue;
+
+            line.QuantityKg = Positive(source.Quantity, 3);
+            line.PricePerKg = Positive(source.Price, 2);
+        }
+    }
+
+    /// <summary>
+    /// Строки акта из присланных марок: КИ и GTIN марки, без веса и цены.
+    /// </summary>
+    private (List<GisMtJournalLine> Lines, List<string> Errors) BuildLinesFromMarks(IReadOnlyList<GisMtReceiptMark> marks)
+    {
+        var source = new List<GisMtExpiredLine>();
+
+        foreach (var mark in marks ?? [])
+        {
+            var value = (mark.Mark ?? string.Empty).Trim();
+            var cis = _markParser.CalculateCis(value);
+
+            if (cis.Length == 0)
+                cis = _markParser.CalculateCis(_markParser.EncodeMark(value));
+
+            if (cis.Length == 0)
+                cis = GisMtCisNormalizer.ToCis(value);
+
+            source.Add(new GisMtExpiredLine(value, cis));
+        }
+
+        return BuildExpirationLines(source);
+    }
+
+    public Task<Result<GisMtReceiptCreateResult>> Update(string id, string inn, IReadOnlyList<string> marks, CancellationToken cancellationToken = default)
+    {
+        var values = (marks ?? [])
+            .Select(mark => new GisMtReceiptMark(mark ?? string.Empty))
+            .ToList();
+
+        return UpdateWithValues(id, inn, values, cancellationToken);
+    }
+
+    public async Task<Result<GisMtReceiptCreateResult>> UpdateWithValues(string id, string inn, IReadOnlyList<GisMtReceiptMark> marks, CancellationToken cancellationToken = default)
     {
         var document = await _journalService.Get(id);
 
@@ -132,12 +403,16 @@ public class GisMtReceiptService : IGisMtReceiptService
             return Result.Failure<GisMtReceiptCreateResult>("Документ отправляется, редактировать его нельзя");
 
         var parameters = await _parametersService.CurrentAsync();
-        var organisation = GisMtOrganisationResolver.Find(parameters, string.IsNullOrWhiteSpace(inn) ? document.Inn : inn);
+        var organisation = ResolveOrganisation(parameters, document, inn);
 
         if (organisation is null)
-            return Result.Failure<GisMtReceiptCreateResult>($"Организация с ИНН {inn} не найдена");
+            return Result.Failure<GisMtReceiptCreateResult>(document.PrintGroupId > 0
+                ? "Печатная группа не найдена"
+                : $"Организация с ИНН {inn} не найдена");
 
-        var preview = await BuildPreview(organisation.INN, parameters, marks, cancellationToken);
+        var texts = (marks ?? []).Select(mark => mark.Mark).ToList();
+        var preview = await BuildPreview(organisation.INN, parameters, texts, cancellationToken);
+        ApplyProvidedValues(preview, marks ?? []);
         ReuseStoredLines(document, preview);
         var lines = ToLines(preview);
 
@@ -160,8 +435,10 @@ public class GisMtReceiptService : IGisMtReceiptService
         var target = current.Value;
 
         target.Inn = organisation.INN;
+        target.PrintGroupId = organisation.Id;
         target.Kpp = organisation.Kpp;
         target.FiasId = organisation.FiasId;
+        target.OrganisationName = organisation.Name;
         target.Lines = lines;
         target.ErrorText = string.Empty;
 
@@ -205,8 +482,10 @@ public class GisMtReceiptService : IGisMtReceiptService
             ProductGroup = group,
             Status = GisMtJournalStatuses.Draft,
             Inn = organisation.INN,
+            PrintGroupId = organisation.Id,
             Kpp = organisation.Kpp,
             FiasId = organisation.FiasId,
+            OrganisationName = organisation.Name,
             DocDate = DateOnly.FromDateTime(DateTime.Now),
             CreatedAt = DateTime.Now,
             Lines = documentLines
@@ -248,10 +527,12 @@ public class GisMtReceiptService : IGisMtReceiptService
             return Result.Failure<GisMtReceiptCreateResult>("Документ отправляется, редактировать его нельзя");
 
         var parameters = await _parametersService.CurrentAsync();
-        var organisation = GisMtOrganisationResolver.Find(parameters, string.IsNullOrWhiteSpace(inn) ? document.Inn : inn);
+        var organisation = ResolveOrganisation(parameters, document, inn);
 
         if (organisation is null)
-            return Result.Failure<GisMtReceiptCreateResult>($"Организация с ИНН {inn} не найдена");
+            return Result.Failure<GisMtReceiptCreateResult>(document.PrintGroupId > 0
+                ? "Печатная группа не найдена"
+                : $"Организация с ИНН {inn} не найдена");
 
         var (documentLines, lineErrors) = BuildExpirationLines(lines);
 
@@ -269,8 +550,10 @@ public class GisMtReceiptService : IGisMtReceiptService
         var target = current.Value;
 
         target.Inn = organisation.INN;
+        target.PrintGroupId = organisation.Id;
         target.Kpp = organisation.Kpp;
         target.FiasId = organisation.FiasId;
+        target.OrganisationName = organisation.Name;
         target.ProductGroup = group;
         target.Lines = documentLines;
         target.ErrorText = string.Empty;
@@ -583,7 +866,8 @@ public class GisMtReceiptService : IGisMtReceiptService
         string inn,
         Parameters parameters,
         IReadOnlyList<string> marks,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool parseTailLess = false)
     {
         var preview = new List<GisMtReceiptLinePreview>();
         var cises = new List<string>();
@@ -595,6 +879,17 @@ public class GisMtReceiptService : IGisMtReceiptService
 
             if (cis.Length == 0)
                 cis = _markParser.CalculateCis(_markParser.EncodeMark(value));
+
+            // Марка без криптохвоста: 01, GTIN и 21 с серийником, разделителя GS нет.
+            if (cis.Length == 0 && parseTailLess)
+            {
+                var normalized = GisMtCisNormalizer.ToCis(value);
+
+                if (normalized.Length >= 18
+                    && normalized.StartsWith("01", StringComparison.Ordinal)
+                    && normalized.Substring(16, 2) == "21")
+                    cis = normalized;
+            }
 
             if (cis.Length == 0)
             {

@@ -14,5 +14,8 @@ public static class GisMtWriteOffReasons
     public static string Resolve(string? reason) =>
         string.IsNullOrWhiteSpace(reason) ? Packing : reason.Trim().ToUpperInvariant();
 
+    public static bool IsKnown(string? reason) =>
+        Resolve(reason) is Packing or Expiration;
+
     public static bool IsExpiration(string? reason) => Resolve(reason) == Expiration;
 }

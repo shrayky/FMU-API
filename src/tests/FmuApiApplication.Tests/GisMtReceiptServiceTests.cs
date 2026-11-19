@@ -1,3 +1,4 @@
+using FmuApiDomain.Configuration.Options.Organization;
 using FmuApiDomain.GisMt.Journal;
 using FmuApiDomain.GisMt.Models;
 using Xunit;
@@ -8,6 +9,8 @@ public class GisMtReceiptServiceTests
 {
     private const string MarkWithWeight = "0104603334003509215EQ26tdHwAvn\u001d93ee1c";
     private const string MarkWithoutWeight = "0104603334003509216EQ26tdHwAvn\u001d93ee1c";
+    private const string MarkWithWeightCis = "0104603334003509215EQ26tdHwAvn";
+    private const string MarkWithoutWeightCis = "0104603334003509216EQ26tdHwAvn";
 
     [Fact]
     public async Task Строка_получает_вес_цену_и_сумму()
@@ -26,6 +29,24 @@ public class GisMtReceiptServiceTests
         Assert.Equal(250m, line.PricePerKg);
         Assert.Equal(12500, line.AmountKop);
         Assert.Empty(result.Value.LineErrors);
+    }
+
+    [Fact]
+    public async Task Марка_без_криптохвоста_попадает_в_акт()
+    {
+        var repository = new FakeJournalRepository();
+        var service = GisMtTestData.ReceiptService(
+            repository,
+            new Dictionary<string, int> { [MarkWithWeightCis] = 500 },
+            250m);
+
+        var result = await service.Create("2464122182", [MarkWithWeightCis]);
+
+        Assert.True(result.IsSuccess);
+        var line = Assert.Single(result.Value.Document.Lines);
+        Assert.Equal(MarkWithWeightCis, line.Cis);
+        Assert.Equal(0.5m, line.QuantityKg);
+        Assert.Equal(12500, line.AmountKop);
     }
 
     [Fact]
@@ -56,6 +77,163 @@ public class GisMtReceiptServiceTests
         var line = Assert.Single(result.Value.Document.Lines);
         Assert.Null(line.PricePerKg);
         Assert.Null(line.AmountKop);
+    }
+
+    [Fact]
+    public async Task Количество_и_цена_с_ТСД_попадают_в_акт_фасовки()
+    {
+        var repository = new FakeJournalRepository();
+        var priceCalls = new List<string>();
+        var service = GisMtTestData.ReceiptService(
+            repository,
+            new Dictionary<string, int> { [MarkWithWeightCis] = 500 },
+            250m,
+            priceCalls: priceCalls);
+
+        var result = await service.CreateWithValues(
+            "2464122182",
+            [new GisMtReceiptMark(MarkWithWeight, 0.75m, 300m)],
+            "PACKING");
+
+        Assert.True(result.IsSuccess);
+        var line = Assert.Single(result.Value.Document.Lines);
+        Assert.Equal(0.75m, line.QuantityKg);
+        Assert.Equal(300m, line.PricePerKg);
+        Assert.Equal(22500, line.AmountKop);
+        Assert.NotEmpty(priceCalls);
+    }
+
+    [Fact]
+    public async Task Неположительные_значения_с_ТСД_не_заменяют_расчётные()
+    {
+        var repository = new FakeJournalRepository();
+        var service = GisMtTestData.ReceiptService(
+            repository,
+            new Dictionary<string, int> { [MarkWithWeightCis] = 500 },
+            250m);
+
+        var result = await service.CreateWithValues(
+            "2464122182",
+            [new GisMtReceiptMark(MarkWithWeight, 0m, 0m)],
+            "PACKING");
+
+        Assert.True(result.IsSuccess);
+        var line = Assert.Single(result.Value.Document.Lines);
+        Assert.Equal(0.5m, line.QuantityKg);
+        Assert.Equal(250m, line.PricePerKg);
+        Assert.Equal(12500, line.AmountKop);
+    }
+
+    [Fact]
+    public async Task Истечение_срока_берёт_количество_с_ТСД_без_суммы()
+    {
+        var repository = new FakeJournalRepository();
+        var priceCalls = new List<string>();
+        var service = GisMtTestData.ReceiptService(
+            repository,
+            new Dictionary<string, int> { [MarkWithWeightCis] = 500 },
+            250m,
+            productGroups: new Dictionary<string, string> { [MarkWithWeightCis] = "milk" },
+            priceCalls: priceCalls);
+
+        var result = await service.CreateWithValues(
+            "2464122182",
+            [new GisMtReceiptMark(MarkWithWeight, 0.4m)],
+            "EXPIRATION");
+
+        Assert.True(result.IsSuccess);
+        var line = Assert.Single(result.Value.Document.Lines);
+        Assert.Equal(0.4m, line.QuantityKg);
+        Assert.Null(line.AmountKop);
+        Assert.Empty(priceCalls);
+    }
+
+    [Fact]
+    public async Task Печатная_группа_выбирает_КПП_при_одном_ИНН()
+    {
+        var parameters = GisMtTestData.Parameters();
+        parameters.OrganisationConfig.PrintGroups.Add(new PrintGroupData
+        {
+            Id = 6,
+            INN = "2464122182",
+            Name = "Магазин 2",
+            Kpp = "246402001"
+        });
+
+        var repository = new FakeJournalRepository();
+        var service = GisMtTestData.ReceiptService(repository, [], null, parameters: parameters);
+
+        var first = await service.CreateWithValues("2464122182", [new GisMtReceiptMark(MarkWithWeight)]);
+        var second = await service.CreateWithValues(
+            "2464122182",
+            [new GisMtReceiptMark(MarkWithWeight)],
+            printGroupId: 6);
+        var missing = await service.CreateWithValues(
+            "2464122182",
+            [new GisMtReceiptMark(MarkWithWeight)],
+            printGroupId: 99);
+
+        Assert.Equal("246401001", first.Value.Document.Kpp);
+        Assert.Equal(5, first.Value.Document.PrintGroupId);
+        Assert.Equal("246402001", second.Value.Document.Kpp);
+        Assert.Equal(6, second.Value.Document.PrintGroupId);
+        Assert.Equal("Магазин 2", second.Value.Document.OrganisationName);
+        Assert.True(missing.IsFailure);
+        Assert.Equal("Печатная группа не найдена", missing.Error);
+    }
+
+    [Fact]
+    public async Task Повторный_uid_ТСД_не_создаёт_второй_акт()
+    {
+        var repository = new FakeJournalRepository();
+        var service = GisMtTestData.ReceiptService(
+            repository,
+            new Dictionary<string, int> { [MarkWithWeightCis] = 500 },
+            250m);
+
+        var first = await service.CreateWithValues(
+            "2464122182",
+            [new GisMtReceiptMark(MarkWithWeight, 0.5m, 250m)],
+            uid: "tsd-1",
+            number: "Скл-1",
+            terminalId: "terminal-1");
+        var second = await service.CreateWithValues(
+            "2464122182",
+            [new GisMtReceiptMark(MarkWithWeight, 0.5m, 250m)],
+            uid: "tsd-1",
+            number: "Скл-1",
+            terminalId: "terminal-1");
+
+        Assert.True(first.IsSuccess);
+        Assert.True(second.IsSuccess);
+        Assert.Equal(first.Value.Document.Id, second.Value.Document.Id);
+        Assert.Equal("Скл-1", first.Value.Document.Number);
+        Assert.Equal("terminal-1", first.Value.Document.TerminalId);
+        Assert.Equal(1, repository.SaveCalls);
+    }
+
+    [Fact]
+    public async Task Правка_черновика_оставляет_количество_и_цену_с_ТСД()
+    {
+        var repository = new FakeJournalRepository();
+        var service = GisMtTestData.ReceiptService(
+            repository,
+            new Dictionary<string, int> { [MarkWithWeightCis] = 500 },
+            250m);
+
+        var created = await service.CreateWithValues(
+            "2464122182",
+            [new GisMtReceiptMark(MarkWithWeight, 0.75m, 300m)]);
+        var updated = await service.UpdateWithValues(
+            created.Value.Document.Id,
+            "2464122182",
+            [new GisMtReceiptMark(MarkWithWeight, 0.75m, 300m)]);
+
+        Assert.True(updated.IsSuccess);
+        var line = Assert.Single(updated.Value.Document.Lines);
+        Assert.Equal(0.75m, line.QuantityKg);
+        Assert.Equal(300m, line.PricePerKg);
+        Assert.Equal(22500, line.AmountKop);
     }
 
     [Fact]
@@ -613,6 +791,93 @@ public class GisMtReceiptServiceTests
         Assert.True(filled.IsSuccess);
         var mark = Assert.Single(filled.Value.Marks);
         Assert.Equal(returned.Cis, mark.Cis);
+    }
+
+    [Fact]
+    public async Task Пустая_причина_создаёт_акт_фасовки()
+    {
+        var repository = new FakeJournalRepository();
+        var service = GisMtTestData.ReceiptService(repository, [], null);
+
+        var result = await service.Create("2464122182", [MarkWithWeight], " ");
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(GisMtWriteOffReasons.Packing, result.Value.Document.Reason);
+        Assert.Equal("milk", result.Value.Document.ProductGroup);
+    }
+
+    [Fact]
+    public async Task Неизвестная_причина_акт_не_создаёт()
+    {
+        var repository = new FakeJournalRepository();
+        var service = GisMtTestData.ReceiptService(repository, [], null);
+
+        var result = await service.Create("2464122182", [MarkWithWeight], "UTILIZATION");
+
+        Assert.True(result.IsFailure);
+        Assert.Contains("Неизвестная причина", result.Error);
+        Assert.Empty(repository.Saved);
+    }
+
+    [Fact]
+    public async Task Истечение_срока_не_запрашивает_цену_во_Frontol()
+    {
+        var repository = new FakeJournalRepository();
+        var priceCalls = new List<string>();
+        var service = GisMtTestData.ReceiptService(
+            repository,
+            new Dictionary<string, int> { [MarkWithWeightCis] = 500 },
+            250m,
+            productGroups: new Dictionary<string, string> { [MarkWithWeightCis] = "milk" },
+            priceCalls: priceCalls);
+
+        var result = await service.Create("2464122182", [MarkWithWeight], "EXPIRATION");
+
+        Assert.True(result.IsSuccess);
+        Assert.Empty(priceCalls);
+
+        var document = result.Value.Document;
+        Assert.Equal(GisMtWriteOffReasons.Expiration, document.Reason);
+        Assert.Equal("milk", document.ProductGroup);
+
+        var line = Assert.Single(document.Lines);
+        Assert.Equal("0104603334003509215EQ26tdHwAvn", line.Cis);
+        Assert.Null(line.PricePerKg);
+        Assert.Null(line.AmountKop);
+    }
+
+    [Fact]
+    public async Task Марки_двух_товарных_групп_акт_не_создают()
+    {
+        var repository = new FakeJournalRepository();
+        var service = GisMtTestData.ReceiptService(
+            repository,
+            new Dictionary<string, int> { [MarkWithWeightCis] = 500, [MarkWithoutWeightCis] = 500 },
+            null,
+            productGroups: new Dictionary<string, string>
+            {
+                [MarkWithWeightCis] = "milk",
+                [MarkWithoutWeightCis] = "water"
+            });
+
+        var result = await service.Create("2464122182", [MarkWithWeight, MarkWithoutWeight], "EXPIRATION");
+
+        Assert.True(result.IsFailure);
+        Assert.Contains("Марки разных товарных групп", result.Error);
+        Assert.Empty(repository.Saved);
+    }
+
+    [Fact]
+    public async Task Без_сведений_КИ_истечение_срока_акт_не_создаёт()
+    {
+        var repository = new FakeJournalRepository();
+        var service = GisMtTestData.ReceiptService(repository, [], null);
+
+        var result = await service.Create("2464122182", [MarkWithWeight], "EXPIRATION");
+
+        Assert.True(result.IsFailure);
+        Assert.Contains("Товарную группу", result.Error);
+        Assert.Empty(repository.Saved);
     }
 
     private static string Cis(int serial) => $"010460333400350921{serial:D6}";

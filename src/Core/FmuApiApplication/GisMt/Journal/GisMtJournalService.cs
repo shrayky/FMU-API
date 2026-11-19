@@ -126,10 +126,16 @@ public class GisMtJournalService : IGisMtJournalService
             return Result.Failure<GisMtJournalEntity>("В документе нет ни одной марки");
 
         var parameters = await _parametersService.CurrentAsync();
-        var organisation = GisMtOrganisationResolver.Find(parameters, document.Inn);
+        var organisation = document.PrintGroupId > 0
+            ? GisMtOrganisationResolver.FindById(parameters, document.PrintGroupId)
+            : GisMtOrganisationResolver.Find(parameters, document.Inn);
 
         if (organisation is null)
-            return await Fail(document, $"Организация с ИНН {document.Inn} не найдена");
+            return await Fail(
+                document,
+                document.PrintGroupId > 0
+                    ? "Печатная группа не найдена"
+                    : $"Организация с ИНН {document.Inn} не найдена");
 
         var token = _applicationState.TrueApiToken(organisation.INN).Token;
 
@@ -138,8 +144,8 @@ public class GisMtJournalService : IGisMtJournalService
 
         var participant = GisMtParticipantRules.Resolve(
             document.Inn,
-            organisation.Kpp,
-            organisation.FiasId,
+            string.IsNullOrWhiteSpace(document.Kpp) ? organisation.Kpp : document.Kpp,
+            string.IsNullOrWhiteSpace(document.FiasId) ? organisation.FiasId : document.FiasId,
             GisMtModRequirement.Required(document.Kind, document.Reason));
 
         if (participant.IsFailure)

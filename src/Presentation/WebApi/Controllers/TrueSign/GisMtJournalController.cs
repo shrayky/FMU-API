@@ -100,10 +100,23 @@ public class GisMtJournalController : ControllerBase
         if (check != null)
             return check;
 
-        if (request?.Marks is null || request.Marks.Count == 0)
+        if (request?.Marks is null && request?.Lines is null)
             return BadRequest(new { error = "В документе нет ни одной марки" });
 
-        var result = await _receiptService.Create(request.Inn ?? string.Empty, request.Marks, cancellationToken);
+        var marks = ToReceiptMarks(request);
+
+        if (marks.Count == 0)
+            return BadRequest(new { error = "В документе нет ни одной марки" });
+
+        var result = await _receiptService.CreateWithValues(
+            request.Inn ?? string.Empty,
+            marks,
+            request.Reason,
+            request.PrintGroupId,
+            request.Uid,
+            request.Number,
+            request.TerminalId,
+            cancellationToken);
 
         if (result.IsFailure)
             return BadRequest(new { error = result.Error });
@@ -339,10 +352,15 @@ public class GisMtJournalController : ControllerBase
         if (check != null)
             return check;
 
-        if (request?.Marks is null || request.Marks.Count == 0)
+        if (request?.Marks is null && request?.Lines is null)
             return BadRequest(new { error = "В документе нет ни одной марки" });
 
-        var result = await _receiptService.Update(id, request.Inn ?? string.Empty, request.Marks, cancellationToken);
+        var marks = ToReceiptMarks(request);
+
+        if (marks.Count == 0)
+            return BadRequest(new { error = "В документе нет ни одной марки" });
+
+        var result = await _receiptService.UpdateWithValues(id, request.Inn ?? string.Empty, marks, cancellationToken);
 
         if (result.IsFailure)
             return BadRequest(new { error = result.Error });
@@ -390,7 +408,35 @@ public class GisMtJournalController : ControllerBase
         .Select(line => new GisMtExpiredLine(line.Mark ?? string.Empty, line.Cis ?? string.Empty))
         .ToList();
 
-    public record CreateReceiptRequest(string? Inn, List<string>? Marks);
+    private static List<GisMtReceiptMark> ToReceiptMarks(CreateReceiptRequest request)
+    {
+        var marks = new List<GisMtReceiptMark>();
+
+        foreach (var line in request.Lines ?? [])
+        {
+            var value = (line.Mark ?? string.Empty).Trim();
+
+            if (value.Length > 0)
+                marks.Add(new GisMtReceiptMark(value, line.Quantity, line.Price));
+        }
+
+        if (marks.Count > 0)
+            return marks;
+
+        foreach (var mark in request.Marks ?? [])
+        {
+            var value = (mark ?? string.Empty).Trim();
+
+            if (value.Length > 0)
+                marks.Add(new GisMtReceiptMark(value));
+        }
+
+        return marks;
+    }
+
+    public record CreateReceiptRequest(string? Inn, List<string>? Marks, string? Reason, List<ReceiptMarkRequest>? Lines, int? PrintGroupId, string? Uid, string? Number, string? TerminalId);
+
+    public record ReceiptMarkRequest(string? Mark, decimal? Quantity, decimal? Price);
 
     public record ReconcileRequest(string? CrptDocumentId);
 

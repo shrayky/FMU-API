@@ -153,9 +153,12 @@ internal static class GisMtTestData
         IGisMtMarkRepository? marks = null,
         Dictionary<string, string>? packageTypes = null,
         Dictionary<string, List<string>>? aggregation = null,
-        string? aggregationFailure = null)
+        string? aggregationFailure = null,
+        Dictionary<string, string>? productGroups = null,
+        List<string>? priceCalls = null,
+        Parameters? parameters = null)
     {
-        var parameters = Parameters();
+        parameters ??= Parameters();
         var markRepository = marks ?? new FakeMarksRepository();
 
         return new GisMtReceiptService(
@@ -163,8 +166,8 @@ internal static class GisMtTestData
             new FakeParameters(parameters),
             TokenState(),
             MarkParser(),
-            new FakeCisesClient(weights, packageTypes),
-            new FakeSprTFactory(price),
+            new FakeCisesClient(weights, packageTypes, productGroups),
+            new FakeSprTFactory(price, priceCalls),
             JournalService(repository, new FakeSigner(), new FakeLkClient(), parameters, markRepository),
             markRepository,
             repository,
@@ -496,7 +499,10 @@ internal sealed class FakeLkClient(string? failure = null, Exception? exception 
     }
 }
 
-internal sealed class FakeCisesClient(Dictionary<string, int> weights, Dictionary<string, string>? packageTypes = null) : IGisMtCisesClient
+internal sealed class FakeCisesClient(
+    Dictionary<string, int> weights,
+    Dictionary<string, string>? packageTypes = null,
+    Dictionary<string, string>? productGroups = null) : IGisMtCisesClient
 {
     public Task<Result<List<CisInfoResponseItem>>> CisesInfo(
         string token,
@@ -514,7 +520,8 @@ internal sealed class FakeCisesClient(Dictionary<string, int> weights, Dictionar
                     RequestedCis = cis,
                     ProductName = "Молоко пастеризованное 3,2%",
                     ProductWeightGr = weights[cis],
-                    PackageType = packageTypes?.GetValueOrDefault(cis)
+                    PackageType = packageTypes?.GetValueOrDefault(cis),
+                    ProductGroup = productGroups?.GetValueOrDefault(cis)
                 }
             })
             .ToList();
@@ -529,12 +536,12 @@ internal sealed class FakeCisesClient(Dictionary<string, int> weights, Dictionar
         Task.FromResult(Result.Success(new ProductsInformationTrueApi()));
 }
 
-internal sealed class FakeSprTFactory(decimal? price) : IFrontolSprTServiceFactory
+internal sealed class FakeSprTFactory(decimal? price, List<string>? priceCalls = null) : IFrontolSprTServiceFactory
 {
-    public IDisposableFrontolSprTService Create(string connectionString) => new FakeSprTService(price);
+    public IDisposableFrontolSprTService Create(string connectionString) => new FakeSprTService(price, priceCalls);
 }
 
-internal sealed class FakeSprTService(decimal? price) : IDisposableFrontolSprTService
+internal sealed class FakeSprTService(decimal? price, List<string>? priceCalls = null) : IDisposableFrontolSprTService
 {
     public Task<Result<int>> PrintGroupCodeByBarcodeAsync(string barCode) =>
         Task.FromResult(Result.Success(0));
@@ -545,8 +552,12 @@ internal sealed class FakeSprTService(decimal? price) : IDisposableFrontolSprTSe
     public Task<Result<Dictionary<int, FrontolWare>>> GetWaresByIdsAsync(IReadOnlyCollection<int> wareIds) =>
         Task.FromResult(Result.Success(new Dictionary<int, FrontolWare>()));
 
-    public Task<Result<decimal?>> RetailPriceByBarcode(string barcode) =>
-        Task.FromResult(Result.Success(price));
+    public Task<Result<decimal?>> RetailPriceByBarcode(string barcode)
+    {
+        priceCalls?.Add(barcode);
+
+        return Task.FromResult(Result.Success(price));
+    }
 
     public void Dispose()
     {

@@ -76,6 +76,7 @@ public class GisMtConnectTapService : IGisMtConnectTapService
         }
         else
         {
+            document.PrintGroupId = organisation.Id;
             document.Kpp = organisation.Kpp;
             document.FiasId = organisation.FiasId;
 
